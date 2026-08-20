@@ -43,7 +43,7 @@ export default function CompanionJourneyScreen() {
     <ScreenContainer edges={["left", "right", "bottom"]}>
       <Stack.Screen options={{ headerShown: true, title: "90 天陪跑", headerBackTitle: "返回" }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.eyebrow, { color: colors.tint }]}>UI-05 · 本周陪跑</Text>
+        <Text style={[styles.eyebrow, { color: colors.tint }]}>本周陪伴节奏</Text>
         <Text style={[styles.title, { color: colors.text }]}>{focus ? `${focus.title} · 从一个小行动开始` : "从一个小行动开始"}</Text>
         <Text style={[styles.subtitle, { color: colors.muted }]}>陪跑提供节奏、提醒和回顾，不评价家庭好坏，也不要求连续完美。</Text>
         <DataSourceBanner />

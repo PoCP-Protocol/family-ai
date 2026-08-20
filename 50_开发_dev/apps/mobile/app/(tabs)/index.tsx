@@ -88,7 +88,11 @@ export default function TodayScreen() {
             style={({ pressed }) => [styles.quickRow, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}
           >
             <View style={[styles.quickIcon, { backgroundColor: colors.background }]}>
-              <Text style={[styles.quickIconText, { color: colors.tint }]}>{item.id.slice(3)}</Text>
+              <IconSymbol
+                name={item.id === "UI-35" ? "calendar.fill" : item.id === "UI-02" ? "chart.bar.fill" : "person.2.fill"}
+                size={23}
+                color={colors.tint}
+              />
             </View>
             <View style={styles.quickCopy}>
               <Text style={[styles.quickTitle, { color: colors.text }]}>{item.title}</Text>
@@ -134,7 +138,6 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 20, lineHeight: 26, fontWeight: "800", marginTop: 4 },
   quickRow: { minHeight: 94, borderWidth: 1, borderRadius: 20, padding: 15, flexDirection: "row", alignItems: "center", gap: 13 },
   quickIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  quickIconText: { fontSize: 14, lineHeight: 18, fontWeight: "800" },
   quickCopy: { flex: 1, gap: 4 },
   quickTitle: { fontSize: 17, lineHeight: 22, fontWeight: "700" },
   quickSubtitle: { fontSize: 14, lineHeight: 19 },

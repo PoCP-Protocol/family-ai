@@ -60,7 +60,7 @@ export default function FamilyAssessmentScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={[styles.eyebrow, { color: colors.tint }]}>UI-02 · 家长视角</Text>
+            <Text style={[styles.eyebrow, { color: colors.tint }]}>家长视角</Text>
             <Text style={[styles.title, { color: colors.text }]}>现在最想先改善哪个家庭场景？</Text>
             <Text style={[styles.subtitle, { color: colors.muted }]}>这不是儿童诊断。答案只代表你此刻的观察，也可以随时修改。</Text>
             <DataSourceBanner />

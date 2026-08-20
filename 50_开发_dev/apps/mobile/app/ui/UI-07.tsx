@@ -19,7 +19,7 @@ export default function GrowthAssessmentEntryScreen() {
     <ScreenContainer edges={["left", "right", "bottom"]}>
       <Stack.Screen options={{ headerShown: true, title: "成长测评", headerBackTitle: "返回" }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.eyebrow, { color: colors.tint }]}>UI-07 · 成长入口</Text>
+        <Text style={[styles.eyebrow, { color: colors.tint }]}>从家庭当下开始</Text>
         <Text style={[styles.title, { color: colors.text }]}>从一个真实场景开始</Text>
         <Text style={[styles.subtitle, { color: colors.muted }]}>测评帮助家庭决定先练习什么，不用于给孩子贴标签，也不产生家庭总分。</Text>
         <DataSourceBanner />
@@ -34,7 +34,7 @@ export default function GrowthAssessmentEntryScreen() {
               <View style={[styles.progressFill, { width: `${Math.round(completion * 100)}%`, backgroundColor: focus.color }]} />
             </View>
             <Text style={[styles.progressText, { color: colors.muted }]}>
-              {completion === 1 ? `已完成 · ${assessmentSyncState === "synced" ? "Family API 已回读" : "保存在本机"}` : `${Math.round(completion * 100)}% 已回答`}
+              {completion === 1 ? `已完成 · ${assessmentSyncState === "synced" ? "家庭记录已同步" : "保存在本机"}` : `${Math.round(completion * 100)}% 已回答`}
             </Text>
           </View>
         ) : (

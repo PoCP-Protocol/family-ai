@@ -47,17 +47,17 @@ export default function GrowthReviewScreen() {
   const records = useMemo<ReviewItem[]>(() => {
     const items: ReviewItem[] = [];
     if (lastReceipt) {
-      items.push({ id: lastReceipt.actionId, title: "完成一次家庭行动", detail: lastReceipt.reflection || "这次行动已记录，没有填写反思。", occurredAt: lastReceipt.checkedInAt, source: "UI-09 · 家长行动" });
+      items.push({ id: lastReceipt.actionId, title: "完成一次家庭行动", detail: lastReceipt.reflection || "这次行动已记录，没有填写反思。", occurredAt: lastReceipt.checkedInAt, source: "今日家庭行动" });
     }
     campCompletedDays.slice(-5).forEach((day) => {
-      items.push({ id: `camp-${day}`, title: `21 天成长营 Day ${day}`, detail: "完成只表示当日行动发生。", occurredAt: "", source: "UI-35 · 课程行动" });
+      items.push({ id: `camp-${day}`, title: `21 天成长营 Day ${day}`, detail: "完成只表示当日行动发生。", occurredAt: "", source: "成长营行动" });
     });
     uiActionReceipts.slice(-5).forEach((receipt) => {
       items.push({ id: `${receipt.screenId}-${receipt.kind}`, title: receipt.label, detail: receipt.message, occurredAt: receipt.recordedAt, source: `${receipt.screenId} · ${receipt.loop}循环` });
     });
     remote?.recorded_actions?.slice(-8).forEach((receipt) => {
       if (items.some((item) => item.id === receipt.receipt_id)) return;
-      items.push({ id: receipt.receipt_id, title: "Family API 行动记录", detail: receipt.kind.replaceAll("_", " "), occurredAt: receipt.occurred_at, source: receipt.source_ui });
+      items.push({ id: receipt.receipt_id, title: "家庭行动记录", detail: receipt.kind.replaceAll("_", " "), occurredAt: receipt.occurred_at, source: "家庭同步记录" });
     });
     return items.sort((left, right) => (right.occurredAt || "").localeCompare(left.occurredAt || ""));
   }, [campCompletedDays, lastReceipt, remote?.recorded_actions, uiActionReceipts]);
@@ -72,7 +72,7 @@ export default function GrowthReviewScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={[styles.eyebrow, { color: colors.tint }]}>UI-08 · 阶段回顾</Text>
+            <Text style={[styles.eyebrow, { color: colors.tint }]}>阶段回顾</Text>
             <Text style={[styles.title, { color: colors.text }]}>我们做过什么，比一个总分更重要</Text>
             <Text style={[styles.subtitle, { color: colors.muted }]}>这里汇总行动和反思来源，不把过程记录自动解释为孩子或家庭已经改变。</Text>
             <DataSourceBanner />

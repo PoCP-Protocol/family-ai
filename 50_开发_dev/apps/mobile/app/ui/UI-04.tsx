@@ -88,7 +88,7 @@ export default function JourneyPlanScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={[styles.eyebrow, { color: colors.tint }]}>UI-04 · 家庭计划草稿</Text>
+            <Text style={[styles.eyebrow, { color: colors.tint }]}>家庭成长方案</Text>
             <Text style={[styles.title, { color: colors.text }]}>{plan?.title ?? `${focus?.title ?? "家庭成长"} 90 天方案`}</Text>
             <Text style={[styles.subtitle, { color: colors.muted }]}>计划提供节奏，不是儿童诊断或成长结果。每次阶段转换都由家庭回顾后决定。</Text>
             <DataSourceBanner />

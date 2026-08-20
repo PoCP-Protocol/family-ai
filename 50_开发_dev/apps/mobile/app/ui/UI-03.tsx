@@ -78,7 +78,7 @@ export default function GrowthExplanationScreen() {
     <ScreenContainer edges={["left", "right", "bottom"]}>
       <Stack.Screen options={{ headerShown: true, title: "家庭成长解读", headerBackTitle: "返回" }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.eyebrow, { color: colors.tint }]}>UI-03 · 家庭成长解读</Text>
+        <Text style={[styles.eyebrow, { color: colors.tint }]}>家庭成长解读</Text>
         <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
         <Text style={[styles.subtitle, { color: colors.muted }]}>{local.summary}</Text>
         <DataSourceBanner />
