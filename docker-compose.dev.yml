@@ -1,0 +1,71 @@
+name: family-ai-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-family}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-family_dev_only}
+      POSTGRES_DB: ${POSTGRES_DB:-family_dev}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - family_ai_dev_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-family} -d ${POSTGRES_DB:-family_dev}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    image: node:22-bookworm
+    working_dir: /workspace
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-family}:${POSTGRES_PASSWORD:-family_dev_only}@postgres:5432/${POSTGRES_DB:-family_dev}
+      MODEL_GATEWAY_MODE: ${MODEL_GATEWAY_MODE:-NOOP}
+      EXTERNAL_EFFECTS_ENABLED: ${EXTERNAL_EFFECTS_ENABLED:-false}
+    volumes:
+      - ./50_开发_dev:/workspace
+      - family_ai_dev_node_modules:/workspace/node_modules
+      - family_ai_dev_pnpm_store:/pnpm/store
+    command: >-
+      bash -lc
+      "corepack enable && corepack prepare pnpm@11.1.3 --activate &&
+      pnpm config set store-dir /pnpm/store &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @family/api dev"
+    ports:
+      - "127.0.0.1:${API_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    image: node:22-bookworm
+    working_dir: /workspace
+    environment:
+      NODE_ENV: development
+      PORT: 5173
+      FAMILY_API_BASE_URL: ${FAMILY_API_BASE_URL:-http://localhost:3000}
+    volumes:
+      - ./50_开发_dev:/workspace
+      - family_ai_dev_node_modules:/workspace/node_modules
+      - family_ai_dev_pnpm_store:/pnpm/store
+    command: >-
+      bash -lc
+      "corepack enable && corepack prepare pnpm@11.1.3 --activate &&
+      pnpm config set store-dir /pnpm/store &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @family/web dev"
+    ports:
+      - "127.0.0.1:${WEB_PORT:-5173}:5173"
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  family_ai_dev_postgres:
+  family_ai_dev_node_modules:
+  family_ai_dev_pnpm_store:
