@@ -53,7 +53,7 @@
 - [x] 编写 35 UI 导航、Today/check-in 与六循环状态的单元测试
 - [x] 运行 TypeScript、Lint、Vitest 和 Expo 配置检查并修复问题
 - [x] 核对 todo.md 完成状态并准备首个移动 App 检查点
-- [ ] 将移动 App 阶段成果同步到 family-ai 独立仓库
+- [x] 将移动 App 阶段成果同步到 family-ai 独立仓库
 - [x] 审计当前移动项目 GitHub 远程、分支、工作区差异与环境文件排除状态
 - [x] 仅暂存已验证的移动端代码、测试、研究与台账文件，排除密钥、环境文件、日志和无关资产
 - [x] 创建可审计 GitHub 提交并推送到当前远程分支，记录 commit、branch、remote 和 ahead/behind
