@@ -1,0 +1,837 @@
+openapi: 3.1.0
+info:
+  title: Family Growth Platform API
+  version: 0.2.0
+  description: >
+    Canonical API contract for Family Core and Growth Foundation.
+    Core state mutations use Named Actions; generic PATCH is intentionally absent.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Family
+  - name: Members
+  - name: Relationships
+  - name: LifeStage
+  - name: Consent
+  - name: Growth
+  - name: Events
+  - name: Outcomes
+
+paths:
+  /families:
+    post:
+      tags: [Family]
+      operationId: CreateFamily
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateFamilyRequest'}
+      responses:
+        '201':
+          description: Family created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FamilyResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /families/{familyId}:
+    get:
+      tags: [Family]
+      operationId: GetFamilyAggregate
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Family aggregate
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FamilyAggregate'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+  /families/{familyId}/parents:
+    post:
+      tags: [Members]
+      operationId: AddParent
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AddParentRequest'}
+      responses:
+        '201':
+          description: Parent added
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PersonResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+  /families/{familyId}/children:
+    post:
+      tags: [Members]
+      operationId: AddChild
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AddChildRequest'}
+      responses:
+        '201':
+          description: Child added
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PersonResponse'}
+
+  /families/{familyId}/relationships:
+    post:
+      tags: [Relationships]
+      operationId: CreateFamilyRelationship
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateRelationshipRequest'}
+      responses:
+        '201':
+          description: Relationship created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RelationshipResponse'}
+
+  /families/{familyId}/life-stages:
+    post:
+      tags: [LifeStage]
+      operationId: AssignLifeStage
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AssignLifeStageRequest'}
+      responses:
+        '201':
+          description: LifeStage assigned
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LifeStageResponse'}
+
+  /families/{familyId}/consents:
+    post:
+      tags: [Consent]
+      operationId: GrantConsent
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GrantConsentRequest'}
+      responses:
+        '201':
+          description: Consent granted
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ConsentResponse'}
+
+  /families/{familyId}/growth-profiles:
+    get:
+      tags: [Growth]
+      operationId: ListGrowthProfiles
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - in: query
+          name: subjectType
+          schema: {$ref: '#/components/schemas/GrowthDomain'}
+      responses:
+        '200':
+          description: Profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/GrowthProfileSummary'}
+
+  /families/{familyId}/growth/onboardings/{onboardingId}/priority:
+    get:
+      tags: [Growth]
+      operationId: GetGrowthPriorityInsight
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/OnboardingId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Current priority draft and active priority
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GrowthPriorityInsightResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+  /families/{familyId}/growth/onboardings/{onboardingId}/priority/confirm:
+    post:
+      tags: [Growth]
+      operationId: ConfirmGrowthPriority
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/OnboardingId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ConfirmGrowthPriorityRequest'}
+      responses:
+        '201':
+          description: Priority decision recorded
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ConfirmGrowthPriorityResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /families/{familyId}/growth/interventions/LISTEN_BEFORE_RESPOND:
+    get:
+      tags: [Growth]
+      operationId: GetListenBeforeRespondIntervention
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Intervention-001 card
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InterventionCard'}
+
+  /families/{familyId}/growth/onboardings/{onboardingId}/interventions/start:
+    post:
+      tags: [Growth]
+      operationId: StartIntervention
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/OnboardingId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/StartInterventionRequest'}
+      responses:
+        '201':
+          description: Intervention episode started with seven actions
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StartInterventionResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /families/{familyId}/growth/onboardings/{onboardingId}/interventions/active:
+    get:
+      tags: [Growth]
+      operationId: GetActiveIntervention
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/OnboardingId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Active intervention episode, or null when no active episode exists
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {$ref: '#/components/schemas/StartInterventionResponse'}
+                  - type: 'null'
+
+  /families/{familyId}/growth/actions/today:
+    get:
+      tags: [Growth]
+      operationId: GetTodayGrowthAction
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Next pending growth action, or null when none exists
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {$ref: '#/components/schemas/GrowthAction'}
+                  - type: 'null'
+
+  /families/{familyId}/growth/actions/{actionId}/complete:
+    post:
+      tags: [Growth]
+      operationId: CompleteGrowthAction
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/ActionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CompleteGrowthActionRequest'}
+      responses:
+        '200':
+          description: Growth action check-in recorded
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CompleteGrowthActionResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /families/{familyId}/events:
+    post:
+      tags: [Events]
+      operationId: LogGrowthEvent
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LogGrowthEventRequest'}
+      responses:
+        '201':
+          description: Event logged
+
+  /families/{familyId}/outcomes:
+    post:
+      tags: [Outcomes]
+      operationId: MeasureOutcome
+      parameters:
+        - $ref: '#/components/parameters/FamilyId'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MeasureOutcomeRequest'}
+      responses:
+        '201':
+          description: Outcome created
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    FamilyId:
+      in: path
+      name: familyId
+      required: true
+      schema: {type: string, format: uuid}
+    OnboardingId:
+      in: path
+      name: onboardingId
+      required: true
+      schema: {type: string, format: uuid}
+    ActionId:
+      in: path
+      name: actionId
+      required: true
+      schema: {type: string, format: uuid}
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: {type: string, minLength: 8, maxLength: 128}
+    CorrelationId:
+      in: header
+      name: X-Correlation-Id
+      required: true
+      schema: {type: string, minLength: 8, maxLength: 128}
+
+  responses:
+    BadRequest:
+      description: Validation failed
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Forbidden:
+      description: Not allowed
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Conflict:
+      description: Idempotency or state conflict
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+
+  schemas:
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [code, message, correlationId]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        correlationId: {type: string}
+        details: {type: object, additionalProperties: true}
+
+    FamilyStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, ARCHIVED]
+
+    GrowthDomain:
+      type: string
+      enum: [CHILD, PARENT, RELATIONSHIP]
+
+    CreateFamilyRequest:
+      type: object
+      additionalProperties: false
+      required: [displayName]
+      properties:
+        displayName: {type: string, minLength: 1, maxLength: 100}
+        primaryContactAccountId: {type: string}
+
+    AddParentRequest:
+      type: object
+      additionalProperties: false
+      required: [displayName, role]
+      properties:
+        displayName: {type: string, minLength: 1, maxLength: 100}
+        role:
+          type: string
+          enum: [MOTHER, FATHER, GUARDIAN, OTHER_GUARDIAN]
+        accountId: {type: string}
+
+    AddChildRequest:
+      type: object
+      additionalProperties: false
+      required: [displayName]
+      properties:
+        displayName: {type: string, minLength: 1, maxLength: 100}
+        birthDate: {type: string, format: date}
+
+    CreateRelationshipRequest:
+      type: object
+      additionalProperties: false
+      required: [personAId, personBId, relationshipType]
+      properties:
+        personAId: {type: string, format: uuid}
+        personBId: {type: string, format: uuid}
+        relationshipType:
+          type: string
+          enum: [PARENT_CHILD, SPOUSE, SIBLING, GUARDIAN_CHILD, OTHER]
+
+    AssignLifeStageRequest:
+      type: object
+      additionalProperties: false
+      required: [childId, lifeStageCode, effectiveFrom]
+      properties:
+        childId: {type: string, format: uuid}
+        lifeStageCode:
+          type: string
+          enum: [EARLY_ADOLESCENCE_12_15]
+        effectiveFrom: {type: string, format: date-time}
+        source: {type: string, default: MANUAL}
+
+    GrantConsentRequest:
+      type: object
+      additionalProperties: false
+      required: [subjectPersonId, guardianPersonId, purpose, policyVersion]
+      properties:
+        subjectPersonId: {type: string, format: uuid}
+        guardianPersonId: {type: string, format: uuid}
+        purpose:
+          type: string
+          enum:
+            - SERVICE
+            - ASSESSMENT
+            - AI_PERSONALIZATION
+            - GROWTH_TRACKING
+            - EXPERT_SERVICE
+            - RESEARCH
+            - MODEL_IMPROVEMENT
+            - CONTENT_PUBLICATION
+        policyVersion: {type: string}
+
+    ConfirmGrowthPriorityRequest:
+      type: object
+      additionalProperties: false
+      required: [draft_id, decision]
+      properties:
+        draft_id: {type: string, format: uuid}
+        decision: {$ref: '#/components/schemas/GrowthPriorityDecision'}
+
+    StartInterventionRequest:
+      type: object
+      additionalProperties: false
+      required: [priority_id, intervention_code]
+      properties:
+        priority_id: {type: string, format: uuid}
+        intervention_code:
+          type: string
+          enum: [LISTEN_BEFORE_RESPOND]
+
+    CompleteGrowthActionRequest:
+      type: object
+      additionalProperties: false
+      required: [completion_status, reflection, occurred_at]
+      properties:
+        completion_status:
+          type: string
+          enum: [COMPLETED, PARTIAL, NOT_COMPLETED]
+        reflection: {type: string, minLength: 1, maxLength: 1000}
+        occurred_at: {type: string, format: date-time}
+
+    GrowthPriorityDecision:
+      type: string
+      enum: [P03, R03, R04, R05, NO_PRIORITY_YET]
+
+    GrowthPriorityInsightResponse:
+      type: object
+      additionalProperties: false
+      required: [onboarding_id, family_id, draft, active_priority]
+      properties:
+        onboarding_id: {type: string, format: uuid}
+        family_id: {type: string, format: uuid}
+        draft: {$ref: '#/components/schemas/GrowthPriorityDraft'}
+        active_priority:
+          oneOf:
+            - {$ref: '#/components/schemas/GrowthPriority'}
+            - type: 'null'
+
+    ConfirmGrowthPriorityResponse:
+      type: object
+      additionalProperties: false
+      required: [priority, decision, draft]
+      properties:
+        priority:
+          oneOf:
+            - {$ref: '#/components/schemas/GrowthPriority'}
+            - type: 'null'
+        decision: {$ref: '#/components/schemas/GrowthPriorityDecision'}
+        draft: {$ref: '#/components/schemas/GrowthPriorityDraft'}
+
+    GrowthPriorityDraft:
+      type: object
+      additionalProperties: true
+      required: [draft_id, family_id, onboarding_id, decision, candidate, profile_refs, evidence_refs, confidence, policy_version, created_at]
+      properties:
+        draft_id: {type: string, format: uuid}
+        family_id: {type: string, format: uuid}
+        onboarding_id: {type: string, format: uuid}
+        decision: {$ref: '#/components/schemas/GrowthPriorityDecision'}
+        candidate:
+          oneOf:
+            - {$ref: '#/components/schemas/GrowthPriorityCandidate'}
+            - type: 'null'
+        profile_refs:
+          type: array
+          items:
+            type: object
+            required: [profile_id, version, dimension_id]
+            properties:
+              profile_id: {type: string, format: uuid}
+              version: {type: integer, minimum: 1}
+              dimension_id: {type: string, enum: [P03, R03, R04, R05]}
+        evidence_refs:
+          type: array
+          items: {type: string, format: uuid}
+        confidence: {type: string, enum: [LOW, MEDIUM, HIGH]}
+        policy_version: {type: string, enum: [M2_104_DETERMINISTIC_V2]}
+        profile_snapshot: {type: object, additionalProperties: true}
+        created_at: {type: string, format: date-time}
+
+    GrowthPriorityCandidate:
+      type: object
+      additionalProperties: true
+      required: [dimension_id, profile_id, profile_version, eligibility, boundary, policy_version]
+      properties:
+        dimension_id: {type: string, enum: [P03, R03, R04, R05]}
+        profile_id: {type: string, format: uuid}
+        profile_version: {type: integer, minimum: 1}
+        eligibility: {type: string, enum: [ELIGIBLE, REVIEW_REQUIRED, NO_PRIORITY_YET]}
+        boundary: {type: string, enum: [PRIORITY_IS_HUMAN_CONFIRMED_PRACTICE_FOCUS]}
+        policy_version: {type: string, enum: [M2_104_DETERMINISTIC_V2]}
+
+    GrowthPriority:
+      type: object
+      additionalProperties: false
+      required: [priority_id, family_id, onboarding_id, profile_id, dimension_id, status, version, boundary, reason_codes, evidence_refs, policy_version, confirmed_by_actor_id, confirmed_at, superseded_at, previous_priority_id, created_at]
+      properties:
+        priority_id: {type: string, format: uuid}
+        family_id: {type: string, format: uuid}
+        onboarding_id: {type: string, format: uuid}
+        profile_id: {type: string, format: uuid}
+        dimension_id: {type: string, enum: [P03, R03, R04, R05]}
+        status: {type: string, enum: [ACTIVE, SUPERSEDED]}
+        version: {type: integer, minimum: 1}
+        boundary: {type: string, enum: [PRIORITY_IS_HUMAN_CONFIRMED_PRACTICE_FOCUS]}
+        reason_codes:
+          type: array
+          items: {type: string}
+        evidence_refs:
+          type: array
+          items: {type: string, format: uuid}
+        policy_version: {type: string, enum: [M2_104_DETERMINISTIC_V2]}
+        confirmed_by_actor_id: {type: string}
+        confirmed_at: {type: string, format: date-time}
+        superseded_at:
+          oneOf:
+            - {type: string, format: date-time}
+            - type: 'null'
+        previous_priority_id:
+          oneOf:
+            - {type: string, format: uuid}
+            - type: 'null'
+        created_at: {type: string, format: date-time}
+
+    InterventionCard:
+      type: object
+      additionalProperties: false
+      required: [intervention_id, intervention_code, name_zh, duration_days, why, target, behavior, applicability, contraindications, safety_notes, expected_mediator, expected_outcome, action_template, policy_version]
+      properties:
+        intervention_id: {type: string, enum: [INTERVENTION-001]}
+        intervention_code: {type: string, enum: [LISTEN_BEFORE_RESPOND]}
+        name_zh: {type: string, enum: [先听后回应]}
+        duration_days: {type: integer, enum: [7]}
+        why: {type: string}
+        target: {type: string}
+        behavior: {type: string}
+        applicability:
+          type: array
+          items: {type: string}
+        contraindications:
+          type: array
+          items: {type: string}
+        safety_notes:
+          type: array
+          items: {type: string}
+        expected_mediator: {type: string}
+        expected_outcome: {type: string}
+        action_template: {type: string}
+        policy_version: {type: string, enum: [M2_105_DETERMINISTIC_V1]}
+
+    InterventionEpisode:
+      type: object
+      additionalProperties: false
+      required: [episode_id, family_id, onboarding_id, priority_id, intervention_id, intervention_code, status, started_by_actor_id, started_at, planned_days, policy_version, created_at]
+      properties:
+        episode_id: {type: string, format: uuid}
+        family_id: {type: string, format: uuid}
+        onboarding_id: {type: string, format: uuid}
+        priority_id: {type: string, format: uuid}
+        intervention_id: {type: string, enum: [INTERVENTION-001]}
+        intervention_code: {type: string, enum: [LISTEN_BEFORE_RESPOND]}
+        status: {type: string, enum: [ACTIVE, COMPLETED, CANCELLED]}
+        started_by_actor_id: {type: string}
+        started_at: {type: string, format: date-time}
+        planned_days: {type: integer, enum: [7]}
+        policy_version: {type: string, enum: [M2_105_DETERMINISTIC_V1]}
+        created_at: {type: string, format: date-time}
+
+    GrowthAction:
+      type: object
+      additionalProperties: false
+      required: [action_id, family_id, onboarding_id, priority_id, intervention_episode_id, day_index, status, assignment_text, due_date, completed_at, completion_status, reflection, reflection_boundary, boundary, created_at]
+      properties:
+        action_id: {type: string, format: uuid}
+        family_id: {type: string, format: uuid}
+        onboarding_id: {type: string, format: uuid}
+        priority_id: {type: string, format: uuid}
+        intervention_episode_id: {type: string, format: uuid}
+        day_index: {type: integer, minimum: 1, maximum: 7}
+        status: {type: string, enum: [PENDING, COMPLETED, PARTIAL, NOT_COMPLETED]}
+        assignment_text: {type: string}
+        due_date: {type: string, format: date}
+        completed_at:
+          oneOf:
+            - {type: string, format: date-time}
+            - type: 'null'
+        completion_status:
+          oneOf:
+            - {type: string, enum: [COMPLETED, PARTIAL, NOT_COMPLETED]}
+            - type: 'null'
+        reflection:
+          oneOf:
+            - {type: string}
+            - type: 'null'
+        reflection_boundary:
+          oneOf:
+            - {type: string, enum: [REFLECTION_IS_RAW_MATERIAL_NOT_OUTCOME]}
+            - type: 'null'
+        boundary: {type: string, enum: [ACTION_IS_NOT_OUTCOME]}
+        created_at: {type: string, format: date-time}
+
+    StartInterventionResponse:
+      type: object
+      additionalProperties: false
+      required: [intervention, episode, actions]
+      properties:
+        intervention: {$ref: '#/components/schemas/InterventionCard'}
+        episode: {$ref: '#/components/schemas/InterventionEpisode'}
+        actions:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items: {$ref: '#/components/schemas/GrowthAction'}
+
+    CompleteGrowthActionResponse:
+      type: object
+      additionalProperties: false
+      required: [action, reflection_boundary]
+      properties:
+        action: {$ref: '#/components/schemas/GrowthAction'}
+        reflection_boundary: {type: string, enum: [REFLECTION_IS_RAW_MATERIAL_NOT_OUTCOME]}
+
+    LogGrowthEventRequest:
+      type: object
+      additionalProperties: false
+      required: [eventType, occurredAt, source]
+      properties:
+        eventType: {type: string}
+        occurredAt: {type: string, format: date-time}
+        source: {type: string}
+        actionId: {type: string, format: uuid}
+        payload: {type: object, additionalProperties: true}
+
+    MeasureOutcomeRequest:
+      type: object
+      additionalProperties: false
+      required: [dimensionId, windowStart, windowEnd, source, confidence]
+      properties:
+        dimensionId: {type: string}
+        baseline: {}
+        current: {}
+        windowStart: {type: string, format: date-time}
+        windowEnd: {type: string, format: date-time}
+        source: {type: string}
+        evidenceIds:
+          type: array
+          items: {type: string, format: uuid}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        context: {type: object, additionalProperties: true}
+        possibleConfounders:
+          type: array
+          items: {type: string}
+
+    FamilyResponse:
+      type: object
+      required: [familyId, displayName, status, version, createdAt]
+      properties:
+        familyId: {type: string, format: uuid}
+        displayName: {type: string}
+        status: {$ref: '#/components/schemas/FamilyStatus'}
+        version: {type: integer}
+        createdAt: {type: string, format: date-time}
+
+    PersonResponse:
+      type: object
+      required: [personId, familyId, personType, displayName]
+      properties:
+        personId: {type: string, format: uuid}
+        familyId: {type: string, format: uuid}
+        personType: {type: string, enum: [PARENT, CHILD]}
+        displayName: {type: string}
+
+    RelationshipResponse:
+      type: object
+      required: [relationshipId, familyId, personAId, personBId, relationshipType]
+      properties:
+        relationshipId: {type: string, format: uuid}
+        familyId: {type: string, format: uuid}
+        personAId: {type: string, format: uuid}
+        personBId: {type: string, format: uuid}
+        relationshipType: {type: string}
+
+    LifeStageResponse:
+      type: object
+      properties:
+        assignmentId: {type: string, format: uuid}
+        childId: {type: string, format: uuid}
+        lifeStageCode: {type: string}
+        effectiveFrom: {type: string, format: date-time}
+
+    ConsentResponse:
+      type: object
+      properties:
+        consentId: {type: string, format: uuid}
+        purpose: {type: string}
+        status: {type: string, enum: [GRANTED, WITHDRAWN, EXPIRED]}
+        policyVersion: {type: string}
+
+    GrowthProfileSummary:
+      type: object
+      properties:
+        profileId: {type: string, format: uuid}
+        subjectType: {$ref: '#/components/schemas/GrowthDomain'}
+        subjectId: {type: string}
+        version: {type: integer}
+        confidence: {type: number}
+
+    FamilyAggregate:
+      type: object
+      required: [family, members, relationships, lifeStages, consents]
+      properties:
+        family: {$ref: '#/components/schemas/FamilyResponse'}
+        members:
+          type: array
+          items: {$ref: '#/components/schemas/PersonResponse'}
+        relationships:
+          type: array
+          items: {$ref: '#/components/schemas/RelationshipResponse'}
+        lifeStages:
+          type: array
+          items: {$ref: '#/components/schemas/LifeStageResponse'}
+        consents:
+          type: array
+          items: {$ref: '#/components/schemas/ConsentResponse'}

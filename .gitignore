@@ -1,0 +1,23 @@
+# 可再生中间产物与归档(体积大、可从素材/脚本重建)
+90_归档_archive/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 纯临时目录
+.tmp/
+
+# Node / 前后端构建产物(50_开发_dev 引导后生成)
+node_modules/
+dist/
+build/
+.turbo/
+coverage/
+*.log
+.env
+.env.local
+
+# 系统文件
+Thumbs.db
+.DS_Store

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+.slide-container{width:1280px;min-height:720px;background:#E0F2E9;color:#1A202C;font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif}
+.head{min-height:150px;padding:54px 72px 0;border-bottom:1px solid #9DC8AA}
+.kicker{font-size:14px;letter-spacing:1.7px;font-weight:800;color:#F56476}
+.title{font-size:43px;line-height:1.15;font-weight:900;letter-spacing:-1px;color:#0B4619;margin-top:12px}
+.layout{min-height:490px;display:grid;grid-template-columns:1.04fr .96fr;gap:30px;padding:24px 72px 0}
+.lead{font-size:23px;line-height:1.5;font-weight:700;color:#0B4619;max-width:520px}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:30px;position:relative}
+.steps:before{content:"";position:absolute;top:16px;left:20px;right:20px;border-top:2px dashed #78A98A}
+.step{position:relative;padding-top:40px}
+.dot{width:36px;height:36px;border:2px solid #0B4619;background:#EAF8F0;border-radius:50%;position:absolute;top:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#0B4619}
+.step strong{display:block;font-size:17px;color:#0B4619;line-height:1.25}
+.step p{font-size:13px;line-height:1.45;margin-top:6px;color:#43584A}
+.accent .dot{border-color:#F56476;color:#B63343}
+.accent strong{color:#B63343}
+.visual{display:flex;align-items:center;justify-content:center}
+.visual img{width:468px;height:240px;object-fit:contain}
+.caption{font-size:13px;line-height:1.5;color:#43584A;text-align:center;margin-top:4px}
+.foot{font-size:13px;color:#3D5A48;margin:0 72px;padding-top:8px;border-top:1px solid #9DC8AA}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="head"><div class="kicker">阶段性成果 / 01</div><h1 class="title">从静态页面走向可验证的成长闭环</h1></div>
+  <div class="layout">
+    <section>
+      <p class="lead">关键变化不是“多了动态模块”，而是同一家庭数据可以跨页面读取、写入、回读和验证。</p>
+      <div class="steps">
+        <div class="step"><div class="dot">1</div><strong>静态基线</strong><p>保留原始页面结构与体验。</p></div>
+        <div class="step"><div class="dot">2</div><strong>读取投影</strong><p>按家庭范围加载同一上下文。</p></div>
+        <div class="step accent"><div class="dot">3</div><strong>命名动作</strong><p>以幂等、审计的动作记录过程。</p></div>
+        <div class="step"><div class="dot">4</div><strong>跨页回读</strong><p>在档案与回顾中验证数据血缘。</p></div>
+      </div>
+    </section>
+    <section class="visual"><div><img src="/home/ubuntu/upload/search_images/5A6i5K0YQdQB.jpg" alt="家庭科技插画"><div class="caption">家庭成长不由单页定义，而由持续、可回看的过程连接。</div></div></section>
+  </div>
+  <div class="foot">本轮范围：UI-01 至 UI-08 · 以家庭私有数据链为基础，不将过程记录包装为教育效果结论。</div>
+</div>
+</body>
+</html>

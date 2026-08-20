@@ -1,0 +1,167 @@
+{
+  "project_info": {
+    "title": "Family Growth AI Platform",
+    "created": 1787132782.441,
+    "last_updated": 1787132946.229,
+    "total_slides": 15
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "from_static_to_verified",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "core_closure",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "lineage",
+      "state": "edit_pending",
+      "pageNum": 4
+    },
+    {
+      "id": "today_action",
+      "state": "edit_pending",
+      "pageNum": 5
+    },
+    {
+      "id": "report_plan",
+      "state": "edit_pending",
+      "pageNum": 6
+    },
+    {
+      "id": "service_journey",
+      "state": "edit_pending",
+      "pageNum": 7
+    },
+    {
+      "id": "growth_profile",
+      "state": "edit_pending",
+      "pageNum": 8
+    },
+    {
+      "id": "family_review",
+      "state": "edit_pending",
+      "pageNum": 9
+    },
+    {
+      "id": "ai_native",
+      "state": "edit_pending",
+      "pageNum": 10
+    },
+    {
+      "id": "pdca",
+      "state": "edit_pending",
+      "pageNum": 11
+    },
+    {
+      "id": "quality_baseline",
+      "state": "edit_pending",
+      "pageNum": 12
+    },
+    {
+      "id": "github_lineage",
+      "state": "edit_pending",
+      "pageNum": 13
+    },
+    {
+      "id": "next_stage",
+      "state": "edit_pending",
+      "pageNum": 14
+    },
+    {
+      "id": "closing",
+      "state": "edit_pending",
+      "pageNum": 15
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Family Growth AI Platform",
+      "summary": "UI-01 至 UI-08 闭环成果与 PDCA 测试总结；开发环境阶段性成果。"
+    },
+    {
+      "id": "from_static_to_verified",
+      "title": "从静态页面走向可验证闭环",
+      "summary": "说明成果从视觉静态壳演进为跨页面、可回读、可验证的家庭成长数据链。",
+      "image_plan": "/home/ubuntu/upload/search_images/5A6i5K0YQdQB.jpg - Family technology and digital life illustration fits well with moving from static pages to interactive growth loops."
+    },
+    {
+      "id": "core_closure",
+      "title": "已跑通的核心闭环",
+      "summary": "梳理 UI-01 至 UI-08 的今日行动、成长输入、解释、计划、陪跑、档案与回顾。"
+    },
+    {
+      "id": "lineage",
+      "title": "一条数据血缘贯通八个页面",
+      "summary": "展示家庭范围内行动、解释、方案、私有小记与回顾的可追溯信息流。"
+    },
+    {
+      "id": "today_action",
+      "title": "今日行动成为可追溯入口",
+      "summary": "UI-01/UI-09 的 Today Projection、完成记录、幂等与回执闭环。"
+    },
+    {
+      "id": "report_plan",
+      "title": "从关注方向到 90 天预览",
+      "summary": "UI-02 至 UI-05 从受控成长输入、解释到计划预览与 active onboarding 恢复。"
+    },
+    {
+      "id": "service_journey",
+      "title": "陪跑服务进入家庭私有过程空间",
+      "summary": "UI-06 服务旅程、私有小记与服务 HOLD 边界。"
+    },
+    {
+      "id": "growth_profile",
+      "title": "成长档案只回看可确认上下文",
+      "summary": "UI-07 family-private profile readback、来源记录与无评价边界。"
+    },
+    {
+      "id": "family_review",
+      "title": "成长回顾只回看已发生过程",
+      "summary": "UI-08 对行动记录和私有小记的即时 readback 与反思边界。"
+    },
+    {
+      "id": "ai_native",
+      "title": "AI-Native 基础：四类信息不混写",
+      "summary": "Fact、Perspective、Recommendation、Action 的分层与模型网关 no-op 策略。",
+      "image_plan": "/home/ubuntu/upload/search_images/qFodvxmHI9fG.jpg - AI-native illustration fits with AI-native foundation and four information types."
+    },
+    {
+      "id": "pdca",
+      "title": "PDCA 每一轮都有验证证据",
+      "summary": "展示计划、实施、检查、修复的可审计工程节奏。",
+      "image_plan": "/home/ubuntu/upload/search_images/VOxru1hTnpBH.jpg - Work-life balance / structured icons fit with audit and testing evidence (PDCA)."
+    },
+    {
+      "id": "quality_baseline",
+      "title": "当前质量基线",
+      "summary": "呈现 Web、API E2E、PostgreSQL integration 的真实通过数与浏览器验证。"
+    },
+    {
+      "id": "github_lineage",
+      "title": "GitHub 保留连续开发血缘",
+      "summary": "展示关键 commit 与本地远端同步状态。"
+    },
+    {
+      "id": "next_stage",
+      "title": "下一阶段：扩大闭环，不堆叠页面",
+      "summary": "说明将验证过的对象、审计、幂等、来源和 consent 规则扩展到后续 UI。",
+      "image_plan": "/home/ubuntu/upload/search_images/KzG1fHzeJ3ZE.jpg - Family technology illustration fits with expanding closed-loop platform."
+    },
+    {
+      "id": "closing",
+      "title": "阶段结论",
+      "summary": "平台已具备从行动、解释、计划、陪跑、档案到回顾持续扩展的真实运行基础。",
+      "image_plan": "/home/ubuntu/upload/search_images/3NRQypg74xc2.jpg - Parent and child with computer stock illustration fits platform conclusion."
+    }
+  ]
+}

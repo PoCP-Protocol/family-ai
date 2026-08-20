@@ -1,0 +1,59 @@
+{
+  "source": "/home/ubuntu/upload/pasted_file_6zXWa4_image.png",
+  "pixel_width": 2780,
+  "pixel_height": 410,
+  "aspect_ratio": "278:41",
+  "aspect_ratio_decimal_width_over_height": 6.780488,
+  "orientation": "landscape",
+  "tiled": true,
+  "mode": "horizontal",
+  "overlap_fraction_requested_target": 0.12,
+  "overlap_fraction_actual_minimum": {
+    "horizontal": 0.091667,
+    "vertical": 0.0
+  },
+  "reading_order": "left-to-right",
+  "tile_count": 5,
+  "tiles": [
+    {
+      "index": 1,
+      "path": "/home/ubuntu/family-repo-review/50_开发_dev/reports/l1/community-loop-path-tiles/tile_001_x000000_y000000.png",
+      "x": 0,
+      "y": 0,
+      "pixel_width": 600,
+      "pixel_height": 410
+    },
+    {
+      "index": 2,
+      "path": "/home/ubuntu/family-repo-review/50_开发_dev/reports/l1/community-loop-path-tiles/tile_002_x000545_y000000.png",
+      "x": 545,
+      "y": 0,
+      "pixel_width": 600,
+      "pixel_height": 410
+    },
+    {
+      "index": 3,
+      "path": "/home/ubuntu/family-repo-review/50_开发_dev/reports/l1/community-loop-path-tiles/tile_003_x001090_y000000.png",
+      "x": 1090,
+      "y": 0,
+      "pixel_width": 600,
+      "pixel_height": 410
+    },
+    {
+      "index": 4,
+      "path": "/home/ubuntu/family-repo-review/50_开发_dev/reports/l1/community-loop-path-tiles/tile_004_x001635_y000000.png",
+      "x": 1635,
+      "y": 0,
+      "pixel_width": 600,
+      "pixel_height": 410
+    },
+    {
+      "index": 5,
+      "path": "/home/ubuntu/family-repo-review/50_开发_dev/reports/l1/community-loop-path-tiles/tile_005_x002180_y000000.png",
+      "x": 2180,
+      "y": 0,
+      "pixel_width": 600,
+      "pixel_height": 410
+    }
+  ]
+}

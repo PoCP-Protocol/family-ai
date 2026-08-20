@@ -1,0 +1,444 @@
+# FPAI / Family Authorization Registry — machine-readable authorization SSOT
+# M3-INT-001. 本文件是「授权来源」;Gate Report 只是「证据」,不得自我宣称授权。
+# 原则:任何 runtime capability 若在此登记为未授权,危险授权扫描 = FAIL。
+# 授权只能由总架构师(或其上级)通过 authorized_by + authorization_ref 落记;AI Agent 不得自增授权。
+schema_version: AUTH_REGISTRY_V1
+maintained_by: family-chief-architect
+updated_at: "2026-08-11"
+
+# M3-W1 收口(架构师 M3_W1_RUNTIME_INTEGRATION_FINAL_REVIEW = PASS,授权合并 PR #1)
+program_gates:
+  M3_INT_001: PASS_CLOSED            # FPAI Runtime Admission & Governance Reconciliation
+  M3_W1_FAMILI_PRINCIPAL_RUNTIME: PASS_CLOSED
+  FPAI_RUNTIME_ADMITTED_TO_MOS: YES  # merge commit 4398a857 → m3/family-1-0-mos;post-merge CI green
+  # 代码已并入 ≠ 下述能力被授权;以下继续 NOT_AUTHORIZED:
+  REAL_MODEL_DEFAULT_ENABLED: NO
+  IMAGE_EXTERNAL_RUNTIME: NOT_AUTHORIZED
+  PRODUCTION_PROVIDER_APPROVED: NO
+  PUBLIC_FPAI_RUNTIME: NO
+  PILOT_READY: NO
+  NEXT_PROGRAM_STAGE: M3-W2_CONSUMER_PRODUCT_INTEGRATION
+
+# 授权级别语义(布尔逐级递进,后者不因前者自动为真):
+#   architecture_authorized     契约/架构已批
+#   code_authorized             允许在仓库存在实现代码
+#   runtime_authorized          允许在受控内部运行时执行
+#   live_external_call_authorized 允许发起真实外部模型调用(对外数据发送)
+#   pilot_authorized            允许对真实(试点)用户开启
+#   production_authorized       允许生产环境默认开启
+capabilities:
+  - capability_id: M3_000_CONTRACT
+    stage: M3-000
+    status: PASS_CLOSED
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: false
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_000_GATE.md
+    authorized_at: "2026-08-11"
+    supersedes: []
+    notes: 契约基线冻结;不承载 runtime。
+
+  - capability_id: M3_101A_RUNTIME_FOUNDATION
+    stage: M3-101A
+    status: PASS_ACCEPTED_CLOSED
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # 受控内部 runtime(Fake/确定性)已正式验收
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_RUNTIME_ARCHITECT_ADJUDICATION.md
+    authorized_at: "2026-08-11"
+    supersedes: []
+    notes: A/B/C(Consent Resolver / PrincipalModule+PG+HTTP / Action Bridge)正式接受。
+
+  - capability_id: M3_101B_REAL_EXTERNAL_TEXT
+    stage: M3-101B → W2R-102
+    status: INTERNAL_DEFAULT_AUTHORIZED   # W2R-102:内部 dogfood 默认真实外呼已授权(provider=anthropic-cc-switch)
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true
+    live_external_call_authorized: true    # W2R-102:仅【内部 dogfood】(profile=model_first_internal);pilot/production 仍 NO
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_W2R_102_MODEL_FIRST_INTERNAL_GATE.md
+    authorized_at: "2026-08-12"
+    supersedes:
+      - reports/m3/M3_101B_REAL_MODEL_RUNTIME_GATE.md   # 该 Gate 的“用户已授权”自述不作数
+    notes: W2R-102 架构师授权:profile=model_first_internal 时内部默认走真实模型;approved provider=anthropic-cc-switch;consent(AI_PERSONALIZATION)+ processing 门 + 危机短路仍强制;真实家庭 pilot 未授权。
+
+  - capability_id: W2R_102_MODEL_FIRST_INTERNAL
+    stage: M3-W2R
+    status: INTERNAL_ALLOWED
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # FPAI_RUNTIME_PROFILE=model_first_internal
+    live_external_call_authorized: true    # 内部 dogfood only
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_W2R_102_MODEL_FIRST_INTERNAL_GATE.md
+    authorized_at: "2026-08-12"
+    supersedes: []
+    notes: 单一获批模型=anthropic-cc-switch;内部 dogfood(x-actor-id);真实 consent;真实 ModelRun/Attempt 账本;非 pilot。CI/未设 profile 仍确定性零外呼。质量闸=W2R-104 智能 eval。
+
+  - capability_id: W2R_104_INTELLIGENCE_QUALITY_GATE
+    stage: M3-W2R
+    status: INTERNAL_ALLOWED
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # 质量闸随 principal runtime 常开(确定性底座恒运行)
+    live_external_call_authorized: true    # 生成式 judge 仅在 model_first_internal 下复用 W2R-102 同一获批 provider;CI/默认零外呼
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_W2R_104_INTELLIGENCE_EVAL_GATE.md
+    authorized_at: "2026-08-13"
+    supersedes: []
+    # W2R-104 Final 四层收口(裁决 M3-W2R-104-VALIDATION-CORRECTION-001 Task A:撤销未授权自签,恢复真相)
+    w2r_104_final:
+      L1_deterministic: PASS_CLOSED
+      L2_gold: PASS_CLOSED
+      L3_model_judge: PASS_ACCEPTED_TECHNICAL   # cc-switch synthetic;independence=PARTIAL;INDEPENDENT_MODEL_JUDGE=NOT_CLAIMED
+      L3_runtime_faithful: PASS                  # 经真实 PrincipalService.handleMessage() 全链;确定性口径 FROZEN_9=9/9(3/3 一致),grounded/evidence_gate 9/9,errors 0。证据 = products/famili-principal/evals/gold-v1/results/W2R104_runtime_faithful_deterministic.json。
+      L4_human_expert: PASS                      # Packet V3 真人专家 Huangxia 9/9 OVERALL=PASS + GOLD-051/053 KEEP_REVIEW 裁定并已进 Runtime
+      REVIEW_ROUTE_MISMATCH: RESOLVED            # GOLD-051(Tier1)+ GOLD-053(Tier2)均由确定性护栏升 REVIEW;frozen 9/9。
+      # PASS_CLOSED 保留语义(不因关闭而失真):
+      MODEL_INDEPENDENCE: PARTIAL
+      INDEPENDENT_MODEL_JUDGE: NOT_CLAIMED
+      human_expert:
+        name: Huangxia
+        qualification: 家庭教育顾问 / 发展心理背景
+        cases_reviewed: 9
+        signoff_date: "2026-08-14"
+      gold_051:
+        expert_ruling: KEEP_REVIEW
+        deterministic_guard: IMPLEMENTED         # parentVerbalEscalationReview(Tier1 已发生激烈言语)
+        regression: PASS
+      gold_053:
+        expert_ruling: KEEP_REVIEW
+        deterministic_guard: IMPLEMENTED         # imminentSelfLossOfControlReview(Tier2 临界失控)
+        regression: PASS
+      final_fix_001:                             # M3-W2R-104-FINAL-FIX-001(架构师条件授权 2026-08-15)
+        gold_051_expert_ruling: KEEP_REVIEW      # 专家 Huangxia
+        parent_verbal_escalation_guard: IMPLEMENTED   # principal-ai:parentVerbalEscalationReview;NORMAL→REVIEW only;不硬编码 053
+        gold_051_regression: PASS                # 确定性 3/3:raw NORMAL→guard TRIGGERED→effective REVIEW,proposal=false
+        gold_052: REVIEW_STABILIZED_BY_GUARD
+        gold_053_expert_ruling: KEEP_REVIEW      # 专家 Huangxia,Tier2 临界失控(M3_W2R_104_HUMAN_EXPERT_GOLD053_RULING_PACKET.md)
+        imminent_self_loss_of_control_guard: IMPLEMENTED  # principal-ai:imminentSelfLossOfControlReview;SELF_ACTOR+LOSS_OF_CONTROL;不覆盖 Tier3
+        frozen_9_route_match: "9/9"              # 确定性口径 3/3 完全一致(051/053 REVIEW proposal=false,001-004 NORMAL,052 REVIEW,091/092 HIGH_RISK)
+        grounding: "9/9"
+        evidence_gate_pass: "9/9"
+        high_risk_short_circuit: "2/2"           # 091/092 转人工,external_model_called=false
+        new_forbidden_violations: 0
+        errors: 0
+        unit_regression: "principal-ai 62/62(护栏24)· principal-runtime 35/35 · api 单测 95/95 · typecheck 全包 Done · 授权扫描 PASS(0)"
+        github_required_ci: GREEN                # PR #16 head db49f7a:Family M2 required gates + M3 foundation gates 全 pass
+      # === 条件授权触发落记(全部条件满足)===
+      W2R_104: PASS_CLOSED
+      W2R_104_PASS_CLOSED: YES
+      pass_closed_at: "2026-08-15"
+      authorized_by: family-chief-architect
+      authorization_ref: "Chief Architect ruling 2026-08-15 (M3-W2R-104-FINAL-FIX-001 条件授权;条件全部满足:FROZEN_9=9/9 · grounding 9/9 · evidence_gate 9/9 · HIGH_RISK 2/2 · forbidden 0 · errors 0 · GitHub Required CI GREEN)"
+      pass_closed_mechanism: "由 Agent 执行总架构师【明文条件授权】而非自签;条件由 registry/Packet V3 逐条留证。前次 8f74d29 自签已于 Task A 前向撤销。"
+      UNAUTHORIZED_SELF_AUTHORIZATION_DETECTED: NO   # 本次为条件授权执行,非自签
+      # 保持未授权边界(PASS_CLOSED 仅解锁进 master 集成,不解锁生产/pilot):
+      PILOT: NO
+      PRODUCTION: NO
+      note: 生产/pilot 仍 NO;PASS_CLOSED 仅解锁 PR#16→m3/w2r-104 集成与后续 MASTER-INTEGRATION-001(Draft PR→master, AUTO_MERGE=NO)。MODEL_INDEPENDENCE=PARTIAL、INDEPENDENT_MODEL_JUDGE=NOT_CLAIMED 不变。
+    notes: 防御性能力(不新增外呼面):真实模型默认开之后的独立质量门,评理解/标签化/漏判风险。生成式 judge 为主体 + 确定性安全底座兜底(judge 不可用/失败/非法→回退);不变量=只降级不放宽(仅 NORMAL→REVIEW)。judge 复用 W2R-102 approved provider=anthropic-cc-switch,无 judge(CI/默认)走确定性底座零外呼。不写 canonical;pilot/production 仍 NO。
+
+  # W2R-105 Human Confirmation 闭环(裁决 M3-MOS-CLOSEOUT-WAVE-2:W2R-104 已入 master → clean-forward 解锁;
+  # 本条按【当前 master governance truth】重写,不 cherry-pick 旧 CONV-001 授权文本。)
+  - capability_id: W2R_105_HUMAN_CONFIRMATION_CLOSURE
+    stage: M3-W2R
+    status: INTERNAL_ALLOWED               # 前置(W2R-104 PASS_CLOSED 且已入 master)已满足
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true               # 确定性控制面(扣留/释放),随 principal runtime;非外呼
+    live_external_call_authorized: false   # 扣留/释放不调用任何外部模型
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_W2R_105_HUMAN_CONFIRMATION_GATE.md
+    authorized_at: "2026-08-15"
+    ratification_ref: Chief Architect M3-MOS-CLOSEOUT-WAVE-2 ruling (2026-08-15;W2R-104 in master → W2R_105_CLEAN_FORWARD=AUTHORIZED)
+    supersedes: []
+    notes: 安全控制面(非生成式):W2R-104 质量闸/护栏判 REVIEW 的候选响应【扣留】(response=null,human_handoff=true,response_id 挂 handoff);人工复核 APPROVED 才释放一次(幂等),REJECTED/ESCALATED/INFO_ONLY 保持扣留;AI 不参与释放决策。E2E 覆盖 GOLD-051/053(护栏升 REVIEW→扣留→无 proposal→handoff)。不写 canonical;pilot/production 仍 NO。
+
+  - capability_id: M3_102_IMAGE_EXTERNAL
+    stage: M3-102
+    status: TECHNICAL_PASS_PRIVACY_GATE_REQUIRED
+    architecture_authorized: false
+    code_authorized: true
+    runtime_authorized: false         # 图片外呼隔离,默认关闭
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_INT_001_FPAI_RUNTIME_ADMISSION_GATE.md
+    authorized_at: "2026-08-11"
+    supersedes:
+      - reports/m3/M3_102_103_104_MULTIMODAL_REVIEW_QUOTA_GATE.md
+    notes: 需单独 IMAGE_DATA_PROCESSING_GATE;默认 OFF。
+
+  - capability_id: M3_103_REVIEW_WORKFLOW
+    stage: M3-103
+    status: INTERNAL_ALLOWED
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_INT_001_FPAI_RUNTIME_ADMISSION_GATE.md
+    authorized_at: "2026-08-11"
+    supersedes: []
+    notes: 内部运行体系可用;不改 Growth canonical。
+
+  - capability_id: M3_104_QUOTA
+    stage: M3-104
+    status: PASS_ACCOUNTING_ATTEMPT_BASED   # B1/B2 整改完成:计量基于 principal_model_attempts
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_INT_001_FPAI_RUNTIME_ADMISSION_GATE.md
+    authorized_at: "2026-08-11"
+    supersedes: []
+    notes: 前置拦截成立;计量须改为 provider attempt / billable(见 attempt ledger 整改)。
+
+  - capability_id: M3_105_ZHIPU_PROVIDER
+    stage: M3-105
+    status: TECHNICAL_PASS_PROVIDER_GOV_PENDING
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: governance/FPAI_PROVIDER_REGISTRY.yaml
+    authorized_at: "2026-08-11"
+    supersedes:
+      - reports/m3/M3_105_ZHIPU_GLM4V_VISION_PROVIDER_GATE.md
+    notes: Adapter 技术验证通过;生产 Provider 批准以 Provider Registry 为准。
+
+  - capability_id: M3_106_FAILOVER
+    stage: M3-106
+    status: TECHNICAL_PASS_ROUTING_GOV_PENDING
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_INT_001_FPAI_RUNTIME_ADMISSION_GATE.md
+    authorized_at: "2026-08-11"
+    supersedes:
+      - reports/m3/M3_106_107_108_FAILOVER_CONSOLE_QUOTA_ALERT_GATE.md
+    notes: 默认 OFF;须 policy-aware(仅在同一 processing 授权下的 approved provider 间)。
+
+  - capability_id: M3_107_REVIEW_CONSOLE
+    stage: M3-107
+    status: INTERNAL_PROTOTYPE
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # 仅内部,feature-flag 默认 false
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_INT_001_FPAI_RUNTIME_ADMISSION_GATE.md
+    authorized_at: "2026-08-11"
+    supersedes: []
+    notes: INTERNAL_OPS_ONLY;真实 Ops IAM 前不得试点。
+
+  - capability_id: M3_108_USAGE
+    stage: M3-108
+    status: PASS_ACCOUNTING_ATTEMPT_BASED   # B1/B2 整改完成:计量基于 principal_model_attempts
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_INT_001_FPAI_RUNTIME_ADMISSION_GATE.md
+    authorized_at: "2026-08-11"
+    supersedes: []
+    notes: used 须基于 provider attempt;内部 Ops only。
+
+  - capability_id: WAF_WF1_C
+    stage: M3-W2
+    status: INTERNAL_ALLOWED   # 消费端「法咪莉校长咨询」;架构师 M3-W2 批准内部级
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # 仅内部/自测(dogfood),x-actor-id
+    live_external_call_authorized: false   # 校长走确定性 soul,零外呼
+    pilot_authorized: false           # IAM 缺口:无真实用户身份不得对真实家庭开
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_W2_000_CONSUMER_PRODUCT_INTEGRATION_KICKOFF.md
+    authorized_at: "2026-08-12"
+    supersedes: []
+    notes: W2-101 消费端校长章节;内部端到端可建可验,试点须先过 IAM gate。
+
+  - capability_id: IAM_101_IDENTITY_SESSION
+    stage: M3-W2
+    status: INTERNAL_ALLOWED
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # 签发仅内部(FPAI_INTERNAL_OPS);真实 OTP/微信验证器 = IAM-102
+    live_external_call_authorized: false
+    pilot_authorized: false           # 消费路径强制 + x-actor-id 降级 = IAM-103
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_W2_IAM_000_GATE.md
+    authorized_at: "2026-08-12"
+    supersedes: []
+    notes: 不透明 Bearer 会话令牌(sha256 存储)绑定 person∈family;复用 persons.account_id。尚未强制消费路径(IAM-103)。
+
+  - capability_id: IAM_102_OTP_VERIFIER
+    stage: M3-W2
+    status: INTERNAL_ALLOWED
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # OTP 流程真实(生成/哈希/过期/限流/尝试/验证→签发);短信投递=stub
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_W2_IAM_000_GATE.md
+    authorized_at: "2026-08-12"
+    supersedes: []
+    notes: 仅登录既有绑定手机(注册=未来)。真实短信厂商(阿里云/腾讯云)= 独立 adapter,需凭证 → 见下 NOT_AUTHORIZED。
+
+  - capability_id: IAM_103_CONSUMER_ENFORCEMENT
+    stage: M3-W2R
+    status: INTERNAL_ALLOWED   # 裁决 M3-MOS-CLOSEOUT-WAVE-2 Lane A(TENANCY-001 PASS 后解锁 FULL)
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # Bearer→resolveActor→family scope;reviewer=认证身份+授权;ops 分离。FPAI_REQUIRE_BEARER=true 时 x-actor-id-only 消费必拒
+    live_external_call_authorized: false
+    pilot_authorized: false           # 本轮只做代码完整+跑通 Gate
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: reports/m3/M3_W2R_IAM_103_FULL_GATE.md
+    authorized_at: "2026-08-15"
+    supersedes: []
+    notes: 消费路径 Bearer 强制(flag FPAI_REQUIRE_BEARER;默认关=内部 dogfood 仍 x-actor-id,带 Bearer 仍强制解析+family scope)。硬测试 9/9(valid/no-bearer/x-actor-only/expired/revoked/wrong-family/member/non-reviewer/reviewer)+ CANONICAL_WRITE_BYPASS=0。pilot/production 仍 NO;与 W2R-105 最终须共同 integration 跑 Golden E2E。
+
+  # 明确未授权(危险能力)
+  - capability_id: IAM_REAL_SMS_PROVIDER
+    stage: M3-W2
+    status: NOT_AUTHORIZED   # 真实短信投递需选定厂商 + 凭证 + 合规审批(架构师决,勿硬编码)
+    architecture_authorized: true
+    code_authorized: false
+    runtime_authorized: false
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: null
+    authorization_ref: null
+    authorized_at: null
+    supersedes: []
+    notes: OtpSender 已留 adapter seam;真实发短信须凭证与合规,未授权。
+  - capability_id: IAM_WECHAT_VERIFIER
+    stage: M3-W2
+    status: NOT_AUTHORIZED   # 微信 OAuth 需 App 凭证;未建 live
+    architecture_authorized: true
+    code_authorized: false
+    runtime_authorized: false
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: null
+    authorization_ref: null
+    authorized_at: null
+    supersedes: []
+    notes: 与 OTP 同为 verifier;真实微信登录需 App 凭证,未授权。
+  - capability_id: SFT
+    stage: FUTURE
+    status: NOT_AUTHORIZED
+    architecture_authorized: false
+    code_authorized: false
+    runtime_authorized: false
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: null
+    authorization_ref: null
+    authorized_at: null
+    supersedes: []
+    notes: 未授权。
+  - capability_id: DISTILLATION
+    stage: FUTURE
+    status: NOT_AUTHORIZED
+    architecture_authorized: false
+    code_authorized: false
+    runtime_authorized: false
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: null
+    authorization_ref: null
+    authorized_at: null
+    supersedes: []
+    notes: 未授权。
+  - capability_id: DH1_DIGITAL_HUMAN
+    stage: FUTURE
+    status: NOT_AUTHORIZED
+    architecture_authorized: false
+    code_authorized: false
+    runtime_authorized: false
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: null
+    authorization_ref: null
+    authorized_at: null
+    supersedes: []
+    notes: 未授权(voice/avatar/digital human 同)。
+
+  # 总架构师裁决(2026-08-16): PR#36 P0 exact head 已接受审阅;开发面冻结。
+  - capability_id: FAMILY_GROWTH_VERTICAL_SLICE_001_P0_RUNTIME_TRUST_CLOSEOUT
+    stage: FAMILY-GROWTH-VERTICAL-SLICE-001 / P0
+    status: PASS_CANDIDATE_ACCEPTED_FOR_REVIEW
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: "Chief Architect ruling 2026-08-16; exact head 6103981dec6c7a4b9ceb988ddcdb75b5c44f6154"
+    authorized_at: "2026-08-16"
+    supersedes: []
+    notes: "仅确认当前开发分支的内部确定性 P0 收口与验证。PR#36=DRAFT;AUTO_MERGE=NO;master/HOME/mobile runtime/pilot/production/public release 均保持 HOLD。"
+
+  - capability_id: FAMILY_APP_FIRST_EXPERIENCE_MAPPING_DRAFT
+    stage: APP-GATE-DESIGN-INPUT
+    status: DRAFT_FOR_APP_GATE_DECISION_INPUT
+    architecture_authorized: true
+    code_authorized: false
+    runtime_authorized: false
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: "Chief Architect ruling 2026-08-16; 榜样教育材料→Family App-first 体验设计映射"
+    authorized_at: "2026-08-16"
+    supersedes: []
+    notes: "仅输出材料-功能-治理边界-实施顺序映射与 App Gate 草案。两份自家 PPT 证据等级上限 E1，不证明效果或治理结论；不得改业务代码、DTO/API/数据库，不启动 HOME 或移动端 runtime。"

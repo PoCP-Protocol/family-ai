@@ -1,0 +1,59 @@
+{
+  "source": "/home/ubuntu/upload/pasted_file_E7BUOm_image.png",
+  "pixel_width": 2842,
+  "pixel_height": 404,
+  "aspect_ratio": "1421:202",
+  "aspect_ratio_decimal_width_over_height": 7.034653,
+  "orientation": "landscape",
+  "tiled": true,
+  "mode": "horizontal",
+  "overlap_fraction_requested_target": 0.12,
+  "overlap_fraction_actual_minimum": {
+    "horizontal": 0.065,
+    "vertical": 0.0
+  },
+  "reading_order": "left-to-right",
+  "tile_count": 5,
+  "tiles": [
+    {
+      "index": 1,
+      "path": "/home/ubuntu/family-repo-review/50_开发_dev/reports/l1/teacher-salon-loop-path-tiles/tile_001_x000000_y000000.png",
+      "x": 0,
+      "y": 0,
+      "pixel_width": 600,
+      "pixel_height": 404
+    },
+    {
+      "index": 2,
+      "path": "/home/ubuntu/family-repo-review/50_开发_dev/reports/l1/teacher-salon-loop-path-tiles/tile_002_x000560_y000000.png",
+      "x": 560,
+      "y": 0,
+      "pixel_width": 600,
+      "pixel_height": 404
+    },
+    {
+      "index": 3,
+      "path": "/home/ubuntu/family-repo-review/50_开发_dev/reports/l1/teacher-salon-loop-path-tiles/tile_003_x001121_y000000.png",
+      "x": 1121,
+      "y": 0,
+      "pixel_width": 600,
+      "pixel_height": 404
+    },
+    {
+      "index": 4,
+      "path": "/home/ubuntu/family-repo-review/50_开发_dev/reports/l1/teacher-salon-loop-path-tiles/tile_004_x001682_y000000.png",
+      "x": 1682,
+      "y": 0,
+      "pixel_width": 600,
+      "pixel_height": 404
+    },
+    {
+      "index": 5,
+      "path": "/home/ubuntu/family-repo-review/50_开发_dev/reports/l1/teacher-salon-loop-path-tiles/tile_005_x002242_y000000.png",
+      "x": 2242,
+      "y": 0,
+      "pixel_width": 600,
+      "pixel_height": 404
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><style>
+*{box-sizing:border-box}body{margin:0}
+.slide-container{width:1280px;min-height:720px;margin-top:-1px;background:#E0F2E9;color:#1A202C;font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif}
+.head{min-height:172px;padding:54px 72px 0;display:flex;justify-content:space-between;border-bottom:1px solid #9DC8AA}
+.eyebrow{font-size:14px;letter-spacing:1.6px;color:#F56476;font-weight:800}
+.title{font-size:42px;font-weight:900;color:#0B4619;margin-top:12px;line-height:1.15}
+.summary{font-size:17px;line-height:1.5;width:310px;color:#43584A;padding-top:25px}
+.rail{min-height:340px;margin:50px 72px 0;display:grid;grid-template-columns:repeat(8,1fr);gap:8px;position:relative}
+.rail:before{content:"";position:absolute;top:55px;left:45px;right:45px;border-top:2px dashed #78A98A}
+.item{text-align:center;position:relative;padding-top:0}
+.circle{width:110px;height:110px;border-radius:50%;border:2px solid #0B4619;background:#EAF8F0;margin:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:1}
+.circle.hot{border-color:#F56476;background:#FFF1F1}
+.ui{font-size:12px;letter-spacing:1px;font-weight:900;color:#F56476}
+.label{font-size:17px;font-weight:900;color:#0B4619;margin-top:4px}
+.item p{font-size:13px;line-height:1.4;margin:16px auto 0;color:#43584A;width:120px}
+.base{margin:0 72px;padding-top:19px;border-top:1px solid #9DC8AA;display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.base strong{display:block;color:#0B4619;font-size:16px}
+.base span{font-size:13px;line-height:1.45;color:#43584A}
+</style></head><body><div class="slide-container">
+<div class="head"><section><div class="eyebrow">核心闭环 / 02</div><h1 class="title">已跑通的核心闭环</h1></section><p class="summary">八个页面不再是孤立入口，而是围绕同一家庭与同一成长旅程的连续承接。</p></div>
+<div class="rail">
+<div class="item"><div class="circle"><span class="ui">UI-01</span><span class="label">今日</span></div><p>读取今日行动</p></div>
+<div class="item"><div class="circle hot"><span class="ui">UI-09</span><span class="label">完成</span></div><p>记录行动与回执</p></div>
+<div class="item"><div class="circle"><span class="ui">UI-02</span><span class="label">入口</span></div><p>进入受控成长流程</p></div>
+<div class="item"><div class="circle"><span class="ui">UI-03/04</span><span class="label">解释</span></div><p>呈现关注方向与边界</p></div>
+<div class="item"><div class="circle"><span class="ui">UI-05</span><span class="label">预览</span></div><p>回看 90 天方案</p></div>
+<div class="item"><div class="circle hot"><span class="ui">UI-06</span><span class="label">陪跑</span></div><p>留下家庭私有小记</p></div>
+<div class="item"><div class="circle"><span class="ui">UI-07</span><span class="label">档案</span></div><p>回看可确认上下文</p></div>
+<div class="item"><div class="circle"><span class="ui">UI-08</span><span class="label">回顾</span></div><p>回读已发生过程</p></div>
+</div>
+<div class="base"><div><strong>读取</strong><span>家庭范围内加载同一成长旅程与上下文。</span></div><div><strong>写入</strong><span>以命名动作和幂等回执记录过程。</span></div><div><strong>回读</strong><span>在档案与回顾中验证同一条数据血缘。</span></div></div>
+</div></body></html>
