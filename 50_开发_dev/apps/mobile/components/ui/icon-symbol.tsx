@@ -16,6 +16,7 @@ const MAPPING = {
   "house.fill": "home",
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
+  "chevron.left": "chevron-left",
   "chevron.right": "chevron-right",
   "chart.bar.fill": "insights",
   "safari.fill": "explore",
@@ -47,6 +48,8 @@ const MAPPING = {
   "shield.fill": "shield",
   "photo.fill": "photo-library",
   "heart.fill": "favorite",
+  "bell.fill": "notifications-none",
+  "ellipsis": "more-horiz",
 } as const satisfies Record<string, MaterialIconName>;
 
 type IconSymbolName = keyof typeof MAPPING;

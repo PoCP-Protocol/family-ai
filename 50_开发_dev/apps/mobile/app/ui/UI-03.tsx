@@ -1,32 +1,36 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import Svg, { Circle, Line, Polygon, Text as SvgText } from "react-native-svg";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { ProjectionStateCard } from "@/components/family/projection-state-card";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { getGrowthFocus } from "@/lib/family/core-growth";
+import { GROWTH_FOCUSES, getGrowthFocus } from "@/lib/family/core-growth";
 import { familyApi } from "@/lib/family/family-api-client";
 import { useFamilyApiSession } from "@/lib/family/family-api-session";
 import { useFamilyMobile } from "@/lib/family/family-state";
-import { getLocalGrowthExplanation, summarizeAssessmentPerspective } from "@/lib/family/growth-explanations";
+import { getLocalGrowthExplanation } from "@/lib/family/growth-explanations";
 
 interface RemoteExplanation {
-  title?: string;
-  state?: string;
-  observations?: { label: string; detail: string; kind: "PERSPECTIVE"; evidence_refs: string[] }[];
-  hypotheses?: { text: string; uncertainty: string }[];
   recommendations?: { text: string; source: string; status: string }[];
-  ai_ready?: { evidence_boundary?: string; recommendation_source?: string; model_gateway_status?: string };
 }
+
+const RADAR_LABELS = ["亲子沟通", "学习习惯", "情绪调节", "自我管理", "手机与边界"] as const;
+const RADAR_POINTS = [
+  { x: 120, y: 22, labelX: 120, labelY: 12, anchor: "middle" as const },
+  { x: 190, y: 73, labelX: 211, labelY: 66, anchor: "start" as const },
+  { x: 164, y: 157, labelX: 184, labelY: 176, anchor: "start" as const },
+  { x: 76, y: 157, labelX: 56, labelY: 176, anchor: "end" as const },
+  { x: 50, y: 73, labelX: 29, labelY: 66, anchor: "end" as const },
+] as const;
 
 export default function GrowthExplanationScreen() {
   const colors = useColors();
   const session = useFamilyApiSession();
-  const { selectedGrowthFocus, assessmentAnswers, activeOnboardingId, setActiveOnboardingId } = useFamilyMobile();
+  const { selectedGrowthFocus, activeOnboardingId, setActiveOnboardingId } = useFamilyMobile();
   const focus = getGrowthFocus(selectedGrowthFocus);
   const local = getLocalGrowthExplanation(selectedGrowthFocus);
   const [remote, setRemote] = useState<RemoteExplanation | null>(null);
@@ -54,13 +58,22 @@ export default function GrowthExplanationScreen() {
     return () => { active = false; };
   }, [activeOnboardingId, session.selectedFamily, session.status, session.token, setActiveOnboardingId]);
 
+  const actionItems = useMemo(() => {
+    if (!local) return [];
+    return [
+      remote?.recommendations?.[0]?.text ?? local.recommendation,
+      local.fallback,
+      `记录一次观察：${local.observationPrompt}`,
+    ];
+  }, [local, remote?.recommendations]);
+
   if (!focus || !local) {
     return (
       <ScreenContainer edges={["left", "right", "bottom"]}>
         <Stack.Screen options={{ headerShown: true, title: "家庭成长解读", headerBackTitle: "返回" }} />
         <View style={styles.emptyPage}>
-          <Text style={[styles.title, { color: colors.text }]}>先完成一次家庭测评</Text>
-          <Text style={[styles.subtitle, { color: colors.muted }]}>选择一个当前关注场景后，我们再为你整理来源清楚的成长解读。</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>先完成一次家庭测评</Text>
+          <Text style={[styles.emptyText, { color: colors.muted }]}>选择一个当前关注方向后，我们会按家庭的测评记录整理成长概览和下一步建议。</Text>
           <Pressable onPress={() => router.replace("/ui/UI-02" as Href)} style={[styles.primaryButton, { backgroundColor: colors.tint }]}>
             <Text style={styles.primaryButtonText}>进入家庭测评</Text>
           </Pressable>
@@ -69,86 +82,124 @@ export default function GrowthExplanationScreen() {
     );
   }
 
-  const title = remote?.title ?? local.headline;
-  const perspective = remote?.observations?.[0]?.detail ?? summarizeAssessmentPerspective(assessmentAnswers);
-  const hypothesis = remote?.hypotheses?.[0]?.text ?? local.hypothesis;
-  const recommendation = remote?.recommendations?.[0]?.text ?? local.recommendation;
+  const selectedIndex = GROWTH_FOCUSES.findIndex((item) => item.id === focus.id);
+  const issueTags = [focus.title, "家庭协作", "持续观察"];
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "家庭成长解读", headerBackTitle: "返回" }} />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: "家庭成长解读",
+          headerBackTitle: "返回",
+          headerRight: () => <IconSymbol name="ellipsis" size={24} color="#111827" />,
+        }}
+      />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.eyebrow, { color: colors.tint }]}>家庭成长解读</Text>
-        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>{local.summary}</Text>
-        <DataSourceBanner />
-        <ProjectionStateCard
-          compact
-          state={remoteState === "loading" ? "loading" : remoteState === "fallback" ? "fallback" : remoteState === "ready" && !remote ? "empty" : "hidden"}
-          title={remoteState === "loading" ? "正在整理家庭成长解读" : undefined}
-          detail={remoteState === "loading" ? "先保留本机可读内容，家庭空间中的最新记录会在连接后更新。" : undefined}
-        />
+        <View style={styles.assessmentSummary}>
+          <View style={styles.summaryAvatar}><IconSymbol name="person.crop.circle.fill" size={56} color="#FFFFFF" /></View>
+          <View style={styles.summaryCopy}>
+            <Text style={styles.summaryTitle}>家庭成长测评</Text>
+            <Text style={styles.summaryMeta}>当前关注：{focus.title}</Text>
+            <Text style={styles.summaryMeta}>测评记录：已保存</Text>
+            <Text style={styles.summaryBody}>本页依据家庭本次选择整理成长概览；家庭资料未补充时，不显示预置个人信息。</Text>
+          </View>
+          <IconSymbol name="chevron.right" size={19} color="#FFFFFF" />
+        </View>
 
-        <LayerCard index="01" label="已确认的输入" kind="FACT" color="#16866D" text={`家庭选择先关注“${focus.title}”，并完成了 ${Object.keys(assessmentAnswers).length} 个场景回答。`} />
-        <LayerCard index="02" label="家长视角" kind="PERSPECTIVE" color="#2563EB" text={perspective} />
-        <LayerCard index="03" label="一个可能的解释" kind="HYPOTHESIS" color="#8B5CF6" text={hypothesis} note="这不是儿童诊断，也不是唯一解释。" />
-        <LayerCard index="04" label="本周建议" kind="RECOMMENDATION" color="#F28C45" text={recommendation} note={`如果当下不适合：${local.fallback}`} />
+        {remoteState === "loading" || remoteState === "fallback" ? (
+          <ProjectionStateCard
+            compact
+            state={remoteState === "loading" ? "loading" : "fallback"}
+            title={remoteState === "loading" ? "正在整理成长解读" : "暂时使用家庭本机记录"}
+            detail={remoteState === "loading" ? "成长概览会在家庭记录同步后更新。" : "你仍可查看当前概览并生成下一步成长方案。"}
+          />
+        ) : null}
 
-        <View style={[styles.aiPanel, { backgroundColor: "#09295A" }]}>
-          <Text style={styles.aiLabel}>解释方式</Text>
-          <Text style={styles.aiTitle}>{remote ? "家庭空间规则化解读" : "本机规则化建议"}</Text>
-          <Text style={styles.aiText}>没有使用自动生成内容修改家庭核心资料。建议只有在家庭确认后，才会成为行动。</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>综合成长评估</Text>
+          <Text style={[styles.sectionHint, { color: colors.muted }]}>基于本次家庭选择</Text>
+        </View>
+        <GrowthRadarOverview selectedIndex={selectedIndex} focusTitle={focus.title} />
+        <Text style={[styles.radarNote, { color: colors.muted }]}>五个方向用于帮助家庭组织观察；维度记录会随后续测评与行动逐步补充。</Text>
+
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>核心关注</Text>
+        <View style={styles.tags}>
+          {issueTags.map((tag, index) => (
+            <View key={tag} style={[styles.tag, { backgroundColor: index === 0 ? "#FDEBEC" : index === 1 ? "#EEF2FF" : "#FFF3E5" }]}>
+              <Text style={[styles.tagText, { color: index === 0 ? "#D96464" : index === 1 ? "#5B6FEF" : "#B87530" }]}>{tag}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>成长建议</Text>
+          <Text style={[styles.sectionHint, { color: colors.muted }]}>优先级从高到低</Text>
+        </View>
+        <View style={styles.suggestions}>
+          {actionItems.map((item, index) => (
+            <View key={`${index}-${item}`} style={styles.suggestionRow}>
+              <View style={[styles.suggestionIndex, { backgroundColor: index === 0 ? "#EAF0FF" : "#F1F5FB" }]}><Text style={[styles.suggestionIndexText, { color: index === 0 ? colors.tint : colors.muted }]}>{index + 1}</Text></View>
+              <Text style={[styles.suggestionText, { color: colors.text }]}>{item}</Text>
+            </View>
+          ))}
         </View>
 
         <Pressable onPress={() => router.push("/ui/UI-04" as Href)} style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
-          <Text style={styles.primaryButtonText}>查看 90 天成长方案</Text>
-          <IconSymbol name="chevron.right" size={20} color="#FFFFFF" />
-        </Pressable>
-        <Pressable onPress={() => router.push("/ui/UI-08" as Href)} style={({ pressed }) => [styles.secondaryButton, { borderColor: colors.border }, pressed && styles.pressed]}>
-          <Text style={[styles.secondaryButtonText, { color: colors.tint }]}>查看阶段成长报告</Text>
+          <IconSymbol name="star.fill" size={20} color="#FFFFFF" />
+          <Text style={styles.primaryButtonText}>生成个性化成长方案</Text>
         </Pressable>
       </ScrollView>
     </ScreenContainer>
   );
 }
 
-function LayerCard({ index, label, kind, color, text, note }: { index: string; label: string; kind: string; color: string; text: string; note?: string }) {
+function GrowthRadarOverview({ selectedIndex, focusTitle }: { selectedIndex: number; focusTitle: string }) {
   const colors = useColors();
+  const outer = RADAR_POINTS.map((point) => `${point.x},${point.y}`).join(" ");
+  const inner = RADAR_POINTS.map((point) => `${120 + (point.x - 120) * 0.58},${96 + (point.y - 96) * 0.58}`).join(" ");
   return (
-    <View style={[styles.layerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View style={styles.layerTopline}>
-        <Text style={[styles.layerIndex, { color }]}>{index}</Text>
-        <View style={[styles.kindBadge, { backgroundColor: `${color}18` }]}><Text style={[styles.kindText, { color }]}>{kind}</Text></View>
-      </View>
-      <Text style={[styles.layerLabel, { color: colors.text }]}>{label}</Text>
-      <Text style={[styles.layerText, { color: colors.muted }]}>{text}</Text>
-      {note ? <Text style={[styles.layerNote, { color: colors.muted }]}>{note}</Text> : null}
+    <View style={[styles.radarCard, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+      <Svg width={240} height={196} viewBox="0 0 240 196" accessibilityLabel={`五维成长概览，当前关注${focusTitle}`}>
+        <Polygon points={outer} fill="none" stroke="#B9D2F5" strokeWidth={1} />
+        <Polygon points={inner} fill="none" stroke="#D7E7FB" strokeWidth={1} />
+        {RADAR_POINTS.map((point, index) => <Line key={`axis-${RADAR_LABELS[index]}`} x1={120} y1={96} x2={point.x} y2={point.y} stroke="#D7E7FB" strokeWidth={1} />)}
+        <Circle cx={120} cy={96} r={36} fill="#EAF3FF" />
+        <Circle cx={120} cy={96} r={28} fill="#FFFFFF" stroke="#C8DEF8" strokeWidth={1} />
+        <SvgText x={120} y={92} textAnchor="middle" fill="#2563EB" fontSize={12} fontWeight="700">成长概览</SvgText>
+        <SvgText x={120} y={110} textAnchor="middle" fill="#6B7280" fontSize={10}>持续补充</SvgText>
+        {RADAR_POINTS.map((point, index) => <Circle key={`point-${RADAR_LABELS[index]}`} cx={point.x} cy={point.y} r={index === selectedIndex ? 5 : 3} fill={index === selectedIndex ? "#2563EB" : "#B9D2F5"} />)}
+        {RADAR_POINTS.map((point, index) => <SvgText key={`label-${RADAR_LABELS[index]}`} x={point.labelX} y={point.labelY} textAnchor={point.anchor} fill={index === selectedIndex ? "#2563EB" : "#5B6B7F"} fontSize={11} fontWeight={index === selectedIndex ? "700" : "500"}>{RADAR_LABELS[index]}</SvgText>)}
+      </Svg>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 36, gap: 14 },
+  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 34, gap: 16, backgroundColor: "#FFFFFF" },
   emptyPage: { flex: 1, padding: 24, justifyContent: "center", gap: 16 },
-  eyebrow: { fontSize: 13, lineHeight: 18, fontWeight: "800", letterSpacing: 0.8 },
-  title: { fontSize: 29, lineHeight: 37, fontWeight: "800" },
-  subtitle: { fontSize: 15, lineHeight: 23 },
-  loading: { fontSize: 13, lineHeight: 18 },
-  layerCard: { borderWidth: 1, borderRadius: 22, padding: 18, gap: 8 },
-  layerTopline: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  layerIndex: { fontSize: 13, lineHeight: 18, fontWeight: "900" },
-  kindBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  kindText: { fontSize: 10, lineHeight: 14, fontWeight: "900", letterSpacing: 0.5 },
-  layerLabel: { fontSize: 18, lineHeight: 24, fontWeight: "800" },
-  layerText: { fontSize: 15, lineHeight: 23 },
-  layerNote: { fontSize: 12, lineHeight: 18, fontStyle: "italic" },
-  aiPanel: { borderRadius: 24, padding: 20, gap: 7 },
-  aiLabel: { color: "#67D5FF", fontSize: 12, lineHeight: 17, fontWeight: "800" },
-  aiTitle: { color: "#FFFFFF", fontSize: 18, lineHeight: 24, fontWeight: "800" },
-  aiText: { color: "#C4D7EE", fontSize: 13, lineHeight: 20 },
-  primaryButton: { minHeight: 56, borderRadius: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
+  emptyTitle: { fontSize: 29, lineHeight: 37, fontWeight: "800" },
+  emptyText: { fontSize: 15, lineHeight: 23 },
+  assessmentSummary: { minHeight: 132, borderRadius: 14, backgroundColor: "#2F8FFB", padding: 16, flexDirection: "row", alignItems: "center", gap: 12 },
+  summaryAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#77B8FF", alignItems: "center", justifyContent: "center" },
+  summaryCopy: { flex: 1, gap: 3 },
+  summaryTitle: { color: "#FFFFFF", fontSize: 17, lineHeight: 23, fontWeight: "800" },
+  summaryMeta: { color: "#E8F3FF", fontSize: 12, lineHeight: 17, fontWeight: "700" },
+  summaryBody: { color: "#FFFFFF", fontSize: 12, lineHeight: 18, marginTop: 4 },
+  sectionHeader: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginTop: 2 },
+  sectionTitle: { fontSize: 18, lineHeight: 25, fontWeight: "800" },
+  sectionHint: { fontSize: 11, lineHeight: 16 },
+  radarCard: { alignItems: "center", borderWidth: 1, borderRadius: 14, paddingTop: 10, paddingBottom: 4 },
+  radarNote: { fontSize: 12, lineHeight: 18, textAlign: "center", marginTop: -8 },
+  tags: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  tag: { borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
+  tagText: { fontSize: 12, lineHeight: 17, fontWeight: "700" },
+  suggestions: { gap: 12 },
+  suggestionRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  suggestionIndex: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", marginTop: 1 },
+  suggestionIndexText: { fontSize: 12, lineHeight: 17, fontWeight: "800" },
+  suggestionText: { flex: 1, fontSize: 14, lineHeight: 22 },
+  primaryButton: { minHeight: 52, borderRadius: 26, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 2 },
   primaryButtonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  secondaryButton: { minHeight: 52, borderWidth: 1, borderRadius: 17, alignItems: "center", justifyContent: "center" },
-  secondaryButtonText: { fontSize: 15, lineHeight: 21, fontWeight: "800" },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  pressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
 });
