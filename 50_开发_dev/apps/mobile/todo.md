@@ -202,6 +202,6 @@
 - [x] 为 UI-05 原图服务卡区加入低干扰加载过渡，不改动卡片比例、文案或服务投影
 - [x] 增加 UI-05 交互反馈契约并运行类型、测试与 Lint 验证
 - [x] 重启无响应的开发服务并核验 Expo 与本地 API 恢复状态
-- [ ] 审计当前 Family AI Mobile 工作区和 GitHub 远程状态，确定程序与文档同步范围
-- [ ] 提交并推送当前 Family AI Mobile 的程序、测试、原图资料、设计、研究和台账
-- [ ] 核验目标 GitHub 分支 ahead/behind 为 0/0 并记录同步提交
+- [x] 审计当前 Family AI Mobile 工作区和 GitHub 远程状态，确定程序与文档同步范围
+- [x] 提交并推送当前 Family AI Mobile 的程序、测试、原图资料、设计、研究和台账
+- [x] 核验目标 GitHub 分支 ahead/behind 为 0/0 并记录同步提交
