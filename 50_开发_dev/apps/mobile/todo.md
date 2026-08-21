@@ -207,5 +207,5 @@
 - [x] 核验目标 GitHub 分支 ahead/behind 为 0/0 并记录同步提交
 - [ ] 检查 PoCP-Protocol/family-ai 最新 main 提交的 GitHub Actions 构建与测试结论
 - [ ] 记录远程 CI/CD 失败项或通过结果，并在必要时提出修复路径
-- [ ] 审计并继续同步本轮尚未推送的 Family AI Mobile 程序、文档、测试与台账变更
-- [ ] 核验 PoCP-Protocol/family-ai main 分支同步完成后的 ahead/behind 状态
+- [x] 审计并继续同步本轮尚未推送的 Family AI Mobile 程序、文档、测试与台账变更
+- [x] 核验 PoCP-Protocol/family-ai main 分支同步完成后的 ahead/behind 状态
