@@ -106,11 +106,16 @@ if (searchParams.get('product') === 'console') {
   const familyAdapter = familyId && bearerToken ? createFamilyApiAdapter({ baseUrl: apiBaseUrl, bearerToken, familyId }) : undefined;
   const loadTenantScopedProjection = familyAdapter ? () => familyAdapter.getTenantScopedUiProjection() : undefined;
   const loadFamilyOperations = familyAdapter ? () => familyAdapter.getExperienceCustomerProjection() : undefined;
+  /** @type {((operationId: string, input: { follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null }) => Promise<{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }>)|undefined} */
+  const updateFamilyOperationFollowUp = familyAdapter
+    ? async (operationId, input) => /** @type {{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }} */ (await familyAdapter.updateOperationFollowUp(operationId, input))
+    : undefined;
   createPlatformConsole(root, {
     tenantId: searchParams.get('tenantId') ?? 'tenant_bangyang',
     role: /** @type {'PLATFORM_ADMIN'|'TENANT_ADMIN'|'TENANT_OPERATOR'|'SERVICE_ADVISOR'|'FAMILY_MEMBER'} */ (searchParams.get('role') ?? 'TENANT_OPERATOR'),
     loadTenantScopedProjection,
     loadFamilyOperations,
+    updateFamilyOperationFollowUp,
   });
 } else if (searchParams.get('product') === 'test-loop' || window.location.hash === '#test-loop') {
   // 历史链接仍指向同一家庭门户，避免保留第二套产品入口。

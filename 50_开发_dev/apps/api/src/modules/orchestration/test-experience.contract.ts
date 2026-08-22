@@ -44,9 +44,26 @@ export interface TestExperienceCustomerProjection {
     status: 'CREATED' | 'CONFIRMED' | 'CANCELLED';
     source: 'TEST_FIXTURE' | 'DOMAIN_COMMAND_ADAPTER';
     authorization_status: 'FAMILY_SCOPE_AUTHORIZED';
+    follow_up_status: 'NOT_MARKED' | 'PENDING_FOLLOW_UP' | 'PROCESSED';
+    operator_note: string | null;
+    follow_up_updated_at: string | null;
     external_effect: false;
     created_at: string;
   }>;
+  text_equivalent: string;
+}
+
+export interface UpdateOperationFollowUpDto {
+  follow_up_status?: 'PENDING_FOLLOW_UP' | 'PROCESSED';
+  operator_note?: string | null;
+}
+
+export interface OperationFollowUpResult {
+  operation_id: string;
+  follow_up_status: 'PENDING_FOLLOW_UP' | 'PROCESSED';
+  operator_note: string | null;
+  follow_up_updated_at: string;
+  external_effect: false;
   text_equivalent: string;
 }
 

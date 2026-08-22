@@ -13,6 +13,12 @@ describe('Family API tenant-scoped Web adapter', () => {
     expect(source).toContain("getJourneyPlan: () => read('/growth/journey-plan')");
   });
 
+  it('writes an operation follow-up only through the existing family-scoped controlled endpoint with an idempotency key', () => {
+    expect(source).toContain("updateOperationFollowUp: (operationId, input) => write(`/orchestration/test-loop/experience/operations/${operationId}/follow-up`, input)");
+    expect(source).toContain("method: 'POST'");
+    expect(source).toContain("'idempotency-key': globalThis.crypto?.randomUUID?.()");
+  });
+
   it('uses bearer-only credentials when a short-lived bearer is supplied', () => {
     expect(source).toContain("credentials: bearerToken ? 'omit' : 'include'");
     expect(source).toContain('Authorization: `Bearer ${bearerToken}`');

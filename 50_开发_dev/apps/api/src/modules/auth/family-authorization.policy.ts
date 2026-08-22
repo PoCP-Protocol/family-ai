@@ -14,7 +14,8 @@ export type FamilyNamedAction =
   | 'RequestGrowthHelp' | 'ConfirmGrowthIntent' | 'DecideGrowthService' | 'SubmitServiceFollowUp'
   | 'ExecuteTestExperienceAction' | 'ExecuteFamilyPageObjectAction'
   | 'SubmitCommerceIntent' | 'SubmitServiceBooking' | 'ManageMembershipEntitlement'
-  | 'CreateJourneyPlan' | 'ConfirmJourneyPlan' | 'PauseJourneyPlan' | 'ReviewJourneyPhase';
+  | 'CreateJourneyPlan' | 'ConfirmJourneyPlan' | 'PauseJourneyPlan' | 'ReviewJourneyPhase'
+  | 'ManageOperationReceipt';
 type Decision = 'ALLOW' | 'DENY' | 'LIMITED';
 
 // 显式矩阵(裁决 §6):行=NamedAction,列=角色。缺省视为 DENY(fail closed)。
@@ -50,6 +51,8 @@ const MATRIX: Record<FamilyNamedAction, Record<FamilyRole, Decision>> = {
   ConfirmJourneyPlan: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
   PauseJourneyPlan: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
   ReviewJourneyPhase: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
+  // 家庭范围的运营回执仅记录人工跟进视角；不修改服务、订单、权益或儿童事实。
+  ManageOperationReceipt: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
 };
 
 /** 该角色能否执行该 NamedAction(DENY / 缺省 → 不能;ALLOW/LIMITED → 能过角色门)。 */

@@ -1,11 +1,13 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { OrchestrationRepository } from './orchestration.repository';
 import {
   type ExecuteTestExperienceDto,
+  type OperationFollowUpResult,
   type TestExperienceAction,
   type TestExperienceCustomerProjection,
   type TestExperienceOperationResult,
+  type UpdateOperationFollowUpDto,
   TEST_EXPERIENCE_FIXTURE_VERSION,
   fixtureAllowedForTestExperienceAction,
   isTestExperienceAction,
@@ -36,6 +38,13 @@ interface DomainCommandRow {
   fixture_ref: string;
   event_type: string;
   created_at: string;
+}
+
+interface OperationFollowUpRow {
+  operation_id: string;
+  follow_up_status: 'PENDING_FOLLOW_UP' | 'PROCESSED';
+  operator_note: string | null;
+  updated_at: string | Date;
 }
 
 function operationTimestamp(value: string | Date): string {
@@ -100,6 +109,60 @@ export class TestExperienceService {
   private environment(): 'DEV' | 'TEST' {
     const status = requireDevSyntheticTestLoop().environment_status;
     return status === 'TEST_VALIDATED' ? 'TEST' : 'DEV';
+  }
+
+  async updateOperationFollowUp(
+    familyId: string,
+    actorPersonId: string,
+    operationId: string,
+    dto: UpdateOperationFollowUpDto,
+    idempotencyKey?: string,
+  ): Promise<OperationFollowUpResult> {
+    requireDevSyntheticTestLoop();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(operationId)) throw new BadRequestException('operation_id_invalid');
+    const followUpStatus = dto?.follow_up_status;
+    if (followUpStatus !== 'PENDING_FOLLOW_UP' && followUpStatus !== 'PROCESSED') throw new BadRequestException('follow_up_status_required');
+    const note = dto.operator_note?.trim() || null;
+    if (note && note.length > 1000) throw new BadRequestException('operator_note_too_long');
+    const tenantId = await this.tenantForFamily(familyId);
+    return this.withIdempotency(
+      familyId,
+      'ManageOperationReceipt',
+      idempotencyKey,
+      { familyId, actorPersonId, operationId, followUpStatus, note },
+      async () => {
+        const target = await this.repo.query<{ found: boolean }>(
+          `select exists(
+             select 1 from test_experience_operations where family_id=$1 and operation_id=$2
+             union all
+             select 1 from family_product_events where family_id=$1 and event_id=$2
+           ) as found`,
+          [familyId, operationId],
+        );
+        if (!target.rows[0]?.found) throw new NotFoundException('family_operation_receipt_not_found');
+        const result = await this.repo.query<OperationFollowUpRow>(
+          `insert into family_operation_followups(
+             tenant_id, family_id, operation_id, follow_up_status, operator_note, updated_by_person_id
+           ) values ($1,$2,$3,$4,$5,$6)
+           on conflict (tenant_id, family_id, operation_id) do update set
+             follow_up_status=excluded.follow_up_status,
+             operator_note=excluded.operator_note,
+             updated_by_person_id=excluded.updated_by_person_id,
+             updated_at=now()
+           returning operation_id, follow_up_status, operator_note, updated_at`,
+          [tenantId, familyId, operationId, followUpStatus, note, actorPersonId],
+        );
+        const row = result.rows[0];
+        return {
+          operation_id: row.operation_id,
+          follow_up_status: row.follow_up_status,
+          operator_note: row.operator_note,
+          follow_up_updated_at: operationTimestamp(row.updated_at),
+          external_effect: false,
+          text_equivalent: '已记录当前家庭范围内的人工跟进状态和备注；不会变更订单、服务、权益、儿童事实或触发外部通知。',
+        };
+      },
+    );
   }
 
   async execute(
@@ -233,7 +296,8 @@ export class TestExperienceService {
   async customerProjection(familyId: string): Promise<TestExperienceCustomerProjection> {
     requireDevSyntheticTestLoop();
     await this.assertSyntheticFamilyEligible(familyId);
-    const [rows, domainEvents] = await Promise.all([
+    const tenantId = await this.tenantForFamily(familyId);
+    const [rows, domainEvents, followUps] = await Promise.all([
       this.repo.query<OperationRow>(
       `select operation_id, page_id, operation_kind, fixture_ref, fixture_version, status,
               environment, source, external_effect, created_at
@@ -252,9 +316,18 @@ export class TestExperienceService {
           order by occurred_at desc, event_id desc`,
         [familyId, ['UI-13', 'UI-14', 'UI-15', 'UI-16', 'UI-17', 'UI-18', 'UI-19', 'UI-20', 'UI-21', 'UI-22', 'UI-23', 'UI-24']],
       ),
+      this.repo.query<OperationFollowUpRow>(
+        `select operation_id::text, follow_up_status, operator_note, updated_at
+           from family_operation_followups
+          where tenant_id=$1 and family_id=$2`,
+        [tenantId, familyId],
+      ),
     ]);
+    const followUpByOperation = new Map(followUps.rows.map((row) => [row.operation_id, row]));
     const operations = [
-      ...rows.rows.map((row) => ({
+      ...rows.rows.map((row) => {
+        const followUp = followUpByOperation.get(row.operation_id);
+        return {
         operation_id: row.operation_id,
         page_id: row.page_id,
         operation_kind: row.operation_kind,
@@ -262,10 +335,16 @@ export class TestExperienceService {
         status: row.status,
         source: 'TEST_FIXTURE' as const,
         authorization_status: 'FAMILY_SCOPE_AUTHORIZED' as const,
+        follow_up_status: followUp?.follow_up_status ?? 'NOT_MARKED' as const,
+        operator_note: followUp?.operator_note ?? null,
+        follow_up_updated_at: followUp ? operationTimestamp(followUp.updated_at) : null,
         external_effect: false as const,
         created_at: operationTimestamp(row.created_at),
-      })),
-      ...domainEvents.rows.map((row) => ({
+        };
+      }),
+      ...domainEvents.rows.map((row) => {
+        const followUp = followUpByOperation.get(row.operation_id);
+        return {
         operation_id: row.operation_id,
         page_id: row.page_id,
         operation_kind: 'DOMAIN_COMMAND' as const,
@@ -273,9 +352,13 @@ export class TestExperienceService {
         status: row.event_type === 'booking_request_cancelled' ? 'CANCELLED' as const : 'CONFIRMED' as const,
         source: 'DOMAIN_COMMAND_ADAPTER' as const,
         authorization_status: 'FAMILY_SCOPE_AUTHORIZED' as const,
+        follow_up_status: followUp?.follow_up_status ?? 'NOT_MARKED' as const,
+        operator_note: followUp?.operator_note ?? null,
+        follow_up_updated_at: followUp ? operationTimestamp(followUp.updated_at) : null,
         external_effect: false as const,
         created_at: operationTimestamp(row.created_at),
-      })),
+        };
+      }),
     ].sort((left, right) => right.created_at.localeCompare(left.created_at));
     return {
       environment: this.environment(),
