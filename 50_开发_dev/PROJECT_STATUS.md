@@ -188,6 +188,7 @@ STATE_ALIGNMENT = PASS_WAVE3_CLOSED_M3_NOT_AUTHORIZED
 - Principal AI proposes; humans confirm through Named Action
 - Community participates; it does not define growth
 - FELS is old world; FLM translates; Family is new world
+- ARCHITECTURE_DRIVER = 35_UI_PRODUCT_SCOPE (2026-08-22 ruling; method = UI → Journey → Capability → Domain → Runtime; 35 UI = V1 Product Scope Baseline; ONE_UI_ONE_BACKEND=NO; SHARED_DOMAIN_MODEL=YES; UI_PROJECTION=YES; 7 domains + AI Control Plane + Family Growth Context; MOBILE = PRIMARY_CONSUMER_PRODUCT / Experience Runtime; see governance/ARCHITECTURE_DRIVER_35UI_REBASELINE_001.md; task = FAMILY-35UI-ARCHITECTURE-REBASELINE-001)
 
 ## Status Update Rule
 
