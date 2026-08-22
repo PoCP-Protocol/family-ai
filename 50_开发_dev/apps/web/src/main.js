@@ -2,6 +2,7 @@ import { createGrowthApp, defaultConfig } from './app.js';
 import { createWafCommunityApp } from './waf.js';
 import { createPrincipalApp, defaultPrincipalConfig } from './principal.js';
 import { createTestLoopApp, defaultTestLoopConfig } from './test-loop.js';
+import { createPlatformConsole } from './platform-console.js';
 
 const root = /** @type {HTMLElement | null} */ (document.querySelector('#app'));
 
@@ -11,7 +12,14 @@ if (!root) {
 
 const searchParams = new URLSearchParams(window.location.search);
 
-if (searchParams.get('product') === 'test-loop' || window.location.hash === '#test-loop') {
+if (searchParams.get('product') === 'console' || !searchParams.get('product')) {
+  // 正式 Web 默认入口：仅展示现有 tenant_family_bindings、account membership 与 Family API
+  // 的租户/家庭范围语义，不在 Web 端创建平行的 tenant 或 IAM 本体。
+  createPlatformConsole(root, {
+    tenantId: searchParams.get('tenantId') ?? 'tenant_bangyang',
+    role: searchParams.get('role') ?? 'TENANT_OPERATOR',
+  });
+} else if (searchParams.get('product') === 'test-loop' || window.location.hash === '#test-loop') {
   // ARCH-GO-TEST-FULL-FUNCTION-001: DEV synthetic internal demo only; server capability gate remains authoritative.
   createTestLoopApp(root, {
     ...defaultTestLoopConfig,

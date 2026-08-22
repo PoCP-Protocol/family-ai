@@ -4,7 +4,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(fileURLToPath(new URL('..', import.meta.url)));
-const port = Number(process.env.PORT ?? 5173);
+const port = Number(process.env.WEB_PORT ?? process.env.PORT ?? 4173);
 
 const contentTypes = new Map([
   ['.html', 'text/html; charset=utf-8'],

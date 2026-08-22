@@ -1,0 +1,33 @@
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const source = readFileSync(resolve(process.cwd(), 'src/platform-console.js'), 'utf8');
+const main = readFileSync(resolve(process.cwd(), 'src/main.js'), 'utf8');
+
+describe('正式多租户 Web 控制台', () => {
+  it('将控制台作为默认 Web 入口，同时保留历史产品路由', () => {
+    expect(main).toContain("createPlatformConsole");
+    expect(main).toContain("searchParams.get('product') === 'console' || !searchParams.get('product')");
+    expect(main).toContain("searchParams.get('product') === 'test-loop'");
+  });
+
+  it('呈现家庭、交付、服务、内容、资产、运营和租户工作台', () => {
+    for (const label of ['家庭工作台', '成长交付', '专家与服务', '内容与社群', '会员与资产', '运营工作台', '租户设置']) {
+      expect(source).toContain(label);
+    }
+  });
+
+  it('明确复用现有租户授权边界而不在前端创建新本体', () => {
+    expect(source).toContain('tenant_family_bindings');
+    expect(source).toContain('tenant_policy_profiles');
+    expect(source).toContain('Family Scope Guard');
+    expect(source).toContain('不在 Web 端创建平行的 tenant 或 IAM 本体');
+  });
+
+  it('不把前端租户参数当作授权，并保持受控外部效果边界', () => {
+    expect(source).toContain('不在 Web 端自行裁决高风险策略');
+    expect(source).toContain('实际写入仍由现有 Family API、角色、租户与家庭范围策略校验');
+    expect(source).not.toMatch(/paymentIntent|Share\.share|Linking\.openURL/);
+  });
+});
