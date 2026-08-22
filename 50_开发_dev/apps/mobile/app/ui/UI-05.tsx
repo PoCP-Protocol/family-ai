@@ -14,12 +14,19 @@ interface ServiceJourney {
   process_summary?: { label?: string; completed_actions?: number };
 }
 
+interface JourneyPlanProjection {
+  plan?: { plan_id?: string; current_phase?: string; phases?: { phase: string; status: string }[] } | null;
+}
+
 const WEEKLY_TASKS = ["完成3次亲子沟通练习", "孩子情绪记录 3/3 天", "学习计划执行 4/6 天"] as const;
 
 export default function CompanionJourneyScreen() {
   const session = useFamilyApiSession();
   const { activeOnboardingId, lastReceipt, campCompletedDays } = useFamilyMobile();
   const [remote, setRemote] = useState<ServiceJourney | null>(null);
+  const [journeyPlan, setJourneyPlan] = useState<JourneyPlanProjection | null>(null);
+  const [reviewState, setReviewState] = useState<"idle" | "submitting">("idle");
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const serviceCardsOpacity = useRef(new Animated.Value(0.62)).current;
   const serviceCardsOffset = useRef(new Animated.Value(5)).current;
   const serviceCardsRevealed = useRef(false);
@@ -32,6 +39,9 @@ export default function CompanionJourneyScreen() {
     familyApi.getServiceJourney<ServiceJourney>(session.token, session.selectedFamily.family_id, activeOnboardingId)
       .then((result) => { if (active) setRemote(result); })
       .catch(() => undefined);
+    familyApi.getJourneyPlan<JourneyPlanProjection>(session.token, session.selectedFamily.family_id)
+      .then((result) => { if (active) setJourneyPlan(result); })
+      .catch(() => undefined);
     return () => { active = false; };
   }, [activeOnboardingId, session.selectedFamily, session.status, session.token]);
 
@@ -40,6 +50,23 @@ export default function CompanionJourneyScreen() {
     return { completed, total: 9, percentage: Math.round((completed / 9) * 100) };
   }, [remote]);
   const thirdTaskDone = Boolean(lastReceipt) || campCompletedDays.length > 0;
+  const plan = journeyPlan?.plan;
+  const reviewDue = plan?.phases?.find((phase) => phase.phase === plan.current_phase)?.status === "REVIEW_DUE";
+
+  const reviewPhase = async (decision: "CONTINUE" | "ADJUST") => {
+    if (reviewState === "submitting" || !plan?.plan_id || session.status !== "connected" || !session.token || !session.selectedFamily) return;
+    setReviewState("submitting");
+    setReviewMessage(null);
+    try {
+      const result = await familyApi.reviewJourneyPhase<JourneyPlanProjection>(session.token, session.selectedFamily.family_id, plan.plan_id, decision, `ui05-review-${plan.plan_id}-${decision}`);
+      setJourneyPlan(result);
+      setReviewMessage(decision === "CONTINUE" ? "下一阶段已开始。" : "计划已暂缓，可先调整节奏。" );
+    } catch {
+      setReviewMessage("暂时无法完成阶段回顾，请稍后重试。");
+    } finally {
+      setReviewState("idle");
+    }
+  };
 
   const revealServiceCards = useCallback(() => {
     if (serviceCardsRevealed.current) return;
@@ -100,6 +127,7 @@ export default function CompanionJourneyScreen() {
                 return <WeeklyTaskLine key={task} text={task} done={done} />;
               })}
             </View>
+            {reviewDue ? <View style={styles.reviewPanel}><Text style={styles.reviewTitle}>这一阶段可以回顾了</Text><Text style={styles.reviewText}>一起决定继续下一阶段，或先调整节奏。</Text>{reviewMessage ? <Text style={styles.reviewText}>{reviewMessage}</Text> : null}<View style={styles.reviewActions}><Pressable disabled={reviewState === "submitting"} onPress={() => reviewPhase("CONTINUE")} style={({ pressed }) => [styles.reviewPrimary, pressed && styles.pressed]}><Text style={styles.reviewPrimaryText}>{reviewState === "submitting" ? "正在记录" : "继续下一阶段"}</Text></Pressable><Pressable disabled={reviewState === "submitting"} onPress={() => reviewPhase("ADJUST")} style={({ pressed }) => [styles.reviewSecondary, pressed && styles.pressed]}><Text style={styles.reviewSecondaryText}>先调整节奏</Text></Pressable></View></View> : null}
           </View>
 
           <View style={styles.segmentBar}>
@@ -182,5 +210,5 @@ const styles = StyleSheet.create({
   fab: { position: "absolute", right: 20, bottom: 20, minWidth: 105, minHeight: 49, borderRadius: 25, backgroundColor: "#247DF0", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, shadowColor: "#1C74DE", shadowOpacity: 0.24, shadowRadius: 9, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   fabPlus: { color: "#FFFFFF", fontSize: 25, lineHeight: 29, fontWeight: "500" },
   fabText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "900" },
-  pressed: { opacity: 0.86, transform: [{ scale: 0.98 }] },
+  reviewPanel: { marginTop: 13, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#EDF0F5", gap: 6 }, reviewTitle: { color: "#1E2732", fontSize: 14, lineHeight: 20, fontWeight: "900" }, reviewText: { color: "#697585", fontSize: 12, lineHeight: 17, fontWeight: "700" }, reviewActions: { flexDirection: "row", gap: 8, marginTop: 3 }, reviewPrimary: { flex: 1, minHeight: 36, borderRadius: 18, backgroundColor: "#247DF0", alignItems: "center", justifyContent: "center" }, reviewPrimaryText: { color: "#FFFFFF", fontSize: 12, lineHeight: 17, fontWeight: "900" }, reviewSecondary: { flex: 1, minHeight: 36, borderRadius: 18, borderWidth: 1, borderColor: "#CFD8E4", alignItems: "center", justifyContent: "center" }, reviewSecondaryText: { color: "#596878", fontSize: 12, lineHeight: 17, fontWeight: "900" }, pressed: { opacity: 0.86, transform: [{ scale: 0.98 }] },
 });

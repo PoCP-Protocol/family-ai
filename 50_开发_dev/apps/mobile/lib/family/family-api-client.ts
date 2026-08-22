@@ -340,6 +340,36 @@ export class FamilyApiClient {
       },
     });
   }
+
+  reviewJourneyPhase<T>(token: string, familyId: string, planId: string, decision: "CONTINUE" | "ADJUST" | "PAUSE" | "HUMAN_REVIEW_REQUIRED", idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/growth/journey-plans/${planId}/phase-review`, {
+      method: "POST",
+      token,
+      body: { decision },
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-journey-review"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
+  getTodayGrowthAction<T>(token: string, familyId: string) {
+    return this.request<T>(`/families/${familyId}/growth/actions/today`, { token });
+  }
+
+  checkInTodayTask<T>(token: string, familyId: string, taskId: string, body: { completion_status: "COMPLETED" | "PARTIAL" | "NOT_COMPLETED"; reflection: string; occurred_at: string }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/tasks/${taskId}/check-in`, {
+      method: "POST",
+      token,
+      body,
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-task-checkin"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
 }
 
 function safeJson(raw: string) {
