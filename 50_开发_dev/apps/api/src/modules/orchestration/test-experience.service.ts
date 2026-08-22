@@ -2,10 +2,13 @@ import { BadRequestException, ConflictException, ForbiddenException, Inject, Inj
 import { createHash } from 'node:crypto';
 import { OrchestrationRepository } from './orchestration.repository';
 import {
+  type BatchAssignOperationFollowUpsDto,
+  type BatchAssignOperationFollowUpsResult,
   type BatchProcessOperationFollowUpsDto,
   type BatchProcessOperationFollowUpsResult,
   type ExecuteTestExperienceDto,
   type OperationFollowUpAssignee,
+  type OperationFollowUpWorkspaceMetrics,
   type OperationFollowUpResult,
   type TestExperienceAction,
   type TestExperienceCustomerProjection,
@@ -261,6 +264,95 @@ export class TestExperienceService {
         };
       },
     );
+  }
+
+  async batchAssignOperationFollowUps(
+    familyId: string,
+    actorPersonId: string,
+    dto: BatchAssignOperationFollowUpsDto,
+    idempotencyKey?: string,
+  ): Promise<BatchAssignOperationFollowUpsResult> {
+    requireDevSyntheticTestLoop();
+    const operationIds = [...new Set(dto?.operation_ids ?? [])];
+    const assigneeAccountId = dto.assigned_to_account_id?.trim();
+    if (!operationIds.length || operationIds.length > 100 || operationIds.some((value) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value))) {
+      throw new BadRequestException('operation_ids_invalid');
+    }
+    if (!assigneeAccountId) throw new BadRequestException('assigned_to_account_id_required');
+    const dueDate = this.normalizeDueDate(dto.follow_up_due_date);
+    const tenantId = await this.tenantForFamily(familyId);
+    await this.assertTenantAssignee(tenantId, assigneeAccountId);
+    return this.withIdempotency(
+      familyId,
+      'BatchAssignOperationReceipt',
+      idempotencyKey,
+      { familyId, actorPersonId, operationIds, assigneeAccountId, dueDate },
+      async () => {
+        const targets = await this.repo.query<{ operation_id: string }>(
+          `select operation_id::text from test_experience_operations where family_id=$1 and operation_id = any($2::uuid[])
+           union
+           select event_id::text as operation_id from family_product_events where family_id=$1 and event_id = any($2::uuid[])`,
+          [familyId, operationIds],
+        );
+        if (targets.rows.length !== operationIds.length) throw new NotFoundException('family_operation_receipt_not_found');
+        await this.repo.query(
+          `insert into family_operation_followups(tenant_id, family_id, operation_id, follow_up_status, operator_note, assigned_to_account_id, due_date, updated_by_person_id)
+           select $1, $2, operation_id::uuid, 'PENDING_FOLLOW_UP', null, $3, $4, $5 from unnest($6::uuid[]) as operation_id
+           on conflict (tenant_id, family_id, operation_id) do update set
+             assigned_to_account_id=excluded.assigned_to_account_id,
+             due_date=excluded.due_date,
+             updated_by_person_id=excluded.updated_by_person_id,
+             updated_at=now()`,
+          [tenantId, familyId, assigneeAccountId, dueDate, actorPersonId, operationIds],
+        );
+        return {
+          operation_ids: operationIds,
+          updated_count: operationIds.length,
+          assigned_to_account_id: assigneeAccountId,
+          follow_up_due_date: dueDate,
+          external_effect: false,
+          text_equivalent: '已在当前家庭范围内批量分派负责人和截止日期；不会变更订单、服务、权益或触发外部效果。',
+        };
+      },
+    );
+  }
+
+  async operationFollowUpWorkspaceMetrics(familyId: string): Promise<OperationFollowUpWorkspaceMetrics> {
+    requireDevSyntheticTestLoop();
+    const tenantId = await this.tenantForFamily(familyId);
+    const result = await this.repo.query<{
+      today_new: string; pending: string; processed: string; overdue: string;
+      account_id: string | null; display_name: string | null; pending_count: string; overdue_count: string;
+    }>(
+      `with family_receipts as (
+         select operation_id::text as operation_id, created_at::date as created_date from test_experience_operations where family_id=$1
+         union all
+         select event_id::text as operation_id, occurred_at::date as created_date from family_product_events where family_id=$1 and object_type <> 'TestExperienceOperation'
+       ), scoped_followups as (
+         select r.operation_id, r.created_date, f.follow_up_status, f.assigned_to_account_id, f.due_date
+           from family_receipts r left join family_operation_followups f
+             on f.tenant_id=$2 and f.family_id=$1 and f.operation_id::text=r.operation_id
+       ), totals as (
+         select count(*) filter (where created_date=current_date)::text as today_new,
+                count(*) filter (where follow_up_status='PENDING_FOLLOW_UP')::text as pending,
+                count(*) filter (where follow_up_status='PROCESSED')::text as processed,
+                count(*) filter (where follow_up_status='PENDING_FOLLOW_UP' and due_date < current_date)::text as overdue
+           from scoped_followups
+       ), workloads as (
+         select f.assigned_to_account_id::text as account_id, coalesce(a.external_ref, a.account_id::text) as display_name,
+                count(*) filter (where f.follow_up_status='PENDING_FOLLOW_UP')::text as pending_count,
+                count(*) filter (where f.follow_up_status='PENDING_FOLLOW_UP' and f.due_date < current_date)::text as overdue_count
+           from family_operation_followups f join accounts a on a.account_id=f.assigned_to_account_id
+          where f.tenant_id=$2 and f.family_id=$1 and f.assigned_to_account_id is not null
+          group by f.assigned_to_account_id, a.external_ref, a.account_id
+       ) select totals.*, workloads.* from totals left join workloads on true order by display_name asc nulls last`,
+      [familyId, tenantId],
+    );
+    const first = result.rows[0];
+    return {
+      today_new: Number(first?.today_new ?? 0), pending: Number(first?.pending ?? 0), processed: Number(first?.processed ?? 0), overdue: Number(first?.overdue ?? 0),
+      assignee_workload: result.rows.filter((row) => row.account_id && row.display_name).map((row) => ({ account_id: row.account_id ?? '', display_name: row.display_name ?? '', pending_count: Number(row.pending_count), overdue_count: Number(row.overdue_count) })),
+    };
   }
 
   async execute(

@@ -111,9 +111,14 @@ if (searchParams.get('product') === 'console') {
     ? async (operationId, input) => /** @type {{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string, assigned_to_account_id: string|null, assigned_to_display_name: string|null, follow_up_due_date: string|null }} */ (await familyAdapter.updateOperationFollowUp(operationId, input))
     : undefined;
   const loadOperationFollowUpAssignees = familyAdapter ? () => familyAdapter.getOperationFollowUpAssignees() : undefined;
+  const loadOperationFollowUpWorkspaceMetrics = familyAdapter ? () => familyAdapter.getOperationFollowUpWorkspaceMetrics() : undefined;
   /** @type {((operationIds: string[]) => Promise<{ operation_ids: string[], updated_count: number, follow_up_status: string }>)|undefined} */
   const batchProcessFamilyOperationFollowUps = familyAdapter
     ? async (operationIds) => /** @type {{ operation_ids: string[], updated_count: number, follow_up_status: string }} */ (await familyAdapter.batchProcessOperationFollowUps(operationIds))
+    : undefined;
+  /** @type {((operationIds: string[], assignedToAccountId: string, dueDate: string|null) => Promise<{ operation_ids: string[], updated_count: number, assigned_to_account_id: string, follow_up_due_date: string|null }>)|undefined} */
+  const batchAssignFamilyOperationFollowUps = familyAdapter
+    ? async (operationIds, assignedToAccountId, dueDate) => /** @type {{ operation_ids: string[], updated_count: number, assigned_to_account_id: string, follow_up_due_date: string|null }} */ (await familyAdapter.batchAssignOperationFollowUps(operationIds, assignedToAccountId, dueDate))
     : undefined;
   createPlatformConsole(root, {
     tenantId: searchParams.get('tenantId') ?? 'tenant_bangyang',
@@ -122,7 +127,9 @@ if (searchParams.get('product') === 'console') {
     loadFamilyOperations,
     updateFamilyOperationFollowUp,
     loadOperationFollowUpAssignees,
+    loadOperationFollowUpWorkspaceMetrics,
     batchProcessFamilyOperationFollowUps,
+    batchAssignFamilyOperationFollowUps,
   });
 } else if (searchParams.get('product') === 'test-loop' || window.location.hash === '#test-loop') {
   // 历史链接仍指向同一家庭门户，避免保留第二套产品入口。

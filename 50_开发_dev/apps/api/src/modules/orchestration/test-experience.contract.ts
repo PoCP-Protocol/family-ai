@@ -87,9 +87,32 @@ export interface BatchProcessOperationFollowUpsResult {
   text_equivalent: string;
 }
 
+export interface BatchAssignOperationFollowUpsDto {
+  operation_ids?: string[];
+  assigned_to_account_id?: string;
+  follow_up_due_date?: string | null;
+}
+
+export interface BatchAssignOperationFollowUpsResult {
+  operation_ids: string[];
+  updated_count: number;
+  assigned_to_account_id: string;
+  follow_up_due_date: string | null;
+  external_effect: false;
+  text_equivalent: string;
+}
+
 export interface OperationFollowUpAssignee {
   account_id: string;
   display_name: string;
+}
+
+export interface OperationFollowUpWorkspaceMetrics {
+  today_new: number;
+  pending: number;
+  processed: number;
+  overdue: number;
+  assignee_workload: Array<OperationFollowUpAssignee & { pending_count: number; overdue_count: number }>;
 }
 
 const FIXTURE_RULES: Record<TestExperienceAction, readonly string[]> = {

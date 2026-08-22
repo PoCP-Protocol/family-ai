@@ -188,6 +188,31 @@ describe('DEV/TEST formal experience workflows', () => {
     expect(crossFamily.status).toBe(404);
   });
 
+  it('batch-assigns a trusted tenant operator, exposes overdue workload metrics, and rejects cross-family receipt ids', async () => {
+    const seed = await seedGuardian();
+    const first = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations`, 'POST', seed.token, {
+      page_id: 'UI-21', action: 'CREATE_BOOKING', fixture_ref: 'TEACHER_LI_SLOT_2025_05_21_1000', channel: 'VIDEO', fixture_version: TEST_EXPERIENCE_FIXTURE_VERSION,
+    }, { 'idempotency-key': `assign-first-${randomUUID()}` });
+    const second = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations`, 'POST', seed.token, {
+      page_id: 'UI-23', action: 'CREATE_EVENT', fixture_ref: 'EVENT_PARENT_CHILD_SALON_2025_05_25', fixture_version: TEST_EXPERIENCE_FIXTURE_VERSION,
+    }, { 'idempotency-key': `assign-second-${randomUUID()}` });
+    const firstOperation = await first.json(); const secondOperation = await second.json();
+    const operationIds = [firstOperation.operation_id, secondOperation.operation_id];
+    const assigned = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations/follow-up/batch-assign`, 'POST', seed.token, {
+      operation_ids: operationIds, assigned_to_account_id: seed.accountId, follow_up_due_date: '2000-01-01',
+    }, { 'idempotency-key': `assign-batch-${randomUUID()}` });
+    expect(assigned.status).toBe(201);
+    expect(await assigned.json()).toMatchObject({ operation_ids: operationIds, updated_count: 2, assigned_to_account_id: seed.accountId, follow_up_due_date: '2000-01-01', external_effect: false });
+    const metrics = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations/follow-up/metrics`, 'GET', seed.token);
+    expect(metrics.status).toBe(200);
+    expect(await metrics.json()).toMatchObject({ pending: 2, overdue: 2, assignee_workload: [expect.objectContaining({ account_id: seed.accountId, pending_count: 2, overdue_count: 2 })] });
+    const other = await seedGuardian();
+    const crossFamily = await request(`/families/${other.familyId}/orchestration/test-loop/experience/operations/follow-up/batch-assign`, 'POST', other.token, {
+      operation_ids: operationIds, assigned_to_account_id: other.accountId,
+    });
+    expect(crossFamily.status).toBe(404);
+  });
+
   it('fails closed for an invalid fixture/page pair or missing SERVICE consent with zero operation writes', async () => {
     const seed = await seedGuardian();
     const invalidFixture = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations`, 'POST', seed.token, {
