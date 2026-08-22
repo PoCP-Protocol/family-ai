@@ -8,7 +8,7 @@ export function createFamilyApiAdapter({ baseUrl, bearerToken, familyId }) {
   const read = async (path) => {
     const response = await fetch(`${baseUrl.replace(/\/$/, '')}/families/${familyId}${path}`, {
       headers: bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {},
-      credentials: 'include',
+      credentials: bearerToken ? 'omit' : 'include',
     });
     if (!response.ok) throw new Error(`family_api_read_failed_${response.status}`);
     return response.json();
@@ -20,5 +20,6 @@ export function createFamilyApiAdapter({ baseUrl, bearerToken, familyId }) {
     getServiceJourney: (onboardingId) => read(`/growth/onboardings/${onboardingId}/service-journey`),
     getCoreGrowthPreview: () => read('/dev/core-growth'),
     getPlatformSurfacePreview: () => read('/dev/platform-surfaces'),
+    getTenantScopedUiProjection: () => read('/tenant-scoped/ui-projection'),
   };
 }

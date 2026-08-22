@@ -30,4 +30,13 @@ describe('正式多租户 Web 控制台', () => {
     expect(source).toContain('实际写入仍由现有 Family API、角色、租户与家庭范围策略校验');
     expect(source).not.toMatch(/paymentIntent|Share\.share|Linking\.openURL/);
   });
+
+  it('仅在已有 Bearer 家庭会话时加载统一 tenant-scoped 投影，并保留无会话开发预览', () => {
+    expect(main).toContain('createFamilyApiAdapter');
+    expect(main).toContain('getTenantScopedUiProjection');
+    expect(main).toContain('familyId && bearerToken');
+    expect(source).toContain('loadTenantScopedProjection');
+    expect(source).toContain('tenant/family 双重范围校验');
+    expect(source).toContain('不会在前端生成或放大任何授权');
+  });
 });

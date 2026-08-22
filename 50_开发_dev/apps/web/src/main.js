@@ -3,6 +3,7 @@ import { createWafCommunityApp } from './waf.js';
 import { createPrincipalApp, defaultPrincipalConfig } from './principal.js';
 import { createTestLoopApp, defaultTestLoopConfig } from './test-loop.js';
 import { createPlatformConsole } from './platform-console.js';
+import { createFamilyApiAdapter } from './family-api-adapter.js';
 
 const root = /** @type {HTMLElement | null} */ (document.querySelector('#app'));
 
@@ -15,9 +16,16 @@ const searchParams = new URLSearchParams(window.location.search);
 if (searchParams.get('product') === 'console' || !searchParams.get('product')) {
   // 正式 Web 默认入口：仅展示现有 tenant_family_bindings、account membership 与 Family API
   // 的租户/家庭范围语义，不在 Web 端创建平行的 tenant 或 IAM 本体。
+  const familyId = searchParams.get('familyId') ?? undefined;
+  const bearerToken = window.sessionStorage.getItem('family-ui01-ui09-synthetic-bearer') ?? undefined;
+  const apiBaseUrl = searchParams.get('apiBaseUrl') ?? 'http://localhost:3000';
+  const loadTenantScopedProjection = familyId && bearerToken
+    ? () => createFamilyApiAdapter({ baseUrl: apiBaseUrl, bearerToken, familyId }).getTenantScopedUiProjection()
+    : undefined;
   createPlatformConsole(root, {
     tenantId: searchParams.get('tenantId') ?? 'tenant_bangyang',
     role: searchParams.get('role') ?? 'TENANT_OPERATOR',
+    loadTenantScopedProjection,
   });
 } else if (searchParams.get('product') === 'test-loop' || window.location.hash === '#test-loop') {
   // ARCH-GO-TEST-FULL-FUNCTION-001: DEV synthetic internal demo only; server capability gate remains authoritative.
