@@ -1,0 +1,890 @@
+{
+  "schema_version": "FAMILY_35UI_RUNTIME_MATRIX_V1",
+  "baseline_repo": "PoCP-Protocol/family-ai",
+  "baseline_branch": "main",
+  "baseline_sha": "708cf542ab130642f2248bbebecc997930d10a49",
+  "principles": {
+    "ui_baseline": "UI-01..UI-35 are the product display baseline; backend must implement the capabilities and loops they expose.",
+    "query_model": "UI may own a projection; UI must not own canonical business truth.",
+    "command_model": "All writes are Named Actions owned by a domain.",
+    "ai_control_plane": "All model-backed use cases route through FAMILY_LLM_GATEWAY.",
+    "canonical_backend": "apps/api + PostgreSQL",
+    "mobile_role": "thin client + local draft/cache only",
+    "truth_invariants": [
+      "Perspective != Fact",
+      "Hypothesis != Fact",
+      "Recommendation != Decision != Action",
+      "ServiceCompletion != GrowthOutcome",
+      "AI may propose but may not directly mutate canonical growth truth"
+    ],
+    "ai_diagnosis": {
+      "product_label": "AI诊断",
+      "keep": true,
+      "internal_semantics": "GrowthDiagnosticHypothesis / interpretive artifact, not medical or psychiatric diagnosis, not canonical child fact"
+    },
+    "runtime_status_legend": {
+      "REAL_PERSISTED": "真实生产持久化(PostgreSQL)且经集成/E2E证明",
+      "REAL_INTERNAL_RUNTIME": "真实内部运行时(非fixture),但未对外/未接真实外部效应",
+      "TEST_LOOP_FIXTURE": "经 /orchestration/test-loop/* fixture 闭环, external_effect=false",
+      "LOCAL_DRAFT": "仅本地/私有草稿, 未推进为 canonical 状态",
+      "READ_ONLY_PROJECTION": "只读投影(带 projection_version/as_of/visibility), 无写闭环",
+      "GATE_BOUNDARY": "触及真实支付/真人/儿童作答/跨家庭排名/公开外发/真实AI诊断, 受 Gate, 未授权不可宣称完成",
+      "NOT_IMPLEMENTED": "目标已定义, 运行时未实现(如详情 DTO 待接入)"
+    },
+    "runtime_status_note": "本矩阵 runtime_status 反映 G0 时点(base 708cf542)的现场实况, 非目标态。35_UI_FRONTEND_BASELINE=KEEP; 35_UI_BACKEND_COMPLETE=NO; G0=ALIGNMENT_FOUNDATION。逐页证据见 reports/rebaseline-35ui/FAMILY_35UI_G0_ALIGNMENT_EVIDENCE_001.md。"
+  },
+  "domains": [
+    "FAMILY_CORE",
+    "GROWTH_INTELLIGENCE",
+    "GROWTH_JOURNEY",
+    "RESOURCE_COMMERCE",
+    "SERVICE_OS",
+    "CONTENT_COMMUNITY",
+    "FAMILY_CONTEXT"
+  ],
+  "loops": [
+    "GROWTH",
+    "PLAN",
+    "ASSESSMENT",
+    "SERVICE",
+    "COMMERCE",
+    "COMMUNITY"
+  ],
+  "screens": [
+    {
+      "ui_id": "UI-01",
+      "title": "家庭成长首页",
+      "loop": "GROWTH",
+      "primary_domain": "FAMILY_CONTEXT",
+      "supporting_domains": [
+        "GROWTH_INTELLIGENCE",
+        "GROWTH_JOURNEY",
+        "RESOURCE_COMMERCE",
+        "SERVICE_OS"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/(tabs)/index.tsx",
+      "projection": "FamilyHomeProjection",
+      "named_actions": [
+        "REQUEST_GROWTH_HELP"
+      ],
+      "ai_use_cases": [
+        "HOME_GROWTH_SUMMARY",
+        "NEXT_BEST_GROWTH_HELP"
+      ],
+      "skills": [
+        "CONTEXT_SUMMARY_SKILL",
+        "RESOURCE_ROUTING_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-02",
+      "title": "家庭测评",
+      "loop": "ASSESSMENT",
+      "primary_domain": "GROWTH_INTELLIGENCE",
+      "supporting_domains": [
+        "FAMILY_CORE"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-02.tsx",
+      "projection": "AssessmentSessionProjection",
+      "named_actions": [
+        "START_ASSESSMENT",
+        "SAVE_ASSESSMENT_RESPONSE",
+        "SUBMIT_ASSESSMENT"
+      ],
+      "ai_use_cases": [
+        "ASSESSMENT_INTERVIEW"
+      ],
+      "skills": [
+        "ASSESSMENT_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "GATE_BOUNDARY"
+    },
+    {
+      "ui_id": "UI-03",
+      "title": "家庭成长解读 / AI诊断",
+      "loop": "ASSESSMENT",
+      "primary_domain": "GROWTH_INTELLIGENCE",
+      "supporting_domains": [
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-03.tsx",
+      "projection": "GrowthDiagnosisProjection",
+      "named_actions": [
+        "CONFIRM_GROWTH_INTENT"
+      ],
+      "ai_use_cases": [
+        "AI_DIAGNOSIS",
+        "DIAGNOSIS_EXPLANATION"
+      ],
+      "skills": [
+        "GROWTH_DIAGNOSIS_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "GATE_BOUNDARY"
+    },
+    {
+      "ui_id": "UI-04",
+      "title": "90 天成长方案",
+      "loop": "PLAN",
+      "primary_domain": "GROWTH_JOURNEY",
+      "supporting_domains": [
+        "GROWTH_INTELLIGENCE"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-04.tsx",
+      "projection": "GrowthPlanProjection",
+      "named_actions": [
+        "ACCEPT_GROWTH_PLAN",
+        "PAUSE_GROWTH_PLAN"
+      ],
+      "ai_use_cases": [
+        "GROWTH_PLAN_DRAFT"
+      ],
+      "skills": [
+        "GROWTH_PLANNING_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-05",
+      "title": "90 天陪跑",
+      "loop": "PLAN",
+      "primary_domain": "GROWTH_JOURNEY",
+      "supporting_domains": [
+        "SERVICE_OS",
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-05.tsx",
+      "projection": "ProgramDeliveryProjection",
+      "named_actions": [
+        "RECORD_PROGRAM_CHECKIN",
+        "PAUSE_PROGRAM",
+        "RESUME_PROGRAM"
+      ],
+      "ai_use_cases": [
+        "COACHING_SUPPORT"
+      ],
+      "skills": [
+        "PROGRAM_COACHING_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "LOCAL_DRAFT"
+    },
+    {
+      "ui_id": "UI-06",
+      "title": "我的会员",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_COMMERCE",
+      "supporting_domains": [
+        "SERVICE_OS"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-06.tsx",
+      "projection": "MembershipProjection",
+      "named_actions": [
+        "SUBMIT_RENEWAL_INTENT"
+      ],
+      "ai_use_cases": [
+        "BENEFIT_EXPLANATION"
+      ],
+      "skills": [
+        "ENTITLEMENT_EXPLANATION_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-07",
+      "title": "成长测评入口",
+      "loop": "ASSESSMENT",
+      "primary_domain": "GROWTH_INTELLIGENCE",
+      "supporting_domains": [
+        "FAMILY_CORE"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-07.tsx",
+      "projection": "AssessmentCatalogProjection",
+      "named_actions": [
+        "START_ASSESSMENT"
+      ],
+      "ai_use_cases": [
+        "ASSESSMENT_ROUTING"
+      ],
+      "skills": [
+        "ASSESSMENT_ROUTING_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-08",
+      "title": "成长报告",
+      "loop": "ASSESSMENT",
+      "primary_domain": "GROWTH_INTELLIGENCE",
+      "supporting_domains": [
+        "FAMILY_CONTEXT",
+        "GROWTH_JOURNEY"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-08.tsx",
+      "projection": "GrowthReportProjection",
+      "named_actions": [
+        "ACKNOWLEDGE_GROWTH_REPORT"
+      ],
+      "ai_use_cases": [
+        "REPORT_EXPLANATION",
+        "PROGRESS_INTERPRETATION"
+      ],
+      "skills": [
+        "REPORT_INTERPRETATION_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-09",
+      "title": "今日成长任务",
+      "loop": "GROWTH",
+      "primary_domain": "GROWTH_JOURNEY",
+      "supporting_domains": [
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-09.tsx",
+      "projection": "TodayTaskProjection",
+      "named_actions": [
+        "START_GROWTH_ACTION",
+        "COMPLETE_GROWTH_ACTION",
+        "RECORD_REFLECTION",
+        "SKIP_GROWTH_ACTION"
+      ],
+      "ai_use_cases": [
+        "DAILY_COACH"
+      ],
+      "skills": [
+        "MICRO_ACTION_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "TEST_LOOP_FIXTURE"
+    },
+    {
+      "ui_id": "UI-10",
+      "title": "孩子成长小助手",
+      "loop": "GROWTH",
+      "primary_domain": "GROWTH_JOURNEY",
+      "supporting_domains": [
+        "FAMILY_CORE",
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-10.tsx",
+      "projection": "ChildAssistantProjection",
+      "named_actions": [
+        "SAVE_CHILD_PERSPECTIVE_DRAFT",
+        "REQUEST_HUMAN_HELP"
+      ],
+      "ai_use_cases": [
+        "CHILD_FRIENDLY_COACH"
+      ],
+      "skills": [
+        "CHILD_PARTICIPATION_SKILL",
+        "SAFETY_ESCALATION_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "GATE_BOUNDARY"
+    },
+    {
+      "ui_id": "UI-11",
+      "title": "我们的成长节奏",
+      "loop": "GROWTH",
+      "primary_domain": "FAMILY_CONTEXT",
+      "supporting_domains": [
+        "GROWTH_JOURNEY"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-11.tsx",
+      "projection": "GrowthRhythmProjection",
+      "named_actions": [
+        "PAUSE_JOURNEY",
+        "RESUME_JOURNEY"
+      ],
+      "ai_use_cases": [
+        "CONTEXT_SUMMARY"
+      ],
+      "skills": [
+        "PROGRESS_CONTEXT_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-12",
+      "title": "成长故事卡",
+      "loop": "COMMUNITY",
+      "primary_domain": "FAMILY_CONTEXT",
+      "supporting_domains": [
+        "CONTENT_COMMUNITY"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-12.tsx",
+      "projection": "GrowthStoryProjection",
+      "named_actions": [
+        "SAVE_PRIVATE_GROWTH_STORY",
+        "CREATE_SHARE_DRAFT"
+      ],
+      "ai_use_cases": [
+        "STORY_DRAFT"
+      ],
+      "skills": [
+        "GROWTH_STORY_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "LOCAL_DRAFT"
+    },
+    {
+      "ui_id": "UI-13",
+      "title": "家庭成长商城",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_COMMERCE",
+      "supporting_domains": [
+        "GROWTH_INTELLIGENCE"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-13.tsx",
+      "projection": "ResourceCatalogProjection",
+      "named_actions": [
+        "NONE"
+      ],
+      "ai_use_cases": [
+        "RESOURCE_RECOMMENDATION"
+      ],
+      "skills": [
+        "RESOURCE_MATCH_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "READ_ONLY_OR_DRAFT_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-14",
+      "title": "成长方案详情",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_COMMERCE",
+      "supporting_domains": [
+        "GROWTH_JOURNEY"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-14.tsx",
+      "projection": "ResourceDetailProjection",
+      "named_actions": [
+        "SUBMIT_ORDER_INTENT",
+        "CANCEL_ORDER_INTENT"
+      ],
+      "ai_use_cases": [
+        "RESOURCE_FIT_EXPLANATION"
+      ],
+      "skills": [
+        "RESOURCE_FIT_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "TEST_LOOP_FIXTURE"
+    },
+    {
+      "ui_id": "UI-15",
+      "title": "邀请有礼",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_COMMERCE",
+      "supporting_domains": [
+        "CONTENT_COMMUNITY"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-15.tsx",
+      "projection": "InvitationProjection",
+      "named_actions": [
+        "CREATE_INVITATION_DRAFT",
+        "CANCEL_INVITATION_DRAFT"
+      ],
+      "ai_use_cases": [],
+      "skills": [],
+      "ai_control_plane": "NONE",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "TEST_LOOP_FIXTURE"
+    },
+    {
+      "ui_id": "UI-16",
+      "title": "家庭同行计划",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_COMMERCE",
+      "supporting_domains": [
+        "GROWTH_JOURNEY"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-16.tsx",
+      "projection": "CohortIntentProjection",
+      "named_actions": [
+        "SAVE_COHORT_INTENT",
+        "CANCEL_COHORT_INTENT"
+      ],
+      "ai_use_cases": [],
+      "skills": [],
+      "ai_control_plane": "NONE",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "TEST_LOOP_FIXTURE"
+    },
+    {
+      "ui_id": "UI-17",
+      "title": "成长积分",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_COMMERCE",
+      "supporting_domains": [
+        "GROWTH_JOURNEY",
+        "SERVICE_OS"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-17.tsx",
+      "projection": "PointsProjection",
+      "named_actions": [
+        "CLAIM_POINTS_TASK"
+      ],
+      "ai_use_cases": [],
+      "skills": [],
+      "ai_control_plane": "NONE",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "GATE_BOUNDARY"
+    },
+    {
+      "ui_id": "UI-18",
+      "title": "会员中心",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_COMMERCE",
+      "supporting_domains": [
+        "SERVICE_OS"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-18.tsx",
+      "projection": "MembershipCenterProjection",
+      "named_actions": [
+        "SUBMIT_RENEWAL_INTENT",
+        "CONSUME_MEMBERSHIP_BENEFIT"
+      ],
+      "ai_use_cases": [
+        "BENEFIT_EXPLANATION"
+      ],
+      "skills": [
+        "ENTITLEMENT_EXPLANATION_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-19",
+      "title": "名师专区",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "supporting_domains": [
+        "GROWTH_INTELLIGENCE"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-19.tsx",
+      "projection": "ExpertCatalogProjection",
+      "named_actions": [
+        "NONE"
+      ],
+      "ai_use_cases": [
+        "EXPERT_ROUTING"
+      ],
+      "skills": [
+        "EXPERT_ROUTING_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "READ_ONLY_OR_DRAFT_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-20",
+      "title": "名师详情",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "supporting_domains": [
+        "RESOURCE_COMMERCE"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-20.tsx",
+      "projection": "ExpertDetailProjection",
+      "named_actions": [
+        "NONE"
+      ],
+      "ai_use_cases": [
+        "SERVICE_FIT_EXPLANATION"
+      ],
+      "skills": [
+        "SERVICE_FIT_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "READ_ONLY_OR_DRAFT_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-21",
+      "title": "在线咨询预约",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "supporting_domains": [
+        "FAMILY_CORE"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-21.tsx",
+      "projection": "ConsultationBookingProjection",
+      "named_actions": [
+        "REQUEST_SERVICE_BOOKING",
+        "CANCEL_SERVICE_BOOKING"
+      ],
+      "ai_use_cases": [
+        "SERVICE_INTAKE_ASSIST"
+      ],
+      "skills": [
+        "SERVICE_INTAKE_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "TEST_LOOP_FIXTURE"
+    },
+    {
+      "ui_id": "UI-22",
+      "title": "沙龙活动",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "supporting_domains": [
+        "RESOURCE_COMMERCE"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-22.tsx",
+      "projection": "ActivityCatalogProjection",
+      "named_actions": [
+        "NONE"
+      ],
+      "ai_use_cases": [
+        "ACTIVITY_RECOMMENDATION"
+      ],
+      "skills": [
+        "RESOURCE_MATCH_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "READ_ONLY_OR_DRAFT_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-23",
+      "title": "活动详情",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "supporting_domains": [
+        "FAMILY_CORE"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-23.tsx",
+      "projection": "ActivityDetailProjection",
+      "named_actions": [
+        "SAVE_ACTIVITY_INTENT",
+        "CANCEL_ACTIVITY_INTENT"
+      ],
+      "ai_use_cases": [],
+      "skills": [],
+      "ai_control_plane": "NONE",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "TEST_LOOP_FIXTURE"
+    },
+    {
+      "ui_id": "UI-24",
+      "title": "我的咨询与活动",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "supporting_domains": [
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-24.tsx",
+      "projection": "MyConsultationsProjection",
+      "named_actions": [
+        "NONE"
+      ],
+      "ai_use_cases": [
+        "SERVICE_SUMMARY"
+      ],
+      "skills": [
+        "SERVICE_SUMMARY_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "READ_ONLY_OR_DRAFT_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-25",
+      "title": "家长社区",
+      "loop": "COMMUNITY",
+      "primary_domain": "CONTENT_COMMUNITY",
+      "supporting_domains": [
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-25.tsx",
+      "projection": "CommunityFeedProjection",
+      "named_actions": [
+        "BOOKMARK_CONTENT"
+      ],
+      "ai_use_cases": [
+        "CONTENT_RECOMMENDATION"
+      ],
+      "skills": [
+        "CONTENT_ROUTING_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "GATE_BOUNDARY"
+    },
+    {
+      "ui_id": "UI-26",
+      "title": "发布家庭小记",
+      "loop": "COMMUNITY",
+      "primary_domain": "CONTENT_COMMUNITY",
+      "supporting_domains": [
+        "FAMILY_CORE"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-26.tsx",
+      "projection": "FamilyNoteDraftProjection",
+      "named_actions": [
+        "SAVE_FAMILY_NOTE_DRAFT",
+        "SUBMIT_NOTE_FOR_REVIEW"
+      ],
+      "ai_use_cases": [
+        "PRIVATE_NOTE_TAGGING"
+      ],
+      "skills": [
+        "PRIVATE_NOTE_TAG_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "TEST_LOOP_FIXTURE"
+    },
+    {
+      "ui_id": "UI-27",
+      "title": "家庭小记详情",
+      "loop": "COMMUNITY",
+      "primary_domain": "CONTENT_COMMUNITY",
+      "supporting_domains": [
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-27.tsx",
+      "projection": "FamilyNoteDetailProjection",
+      "named_actions": [
+        "SAVE_COMMUNITY_RESPONSE_DRAFT",
+        "TOGGLE_BOOKMARK",
+        "TOGGLE_FOLLOW"
+      ],
+      "ai_use_cases": [
+        "COMMENT_SAFETY_MODERATION"
+      ],
+      "skills": [
+        "COMMUNITY_SAFETY_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "NOT_IMPLEMENTED"
+    },
+    {
+      "ui_id": "UI-28",
+      "title": "我的社区",
+      "loop": "COMMUNITY",
+      "primary_domain": "CONTENT_COMMUNITY",
+      "supporting_domains": [
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-28.tsx",
+      "projection": "MyCommunityProjection",
+      "named_actions": [
+        "NONE"
+      ],
+      "ai_use_cases": [
+        "CONTEXT_SUMMARY"
+      ],
+      "skills": [
+        "CONTEXT_SUMMARY_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "READ_ONLY_OR_DRAFT_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-29",
+      "title": "成长成果",
+      "loop": "ASSESSMENT",
+      "primary_domain": "FAMILY_CONTEXT",
+      "supporting_domains": [
+        "GROWTH_INTELLIGENCE",
+        "GROWTH_JOURNEY"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-29.tsx",
+      "projection": "GrowthOutcomeProjection",
+      "named_actions": [
+        "CONFIRM_MILESTONE"
+      ],
+      "ai_use_cases": [
+        "PROGRESS_INTERPRETATION"
+      ],
+      "skills": [
+        "PROGRESS_CONTEXT_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-30",
+      "title": "年度陪伴方案",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_COMMERCE",
+      "supporting_domains": [
+        "GROWTH_JOURNEY",
+        "SERVICE_OS"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-30.tsx",
+      "projection": "AnnualCompanionProjection",
+      "named_actions": [
+        "SUBMIT_MEMBERSHIP_INTENT",
+        "SUBMIT_RENEWAL_INTENT"
+      ],
+      "ai_use_cases": [
+        "ANNUAL_PLAN_EXPLANATION"
+      ],
+      "skills": [
+        "ENTITLEMENT_EXPLANATION_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "GATE_BOUNDARY"
+    },
+    {
+      "ui_id": "UI-31",
+      "title": "我的服务",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "supporting_domains": [
+        "GROWTH_JOURNEY",
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-31.tsx",
+      "projection": "MyServicesProjection",
+      "named_actions": [
+        "NONE"
+      ],
+      "ai_use_cases": [
+        "SERVICE_NEXT_STEP"
+      ],
+      "skills": [
+        "SERVICE_SUMMARY_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "READ_ONLY_OR_DRAFT_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-32",
+      "title": "订单与资产",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_COMMERCE",
+      "supporting_domains": [
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-32.tsx",
+      "projection": "OrdersAssetsProjection",
+      "named_actions": [
+        "CANCEL_ORDER_INTENT"
+      ],
+      "ai_use_cases": [
+        "ASSET_SUMMARY"
+      ],
+      "skills": [
+        "ASSET_SUMMARY_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-33",
+      "title": "家庭档案",
+      "loop": "GROWTH",
+      "primary_domain": "FAMILY_CORE",
+      "supporting_domains": [
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-33.tsx",
+      "projection": "FamilyProfileProjection",
+      "named_actions": [
+        "UPDATE_FAMILY_PROFILE",
+        "GRANT_CONSENT",
+        "WITHDRAW_CONSENT",
+        "UPDATE_VISIBILITY"
+      ],
+      "ai_use_cases": [
+        "FAMILY_CONTEXT_SUMMARY"
+      ],
+      "skills": [
+        "CONTEXT_SUMMARY_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-34",
+      "title": "服务记录",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "supporting_domains": [
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-34.tsx",
+      "projection": "ServiceRecordsProjection",
+      "named_actions": [
+        "SUBMIT_SERVICE_FEEDBACK"
+      ],
+      "ai_use_cases": [
+        "SERVICE_RECORD_SUMMARY"
+      ],
+      "skills": [
+        "SERVICE_SUMMARY_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "READ_ONLY_PROJECTION"
+    },
+    {
+      "ui_id": "UI-35",
+      "title": "21 天智慧父母成长营",
+      "loop": "PLAN",
+      "primary_domain": "GROWTH_JOURNEY",
+      "supporting_domains": [
+        "GROWTH_INTELLIGENCE",
+        "FAMILY_CONTEXT"
+      ],
+      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-35.tsx",
+      "projection": "Program21Projection",
+      "named_actions": [
+        "START_PROGRAM",
+        "COMPLETE_GROWTH_ACTION",
+        "RECORD_STAGE_REVIEW",
+        "PAUSE_PROGRAM",
+        "RESUME_PROGRAM"
+      ],
+      "ai_use_cases": [
+        "PROGRAM_COACH",
+        "PROGRESS_INTERPRETATION"
+      ],
+      "skills": [
+        "PROGRAM_COACHING_SKILL",
+        "MICRO_ACTION_SKILL"
+      ],
+      "ai_control_plane": "FAMILY_LLM_GATEWAY",
+      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
+      "runtime_status": "TEST_LOOP_FIXTURE"
+    }
+  ]
+}

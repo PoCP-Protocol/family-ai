@@ -7,6 +7,7 @@
 // Growth Orchestration V3 运行时契约(FAMILY-GROWTH-VERTICAL-SLICE-001;禁语义别名)。
 export * from './orchestration';
 export * from './ui01-ui09-first-slice';
+export * from './family-35ui';
 
 export type FamilyStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 export type PersonType = 'PARENT' | 'CHILD';

@@ -1,0 +1,31 @@
+name: Family 35UI Alignment
+
+on:
+  pull_request:
+    paths:
+      - "50_开发_dev/apps/mobile/**"
+      - "50_开发_dev/apps/api/**"
+      - "50_开发_dev/packages/contracts/**"
+      - "50_开发_dev/governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json"
+      - "50_开发_dev/architecture/FAMILY_35UI_FULLSTACK_ARCHITECTURE_V1.md"
+      - "50_开发_dev/tools/validate-35ui-alignment.mjs"
+
+jobs:
+  alignment:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 50_开发_dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: 50_开发_dev/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm validate:35ui
+      - run: pnpm --filter @family/contracts typecheck
