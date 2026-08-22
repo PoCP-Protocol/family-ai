@@ -38,7 +38,8 @@
     "legacy:db:status": "node legacy-system/tools/legacy-db.mjs status",
     "legacy:seed:clean-small": "pnpm --filter @family/fels-contracts build && pnpm --filter @family/fels-api build && pnpm --filter @family/fels-api seed:clean-small",
     "legacy:seed:dirty-core": "pnpm --filter @family/fels-contracts build && pnpm --filter @family/fels-api build && pnpm --filter @family/fels-api seed:dirty-core",
-    "legacy:test": "pnpm --filter @family/fels-contracts test && pnpm --filter @family/fels-api test && pnpm --filter @family/fels-web test"
+    "legacy:test": "pnpm --filter @family/fels-contracts test && pnpm --filter @family/fels-api test && pnpm --filter @family/fels-web test",
+    "validate:arch:v4.1": "node tools/validate-architecture-v4-1.mjs"
   },
   "devDependencies": {
     "ajv": "^8.20.0",

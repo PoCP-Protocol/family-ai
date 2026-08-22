@@ -1,60 +1,112 @@
-schema_version: FAMILY_35UI_PROGRAM_V1
-task_id: FAMILY-35UI-FULLSTACK-REBASELINE-001
+schema_version: FAMILY_35UI_PROGRAM_V1_1
+task_id: FAMILY-AI-ARCHITECTURE-V4-1-CONVERGENCE-001
 base:
   repository: PoCP-Protocol/family-ai
   branch: main
-  sha: 708cf542ab130642f2248bbebecc997930d10a49
+  sha: f2eeacc69fff78b17f45b78a7ab631543ee8cf2a
 product_baseline:
   ui_start: UI-01
   ui_end: UI-35
   count: 35
   ai_diagnosis: KEEP
 tech_architecture:
-  ssot: architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4.md
-  id: FAMILY_AI_PLATFORM_V4
-  status: FROZEN
-  note: G0 同时冻结产品基线(35UI matrix)与技术架构(V4);二者共同成为 G1+ 施工依据。
+  ssot: architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md
+  id: FAMILY_AI_PLATFORM_V4_1
+  status: TARGET_FROZEN
+  prior: architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4.md
 governance:
   direct_push_main: NO
   auto_merge: NO
   agent_self_authorization: NO
   exact_head_review_required: YES
   docs_may_claim_more_than_code: NO
-  mobile_direct_model_provider: FORBIDDEN
-  mobile_canonical_domain_database: FORBIDDEN
+  branch_protection_required: YES
+  public_production_core_repo: REVIEW_REQUIRED
+  client_direct_model_provider: FORBIDDEN
+  second_canonical_database: FORBIDDEN
 gates:
   - id: G0
     name: PRODUCT_AND_TECH_ARCHITECTURE_FREEZE
-    scope:
-      - machine_35ui_matrix
-      - shared_contracts
-      - structural_validator
-      - current_state_gap_report
-      - tech_architecture_v4_freeze
-      - second_control_plane_inventory
+    status: PASS_CLOSED_WITH_KNOWN_G1_BLOCKERS
+
+  - id: G1-A
+    name: ARCHITECTURE_AND_CONTRACT_CONVERGENCE
     authorized: YES
-    coding_authority: [governance, architecture, shared_contracts, validators, ci, status, evidence, inventory]
-    not_authorized: [business_runtime, db_schema, api_business_impl, mobile_runtime_removal, ui_baseline_change]
-  - id: G1
+    scope:
+      - v4_1_ssot
+      - canonical_loop_vocabulary
+      - canonical_domain_split
+      - context_platform_reclassification
+      - architecture_invariants
+      - ai_use_case_registry
+      - architecture_validators
+    forbidden:
+      - business_feature_runtime
+      - database_schema_change
+      - live_external_ai
+      - ui_visual_change
+
+  - id: G1-B
+    name: RUNTIME_CONVERGENCE
+    authorized: NO
+    scope_future:
+      - mobile_thin_client
+      - remove_direct_provider_active_path
+      - retire_mobile_second_server
+      - retire_mobile_second_identity_db
+      - toolchain_convergence
+
+  - id: G1-C
+    name: DATA_AND_WORKFLOW_FOUNDATION
+    authorized: NO
+    scope_future:
+      - postgres_deployment_baseline
+      - pgvector
+      - redis
+      - object_storage
+      - transactional_outbox
+      - temporal
+
+  - id: G1-D
+    name: OBSERVABILITY_CI_CONTRACT_GENERATION
+    authorized: NO
+    scope_future:
+      - openapi_json_schema_generation
+      - opentelemetry
+      - architecture_required_gates
+      - secrets_and_supply_chain
+
+  - id: G2
+    name: AI_PLATFORM_FOUNDATION
+    authorized: NO
+
+  - id: G3
     name: FAMILY_CORE_CONTEXT
     ui: [UI-01, UI-33]
     authorized: NO
-  - id: G2
+
+  - id: G4
     name: ASSESSMENT_AI_DIAGNOSIS
     ui: [UI-02, UI-03, UI-07, UI-08]
     authorized: NO
-  - id: G3
+
+  - id: G5
     name: GROWTH_JOURNEY
     ui: [UI-04, UI-05, UI-09, UI-10, UI-11, UI-12, UI-29, UI-35]
-  - id: G4
-    name: RESOURCE_COMMERCE
-    ui: [UI-06, UI-13, UI-14, UI-15, UI-16, UI-17, UI-18, UI-30, UI-32]
-  - id: G5
-    name: SERVICE_OS
-    ui: [UI-19, UI-20, UI-21, UI-22, UI-23, UI-24, UI-31, UI-34]
+    authorized: NO
+
   - id: G6
+    name: RESOURCE_SERVICE_COMMERCE
+    ui: [UI-06, UI-13, UI-14, UI-15, UI-16, UI-17, UI-18, UI-19, UI-20, UI-21, UI-22, UI-23, UI-24, UI-30, UI-31, UI-32, UI-34]
+    authorized: NO
+
+  - id: G7
     name: CONTENT_COMMUNITY
     ui: [UI-25, UI-26, UI-27, UI-28]
-  - id: G7
-    name: CROSS_LOOP_E2E
+    authorized: NO
+
+  - id: G8
+    name: CROSS_LOOP_FULL_E2E
+    authorized: NO
+
 final_gate: FAMILY_35UI_FULLSTACK_V1_READY

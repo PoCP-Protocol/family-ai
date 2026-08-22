@@ -1,4 +1,4 @@
-import type { DevFlowReceiptSummary, ExternalEffectBoundary, FamilyBusinessLoop } from './family-growth-os';
+import type { DevFlowReceiptSummary, ExternalEffectBoundary, LegacyFamilySurfaceLoop } from './family-growth-os';
 
 export type DevPlatformSurface =
   | 'UI-11' | 'UI-12' | 'UI-13' | 'UI-14' | 'UI-15' | 'UI-16' | 'UI-17' | 'UI-18'
@@ -78,8 +78,8 @@ export interface DevFamilyLearningExchangeFeed {
 
 export interface DevPlatformSurfaceCard {
   surface: DevPlatformSurface;
-  /** Six-loop architecture metadata, sourced from FAMILY_UI_ARCHITECTURE_BINDINGS. */
-  loop: FamilyBusinessLoop;
+  /** Six-loop architecture metadata, sourced from LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS. */
+  loop: LegacyFamilySurfaceLoop;
   business_capability: string;
   primary_objects: readonly string[];
   state_boundary: ExternalEffectBoundary;
