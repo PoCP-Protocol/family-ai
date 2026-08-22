@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Body, Controller, Get, Headers, Inject, Param, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { ActorId, FamilyPlatformAuthGuard, RequireFamilyAction } from '../auth/family-platform-auth.guard';
+import { ActorId, FamilyContext, FamilyPlatformAuthGuard, RequireFamilyAction } from '../auth/family-platform-auth.guard';
 import { projectTaskCheckinResult } from '@family/contracts';
 import type { AddChildResponse, AddParentResponse, AssignLifeStageResponse, AuditMeta, BuildGrowthProfileDraftsResponse, CompleteGrowthActionResponse, CompleteGrowthReviewResponse, ConfirmGrowthPriorityResponse, ConfirmGrowthProfileResponse, ConfirmJourneyPlanResponse, CreateFamilyRelationshipResponse, CreateFamilyResponse, CreateJourneyPlanResponse, FamilyAggregateResponse, FamilyTimelineResponse, GrantConsentResponse, GrowthActionDto, GrowthInsightResponse, GrowthPriorityInsightResponse, InterventionCardDto, JourneyPlanProjection, PauseJourneyPlanResponse, PerspectiveSummaryResponse, RecordNextStepDecisionResponse, RecordOutcomeObservationResponse, RecordPerspectiveResponse, ReviewJourneyPhaseResponse, StartGrowthOnboardingResponse, StartInterventionResponse } from '@family/contracts';
 import { validateAddChildRequest } from './add-child.dto';
@@ -31,6 +31,7 @@ import { TodayService } from './today.service';
 import { DevCoreGrowthService } from './dev-core-growth.service';
 import { DevPlatformSurfacesService } from './dev-platform-surfaces.service';
 import { DevFlowReceiptService } from './dev-flow-receipt.service';
+import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.service';
 
 @Controller('families')
 @UseGuards(FamilyPlatformAuthGuard)   // PLATFORM-IAM-104:统一解析可信 actor;required 模式拒 x-actor-id-only
@@ -47,7 +48,20 @@ export class FamilyController {
     @Inject(DevCoreGrowthService) private readonly devCoreGrowthService: DevCoreGrowthService,
     @Inject(DevPlatformSurfacesService) private readonly devPlatformSurfacesService: DevPlatformSurfacesService,
     @Inject(DevFlowReceiptService) private readonly devFlowReceiptService: DevFlowReceiptService,
+    @Inject(TenantScopedUiProjectionService) private readonly tenantScopedUiProjectionService: TenantScopedUiProjectionService,
   ) {}
+
+  /** 统一 tenant-scoped UI 读取适配：实际会话 + tenant/family 双重范围，外部效果一律不执行。 */
+  @RequireFamilyAction('ReadFamily')
+  @Get(':familyId/tenant-scoped/ui-projection')
+  async tenantScopedUiProjection(
+    @Param('familyId') familyId: string,
+    @FamilyContext() familyContext: { accountId: string; familyId: string; personId: string; familyRole: string } | undefined,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    return this.tenantScopedUiProjectionService.getProjection({ familyId, accountId: familyContext.accountId });
+  }
 
   // FAMILY-ONBOARDING-001:可恢复 onboarding 状态(读模型,0 canonical 写)。
   @RequireFamilyAction('ReadFamily')
