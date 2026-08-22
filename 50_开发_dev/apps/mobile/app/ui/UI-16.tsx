@@ -3,7 +3,6 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -38,7 +37,7 @@ export default function FamilyStudyGroupScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "家庭同行计划", headerBackTitle: "返回" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
         data={products}
@@ -46,9 +45,8 @@ export default function FamilyStudyGroupScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.text }]}>和熟悉的家庭一起，按自己的节奏开始</Text>
-            <Text style={[styles.subtitle, { color: colors.muted }]}>先保存同行想法，不需要现在邀请、付款或确定开始时间。</Text>
-            <DataSourceBanner />
+            <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>拼团专区</Text><Text style={styles.more}>•••</Text></View>
+            <Text style={[styles.subtitle, { color: colors.muted }]}>多家庭一起学，更划算</Text>
             <View style={styles.filters}>
               {(["ALL", "COURSE", "MEMBERSHIP", "TOOL"] as const).map((item) => (
                 <Pressable key={item} onPress={() => setFilter(item)} style={[styles.filter, filter === item && styles.filterActive]}>
@@ -70,8 +68,8 @@ export default function FamilyStudyGroupScreen() {
                     <IconSymbol name="person.crop.circle.fill" size={24} color={item.accent} />
                   </View>
                   <View style={styles.leaderCopy}>
-                    <Text style={[styles.leaderName, { color: colors.text }]}>家庭发起人</Text>
-                    <Text style={[styles.availability, { color: colors.muted }]}>方案可见期 · 24 小时内</Text>
+                    <Text style={[styles.leaderName, { color: colors.text }]}>团长：乐乐妈妈</Text>
+                    <Text style={[styles.availability, { color: colors.muted }]}>23:45:12 后结束</Text>
                   </View>
                 </View>
                 <View style={styles.peopleArea}>
@@ -83,11 +81,11 @@ export default function FamilyStudyGroupScreen() {
               </View>
               <View style={styles.groupFooter}>
                 <View>
-                  <Text style={[styles.oldPrice, { color: colors.muted }]}>{item.listPriceLabel}</Text>
+                  <Text style={styles.groupPrice}>拼团价 {item.familyPriceLabel.replace("家庭意向 ", "")}</Text>
                   <Text style={styles.groupPrice}>{item.familyPriceLabel}</Text>
                 </View>
                 <Pressable onPress={() => void saveGroup(item, targetCount)} style={({ pressed }) => [styles.joinButton, isSaved && styles.joinButtonSaved, pressed && styles.pressed]}>
-                  <Text style={styles.joinButtonText}>{isSaved ? "已保存" : "记下同行想法"}</Text>
+                  <Text style={styles.joinButtonText}>{isSaved ? "已保存" : "去拼团"}</Text>
                 </Pressable>
               </View>
             </View>
@@ -121,14 +119,17 @@ export default function FamilyStudyGroupScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 38, gap: 12 },
-  header: { gap: 12, marginBottom: 4 },
-  title: { fontSize: 26, lineHeight: 34, fontWeight: "900" },
+  header: { gap: 5, marginBottom: 4 },
+  topBar: { minHeight: 45, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  topBack: { width: 38, height: 38, alignItems: "flex-start", justifyContent: "center" },
+  topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" },
+  more: { color: "#22272D", fontSize: 18, lineHeight: 20, fontWeight: "900", letterSpacing: 1 },
   subtitle: { fontSize: 14, lineHeight: 21 },
   filters: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#E4E9F1" },
   filter: { flex: 1, minHeight: 42, alignItems: "center", justifyContent: "center" },
   filterActive: { borderBottomWidth: 3, borderBottomColor: "#2563EB" },
   filterText: { fontSize: 12, lineHeight: 17, fontWeight: "800" },
-  groupCard: { minHeight: 190, borderWidth: 1, borderRadius: 20, padding: 15, gap: 12 },
+  groupCard: { minHeight: 166, borderWidth: 1, borderRadius: 16, padding: 15, gap: 9 },
   groupTitle: { fontSize: 18, lineHeight: 24, fontWeight: "900" },
   groupMiddle: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
   leaderRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },

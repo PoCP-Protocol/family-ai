@@ -3,7 +3,6 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -44,7 +43,7 @@ export default function TeacherDetailScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "名师详情", headerBackTitle: "名师专区" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
         data={slotRows}
@@ -53,6 +52,7 @@ export default function TeacherDetailScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>名师详情</Text><IconSymbol name="ellipsis" size={22} color="#22272D" /></View>
             <View style={styles.hero}>
               <View style={styles.heroCopy}>
                 <View style={styles.nameRow}><Text style={styles.name}>{offering.providerName}</Text><Text style={styles.dataBadge}>服务资料</Text></View>
@@ -62,7 +62,6 @@ export default function TeacherDetailScreen() {
               </View>
               <View style={styles.portrait}><Text style={styles.portraitText}>{offering.providerName.slice(0, 1)}</Text></View>
             </View>
-            <DataSourceBanner />
 
             <View style={[styles.summaryRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <SummaryCell label="家庭可见" value="已准入" color="#E49B18" />
@@ -94,8 +93,8 @@ export default function TeacherDetailScreen() {
           <View style={styles.footer}>
             <View style={[styles.review, { backgroundColor: "#FFF9EE", borderColor: "#F0D8A5" }]}><Text style={styles.reviewLabel}>家庭体验说明</Text><Text style={[styles.reviewText, { color: colors.muted }]}>先听清家庭需要，再一起讨论可尝试的行动；过程记录不代表教育结果。</Text></View>
             <View style={styles.actionRow}>
-              <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.textAction, { borderColor: colors.border }, pressed && styles.pressed]}><IconSymbol name="message.fill" size={20} color={colors.tint} /><Text style={[styles.textActionLabel, { color: colors.tint }]}>返回主题</Text></Pressable>
-              <Pressable onPress={() => router.push(`/ui/UI-21?offeringRef=${encodeURIComponent(offering.offeringRef)}&slotRef=${encodeURIComponent(selectedSlot ?? "")}` as Href)} style={({ pressed }) => [styles.bookAction, pressed && styles.pressed]}><Text style={styles.bookActionLabel}>准备一对一咨询</Text></Pressable>
+              <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.textAction, { borderColor: colors.border }, pressed && styles.pressed]}><IconSymbol name="message.fill" size={20} color={colors.tint} /><Text style={[styles.textActionLabel, { color: colors.tint }]}>在线咨询</Text></Pressable>
+              <Pressable onPress={() => router.push(`/ui/UI-21?offeringRef=${encodeURIComponent(offering.offeringRef)}&slotRef=${encodeURIComponent(selectedSlot ?? "")}` as Href)} style={({ pressed }) => [styles.bookAction, pressed && styles.pressed]}><Text style={styles.bookActionLabel}>预约 1 对 1</Text></Pressable>
             </View>
           </View>
         }
@@ -117,6 +116,7 @@ function formatSlotTime(value: string) {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 34, gap: 10 }, header: { gap: 13, marginBottom: 2 },
+  topBar: { minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, topBack: { width: 38, height: 38, alignItems: "flex-start", justifyContent: "center" }, topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" },
   hero: { minHeight: 190, borderRadius: 25, backgroundColor: "#0B5BBB", padding: 20, flexDirection: "row", alignItems: "center", overflow: "hidden" }, heroCopy: { flex: 1, gap: 6 }, nameRow: { flexDirection: "row", alignItems: "center", gap: 7 },
   name: { color: "#FFFFFF", fontSize: 29, lineHeight: 37, fontWeight: "900" }, dataBadge: { color: "#8A5A00", backgroundColor: "#FFE3A3", borderRadius: 9, paddingHorizontal: 7, paddingVertical: 3, fontSize: 10, lineHeight: 14, fontWeight: "900" }, role: { color: "#DCE8FF", fontSize: 13, lineHeight: 18, fontWeight: "700" },
   heroTags: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 5 }, heroTag: { color: "#FFFFFF", backgroundColor: "#FFFFFF20", borderRadius: 9, paddingHorizontal: 7, paddingVertical: 4, fontSize: 9, lineHeight: 13, fontWeight: "700" },

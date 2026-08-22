@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { COMMUNITY_POST_KIND_OPTIONS, COMMUNITY_TOPICS, PRIVATE_NOTE_TAG_OPTIONS, detectCommunityPrivacyRisks, type CommunityAiTagDraft, type CommunityPostKind } from "@/lib/family/community-content";
@@ -52,9 +51,9 @@ export default function PublishFamilyNoteScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "写家庭小记", headerBackTitle: "社区" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <DataSourceBanner />
+        <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>发布动态</Text><Pressable onPress={() => void saveDraft()} disabled={!canSave}><Text style={[styles.topPublish, { color: canSave ? colors.tint : colors.muted }]}>发布</Text></Pressable></View>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>选择小记类型</Text>
         <View style={styles.kindGrid}>{COMMUNITY_POST_KIND_OPTIONS.map((item) => <Pressable key={item.id} onPress={() => setKind(item.id)} style={({ pressed }) => [styles.kindCard, { backgroundColor: kind === item.id ? `${item.accent}14` : colors.surface, borderColor: kind === item.id ? item.accent : colors.border }, pressed && styles.pressed]}><IconSymbol name={item.id === "GROWTH_CHECKIN" ? "checkmark.circle.fill" : item.id === "MILESTONE" ? "star.fill" : item.id === "HELP_REFLECTION" ? "message.fill" : "book.fill"} size={25} color={item.accent} /><Text style={[styles.kindText, { color: kind === item.id ? item.accent : colors.text }]}>{item.label}</Text></Pressable>)}</View>
 
@@ -83,7 +82,7 @@ export default function PublishFamilyNoteScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 42, gap: 13 }, sectionTitle: { fontSize: 16, lineHeight: 23, fontWeight: "900" },
+  content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 42, gap: 13 }, topBar: { minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, topBack: { width: 38, height: 38, alignItems: "flex-start", justifyContent: "center" }, topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" }, topPublish: { fontSize: 15, lineHeight: 21, fontWeight: "900" }, sectionTitle: { fontSize: 16, lineHeight: 23, fontWeight: "900" },
   kindGrid: { flexDirection: "row", gap: 8 }, kindCard: { flex: 1, minHeight: 79, borderWidth: 1.5, borderRadius: 17, alignItems: "center", justifyContent: "center", gap: 7, paddingHorizontal: 5 }, kindText: { fontSize: 10, lineHeight: 14, fontWeight: "900", textAlign: "center" },
   inputCard: { minHeight: 82, borderWidth: 1, borderRadius: 18, padding: 13, gap: 6 }, bodyCard: { minHeight: 190, borderWidth: 1, borderRadius: 18, padding: 13, gap: 7 }, inputHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, inputLabel: { fontSize: 12, lineHeight: 18, fontWeight: "900" }, counter: { fontSize: 9, lineHeight: 13 }, titleInput: { fontSize: 14, lineHeight: 21, paddingVertical: 5 }, bodyInput: { minHeight: 128, fontSize: 13, lineHeight: 21, paddingVertical: 3 },
   mediaPanel: { minHeight: 84, borderWidth: 1, borderRadius: 18, padding: 13, flexDirection: "row", alignItems: "center", gap: 11 }, mediaIcon: { width: 54, height: 54, borderRadius: 16, backgroundColor: "#E9EEF5", alignItems: "center", justifyContent: "center" }, mediaCopy: { flex: 1, gap: 3 }, mediaTitle: { fontSize: 13, lineHeight: 18, fontWeight: "900" }, mediaText: { fontSize: 10, lineHeight: 16 },

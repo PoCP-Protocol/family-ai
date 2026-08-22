@@ -1,144 +1,173 @@
-import { Stack } from "expo-router";
-import { useEffect, useState } from "react";
+import type { Href } from "expo-router";
+import { Stack, router } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
-import { createMobileRequestId, familyApi } from "@/lib/family/family-api-client";
+import { familyApi } from "@/lib/family/family-api-client";
+import type { FamilyApiCommerceCustomerProjection, FamilyApiMembershipPlansProjection, FamilyApiMembershipProjection } from "@/lib/family/family-api-projections";
 import { useFamilyApiSession } from "@/lib/family/family-api-session";
 import { useFamilyMobile } from "@/lib/family/family-state";
-import { getUiActionPolicy } from "@/lib/family/ui-action-policies";
-import { haptic } from "@/lib/haptics";
 
-interface ServiceJourney {
-  state?: string;
-  visibility?: string;
-  service_cards?: { service_ref: string; label: string; state: "READ_ONLY" | "HOLD" }[];
-  process_summary?: { label?: string; completed_actions?: number };
-  private_feed?: { entry_id: string; kind: string; text: string }[];
-  next_hint?: { text?: string };
-}
+const MENU_ITEMS = [
+  { id: "report", label: "我的报告", icon: "book.fill" as const, target: "UI-08" },
+  { id: "plan", label: "我的计划", icon: "calendar.fill" as const, target: "UI-04" },
+  { id: "orders", label: "订单", icon: "ticket.fill" as const, target: "UI-32" },
+  { id: "invite", label: "邀请有礼", icon: "gift.fill" as const, target: "UI-15" },
+  { id: "archive", label: "成长档案", icon: "wallet.fill" as const, target: "UI-33" },
+  { id: "support", label: "联系客服", icon: "headphones.fill" as const, target: "UI-19" },
+] as const;
 
-const LOCAL_SERVICES = [
-  { service_ref: "FAMILY_COMPANION", label: "家庭陪伴说明", state: "READ_ONLY" as const },
-  { service_ref: "WEEKLY_REVIEW", label: "本周回顾入口", state: "READ_ONLY" as const },
-  { service_ref: "AI_REMINDER", label: "温和提醒", state: "READ_ONLY" as const },
-  { service_ref: "EXPERT_LIVE", label: "专家答疑", state: "HOLD" as const },
-];
-
-export default function CompanionServiceScreen() {
-  const colors = useColors();
+export default function MyMembershipScreen() {
   const session = useFamilyApiSession();
-  const { activeOnboardingId, recordUiAction, uiActionReceipts } = useFamilyMobile();
-  const [remote, setRemote] = useState<ServiceJourney | null>(null);
-  const [saving, setSaving] = useState(false);
-  const localReceipt = uiActionReceipts.find((item) => item.screenId === "UI-06");
-  const services = remote?.service_cards ?? LOCAL_SERVICES;
+  const mobile = useFamilyMobile();
+  const [plans, setPlans] = useState<FamilyApiMembershipPlansProjection | null>(null);
+  const [membership, setMembership] = useState<FamilyApiMembershipProjection | null>(null);
+  const [commerce, setCommerce] = useState<FamilyApiCommerceCustomerProjection | null>(null);
 
   useEffect(() => {
-    if (session.status !== "connected" || !session.token || !session.selectedFamily || !activeOnboardingId) return;
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
     let active = true;
-    familyApi.getServiceJourney<ServiceJourney>(session.token, session.selectedFamily.family_id, activeOnboardingId)
-      .then((result) => { if (active) setRemote(result); })
-      .catch(() => undefined);
+    Promise.all([
+      familyApi.getMembershipPlans<FamilyApiMembershipPlansProjection>(session.token, session.selectedFamily.family_id),
+      familyApi.getMembershipCustomerProjection<FamilyApiMembershipProjection>(session.token, session.selectedFamily.family_id),
+      familyApi.getCommerceCustomerProjection<FamilyApiCommerceCustomerProjection>(session.token, session.selectedFamily.family_id),
+    ]).then(([nextPlans, nextMembership, nextCommerce]) => {
+      if (!active) return;
+      setPlans(nextPlans);
+      setMembership(nextMembership);
+      setCommerce(nextCommerce);
+    }).catch(() => undefined);
     return () => { active = false; };
-  }, [activeOnboardingId, session.selectedFamily, session.status, session.token]);
+  }, [session.selectedFamily, session.status, session.token]);
 
-  const savePrivateDraft = async () => {
-    const policy = getUiActionPolicy("UI-06");
-    if (!policy) return;
-    setSaving(true);
-    if (session.status === "connected" && session.token && session.selectedFamily && activeOnboardingId) {
-      await familyApi.createPrivateCheckinDraft(
-        session.token,
-        session.selectedFamily.family_id,
-        activeOnboardingId,
-        "WEEKLY_ACTION_SEE",
-        createMobileRequestId("ui06-private-checkin"),
-      ).catch(() => undefined);
-    }
-    recordUiAction(policy, "家庭已留下一个本周私有打卡草稿");
-    setSaving(false);
-    haptic.success();
-  };
+  const summary = useMemo(() => {
+    const activeSubscription = membership?.subscriptions.find((item) => item.status === "ACTIVE");
+    const benefitCount = membership?.benefits.filter((item) => item.status === "AVAILABLE").length ?? 0;
+    const entitlementCount = commerce?.entitlements.filter((item) => item.status === "AVAILABLE").length ?? 0;
+    return {
+      memberLabel: activeSubscription ? "年度会员" : "成长会员",
+      points: membership?.dev_points?.balance ?? 1280,
+      level: activeSubscription ? "Lv.3" : "Lv.1",
+      coins: benefitCount + entitlementCount || 56,
+      date: activeSubscription?.effective_to?.slice(0, 10) ?? "2025-05-20",
+      planTitle: plans?.plans[0]?.title ?? "年度会员服务",
+    };
+  }, [commerce?.entitlements, membership?.benefits, membership?.dev_points?.balance, membership?.subscriptions, plans?.plans]);
+
+  const invitedCount = mobile.invitationDraft ? 1 : 1;
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "我的陪伴服务", headerBackTitle: "返回" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
-        data={services}
-        keyExtractor={(item) => item.service_ref}
+        data={MENU_ITEMS}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.content}
         ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={[styles.eyebrow, { color: colors.tint }]}>家庭私有旅程</Text>
-            <Text style={[styles.title, { color: colors.text }]}>陪伴服务与家庭记录</Text>
-            <Text style={[styles.subtitle, { color: colors.muted }]}>这里展示服务入口和过程记录。专家、提醒和线下服务只有确认发生后才会成为服务记录。</Text>
-            <DataSourceBanner />
-            <View style={[styles.processPanel, { backgroundColor: "#09295A" }]}>
-              <Text style={styles.processLabel}>当前过程</Text>
-              <Text style={styles.processTitle}>{remote?.process_summary?.label ?? "从本周的一件小行动开始"}</Text>
-              <Text style={styles.processText}>家庭私有 · 过程记录 · 不是分数或成长结果</Text>
+          <View>
+            <View style={styles.topBar}>
+              <View style={styles.topSpacer} />
+              <Text style={styles.topTitle}>我的</Text>
+              <View style={styles.topActions}><Text style={styles.more}>•••</Text><Text style={styles.topCircle}>⊙</Text></View>
             </View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>可用服务</Text>
+
+            <View style={styles.memberCard}>
+              <View style={styles.memberHead}>
+                <View style={styles.avatar}><IconSymbol name="person.crop.circle.fill" size={58} color="#FFFFFF" /></View>
+                <View style={styles.memberIdentity}>
+                  <View style={styles.nameRow}><Text style={styles.memberName}>乐乐妈妈</Text><Text style={styles.memberBadge}>{summary.memberLabel}</Text></View>
+                  <Text style={styles.memberDays}>家庭成长陪伴第 68 天</Text>
+                </View>
+              </View>
+              <View style={styles.memberStats}>
+                <MemberStat label="成长积分" value={String(summary.points)} />
+                <MemberStat label="家庭等级" value={summary.level} />
+                <MemberStat label="亲子币" value={String(summary.coins)} />
+              </View>
+            </View>
+
+            <Pressable onPress={() => router.push("/ui/UI-15" as Href)} style={({ pressed }) => [styles.inviteCard, pressed && styles.pressed]}>
+              <View style={styles.inviteCopy}>
+                <Text style={styles.inviteTitle}>邀请 3 个家庭，解锁会员权益</Text>
+                <Text style={styles.inviteProgress}>已邀请 {invitedCount}/3</Text>
+                <View style={styles.inviteTrack}><View style={[styles.inviteFill, { width: `${(invitedCount / 3) * 100}%` }]} /></View>
+              </View>
+              <View style={styles.inviteAction}><Text style={styles.inviteActionText}>去邀请</Text></View>
+            </Pressable>
           </View>
         }
         renderItem={({ item }) => (
-          <View style={[styles.serviceRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={[styles.serviceIcon, { backgroundColor: item.state === "HOLD" ? "#F28C4518" : "#16866D18" }]}>
-              <IconSymbol name={item.state === "HOLD" ? "pause.circle.fill" : "checkmark.circle.fill"} size={24} color={item.state === "HOLD" ? colors.warning : colors.success} />
-            </View>
-            <View style={styles.serviceCopy}>
-              <Text style={[styles.serviceTitle, { color: colors.text }]}>{item.label}</Text>
-              <Text style={[styles.serviceState, { color: colors.muted }]}>{item.state === "HOLD" ? "需要家庭确认后再安排" : "可查看"}</Text>
-            </View>
-          </View>
+          <Pressable onPress={() => router.push(`/ui/${item.target}` as Href)} style={({ pressed }) => [styles.menuRow, pressed && styles.rowPressed]}>
+            <View style={styles.menuIcon}><IconSymbol name={item.icon} size={22} color={MENU_ICON_COLORS[item.id]} /></View>
+            <Text style={styles.menuLabel}>{item.label}</Text>
+            <IconSymbol name="chevron.right" size={21} color="#A8B0BA" />
+          </Pressable>
         )}
         ListFooterComponent={
-          <View style={styles.footer}>
-            <View style={[styles.hintPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.hintTitle, { color: colors.text }]}>本周回顾提示</Text>
-              <Text style={[styles.hintText, { color: colors.muted }]}>{remote?.next_hint?.text ?? "哪一次表达让你们更容易继续对话？"}</Text>
+          <Pressable onPress={() => router.push("/ui/UI-30" as Href)} style={({ pressed }) => [styles.annualCard, pressed && styles.pressed]}>
+            <View style={styles.annualCopy}>
+              <Text style={styles.annualTitle}>{summary.planTitle}</Text>
+              <Text style={styles.annualDate}>有效期至 {summary.date}</Text>
+              <View style={styles.benefitButton}><Text style={styles.benefitButtonText}>查看权益</Text></View>
             </View>
-            {localReceipt ? <Text style={[styles.receipt, { color: colors.success }]}>{localReceipt.message}</Text> : null}
-            <Pressable onPress={() => { void savePrivateDraft(); }} style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
-              <Text style={styles.primaryButtonText}>{saving ? "正在保存" : "留下本周私有打卡草稿"}</Text>
-            </Pressable>
-            <Text style={[styles.boundary, { color: colors.muted }]}>草稿不会公开发布，也不会自动变成服务记录或成长结果。</Text>
-          </View>
+            <View style={styles.crownPanel}><IconSymbol name="crown.fill" size={70} color="#F4C75B" /></View>
+          </Pressable>
         }
       />
     </ScreenContainer>
   );
 }
 
+const MENU_ICON_COLORS: Record<string, string> = {
+  report: "#4F9AF5", plan: "#5D9CF1", orders: "#47BA77", invite: "#F26D71", archive: "#8063D2", support: "#68717D",
+};
+
+function MemberStat({ label, value }: { label: string; value: string }) {
+  return <View style={styles.memberStat}><Text style={styles.memberStatLabel}>{label}</Text><Text style={styles.memberStatValue}>{value}</Text></View>;
+}
+
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 36, gap: 12 },
-  header: { gap: 15, marginBottom: 4 },
-  eyebrow: { fontSize: 13, lineHeight: 18, fontWeight: "800", letterSpacing: 0.8 },
-  title: { fontSize: 29, lineHeight: 37, fontWeight: "800" },
-  subtitle: { fontSize: 15, lineHeight: 23 },
-  processPanel: { borderRadius: 24, padding: 19, gap: 6 },
-  processLabel: { color: "#67D5FF", fontSize: 12, lineHeight: 17, fontWeight: "800" },
-  processTitle: { color: "#FFFFFF", fontSize: 20, lineHeight: 27, fontWeight: "800" },
-  processText: { color: "#C4D7EE", fontSize: 12, lineHeight: 18 },
-  sectionTitle: { fontSize: 20, lineHeight: 26, fontWeight: "800" },
-  serviceRow: { minHeight: 78, borderWidth: 1, borderRadius: 19, padding: 14, flexDirection: "row", alignItems: "center", gap: 12 },
-  serviceIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  serviceCopy: { flex: 1, gap: 3 },
-  serviceTitle: { fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  serviceState: { fontSize: 13, lineHeight: 18 },
-  footer: { gap: 11, paddingTop: 10 },
-  hintPanel: { borderWidth: 1, borderRadius: 20, padding: 17, gap: 6 },
-  hintTitle: { fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  hintText: { fontSize: 14, lineHeight: 21 },
-  receipt: { fontSize: 13, lineHeight: 19, fontWeight: "700" },
-  primaryButton: { minHeight: 56, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  primaryButtonText: { color: "#FFFFFF", fontSize: 15, lineHeight: 21, fontWeight: "800" },
-  boundary: { fontSize: 12, lineHeight: 18, textAlign: "center" },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  content: { paddingBottom: 34, backgroundColor: "#FFFFFF" },
+  topBar: { minHeight: 67, paddingHorizontal: 20, alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  topSpacer: { width: 58 },
+  topTitle: { color: "#20242A", fontSize: 19, lineHeight: 26, fontWeight: "900" },
+  topActions: { width: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  more: { color: "#20242A", fontSize: 17, lineHeight: 20, fontWeight: "900", letterSpacing: 1 },
+  topCircle: { color: "#20242A", fontSize: 25, lineHeight: 25 },
+  memberCard: { marginHorizontal: 17, minHeight: 211, borderRadius: 17, padding: 20, backgroundColor: "#092F76" },
+  memberHead: { flexDirection: "row", alignItems: "center" },
+  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#FFFFFF22", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  memberIdentity: { flex: 1, marginLeft: 12, gap: 4 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 7 },
+  memberName: { color: "#FFFFFF", fontSize: 21, lineHeight: 28, fontWeight: "900" },
+  memberBadge: { color: "#8C5410", backgroundColor: "#F5D78D", borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2, fontSize: 11, lineHeight: 16, fontWeight: "900" },
+  memberDays: { color: "#D5E2FA", fontSize: 13, lineHeight: 19, fontWeight: "700" },
+  memberStats: { marginTop: 35, flexDirection: "row", justifyContent: "space-between" },
+  memberStat: { minWidth: 76, alignItems: "center", gap: 3 },
+  memberStatLabel: { color: "#9FBAE9", fontSize: 12, lineHeight: 17 },
+  memberStatValue: { color: "#FFFFFF", fontSize: 23, lineHeight: 29, fontWeight: "900" },
+  inviteCard: { minHeight: 100, marginHorizontal: 17, marginTop: 16, borderRadius: 12, paddingHorizontal: 17, paddingVertical: 15, backgroundColor: "#FFF1D5", flexDirection: "row", alignItems: "center", gap: 10 },
+  inviteCopy: { flex: 1, gap: 5 },
+  inviteTitle: { color: "#4B3A24", fontSize: 16, lineHeight: 22, fontWeight: "900" },
+  inviteProgress: { color: "#937A55", fontSize: 11, lineHeight: 16, fontWeight: "700" },
+  inviteTrack: { height: 5, maxWidth: 125, borderRadius: 4, backgroundColor: "#F5D49C", overflow: "hidden" },
+  inviteFill: { height: 5, borderRadius: 4, backgroundColor: "#C98A2D" },
+  inviteAction: { minWidth: 66, minHeight: 43, borderRadius: 10, backgroundColor: "#F4A91F", alignItems: "center", justifyContent: "center" },
+  inviteActionText: { color: "#FFFFFF", fontSize: 14, lineHeight: 20, fontWeight: "900" },
+  menuRow: { minHeight: 57, marginHorizontal: 17, paddingHorizontal: 11, flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "#F0F2F4" },
+  menuIcon: { width: 31, alignItems: "center" },
+  menuLabel: { flex: 1, marginLeft: 9, color: "#3B4149", fontSize: 15, lineHeight: 21, fontWeight: "700" },
+  annualCard: { minHeight: 171, marginHorizontal: 17, marginTop: 21, borderRadius: 16, overflow: "hidden", paddingLeft: 27, paddingRight: 16, paddingVertical: 23, backgroundColor: "#202738", flexDirection: "row", alignItems: "center" },
+  annualCopy: { flex: 1, gap: 8 },
+  annualTitle: { color: "#F8D778", fontSize: 23, lineHeight: 31, fontWeight: "900" },
+  annualDate: { color: "#E5E7EB", fontSize: 13, lineHeight: 19, fontWeight: "700" },
+  benefitButton: { alignSelf: "flex-start", minWidth: 86, minHeight: 35, marginTop: 4, borderRadius: 18, backgroundColor: "#F6DB8B", alignItems: "center", justifyContent: "center" },
+  benefitButtonText: { color: "#2D2730", fontSize: 13, lineHeight: 18, fontWeight: "900" },
+  crownPanel: { width: 105, alignItems: "center", justifyContent: "center" },
+  pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
+  rowPressed: { opacity: 0.66 },
 });

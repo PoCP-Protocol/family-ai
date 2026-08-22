@@ -1,9 +1,8 @@
 import type { Href } from "expo-router";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
@@ -92,13 +91,12 @@ export default function ConsultationBookingScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "在线咨询 / 预约", headerBackTitle: "名师详情" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>在线咨询 / 预约</Text><Text style={styles.topMore}>↗</Text></View>
         <View style={styles.steps}>
           {["选择方式", "选择时间", "填写信息", "确认需求"].map((label, index) => <View key={label} style={styles.step}><View style={[styles.stepCircle, { backgroundColor: index === 0 ? colors.tint : colors.surface, borderColor: index === 0 ? colors.tint : colors.border }]}><Text style={[styles.stepNumber, { color: index === 0 ? "#FFFFFF" : colors.muted }]}>{index + 1}</Text></View><Text style={[styles.stepLabel, { color: index === 0 ? colors.text : colors.muted }]}>{label}</Text></View>)}
         </View>
-
-        <DataSourceBanner />
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>选择咨询方式</Text>
         <View style={styles.channelGrid}>{CHANNELS.map((item) => <Pressable key={item.id} onPress={() => setChannel(item.id)} style={({ pressed }) => [styles.channelCard, { backgroundColor: colors.surface, borderColor: channel === item.id ? colors.tint : colors.border }, pressed && styles.pressed]}><View style={[styles.channelIcon, { backgroundColor: channel === item.id ? "#2563EB18" : "#8794A515" }]}><IconSymbol name={item.icon} size={24} color={channel === item.id ? colors.tint : colors.muted} /></View><View style={styles.channelCopy}><Text style={[styles.channelLabel, { color: colors.text }]}>{item.label}</Text><Text style={[styles.channelDetail, { color: colors.muted }]}>{item.detail}</Text></View></Pressable>)}</View>
@@ -124,8 +122,9 @@ export default function ConsultationBookingScreen() {
 
         {submitState === "saved" || state.consultationNeedDraft?.offeringRef === offering.offeringRef ? <View style={[styles.receipt, { backgroundColor: "#16866D12", borderColor: colors.success }]}><IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} /><View style={styles.receiptCopy}><Text style={[styles.receiptTitle, { color: colors.success }]}>咨询需求已记下</Text><Text style={[styles.receiptText, { color: colors.muted }]}>当前没有向外部联系人发消息；你可以在“我的咨询与活动”里回看。</Text></View></View> : submitState === "error" ? <Text style={[styles.error, { color: colors.error }]}>暂时无法同步，但本机的家庭私有草稿已经保留。</Text> : null}
 
-        <Pressable disabled={submitState === "submitting"} onPress={saveConsultationNeed} style={({ pressed }) => [styles.confirmAction, { backgroundColor: colors.tint }, pressed && styles.pressed]}><Text style={styles.confirmText}>{submitState === "submitting" ? "正在保存" : "确认并保存咨询需求"}</Text></Pressable>
+        <Pressable disabled={submitState === "submitting"} onPress={saveConsultationNeed} style={({ pressed }) => [styles.confirmAction, { backgroundColor: colors.tint }, pressed && styles.pressed, submitState === "submitting" && styles.disabled]}>{submitState === "submitting" ? <View style={styles.loadingContent}><ActivityIndicator size="small" color="#FFFFFF" /><Text style={styles.confirmText}>正在保存</Text></View> : <Text style={styles.confirmText}>确认预约</Text>}</Pressable>
         <Pressable onPress={() => router.push("/ui/UI-24" as Href)} style={({ pressed }) => [styles.recordsAction, pressed && styles.pressed]}><Text style={[styles.recordsText, { color: colors.tint }]}>查看我的咨询与活动</Text><IconSymbol name="chevron.right" size={18} color={colors.tint} /></Pressable>
+        <Modal transparent visible={submitState === "saved"} animationType="fade" onRequestClose={() => setSubmitState("idle")}><View style={styles.modalScrim}><View style={styles.successModal}><IconSymbol name="checkmark.circle.fill" size={44} color={colors.success} /><Text style={styles.successTitle}>咨询需求已保存</Text><Text style={styles.successText}>已记录在家庭私有空间。当前没有联系专家、确认时段或发送通知。</Text><Pressable onPress={() => setSubmitState("idle")} style={styles.successAction}><Text style={styles.successActionText}>我知道了</Text></Pressable></View></View></Modal>
       </ScrollView>
     </ScreenContainer>
   );
@@ -138,10 +137,10 @@ function formatSlot(value: string) {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 17, paddingTop: 12, paddingBottom: 38, gap: 14 }, steps: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }, step: { width: "24%", alignItems: "center", gap: 5 }, stepCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" }, stepNumber: { fontSize: 11, fontWeight: "900" }, stepLabel: { fontSize: 9, lineHeight: 13, fontWeight: "700", textAlign: "center" },
+  content: { paddingHorizontal: 17, paddingTop: 12, paddingBottom: 38, gap: 14 }, topBar: { minHeight: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, topBack: { width: 38, height: 38, alignItems: "flex-start", justifyContent: "center" }, topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" }, topMore: { color: "#22272D", fontSize: 22, lineHeight: 26 }, steps: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }, step: { width: "24%", alignItems: "center", gap: 5 }, stepCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" }, stepNumber: { fontSize: 11, fontWeight: "900" }, stepLabel: { fontSize: 9, lineHeight: 13, fontWeight: "700", textAlign: "center" },
   sectionTitle: { fontSize: 19, lineHeight: 26, fontWeight: "900" }, sectionHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, sectionMeta: { fontSize: 11, lineHeight: 16 }, channelGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 }, channelCard: { width: "48%", minHeight: 88, borderWidth: 1, borderRadius: 17, padding: 11, flexDirection: "row", alignItems: "center", gap: 8 }, channelIcon: { width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center" }, channelCopy: { flex: 1, gap: 2 }, channelLabel: { fontSize: 13, lineHeight: 18, fontWeight: "900" }, channelDetail: { fontSize: 9, lineHeight: 14 },
   slotRow: { gap: 8 }, slotChip: { minWidth: 128, minHeight: 62, borderWidth: 1, borderRadius: 15, paddingHorizontal: 12, paddingVertical: 9, gap: 2 }, slotText: { fontSize: 11, lineHeight: 16, fontWeight: "900" }, slotChannel: { fontSize: 9, lineHeight: 13 },
   formCard: { borderWidth: 1, borderRadius: 20, padding: 14, gap: 10 }, fieldLabel: { fontSize: 13, lineHeight: 18, fontWeight: "900" }, ageRow: { flexDirection: "row", flexWrap: "wrap", gap: 7 }, ageChip: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 9, paddingVertical: 6 }, ageText: { fontSize: 10, lineHeight: 15, fontWeight: "800" }, textArea: { minHeight: 94, borderWidth: 1, borderRadius: 14, padding: 11, fontSize: 13, lineHeight: 20 }, textAreaSmall: { minHeight: 72, borderWidth: 1, borderRadius: 14, padding: 11, fontSize: 13, lineHeight: 20 }, perspectiveHint: { fontSize: 10, lineHeight: 16 },
   consent: { minHeight: 70, borderWidth: 1, borderRadius: 17, padding: 12, flexDirection: "row", alignItems: "flex-start", gap: 8 }, consentText: { flex: 1, fontSize: 11, lineHeight: 17 }, receipt: { minHeight: 80, borderWidth: 1, borderRadius: 18, padding: 13, flexDirection: "row", alignItems: "center", gap: 9 }, receiptCopy: { flex: 1, gap: 3 }, receiptTitle: { fontSize: 14, lineHeight: 20, fontWeight: "900" }, receiptText: { fontSize: 11, lineHeight: 17 }, error: { fontSize: 12, lineHeight: 18 },
-  confirmAction: { minHeight: 54, borderRadius: 18, alignItems: "center", justifyContent: "center" }, confirmText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "900" }, recordsAction: { minHeight: 42, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 2 }, recordsText: { fontSize: 12, lineHeight: 17, fontWeight: "800" }, pressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
+  confirmAction: { minHeight: 54, borderRadius: 18, alignItems: "center", justifyContent: "center" }, loadingContent: { flexDirection: "row", alignItems: "center", gap: 8 }, disabled: { opacity: 0.78 }, confirmText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "900" }, recordsAction: { minHeight: 42, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 2 }, recordsText: { fontSize: 12, lineHeight: 17, fontWeight: "800" }, modalScrim: { flex: 1, backgroundColor: "#09295A66", alignItems: "center", justifyContent: "center", paddingHorizontal: 34 }, successModal: { width: "100%", borderRadius: 24, backgroundColor: "#FFFFFF", padding: 24, alignItems: "center", gap: 12 }, successTitle: { color: "#09295A", fontSize: 20, lineHeight: 28, fontWeight: "900" }, successText: { color: "#5D6D84", fontSize: 13, lineHeight: 20, textAlign: "center" }, successAction: { alignSelf: "stretch", minHeight: 48, borderRadius: 18, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center", marginTop: 4 }, successActionText: { color: "#FFFFFF", fontSize: 15, lineHeight: 21, fontWeight: "900" }, pressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
 });

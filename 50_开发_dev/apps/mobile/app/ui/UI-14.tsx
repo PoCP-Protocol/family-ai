@@ -3,7 +3,6 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -72,7 +71,7 @@ export default function GrowthProductDetailScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "方案详情", headerBackTitle: "返回" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
         data={deliveryRows}
@@ -82,9 +81,10 @@ export default function GrowthProductDetailScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.backButton}><IconSymbol name="chevron.left" size={26} color="#23272D" /></Pressable><Text style={styles.topTitle}>商品详情</Text><Text style={styles.more}>•••</Text></View>
             <View style={[styles.hero, { backgroundColor: `${product.accent}18` }]}>
               <View style={styles.heroCopy}>
-                <Text style={[styles.heroLabel, { color: product.accent }]}>家庭成长方案</Text>
+                <Text style={[styles.heroLabel, { color: product.accent }]}>家庭成长好物</Text>
                 <Text style={[styles.title, { color: colors.text }]}>{product.title}</Text>
                 <Text style={[styles.subtitle, { color: colors.muted }]}>{product.subtitle}</Text>
               </View>
@@ -92,8 +92,6 @@ export default function GrowthProductDetailScreen() {
                 <IconSymbol name="book.fill" size={42} color="#FFFFFF" />
               </View>
             </View>
-            <DataSourceBanner />
-
             <View style={styles.priceArea}>
               <Text style={[styles.familyPrice, { color: "#E04E3E" }]}>{product.familyPriceLabel}</Text>
               <Text style={[styles.listPrice, { color: colors.muted }]}>{product.listPriceLabel}</Text>
@@ -102,12 +100,13 @@ export default function GrowthProductDetailScreen() {
             </View>
 
             <View style={[styles.assurance, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <AssuranceItem label="家庭可暂停" />
+              <AssuranceItem label="21天成长陪伴" />
               <AssuranceItem label="行动卡与回顾" />
-              <AssuranceItem label="不承诺结果" />
+              <AssuranceItem label="家庭可暂停" />
             </View>
 
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>你将获得</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>你将获得</Text>
+              <Text style={[styles.sectionSubtitle, { color: colors.tint }]}>训练营 ＋ 打卡社群 ＋ 顾问答疑</Text>
           </View>
         }
         renderItem={({ item, index }) => (
@@ -128,8 +127,8 @@ export default function GrowthProductDetailScreen() {
 
             <Pressable onPress={() => router.push("/ui/UI-15" as Href)} style={({ pressed }) => [styles.inviteOffer, { backgroundColor: "#FFF6F1", borderColor: "#F5C9B1" }, pressed && styles.pressed]}>
               <View style={styles.inviteOfferCopy}>
-                <Text style={styles.inviteOfferTitle}>分享给熟悉的家庭，领取成长权益</Text>
-                <Text style={[styles.inviteOfferText, { color: colors.muted }]}>先创建邀请草稿，是否发出由你决定</Text>
+                <Text style={styles.inviteOfferTitle}>分享给 3 位家长，领取专属优惠券</Text>
+                <Text style={[styles.inviteOfferText, { color: colors.muted }]}>成功邀请可得 ¥20 优惠券</Text>
               </View>
               <Text style={styles.inviteOfferAction}>去看看</Text>
             </Pressable>
@@ -148,10 +147,10 @@ export default function GrowthProductDetailScreen() {
 
             <View style={styles.actionBar}>
               <Pressable disabled={submitState === "submitting"} onPress={saveIntent} style={({ pressed }) => [styles.primaryAction, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
-                <Text style={styles.actionText}>{submitState === "submitting" ? "正在保存" : "保存方案意向"}</Text>
+                <Text style={styles.actionText}>{submitState === "submitting" ? "正在保存" : "立即购买"}</Text>
               </Pressable>
               <Pressable onPress={() => router.push(`/ui/UI-16?productRef=${encodeURIComponent(product.productRef)}` as Href)} style={({ pressed }) => [styles.groupAction, pressed && styles.pressed]}>
-                <Text style={styles.actionText}>家庭同行</Text>
+                <Text style={styles.actionText}>发起拼团</Text>
               </Pressable>
             </View>
           </View>
@@ -174,6 +173,10 @@ function AssuranceItem({ label }: { label: string }) {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 36, gap: 12 },
   header: { gap: 14, marginBottom: 8 },
+  topBar: { minHeight: 44, alignItems: "center", justifyContent: "space-between", flexDirection: "row" },
+  backButton: { width: 38, height: 38, justifyContent: "center", alignItems: "flex-start" },
+  topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" },
+  more: { color: "#22272D", fontSize: 18, lineHeight: 20, fontWeight: "900", letterSpacing: 1 },
   hero: { minHeight: 190, borderRadius: 26, padding: 20, flexDirection: "row", alignItems: "center", gap: 12 },
   heroCopy: { flex: 1, gap: 7 },
   heroLabel: { fontSize: 12, lineHeight: 17, fontWeight: "800" },
@@ -189,6 +192,7 @@ const styles = StyleSheet.create({
   assuranceItem: { flexDirection: "row", alignItems: "center", gap: 3 },
   assuranceText: { fontSize: 10, lineHeight: 14 },
   sectionTitle: { fontSize: 20, lineHeight: 26, fontWeight: "900" },
+  sectionSubtitle: { marginTop: -8, fontSize: 14, lineHeight: 20, fontWeight: "900" },
   deliveryRow: { justifyContent: "space-between", gap: 7 },
   deliveryItem: { flex: 1, minHeight: 94, alignItems: "center", gap: 7 },
   deliveryIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },

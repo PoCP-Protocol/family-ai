@@ -3,7 +3,6 @@ import { Stack, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -34,7 +33,7 @@ export default function FamilyGrowthMallScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "家庭成长商城", headerBackTitle: "返回" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
         data={products}
@@ -44,16 +43,16 @@ export default function FamilyGrowthMallScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={[styles.greeting, { color: colors.text }]}>早上好，今天想先照顾家里的哪件事？</Text>
-            <Text style={[styles.subtitle, { color: colors.muted }]}>课程、工具和服务都从家庭成长路径出发，不用一次做很多。</Text>
-            <DataSourceBanner />
+            <View style={styles.topBar}><View style={styles.topSpacer} /><Text style={styles.topTitle}>家庭成长商城</Text><Text style={styles.more}>•••</Text></View>
+            <Text style={[styles.greeting, { color: colors.text }]}>早上好，乐乐妈妈 👋</Text>
+            <Text style={[styles.subtitle, { color: colors.muted }]}>一起成长，一起成为更好的父母</Text>
 
             <Pressable onPress={() => router.push("/ui/UI-15" as Href)} style={({ pressed }) => [styles.inviteBanner, pressed && styles.pressed]}>
               <View style={styles.inviteCopy}>
-                <Text style={styles.inviteLabel}>邀请熟悉的家庭一起成长</Text>
-                <Text style={styles.inviteTitle}>邀请 3 个家庭，解锁成长权益</Text>
+                <Text style={styles.inviteTitle}>邀请好友领成长礼包</Text>
+                <Text style={styles.inviteLabel}>邀请越多，奖励越多</Text>
                 <View style={styles.inviteAction}>
-                  <Text style={styles.inviteActionText}>查看邀请进度</Text>
+                  <Text style={styles.inviteActionText}>立即邀请</Text>
                   <IconSymbol name="chevron.right" size={18} color="#2563EB" />
                 </View>
               </View>
@@ -63,17 +62,17 @@ export default function FamilyGrowthMallScreen() {
             </Pressable>
 
             <View style={styles.categoryGrid}>
-              <CategoryTile label="同行计划" detail="和熟悉家庭一起" icon="person.2.fill" color="#F28C45" target="UI-16" />
-              <CategoryTile label="家庭成长" detail="课程与工具" icon="book.fill" color="#16866D" target="UI-14" />
-              <CategoryTile label="成长积分" detail="任务与账本" icon="star.fill" color="#E49B18" target="UI-17" />
-              <CategoryTile label="会员专享" detail="当前权益" icon="crown.fill" color="#2563EB" target="UI-18" />
-              <CategoryTile label="邀请有礼" detail="单层成长权益" icon="gift.fill" color="#D7604F" target="UI-15" />
-              <CategoryTile label="进阶支持" detail="专家与服务" icon="headphones.fill" color="#7556C8" target="UI-19" />
+              <CategoryTile label="拼团专区" detail="多人更优惠" icon="person.2.fill" color="#F06D61" target="UI-16" />
+              <CategoryTile label="家庭成长好物" detail="课程工具服务" icon="book.fill" color="#53AD68" target="UI-14" />
+              <CategoryTile label="成长积分商城" detail="积分换好礼" icon="star.fill" color="#F39A1C" target="UI-17" />
+              <CategoryTile label="会员专享" detail="专属权益" icon="crown.fill" color="#F3A424" target="UI-18" />
+              <CategoryTile label="限时挑战" detail="限时超值" icon="heart.fill" color="#F06863" target="UI-10" />
+              <CategoryTile label="邀请有礼" detail="邀请得奖励" icon="gift.fill" color="#8561DF" target="UI-15" />
             </View>
 
             <View style={styles.sectionTopline}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>今日推荐</Text>
-              <Text style={[styles.sectionHint, { color: colors.muted }]}>按家庭场景组织</Text>
+              <Text style={[styles.sectionHint, { color: colors.muted }]}>更多 ›</Text>
             </View>
           </View>
         }
@@ -84,7 +83,7 @@ export default function FamilyGrowthMallScreen() {
             </View>
             <Text style={[styles.productTitle, { color: colors.text }]} numberOfLines={2}>{item.title}</Text>
             <Text style={[styles.productPrice, { color: item.accent }]}>{item.familyPriceLabel.replace("家庭意向 ", "")}</Text>
-            <Text style={[styles.productSource, { color: colors.muted }]}>{item.source === "FAMILY_API" ? "家庭目录" : "推荐方案"}</Text>
+            <Text style={[styles.productSource, { color: colors.muted }]}>已有人购买</Text>
           </Pressable>
         )}
         ListFooterComponent={
@@ -98,7 +97,7 @@ export default function FamilyGrowthMallScreen() {
   );
 }
 
-type CommerceIcon = "person.2.fill" | "book.fill" | "star.fill" | "crown.fill" | "gift.fill" | "headphones.fill";
+type CommerceIcon = "person.2.fill" | "book.fill" | "star.fill" | "crown.fill" | "gift.fill" | "headphones.fill" | "heart.fill";
 
 function CategoryTile({ label, detail, icon, color, target }: { label: string; detail: string; icon: CommerceIcon; color: string; target: string }) {
   const colors = useColors();
@@ -115,18 +114,22 @@ function CategoryTile({ label, detail, icon, color, target }: { label: string; d
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 36, gap: 12 },
-  header: { gap: 14, marginBottom: 12 },
+  header: { gap: 10, marginBottom: 12 },
+  topBar: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  topSpacer: { width: 42 },
+  topTitle: { color: "#20242A", fontSize: 19, lineHeight: 26, fontWeight: "900" },
+  more: { width: 42, textAlign: "right", color: "#20242A", fontSize: 18, lineHeight: 20, fontWeight: "900", letterSpacing: 1 },
   greeting: { fontSize: 24, lineHeight: 32, fontWeight: "900" },
   subtitle: { fontSize: 14, lineHeight: 21 },
-  inviteBanner: { minHeight: 146, borderRadius: 25, backgroundColor: "#2563EB", padding: 18, flexDirection: "row", alignItems: "center", gap: 12 },
+  inviteBanner: { minHeight: 151, borderRadius: 18, backgroundColor: "#187AF2", padding: 18, flexDirection: "row", alignItems: "center", gap: 12 },
   inviteCopy: { flex: 1, gap: 7 },
-  inviteLabel: { color: "#CFE0FF", fontSize: 12, lineHeight: 17, fontWeight: "700" },
-  inviteTitle: { color: "#FFFFFF", fontSize: 20, lineHeight: 27, fontWeight: "900" },
+  inviteLabel: { color: "#D9ECFF", fontSize: 14, lineHeight: 20, fontWeight: "800" },
+  inviteTitle: { color: "#FFFFFF", fontSize: 23, lineHeight: 30, fontWeight: "900" },
   inviteAction: { alignSelf: "flex-start", minHeight: 34, borderRadius: 17, paddingHorizontal: 11, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", gap: 2 },
   inviteActionText: { color: "#2563EB", fontSize: 12, lineHeight: 17, fontWeight: "800" },
   familyMark: { width: 68, height: 68, borderRadius: 34, backgroundColor: "#FFFFFF20", alignItems: "center", justifyContent: "center" },
   categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
-  categoryTile: { width: "31%", minHeight: 112, borderWidth: 1, borderRadius: 19, padding: 10, alignItems: "center", justifyContent: "center", gap: 4 },
+  categoryTile: { width: "31%", minHeight: 98, borderWidth: 1, borderRadius: 13, padding: 8, alignItems: "center", justifyContent: "center", gap: 3 },
   categoryIcon: { width: 42, height: 42, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   categoryLabel: { fontSize: 13, lineHeight: 18, fontWeight: "800", textAlign: "center" },
   categoryDetail: { fontSize: 10, lineHeight: 14, textAlign: "center" },

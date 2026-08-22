@@ -3,7 +3,6 @@ import { Stack, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -46,7 +45,7 @@ export default function SalonListScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "沙龙活动", headerBackTitle: "服务" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
         data={activities}
@@ -54,14 +53,14 @@ export default function SalonListScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>线下沙龙</Text><Text style={styles.topMore}>•••</Text></View>
             <View style={styles.hero}>
               <View style={styles.heroCopy}><Text style={styles.heroTitle}>走进家庭成长沙龙，与同阶段家长交流</Text><Text style={styles.heroText}>学习 · 交流 · 成长</Text></View>
               <View style={styles.heroIllustration}><IconSymbol name="person.2.fill" size={45} color="#FFFFFF" /></View>
             </View>
-            <DataSourceBanner />
             <View style={styles.searchRow}>
-              <View style={[styles.cityChip, { backgroundColor: colors.surface, borderColor: colors.border }]}><IconSymbol name="mappin.circle.fill" size={18} color={colors.tint} /><Text style={[styles.cityText, { color: colors.text }]}>活动地点</Text></View>
-              <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}><IconSymbol name="magnifyingglass" size={19} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} placeholder="搜索沙龙主题或讲师" placeholderTextColor={colors.muted} style={[styles.searchInput, { color: colors.text }]} returnKeyType="search" /></View>
+              <View style={[styles.cityChip, { backgroundColor: colors.surface, borderColor: colors.border }]}><Text style={[styles.cityText, { color: colors.text }]}>北京市⌄</Text></View>
+              <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}><IconSymbol name="magnifyingglass" size={19} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} placeholder="搜索沙龙主题 / 讲师 / 场地" placeholderTextColor={colors.muted} style={[styles.searchInput, { color: colors.text }]} returnKeyType="search" /></View>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.themeRow}>{THEMES.map((item) => <Pressable key={item} onPress={() => setTheme(item)} style={({ pressed }) => [styles.themeChip, { backgroundColor: theme === item ? colors.tint : colors.surface, borderColor: theme === item ? colors.tint : colors.border }, pressed && styles.pressed]}><Text style={[styles.themeText, { color: theme === item ? "#FFFFFF" : colors.muted }]}>{item}</Text></Pressable>)}</ScrollView>
           </View>
@@ -86,7 +85,7 @@ export default function SalonListScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 36, gap: 11 }, header: { gap: 13, marginBottom: 2 },
+  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 36, gap: 11 }, header: { gap: 13, marginBottom: 2 }, topBar: { minHeight: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, topBack: { width: 38, height: 38, alignItems: "flex-start", justifyContent: "center" }, topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" }, topMore: { color: "#22272D", fontSize: 18, lineHeight: 20, fontWeight: "900" },
   hero: { minHeight: 158, borderRadius: 25, backgroundColor: "#2563EB", padding: 19, flexDirection: "row", alignItems: "center", overflow: "hidden" }, heroCopy: { flex: 1, gap: 8 }, heroTitle: { color: "#FFFFFF", fontSize: 23, lineHeight: 31, fontWeight: "900" }, heroText: { color: "#D7E5FF", fontSize: 13, lineHeight: 18, fontWeight: "800" }, heroIllustration: { width: 86, height: 86, borderRadius: 28, backgroundColor: "#FFFFFF20", alignItems: "center", justifyContent: "center" },
   searchRow: { flexDirection: "row", gap: 8 }, cityChip: { width: 104, minHeight: 47, borderWidth: 1, borderRadius: 15, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 }, cityText: { fontSize: 11, lineHeight: 16, fontWeight: "800" }, searchBox: { flex: 1, minHeight: 47, borderWidth: 1, borderRadius: 15, paddingHorizontal: 11, flexDirection: "row", alignItems: "center", gap: 7 }, searchInput: { flex: 1, fontSize: 12, lineHeight: 18, paddingVertical: 9 },
   themeRow: { gap: 8 }, themeChip: { minHeight: 36, borderWidth: 1, borderRadius: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 14 }, themeText: { fontSize: 11, lineHeight: 16, fontWeight: "800" },

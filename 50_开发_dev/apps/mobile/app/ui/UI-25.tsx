@@ -3,7 +3,6 @@ import { Stack, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -47,17 +46,17 @@ export default function ParentCommunityScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "家长社区", headerBackTitle: "发现" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
         data={entries}
         keyExtractor={(item) => item.exchangeRef}
         contentContainerStyle={styles.content}
         ListHeaderComponent={<View style={styles.header}>
-          <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}><IconSymbol name="magnifyingglass" size={20} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} placeholder="搜索家庭话题与经验" placeholderTextColor={colors.muted} style={[styles.searchInput, { color: colors.text }]} returnKeyType="search" /></View>
+          <View style={styles.topBar}><Text style={styles.topTitle}>家长社区</Text><IconSymbol name="magnifyingglass" size={23} color="#22272D" /></View>
+          <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}><IconSymbol name="magnifyingglass" size={20} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} placeholder="搜索话题、内容或用户" placeholderTextColor={colors.muted} style={[styles.searchInput, { color: colors.text }]} returnKeyType="search" /></View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.channelRow}>{CHANNELS.map((item) => <Pressable key={item} onPress={() => setChannel(item)} style={({ pressed }) => [styles.channelButton, pressed && styles.pressed]}><Text style={[styles.channelText, { color: channel === item ? colors.tint : colors.muted }]}>{item}</Text>{channel === item ? <View style={[styles.channelLine, { backgroundColor: colors.tint }]} /> : null}</Pressable>)}</ScrollView>
-          <View style={styles.hero}><View style={styles.heroCopy}><Text style={styles.heroEyebrow}>家庭的真实小变化</Text><Text style={styles.heroTitle}>今天也来分享一件值得记住的小事</Text><Pressable onPress={() => router.push("/ui/UI-26" as Href)} style={({ pressed }) => [styles.heroAction, pressed && styles.pressed]}><Text style={styles.heroActionText}>写家庭小记</Text><IconSymbol name="chevron.right" size={17} color="#2563EB" /></Pressable></View><View style={styles.heroIcon}><IconSymbol name="person.2.fill" size={44} color="#FFFFFF" /></View></View>
-          <DataSourceBanner />
+          <View style={styles.hero}><View style={styles.heroCopy}><Text style={styles.heroTitle}>今天也来分享孩子成长的小变化</Text><Pressable onPress={() => router.push("/ui/UI-26" as Href)} style={({ pressed }) => [styles.heroAction, pressed && styles.pressed]}><Text style={styles.heroActionText}>去分享</Text><IconSymbol name="chevron.right" size={17} color="#2563EB" /></Pressable></View><View style={styles.heroIcon}><IconSymbol name="person.2.fill" size={44} color="#FFFFFF" /></View></View>
           <View style={[styles.topicPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}>{COMMUNITY_TOPICS.map((topic, index) => <Pressable key={topic} onPress={() => setQuery(topic)} style={({ pressed }) => [styles.topicItem, pressed && styles.pressed]}><View style={[styles.topicIcon, { backgroundColor: ["#16866D18", "#2563EB18", "#7C5CE518", "#F28C4518", "#D74C4C18"][index] }]}><IconSymbol name={["message.fill", "book.fill", "heart.fill", "book.fill", "mappin.circle.fill"][index] as never} size={23} color={["#16866D", "#2563EB", "#7C5CE5", "#F28C45", "#D74C4C"][index]} /></View><Text style={[styles.topicLabel, { color: colors.text }]}>{topic}</Text></Pressable>)}</View>
           <View style={styles.sectionLine}><View><Text style={[styles.sectionTitle, { color: colors.text }]}>{feed?.headline ?? "看看其他家庭的日常小经验"}</Text><Text style={[styles.sectionIntro, { color: colors.muted }]}>{feed?.introduction ?? "先读一读，再决定哪些想法适合自己的家庭。"}</Text></View><Pressable onPress={() => router.push("/ui/UI-28" as Href)}><Text style={[styles.mineLink, { color: colors.tint }]}>我的社区</Text></Pressable></View>
         </View>}
@@ -79,7 +78,7 @@ export default function ParentCommunityScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100, gap: 11 }, header: { gap: 13, marginBottom: 2 },
+  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100, gap: 11 }, header: { gap: 13, marginBottom: 2 }, topBar: { minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, topTitle: { color: "#22272D", fontSize: 22, lineHeight: 30, fontWeight: "900" },
   searchBox: { minHeight: 48, borderWidth: 1, borderRadius: 17, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 8 }, searchInput: { flex: 1, fontSize: 13, lineHeight: 19, paddingVertical: 9 },
   channelRow: { gap: 23, paddingHorizontal: 2 }, channelButton: { minHeight: 36, justifyContent: "center", alignItems: "center" }, channelText: { fontSize: 14, lineHeight: 20, fontWeight: "800" }, channelLine: { width: 27, height: 3, borderRadius: 2, marginTop: 5 },
   hero: { minHeight: 154, borderRadius: 25, backgroundColor: "#2563EB", padding: 20, flexDirection: "row", alignItems: "center", overflow: "hidden" }, heroCopy: { flex: 1, gap: 8 }, heroEyebrow: { color: "#D9E8FF", fontSize: 12, lineHeight: 17, fontWeight: "800" }, heroTitle: { color: "#FFFFFF", fontSize: 21, lineHeight: 29, fontWeight: "900" }, heroAction: { alignSelf: "flex-start", minHeight: 34, borderRadius: 17, backgroundColor: "#FFFFFF", paddingHorizontal: 13, flexDirection: "row", alignItems: "center", gap: 3 }, heroActionText: { color: "#2563EB", fontSize: 11, lineHeight: 15, fontWeight: "900" }, heroIcon: { width: 82, height: 82, borderRadius: 28, backgroundColor: "#FFFFFF20", alignItems: "center", justifyContent: "center" },

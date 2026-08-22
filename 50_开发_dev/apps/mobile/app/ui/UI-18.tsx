@@ -3,7 +3,6 @@ import { Stack, router } from "expo-router";
 import { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -54,7 +53,7 @@ export default function MembershipCenterScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "我的", headerBackTitle: "返回" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
         data={MENU_ITEMS}
@@ -62,6 +61,7 @@ export default function MembershipCenterScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.topBar}><View style={styles.topSpacer} /><Text style={styles.topTitle}>我的</Text><Text style={styles.more}>•••</Text></View>
             <View style={styles.profileCard}>
               <View style={styles.profileTop}>
                 <View style={styles.profileAvatar}>
@@ -82,12 +82,11 @@ export default function MembershipCenterScreen() {
                 <Stat label="可用权益" value={String(availableBenefits.length + activeEntitlements.length)} />
               </View>
             </View>
-            <DataSourceBanner />
             <View style={[styles.levelCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.levelCopy}>
                 <Text style={[styles.levelLabel, { color: colors.muted }]}>我的等级　<Text style={{ color: colors.text, fontWeight: "900" }}>LV3 成长达人</Text></Text>
                 <View style={styles.levelTrack}><View style={styles.levelFill} /></View>
-                <Text style={[styles.levelHint, { color: colors.muted }]}>持续行动和回看，比一次性完成更多更重要</Text>
+                <Text style={[styles.levelHint, { color: colors.muted }]}>距下一步成长记录还有 720 积分</Text>
               </View>
               <IconSymbol name="crown.fill" size={44} color="#E4A928" />
             </View>
@@ -149,6 +148,10 @@ function Stat({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 38 },
   header: { gap: 12, marginBottom: 6 },
+  topBar: { minHeight: 46, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  topSpacer: { width: 42 },
+  topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" },
+  more: { width: 42, textAlign: "right", color: "#22272D", fontSize: 18, lineHeight: 20, fontWeight: "900", letterSpacing: 1 },
   profileCard: { minHeight: 190, borderRadius: 24, backgroundColor: "#E8F2FF", padding: 17, gap: 18 },
   profileTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   profileAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },

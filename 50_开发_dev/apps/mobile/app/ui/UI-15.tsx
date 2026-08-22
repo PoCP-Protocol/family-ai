@@ -3,7 +3,6 @@ import { Stack, router } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -43,12 +42,11 @@ export default function InvitationRewardsScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "邀请有礼", headerBackTitle: "返回" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.content} refreshControl={<FamilyRefreshControl />}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.tint }]}>邀请 3 个家庭，解锁成长权益</Text>
-          <Text style={[styles.subtitle, { color: colors.muted }]}>只邀请熟悉的家庭。是否发送、何时发送，都由你决定。</Text>
-          <DataSourceBanner />
+          <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.backButton}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>邀请有礼</Text><Text style={styles.more}>•••</Text></View>
+          <View style={styles.hero}><Text style={styles.title}>邀请 3 个家庭，解锁会员权益</Text><Text style={styles.subtitle}>一起成长，收获更多奖励</Text></View>
         </View>
 
         <View style={[styles.progressCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -63,7 +61,7 @@ export default function InvitationRewardsScreen() {
           <Text style={[styles.progressHint, { color: colors.muted }]}>再邀请 2 个家庭即可解锁全部成长权益</Text>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>满额励进度</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>邀请奖励进度</Text>
         <View style={styles.rewardGrid}>
           {REWARDS.map((reward) => (
             <View key={reward.title} style={[styles.rewardCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -80,7 +78,7 @@ export default function InvitationRewardsScreen() {
 
         <Pressable onPress={() => void saveDraft("邀请说明")} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
           <IconSymbol name="paperplane.fill" size={21} color="#FFFFFF" />
-          <Text style={styles.primaryButtonText}>创建邀请草稿</Text>
+          <Text style={styles.primaryButtonText}>立即邀请</Text>
         </Pressable>
 
         <Text style={[styles.methodTitle, { color: colors.text }]}>邀请方式</Text>
@@ -133,8 +131,13 @@ function InviteMethod({ label, icon, color, onPress }: { label: string; icon: In
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, paddingTop: 16, paddingBottom: 38, gap: 14 },
   header: { gap: 8 },
-  title: { fontSize: 27, lineHeight: 35, fontWeight: "900" },
-  subtitle: { fontSize: 14, lineHeight: 21 },
+  topBar: { minHeight: 45, alignItems: "center", justifyContent: "space-between", flexDirection: "row" },
+  backButton: { width: 38, height: 38, justifyContent: "center", alignItems: "flex-start" },
+  topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" },
+  more: { color: "#22272D", fontSize: 18, lineHeight: 20, fontWeight: "900", letterSpacing: 1 },
+  hero: { minHeight: 94, borderRadius: 16, paddingHorizontal: 18, paddingTop: 20, backgroundColor: "#EAF5FF" },
+  title: { color: "#2575D4", fontSize: 24, lineHeight: 31, fontWeight: "900" },
+  subtitle: { color: "#63809E", fontSize: 14, lineHeight: 21, marginTop: 4, fontWeight: "700" },
   progressCard: { minHeight: 142, borderWidth: 1, borderRadius: 23, padding: 18, gap: 14 },
   progressTopline: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   progressLabel: { fontSize: 15, lineHeight: 21, fontWeight: "800" },

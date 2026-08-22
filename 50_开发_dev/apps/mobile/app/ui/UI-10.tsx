@@ -3,22 +3,25 @@ import { Stack, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
-import { getChildPrompt, type ChildChoice } from "@/lib/family/child-growth";
+import { getChildPrompt } from "@/lib/family/child-growth";
 import { familyApi } from "@/lib/family/family-api-client";
 import { selectChildActionPrompt, type FamilyApiCoreGrowthProjection } from "@/lib/family/family-api-projections";
 import { useFamilyApiSession } from "@/lib/family/family-api-session";
 import { useFamilyMobile } from "@/lib/family/family-state";
 import { haptic } from "@/lib/haptics";
 
+const ACTIVITY_CARDS = [
+  { title: "专注力训练", subtitle: "一起专心一会儿", icon: "◎", bg: "#C9F4F8", ink: "#237EAD" },
+  { title: "阅读打卡", subtitle: "养成阅读习惯", icon: "▰", bg: "#FFE3A7", ink: "#C17522" },
+  { title: "情绪小日记", subtitle: "认识和表达心情", icon: "●", bg: "#DDD0FF", ink: "#7A55BC" },
+  { title: "今日目标", subtitle: "朝着今天的目标走", icon: "✓", bg: "#FFE1AD", ink: "#DB7A1E" },
+] as const;
+
 export default function ChildAssistantScreen() {
-  const colors = useColors();
   const session = useFamilyApiSession();
-  const { lastReceipt, campCompletedDays, childChoiceDraft, recordChildChoice } = useFamilyMobile();
-  const [promptOffset, setPromptOffset] = useState(0);
+  const { campCompletedDays } = useFamilyMobile();
   const [remoteProjection, setRemoteProjection] = useState<FamilyApiCoreGrowthProjection | null>(null);
 
   useEffect(() => {
@@ -31,145 +34,35 @@ export default function ChildAssistantScreen() {
   }, [session.selectedFamily, session.status, session.token]);
 
   const apiPrompt = selectChildActionPrompt(remoteProjection);
-  const localPrompt = useMemo(() => getChildPrompt(campCompletedDays.length + promptOffset), [campCompletedDays.length, promptOffset]);
-  const prompt = apiPrompt ? {
-    id: `family-api-child-${apiPrompt.focus}`,
-    title: apiPrompt.headline,
-    invitation: apiPrompt.shared_action,
-    purpose: apiPrompt.pause_hint,
-    estimatedMinutes: 5,
-    choices: localPrompt.choices,
-  } : localPrompt;
-  const hasFamilyAction = Boolean(apiPrompt) || Boolean(lastReceipt) || campCompletedDays.length > 0;
-
-  const choose = (choice: ChildChoice) => {
-    if (choice === "CHOOSE_ANOTHER") {
-      setPromptOffset((value) => value + 1);
-      haptic.selection();
-      return;
-    }
-    recordChildChoice(prompt.id, choice);
-    if (choice === "PAUSE_TODAY") haptic.selection();
-    else haptic.success();
-  };
+  const localPrompt = useMemo(() => getChildPrompt(campCompletedDays.length), [campCompletedDays.length]);
+  const challenge = apiPrompt ? { title: apiPrompt.headline, invitation: apiPrompt.shared_action } : { title: localPrompt.title, invitation: localPrompt.invitation };
+  const progress = Math.min(86, 32 + campCompletedDays.length * 8);
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "成长小助手", headerBackTitle: "返回" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={[styles.eyebrow, { color: colors.tint }]}>和孩子一起选择</Text>
-          <Text style={[styles.title, { color: colors.text }]}>今天想一起试试什么？</Text>
-          <Text style={[styles.subtitle, { color: colors.muted }]}>没有标准答案。可以试试、换一个，也可以今天先暂停。</Text>
-          <DataSourceBanner />
-        </View>
-
-        <View style={[styles.privacyBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={[styles.privacyDot, { backgroundColor: colors.success }]} />
-          <View style={styles.privacyCopy}>
-            <Text style={[styles.privacyTitle, { color: colors.text }]}>只保存在这个家庭</Text>
-            <Text style={[styles.privacyText, { color: colors.muted }]}>不记录姓名、学校、能力、分数或“是否听话”。</Text>
-          </View>
-        </View>
-
-        {!hasFamilyAction ? (
-          <View style={[styles.emptyPanel, { backgroundColor: "#09295A" }]}>
-            <Text style={styles.emptyLabel}>先和家长完成一次家庭行动</Text>
-            <Text style={styles.emptyTitle}>小助手会在行动之后，给你一个可以自由选择的小练习</Text>
-            <Text style={styles.emptyText}>这里不会安排必须完成的挑战，也不会因为暂停而扣分。</Text>
-            <Pressable onPress={() => router.push("/ui/UI-09" as Href)} style={({ pressed }) => [styles.darkButton, pressed && styles.pressed]}>
-              <Text style={styles.darkButtonText}>和家长看看今日行动</Text>
-              <IconSymbol name="chevron.right" size={20} color="#FFFFFF" />
-            </Pressable>
-          </View>
-        ) : (
-          <>
-            <View style={[styles.practiceCard, { backgroundColor: "#09295A" }]}>
-              <View style={styles.practiceTopline}>
-                <Text style={styles.practiceLabel}>可以一起试试</Text>
-                <Text style={styles.practiceTime}>约 {prompt.estimatedMinutes} 分钟</Text>
-              </View>
-              <Text style={styles.practiceTitle}>{prompt.title}</Text>
-              <Text style={styles.practiceInvitation}>{prompt.invitation}</Text>
-              <Text style={styles.practicePurpose}>{prompt.purpose}</Text>
-            </View>
-
-            <View style={styles.choiceArea}>
-              <Pressable onPress={() => choose("TRY_THIS")} style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
-                <Text style={styles.primaryButtonText}>我想试试</Text>
-                <IconSymbol name="checkmark.circle.fill" size={21} color="#FFFFFF" />
-              </Pressable>
-              <View style={styles.choiceRow}>
-                <Pressable onPress={() => choose("CHOOSE_ANOTHER")} style={({ pressed }) => [styles.secondaryButton, { borderColor: colors.border }, pressed && styles.pressed]}>
-                  <Text style={[styles.secondaryButtonText, { color: colors.tint }]}>换一个</Text>
-                </Pressable>
-                <Pressable onPress={() => choose("PAUSE_TODAY")} style={({ pressed }) => [styles.secondaryButton, { borderColor: colors.border }, pressed && styles.pressed]}>
-                  <Text style={[styles.secondaryButtonText, { color: colors.muted }]}>今天先暂停</Text>
-                </Pressable>
-              </View>
-            </View>
-          </>
-        )}
-
-        {childChoiceDraft ? (
-          <View style={[styles.receipt, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <IconSymbol name={childChoiceDraft.choice === "PAUSE_TODAY" ? "pause.circle.fill" : "checkmark.circle.fill"} size={30} color={childChoiceDraft.choice === "PAUSE_TODAY" ? colors.warning : colors.success} />
-            <View style={styles.receiptCopy}>
-              <Text style={[styles.receiptTitle, { color: colors.text }]}>
-                {childChoiceDraft.choice === "PAUSE_TODAY" ? "今天先到这里也可以" : "你的选择已经记下"}
-              </Text>
-              <Text style={[styles.receiptText, { color: colors.muted }]}>这是一次家庭内的选择记录，不会被当作你的能力、性格或表现。</Text>
-            </View>
-          </View>
-        ) : null}
-
-        <View style={[styles.parentNote, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.parentNoteLabel, { color: colors.tint }]}>给家长</Text>
-          <Text style={[styles.parentNoteTitle, { color: colors.text }]}>让选择真的有用</Text>
-          <Text style={[styles.parentNoteText, { color: colors.muted }]}>孩子选择暂停或换一个时，不追问理由、不扣分，也不把这个选择解释成抗拒。</Text>
-        </View>
+        <View style={styles.topBar}><Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><IconSymbol name="chevron.left" size={27} color="#22272D" /></Pressable><Text style={styles.topTitle}>成长小助手</Text><Text style={styles.more}>•••</Text></View>
+        <View style={styles.welcome}><View style={styles.cloudOne} /><View style={styles.cloudTwo} /><View style={styles.childFigure}><View style={styles.childHead} /><View style={styles.childArm} /></View><Text style={styles.welcomeTitle}>Hi，乐乐小朋友！</Text><Text style={styles.welcomeSubtitle}>今天又是元气满满的一天！</Text></View>
+        <View style={styles.energyCard}><View style={styles.energyHead}><View style={styles.lightning}><Text style={styles.lightningText}>ϟ</Text></View><Text style={styles.energyTitle}>成长能量</Text><Text style={styles.energyValue}>今天慢慢积累</Text></View><View style={styles.energyRow}><View style={styles.energyTrack}><View style={[styles.energyFill, { width: `${progress}%` }]} /></View><Text style={styles.level}>Lv.3</Text></View></View>
+        <View style={styles.cardGrid}>{ACTIVITY_CARDS.map((card) => <View key={card.title} style={[styles.activityCard, { backgroundColor: card.bg }]}><Text style={[styles.activityIcon, { color: card.ink }]}>{card.icon}</Text><View><Text style={[styles.activityTitle, { color: card.ink }]}>{card.title}</Text><Text style={styles.activitySubtitle}>{card.subtitle}</Text></View></View>)}</View>
+        <View style={styles.challengeCard}><View style={styles.challengeTitleRow}><Text style={styles.trophy}>♜</Text><Text style={styles.challengeLabel}>今日挑战</Text></View><Text style={styles.challengeText} numberOfLines={2}>{challenge.invitation}</Text><View style={styles.challengeMeta}><Text style={styles.processNote}>一次家庭小行动</Text><Text style={styles.starNote}>慢慢积累</Text><View style={styles.arrowCircle}><IconSymbol name="chevron.right" size={20} color="#377EDC" /></View></View></View>
+        <View style={styles.collection}><Text style={styles.collectionTitle}>我的小收藏</Text><View style={styles.collectionRow}><Collection icon="★" label={String(Math.max(1, campCompletedDays.length))} color="#FFB52B" /><Collection icon="♜" label="3" color="#9165E6" /><Collection icon="♕" label="1" color="#E1A331" /><Collection icon="▣" label="2" color="#F08E49" /></View></View>
+        <Pressable onPress={() => { haptic.light(); router.push("/ui/UI-09" as Href); }} style={({ pressed }) => [styles.startButton, pressed && styles.pressed]}><Text style={styles.startText}>开始挑战</Text></Pressable>
+        <Text style={styles.boundary}>挑战是一起尝试，不记录能力、分数或成长结果。</Text>
       </ScrollView>
     </ScreenContainer>
   );
 }
 
+function Collection({ icon, label, color }: { icon: string; label: string; color: string }) { return <View style={styles.collectionItem}><Text style={[styles.collectionIcon, { color }]}>{icon}</Text><Text style={styles.collectionNumber}>{label}</Text></View>; }
+
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 36, gap: 16 },
-  header: { gap: 8 },
-  eyebrow: { fontSize: 13, lineHeight: 18, fontWeight: "800", letterSpacing: 0.8 },
-  title: { fontSize: 30, lineHeight: 38, fontWeight: "800" },
-  subtitle: { fontSize: 16, lineHeight: 24 },
-  privacyBar: { minHeight: 76, borderWidth: 1, borderRadius: 19, padding: 14, flexDirection: "row", alignItems: "center", gap: 11 },
-  privacyDot: { width: 10, height: 10, borderRadius: 5 },
-  privacyCopy: { flex: 1, gap: 2 },
-  privacyTitle: { fontSize: 14, lineHeight: 19, fontWeight: "800" },
-  privacyText: { fontSize: 12, lineHeight: 18 },
-  emptyPanel: { borderRadius: 26, padding: 21, gap: 10 },
-  emptyLabel: { color: "#FFD9B8", fontSize: 12, lineHeight: 17, fontWeight: "800" },
-  emptyTitle: { color: "#FFFFFF", fontSize: 21, lineHeight: 29, fontWeight: "800" },
-  emptyText: { color: "#C4D7EE", fontSize: 14, lineHeight: 21 },
-  darkButton: { minHeight: 50, borderRadius: 16, backgroundColor: "#2563EB", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 4 },
-  darkButtonText: { color: "#FFFFFF", fontSize: 15, lineHeight: 21, fontWeight: "800" },
-  practiceCard: { borderRadius: 28, padding: 22, gap: 12 },
-  practiceTopline: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  practiceLabel: { color: "#FFD9B8", fontSize: 13, lineHeight: 18, fontWeight: "800" },
-  practiceTime: { color: "#BFD3EC", fontSize: 12, lineHeight: 17 },
-  practiceTitle: { color: "#FFFFFF", fontSize: 26, lineHeight: 34, fontWeight: "800" },
-  practiceInvitation: { color: "#FFFFFF", fontSize: 17, lineHeight: 25, fontWeight: "600" },
-  practicePurpose: { color: "#BFD3EC", fontSize: 13, lineHeight: 19 },
-  choiceArea: { gap: 10 },
-  primaryButton: { minHeight: 56, borderRadius: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
-  primaryButtonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  choiceRow: { flexDirection: "row", gap: 10 },
-  secondaryButton: { flex: 1, minHeight: 50, borderWidth: 1, borderRadius: 17, alignItems: "center", justifyContent: "center" },
-  secondaryButtonText: { fontSize: 14, lineHeight: 19, fontWeight: "800" },
-  receipt: { minHeight: 92, borderWidth: 1, borderRadius: 20, padding: 15, flexDirection: "row", alignItems: "center", gap: 12 },
-  receiptCopy: { flex: 1, gap: 4 },
-  receiptTitle: { fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  receiptText: { fontSize: 13, lineHeight: 19 },
-  parentNote: { borderWidth: 1, borderRadius: 22, padding: 18, gap: 6 },
-  parentNoteLabel: { fontSize: 12, lineHeight: 17, fontWeight: "800" },
-  parentNoteTitle: { fontSize: 18, lineHeight: 24, fontWeight: "800" },
-  parentNoteText: { fontSize: 14, lineHeight: 21 },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  content: { paddingHorizontal: 20, paddingBottom: 26, backgroundColor: "#FFFFFF" }, topBar: { minHeight: 67, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, backButton: { width: 44, height: 44, alignItems: "flex-start", justifyContent: "center" }, topTitle: { color: "#20242A", fontSize: 20, lineHeight: 27, fontWeight: "900" }, more: { color: "#2B3036", width: 44, textAlign: "right", fontSize: 20, lineHeight: 22, fontWeight: "900", letterSpacing: 1 },
+  welcome: { minHeight: 151, borderRadius: 15, paddingHorizontal: 20, paddingTop: 31, overflow: "hidden", backgroundColor: "#C7F2FF" }, cloudOne: { position: "absolute", left: -30, bottom: -26, width: 150, height: 65, borderRadius: 40, backgroundColor: "#FFFFFFB0" }, cloudTwo: { position: "absolute", left: 80, top: -24, width: 132, height: 48, borderRadius: 35, backgroundColor: "#FFFFFF80" }, childFigure: { position: "absolute", right: 40, bottom: 0, width: 77, height: 92, borderTopLeftRadius: 34, borderTopRightRadius: 34, backgroundColor: "#1577C9" }, childHead: { position: "absolute", left: 11, top: -36, width: 57, height: 57, borderRadius: 29, backgroundColor: "#7A422B" }, childArm: { position: "absolute", right: -21, top: 18, width: 37, height: 15, borderRadius: 8, backgroundColor: "#F6B177", transform: [{ rotate: "-42deg" }] }, welcomeTitle: { color: "#1F2E3B", fontSize: 23, lineHeight: 30, fontWeight: "900" }, welcomeSubtitle: { color: "#3F637B", fontSize: 14, lineHeight: 20, fontWeight: "800", marginTop: 5 },
+  energyCard: { minHeight: 91, marginTop: -1, borderWidth: 1, borderColor: "#E4EBF1", borderRadius: 17, paddingHorizontal: 16, paddingVertical: 13, backgroundColor: "#FFFFFF" }, energyHead: { flexDirection: "row", alignItems: "center" }, lightning: { width: 25, height: 25, borderRadius: 13, backgroundColor: "#FFF0C6", alignItems: "center", justifyContent: "center" }, lightningText: { color: "#F2A61C", fontSize: 21, lineHeight: 23, fontWeight: "900" }, energyTitle: { color: "#3C4249", marginLeft: 7, fontSize: 15, lineHeight: 21, fontWeight: "900" }, energyValue: { flex: 1, textAlign: "right", color: "#23282F", fontSize: 15, lineHeight: 21, fontWeight: "900" }, energyRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 }, energyTrack: { flex: 1, height: 18, padding: 2, borderRadius: 9, backgroundColor: "#E9EDF1", overflow: "hidden" }, energyFill: { height: 14, borderRadius: 7, backgroundColor: "#FFAE1A" }, level: { color: "#E98728", fontSize: 16, lineHeight: 21, fontWeight: "900" },
+  cardGrid: { marginTop: 17, flexDirection: "row", flexWrap: "wrap", gap: 14, justifyContent: "space-between" }, activityCard: { width: "47.9%", minHeight: 120, borderRadius: 16, padding: 13, overflow: "hidden", justifyContent: "space-between" }, activityIcon: { alignSelf: "flex-end", fontSize: 44, lineHeight: 45, fontWeight: "900", opacity: 0.8 }, activityTitle: { fontSize: 18, lineHeight: 24, fontWeight: "900" }, activitySubtitle: { color: "#59646F", fontSize: 12, lineHeight: 17, fontWeight: "700", marginTop: 3 },
+  challengeCard: { minHeight: 101, marginTop: 17, borderWidth: 1, borderColor: "#E4EBF1", borderRadius: 17, paddingHorizontal: 15, paddingVertical: 12, backgroundColor: "#FFFFFF" }, challengeTitleRow: { flexDirection: "row", alignItems: "center", gap: 7 }, trophy: { color: "#F0A81C", fontSize: 21, lineHeight: 24 }, challengeLabel: { color: "#3F454C", fontSize: 16, lineHeight: 22, fontWeight: "900" }, challengeText: { color: "#404951", fontSize: 15, lineHeight: 21, fontWeight: "800", marginTop: 5 }, challengeMeta: { flexDirection: "row", alignItems: "center", marginTop: 4 }, processNote: { color: "#F29B32", fontSize: 12, lineHeight: 17, fontWeight: "900" }, starNote: { color: "#3FB083", fontSize: 12, lineHeight: 17, fontWeight: "900", marginLeft: 18 }, arrowCircle: { marginLeft: "auto", width: 35, height: 35, borderRadius: 18, backgroundColor: "#E9F2FF", alignItems: "center", justifyContent: "center" },
+  collection: { minHeight: 84, marginTop: 13, borderWidth: 1, borderColor: "#E4EBF1", borderRadius: 17, paddingHorizontal: 14, paddingVertical: 10 }, collectionTitle: { color: "#42474D", fontSize: 15, lineHeight: 20, fontWeight: "900" }, collectionRow: { flexDirection: "row", justifyContent: "space-around", marginTop: 4 }, collectionItem: { alignItems: "center", gap: 0 }, collectionIcon: { fontSize: 31, lineHeight: 36, fontWeight: "900" }, collectionNumber: { color: "#4E5760", fontSize: 12, lineHeight: 16, fontWeight: "900" },
+  startButton: { minHeight: 56, marginTop: 13, borderRadius: 29, backgroundColor: "#1D78EC", alignItems: "center", justifyContent: "center" }, startText: { color: "#FFFFFF", fontSize: 19, lineHeight: 26, fontWeight: "900" }, boundary: { color: "#84909B", textAlign: "center", fontSize: 10, lineHeight: 15, marginTop: 8 }, pressed: { opacity: 0.86, transform: [{ scale: 0.985 }] },
 });

@@ -2,87 +2,92 @@ import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
-import { assessmentCompletion, getGrowthFocus } from "@/lib/family/core-growth";
-import { useFamilyMobile } from "@/lib/family/family-state";
+
+const DIMENSIONS = [
+  { label: "亲子沟通", icon: "message.fill" as const, color: "#4D99F3", bg: "#F1F8FF" },
+  { label: "学习习惯", icon: "book.fill" as const, color: "#46A66B", bg: "#F4FBF4" },
+  { label: "情绪管理", icon: "heart.fill" as const, color: "#F18423", bg: "#FFF8ED" },
+  { label: "自律能力", icon: "shield.fill" as const, color: "#8054D6", bg: "#F8F5FF" },
+  { label: "手机依赖", icon: "phone.fill" as const, color: "#3881ED", bg: "#F3F8FF" },
+] as const;
+
+const EXAMPLE_ANSWERS = ["经常主动分享", "偶尔分享", "很少分享", "几乎不分享"];
 
 export default function GrowthAssessmentEntryScreen() {
-  const colors = useColors();
-  const { selectedGrowthFocus, assessmentAnswers, assessmentSyncState } = useFamilyMobile();
-  const focus = getGrowthFocus(selectedGrowthFocus);
-  const completion = assessmentCompletion(selectedGrowthFocus, assessmentAnswers);
-
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "成长测评", headerBackTitle: "返回" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.eyebrow, { color: colors.tint }]}>从家庭当下开始</Text>
-        <Text style={[styles.title, { color: colors.text }]}>从一个真实场景开始</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>测评帮助家庭决定先练习什么，不用于给孩子贴标签，也不产生家庭总分。</Text>
-        <DataSourceBanner />
-
-        {focus ? (
-          <View style={[styles.focusPanel, { backgroundColor: colors.surface, borderColor: focus.color }]}>
-            <View style={[styles.focusMark, { backgroundColor: focus.color }]} />
-            <Text style={[styles.focusLabel, { color: colors.muted }]}>当前关注场景</Text>
-            <Text style={[styles.focusTitle, { color: colors.text }]}>{focus.title}</Text>
-            <Text style={[styles.focusSubtitle, { color: colors.muted }]}>{focus.subtitle}</Text>
-            <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-              <View style={[styles.progressFill, { width: `${Math.round(completion * 100)}%`, backgroundColor: focus.color }]} />
-            </View>
-            <Text style={[styles.progressText, { color: colors.muted }]}>
-              {completion === 1 ? `已完成 · ${assessmentSyncState === "synced" ? "家庭记录已同步" : "保存在本机"}` : `${Math.round(completion * 100)}% 已回答`}
-            </Text>
-          </View>
-        ) : (
-          <View style={[styles.focusPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.focusLabel, { color: colors.muted }]}>还没有选择关注场景</Text>
-            <Text style={[styles.focusTitle, { color: colors.text }]}>一次只从一个重点开始</Text>
-            <Text style={[styles.focusSubtitle, { color: colors.muted }]}>预计 3 分钟，可以随时返回修改。</Text>
-          </View>
-        )}
-
-        <View style={[styles.boundaryPanel, { backgroundColor: "#09295A" }]}>
-          <Text style={styles.boundaryTitle}>你会得到什么</Text>
-          <Text style={styles.boundaryItem}>· 一份来源清楚的家庭成长解读</Text>
-          <Text style={styles.boundaryItem}>· 一个本周可以开始的小行动</Text>
-          <Text style={styles.boundaryItem}>· 可由家庭确认的 90 天计划草稿</Text>
-          <Text style={styles.boundaryNote}>不会生成儿童诊断、家庭排名或确定性效果结论。</Text>
+        <View style={styles.topBar}>
+          <Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            <IconSymbol name="chevron.left" size={27} color="#22272E" />
+          </Pressable>
+          <Text style={styles.topTitle}>家庭成长体检</Text>
+          <View style={styles.moreCircle}><Text style={styles.moreText}>•••</Text></View>
         </View>
 
-        <Pressable
-          onPress={() => router.push("/ui/UI-02" as Href)}
-          style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}
-        >
-          <Text style={styles.primaryButtonText}>{focus ? "继续或修改家庭测评" : "开始家庭测评"}</Text>
-          <IconSymbol name="chevron.right" size={20} color="#FFFFFF" />
-        </Pressable>
+        <View style={styles.hero}>
+          <View style={styles.heroOrbs}><View style={styles.orbOne} /><View style={styles.orbTwo} /><View style={styles.familyFigure}><View style={styles.parentHead} /><View style={styles.childHead} /></View></View>
+          <Text style={styles.heroTitle}>3分钟了解{`\n`}孩子成长状态</Text>
+          <Text style={styles.heroDescription}>先做一次家庭体检，{`\n`}找到最值得优先解决的问题</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="立即开始测评" onPress={() => router.push("/ui/UI-02" as Href)} style={({ pressed }) => [styles.heroButton, pressed && styles.pressed]}>
+            <Text style={styles.heroButtonText}>立即开始测评</Text>
+          </Pressable>
+          <Text style={styles.step}>第 1 / 5 步</Text>
+        </View>
+
+        <Text style={styles.sectionTitle}>5大维度快速评估</Text>
+        <View style={styles.dimensionGrid}>
+          {DIMENSIONS.map((dimension) => (
+            <View key={dimension.label} style={[styles.dimensionCard, { backgroundColor: dimension.bg }]}>
+              <IconSymbol name={dimension.icon} size={34} color={dimension.color} />
+              <Text style={styles.dimensionLabel}>{dimension.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.questionCard}>
+          <Text style={styles.questionTitle}>示例问题</Text>
+          <Text style={styles.question}>孩子最近愿意主动和你分享学校里的事吗？</Text>
+          {EXAMPLE_ANSWERS.map((answer) => (
+            <View key={answer} style={styles.answerRow}><View style={styles.radio} /><Text style={styles.answer}>{answer}</Text></View>
+          ))}
+        </View>
       </ScrollView>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 36, gap: 16 },
-  eyebrow: { fontSize: 13, lineHeight: 18, fontWeight: "800", letterSpacing: 0.8 },
-  title: { fontSize: 30, lineHeight: 38, fontWeight: "800" },
-  subtitle: { fontSize: 15, lineHeight: 23 },
-  focusPanel: { borderWidth: 1.5, borderRadius: 24, padding: 20, gap: 8 },
-  focusMark: { width: 36, height: 6, borderRadius: 3, marginBottom: 4 },
-  focusLabel: { fontSize: 12, lineHeight: 17, fontWeight: "700" },
-  focusTitle: { fontSize: 24, lineHeight: 31, fontWeight: "800" },
-  focusSubtitle: { fontSize: 14, lineHeight: 21 },
-  progressTrack: { height: 7, borderRadius: 999, overflow: "hidden", marginTop: 6 },
-  progressFill: { height: 7, borderRadius: 999 },
-  progressText: { fontSize: 12, lineHeight: 17 },
-  boundaryPanel: { borderRadius: 24, padding: 20, gap: 8 },
-  boundaryTitle: { color: "#FFD9B8", fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  boundaryItem: { color: "#FFFFFF", fontSize: 15, lineHeight: 22, fontWeight: "600" },
-  boundaryNote: { color: "#BFD3EC", fontSize: 12, lineHeight: 18, marginTop: 4 },
-  primaryButton: { minHeight: 56, borderRadius: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
-  primaryButtonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  content: { paddingHorizontal: 20, paddingBottom: 34, backgroundColor: "#FFFFFF" },
+  topBar: { minHeight: 66, alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  backButton: { width: 44, height: 44, justifyContent: "center", alignItems: "flex-start" },
+  topTitle: { color: "#20242A", fontSize: 20, lineHeight: 27, fontWeight: "900" },
+  moreCircle: { width: 25, height: 25, borderRadius: 13, borderWidth: 2, borderColor: "#2B3036", alignItems: "center", justifyContent: "center" },
+  moreText: { color: "#2B3036", fontSize: 11, lineHeight: 11, fontWeight: "900", letterSpacing: -1 },
+  hero: { minHeight: 314, paddingHorizontal: 23, paddingTop: 34, borderRadius: 17, overflow: "hidden", backgroundColor: "#1877F2" },
+  heroOrbs: { position: "absolute", right: -3, top: 0, width: 220, height: 242 },
+  orbOne: { position: "absolute", right: -58, top: 14, width: 220, height: 220, borderRadius: 110, backgroundColor: "#4BA5FF55" },
+  orbTwo: { position: "absolute", right: 4, top: 78, width: 130, height: 130, borderRadius: 65, backgroundColor: "#7BC1FF55" },
+  familyFigure: { position: "absolute", right: 23, bottom: 0, width: 107, height: 132, borderTopLeftRadius: 50, borderTopRightRadius: 50, backgroundColor: "#F2B875" },
+  parentHead: { position: "absolute", right: 20, top: -37, width: 67, height: 67, borderRadius: 34, backgroundColor: "#825A3F" },
+  childHead: { position: "absolute", left: -18, top: 39, width: 48, height: 48, borderRadius: 24, backgroundColor: "#74422D" },
+  heroTitle: { color: "#FFFFFF", fontSize: 31, lineHeight: 41, fontWeight: "900", zIndex: 1 },
+  heroDescription: { color: "#E1F0FF", fontSize: 15, lineHeight: 22, fontWeight: "700", marginTop: 17, zIndex: 1 },
+  heroButton: { minHeight: 52, marginTop: 22, borderRadius: 27, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center", zIndex: 1 },
+  heroButtonText: { color: "#267CEF", fontSize: 18, lineHeight: 25, fontWeight: "900" },
+  step: { alignSelf: "center", color: "#FFFFFF", fontSize: 14, lineHeight: 20, fontWeight: "900", marginTop: 14 },
+  sectionTitle: { color: "#2C3138", fontSize: 17, lineHeight: 24, fontWeight: "900", marginTop: 22, marginBottom: 10 },
+  dimensionGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 10 },
+  dimensionCard: { width: "30.5%", minHeight: 91, borderRadius: 15, alignItems: "center", justifyContent: "center", gap: 7, borderWidth: 1, borderColor: "#EAF0F4" },
+  dimensionLabel: { color: "#454B53", fontSize: 13, lineHeight: 18, fontWeight: "800" },
+  questionCard: { marginTop: 18, borderWidth: 1, borderColor: "#E8EDF2", borderRadius: 16, paddingHorizontal: 17, paddingTop: 16, paddingBottom: 12 },
+  questionTitle: { color: "#333940", fontSize: 15, lineHeight: 21, fontWeight: "900" },
+  question: { color: "#353B43", fontSize: 14, lineHeight: 21, fontWeight: "700", marginTop: 9, marginBottom: 8 },
+  answerRow: { minHeight: 35, flexDirection: "row", alignItems: "center", gap: 9 },
+  radio: { width: 19, height: 19, borderRadius: 10, borderWidth: 2, borderColor: "#E0E5EA" },
+  answer: { color: "#7F8994", fontSize: 14, lineHeight: 20 },
+  pressed: { opacity: 0.86, transform: [{ scale: 0.985 }] },
 });

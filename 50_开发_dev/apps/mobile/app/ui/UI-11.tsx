@@ -3,201 +3,59 @@ import { Stack, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
 import { buildFamilyRhythmEvents } from "@/lib/family/child-growth";
-import { getGrowthFocus } from "@/lib/family/core-growth";
 import { familyApi } from "@/lib/family/family-api-client";
 import { selectPersonalGrowthJourney, type FamilyApiPlatformSurfacesProjection } from "@/lib/family/family-api-projections";
 import { useFamilyApiSession } from "@/lib/family/family-api-session";
 import { useFamilyMobile } from "@/lib/family/family-state";
 
-interface RhythmDisplayItem {
-  id: string;
-  title: string;
-  detail: string;
-  sourceLabel: string;
-}
+interface RhythmDisplayItem { id: string; title: string; detail: string; }
 
 export default function FamilyRhythmScreen() {
-  const colors = useColors();
   const session = useFamilyApiSession();
   const state = useFamilyMobile();
-  const focus = getGrowthFocus(state.selectedGrowthFocus);
   const [remoteProjection, setRemoteProjection] = useState<FamilyApiPlatformSurfacesProjection | null>(null);
 
   useEffect(() => {
     if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
     let active = true;
-    familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id)
-      .then((result) => { if (active) setRemoteProjection(result); })
-      .catch(() => undefined);
+    familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setRemoteProjection(result); }).catch(() => undefined);
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 
-  const localEvents = useMemo(() => buildFamilyRhythmEvents({
-    selectedGrowthFocus: state.selectedGrowthFocus,
-    lastReceipt: state.lastReceipt,
-    campCompletedDays: state.campCompletedDays,
-    uiActionReceipts: state.uiActionReceipts,
-    childChoiceDraft: state.childChoiceDraft,
-  }), [state.campCompletedDays, state.childChoiceDraft, state.lastReceipt, state.selectedGrowthFocus, state.uiActionReceipts]);
-
+  const localEvents = useMemo(() => buildFamilyRhythmEvents({ selectedGrowthFocus: state.selectedGrowthFocus, lastReceipt: state.lastReceipt, campCompletedDays: state.campCompletedDays, uiActionReceipts: state.uiActionReceipts, childChoiceDraft: state.childChoiceDraft }), [state.campCompletedDays, state.childChoiceDraft, state.lastReceipt, state.selectedGrowthFocus, state.uiActionReceipts]);
   const remoteJourney = selectPersonalGrowthJourney(remoteProjection);
-  const events = useMemo<RhythmDisplayItem[]>(() => {
-    if (!remoteJourney?.entries.length) {
-      return localEvents.map((event) => ({ id: event.id, title: event.title, detail: event.detail, sourceLabel: event.sourceUi }));
-    }
-    const serverEvents = remoteJourney.entries.map((event) => ({ id: event.event_id, title: event.label, detail: event.detail, sourceLabel: "家庭过程记录" }));
-    const offlineChildChoice = localEvents
-      .filter((event) => event.sourceUi === "UI-10")
-      .map((event) => ({ id: event.id, title: event.title, detail: event.detail, sourceLabel: "孩子的本机选择" }));
-    return [...serverEvents, ...offlineChildChoice].slice(-8);
-  }, [localEvents, remoteJourney?.entries]);
-
-  const rhythmLabel = remoteJourney?.headline ?? (events.length === 0
-    ? "从一件愿意做的小事开始"
-    : localEvents.some((event) => event.kind === "family_review")
-      ? "已经开始回看自己的过程"
-      : "正在形成适合我们家的节奏");
+  const events = useMemo<RhythmDisplayItem[]>(() => remoteJourney?.entries.length ? remoteJourney.entries.slice(-3).map((event) => ({ id: event.event_id, title: event.label, detail: event.detail })) : localEvents.slice(-3).map((event) => ({ id: event.id, title: event.title, detail: event.detail })), [localEvents, remoteJourney?.entries]);
+  const count = events.length || state.campCompletedDays.length || 1;
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "我们的成长节奏", headerBackTitle: "返回" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
         data={events}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.content}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={[styles.eyebrow, { color: colors.tint }]}>只和自己的过去比较</Text>
-            <Text style={[styles.title, { color: colors.text }]}>我们已经一起走过哪些小步骤？</Text>
-            <Text style={[styles.subtitle, { color: colors.muted }]}>这里没有名次、总分、百分位或连续打卡要求，只回看同一家庭真实发生过的过程。</Text>
-            <DataSourceBanner />
-
-            <View style={[styles.rhythmPanel, { backgroundColor: "#09295A" }]}>
-              <View style={styles.rhythmTopline}>
-                <Text style={styles.rhythmLabel}>当前节奏</Text>
-                <Text style={styles.rhythmCount}>{events.length} 个过程片段</Text>
-              </View>
-              <Text style={styles.rhythmTitle}>{rhythmLabel}</Text>
-              <Text style={styles.rhythmText}>{focus ? `当前关注：${focus.title}` : "家庭还没有选择关注场景，可以先从一次测评或今日行动开始。"}</Text>
-            </View>
-
-            <View style={styles.pillRow}>
-              <RhythmPill label="可暂停" active color="#2563EB" />
-              <RhythmPill label="可调整" active color="#16866D" />
-              <RhythmPill label="不排名" active color="#F28C45" />
-            </View>
-
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>家庭过程时间线</Text>
-          </View>
-        }
-        renderItem={({ item, index }) => (
-          <View style={styles.timelineRow}>
-            <View style={styles.timelineRail}>
-              <View style={[styles.timelineDot, { backgroundColor: index === events.length - 1 ? colors.tint : colors.success }]} />
-              {index < events.length - 1 ? <View style={[styles.timelineLine, { backgroundColor: colors.border }]} /> : null}
-            </View>
-            <View style={[styles.eventCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={styles.eventTopline}>
-                <Text style={[styles.eventSource, { color: colors.tint }]}>{item.sourceLabel}</Text>
-                <Text style={[styles.eventKind, { color: colors.muted }]}>过程记录</Text>
-              </View>
-              <Text style={[styles.eventTitle, { color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.eventDetail, { color: colors.muted }]}>{item.detail}</Text>
-            </View>
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={[styles.empty, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>还没有过程记录</Text>
-            <Text style={[styles.emptyText, { color: colors.muted }]}>从选择一个家庭关注场景，或记录一次今天愿意尝试的小行动开始。</Text>
-            <View style={styles.emptyActions}>
-              <Pressable onPress={() => router.push("/ui/UI-07" as Href)} style={[styles.smallButton, { backgroundColor: colors.tint }]}>
-                <Text style={styles.smallButtonText}>选择关注场景</Text>
-              </Pressable>
-              <Pressable onPress={() => router.push("/ui/UI-09" as Href)} style={[styles.smallButton, { backgroundColor: colors.success }]}>
-                <Text style={styles.smallButtonText}>查看今日行动</Text>
-              </Pressable>
-            </View>
-          </View>
-        }
-        ListFooterComponent={events.length > 0 ? (
-          <View style={styles.footer}>
-            <Pressable onPress={() => router.push("/ui/UI-12" as Href)} style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
-              <Text style={styles.primaryButtonText}>整理成家庭私有故事</Text>
-              <IconSymbol name="chevron.right" size={20} color="#FFFFFF" />
-            </Pressable>
-            <View style={styles.footerRow}>
-              <Pressable onPress={() => router.push("/ui/UI-05" as Href)} style={({ pressed }) => [styles.secondaryButton, { borderColor: colors.border }, pressed && styles.pressed]}>
-                <Text style={[styles.secondaryButtonText, { color: colors.tint }]}>回到陪跑</Text>
-              </Pressable>
-              <Pressable onPress={() => router.push("/ui/UI-08" as Href)} style={({ pressed }) => [styles.secondaryButton, { borderColor: colors.border }, pressed && styles.pressed]}>
-                <Text style={[styles.secondaryButtonText, { color: colors.tint }]}>查看回顾</Text>
-              </Pressable>
-            </View>
-            <Text style={[styles.boundary, { color: colors.muted }]}>过程片段不代表教育效果，不用于比较不同家庭或孩子。</Text>
-          </View>
-        ) : null}
+        ListHeaderComponent={<View><View style={styles.topBar}><Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><IconSymbol name="chevron.left" size={27} color="#22272D" /></Pressable><Text style={styles.topTitle}>我们的成长节奏</Text><Text style={styles.more}>•••</Text></View><View style={styles.segment}><Segment label="本周" active /><Segment label="本月" /><Segment label="我的过程" /><Segment label="可暂停" /></View><View style={styles.podium}><Podium position="上周" label="慢慢开始" count="过程 1 次" tone="silver" /><Podium position="我们的家庭" label="正在形成节奏" count={`已记录 ${count} 次`} tone="gold" /><Podium position="下次" label="继续一件小事" count="不比较他人" tone="bronze" /></View><Text style={styles.listTitle}>最近家庭过程</Text></View>}
+        renderItem={({ item, index }) => <View style={styles.eventRow}><Text style={styles.eventIndex}>{index + 1}</Text><View style={styles.eventAvatar}><IconSymbol name="heart.fill" size={18} color="#5D9CF1" /></View><View style={styles.eventCopy}><Text style={styles.eventTitle}>{item.title}</Text><Text style={styles.eventDetail} numberOfLines={1}>{item.detail}</Text></View><Text style={styles.eventTag}>过程</Text></View>}
+        ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyTitle}>还没有过程记录</Text><Text style={styles.emptyText}>从一次愿意尝试的今日行动开始，之后这里会回看同一家庭的过程。</Text><Pressable onPress={() => router.push("/ui/UI-09" as Href)} style={styles.emptyButton}><Text style={styles.emptyButtonText}>查看今日行动</Text></Pressable></View>}
+        ListFooterComponent={<View style={styles.myCard}><View style={styles.myTop}><View style={styles.myAvatar}><IconSymbol name="person.crop.circle.fill" size={42} color="#347FED" /></View><View><Text style={styles.myTitle}>我们的过程：本周已记录 {count} 次</Text><Text style={styles.mySubtitle}>只和自己的过去比较</Text></View></View><View style={styles.myMetrics}><Text style={styles.metric}>已记录 {count} 次</Text><Text style={styles.metric}>可随时暂停</Text></View><View style={styles.safeBadge}><Text style={styles.safeBadgeText}>正在形成属于我们自己的节奏</Text><Text style={styles.safeBadgeIcon}>✦</Text></View><Pressable onPress={() => router.push("/ui/UI-12" as Href)} style={({ pressed }) => [styles.storyButton, pressed && styles.pressed]}><Text style={styles.storyButtonText}>整理成家庭私有故事</Text><IconSymbol name="chevron.right" size={18} color="#FFFFFF" /></Pressable></View>}
       />
     </ScreenContainer>
   );
 }
 
-function RhythmPill({ label, color }: { label: string; active: boolean; color: string }) {
-  const colors = useColors();
-  return (
-    <View style={[styles.pill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View style={[styles.pillDot, { backgroundColor: color }]} />
-      <Text style={[styles.pillText, { color: colors.text }]}>{label}</Text>
-    </View>
-  );
-}
+function Segment({ label, active }: { label: string; active?: boolean }) { return <View style={[styles.segmentItem, active && styles.segmentActive]}><Text style={[styles.segmentText, active && styles.segmentTextActive]}>{label}</Text></View>; }
+function Podium({ position, label, count, tone }: { position: string; label: string; count: string; tone: "silver" | "gold" | "bronze" }) { return <View style={[styles.podiumItem, tone === "gold" ? styles.podiumGold : tone === "bronze" ? styles.podiumBronze : styles.podiumSilver]}><Text style={styles.podiumPosition}>{position}</Text><View style={styles.podiumAvatar}><IconSymbol name="person.crop.circle.fill" size={41} color={tone === "gold" ? "#B56C14" : "#59748D"} /></View><Text style={styles.podiumLabel}>{label}</Text><Text style={styles.podiumCount}>{count}</Text></View>; }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 36, gap: 12 },
-  header: { gap: 15, marginBottom: 4 },
-  eyebrow: { fontSize: 13, lineHeight: 18, fontWeight: "800", letterSpacing: 0.8 },
-  title: { fontSize: 29, lineHeight: 37, fontWeight: "800" },
-  subtitle: { fontSize: 15, lineHeight: 23 },
-  rhythmPanel: { borderRadius: 25, padding: 20, gap: 8 },
-  rhythmTopline: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  rhythmLabel: { color: "#FFD9B8", fontSize: 12, lineHeight: 17, fontWeight: "800" },
-  rhythmCount: { color: "#BFD3EC", fontSize: 12, lineHeight: 17 },
-  rhythmTitle: { color: "#FFFFFF", fontSize: 22, lineHeight: 30, fontWeight: "800" },
-  rhythmText: { color: "#D7E8FF", fontSize: 14, lineHeight: 21 },
-  pillRow: { flexDirection: "row", gap: 8 },
-  pill: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: 15, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
-  pillDot: { width: 8, height: 8, borderRadius: 4 },
-  pillText: { fontSize: 12, lineHeight: 17, fontWeight: "700" },
-  sectionTitle: { fontSize: 20, lineHeight: 26, fontWeight: "800" },
-  timelineRow: { flexDirection: "row", gap: 12 },
-  timelineRail: { width: 18, alignItems: "center" },
-  timelineDot: { width: 12, height: 12, borderRadius: 6, marginTop: 20 },
-  timelineLine: { width: 2, flex: 1, minHeight: 74 },
-  eventCard: { flex: 1, minHeight: 112, borderWidth: 1, borderRadius: 20, padding: 16, gap: 5, marginBottom: 2 },
-  eventTopline: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  eventSource: { fontSize: 11, lineHeight: 16, fontWeight: "800" },
-  eventKind: { fontSize: 11, lineHeight: 16 },
-  eventTitle: { fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  eventDetail: { fontSize: 13, lineHeight: 19 },
-  empty: { borderWidth: 1, borderRadius: 22, padding: 20, gap: 10 },
-  emptyTitle: { fontSize: 18, lineHeight: 24, fontWeight: "800" },
-  emptyText: { fontSize: 14, lineHeight: 21 },
-  emptyActions: { flexDirection: "row", gap: 9 },
-  smallButton: { flex: 1, minHeight: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  smallButtonText: { color: "#FFFFFF", fontSize: 13, lineHeight: 18, fontWeight: "800" },
-  footer: { gap: 11, paddingTop: 12 },
-  primaryButton: { minHeight: 56, borderRadius: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
-  primaryButtonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  footerRow: { flexDirection: "row", gap: 9 },
-  secondaryButton: { flex: 1, minHeight: 50, borderWidth: 1, borderRadius: 17, alignItems: "center", justifyContent: "center" },
-  secondaryButtonText: { fontSize: 14, lineHeight: 19, fontWeight: "800" },
-  boundary: { fontSize: 12, lineHeight: 18, textAlign: "center" },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  content: { paddingHorizontal: 16, paddingBottom: 27, backgroundColor: "#FFFFFF" }, topBar: { minHeight: 62, alignItems: "center", flexDirection: "row", justifyContent: "space-between" }, backButton: { width: 42, height: 42, justifyContent: "center", alignItems: "flex-start" }, topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" }, more: { width: 42, textAlign: "right", color: "#2B3036", fontSize: 19, lineHeight: 22, fontWeight: "900", letterSpacing: 1 },
+  segment: { minHeight: 42, borderWidth: 1, borderColor: "#C9DAF3", borderRadius: 22, padding: 3, flexDirection: "row" }, segmentItem: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 18 }, segmentActive: { backgroundColor: "#F0F7FF", borderWidth: 1, borderColor: "#61A6F7" }, segmentText: { color: "#6E7782", fontSize: 12, lineHeight: 17, fontWeight: "800" }, segmentTextActive: { color: "#287FEA" },
+  podium: { height: 218, marginTop: 12, flexDirection: "row", alignItems: "flex-end", justifyContent: "center", gap: 5 }, podiumItem: { width: "30.5%", alignItems: "center", justifyContent: "flex-start", paddingTop: 10, borderTopLeftRadius: 15, borderTopRightRadius: 15 }, podiumSilver: { height: 145, backgroundColor: "#E9F3FF" }, podiumGold: { height: 184, backgroundColor: "#FFF0BF" }, podiumBronze: { height: 135, backgroundColor: "#FFE4CD" }, podiumPosition: { color: "#637689", fontSize: 11, lineHeight: 15, fontWeight: "900" }, podiumAvatar: { width: 51, height: 51, borderRadius: 26, marginTop: 6, backgroundColor: "#FFFFFFA5", alignItems: "center", justifyContent: "center" }, podiumLabel: { color: "#414953", fontSize: 12, lineHeight: 17, fontWeight: "900", marginTop: 5, textAlign: "center" }, podiumCount: { color: "#657482", fontSize: 10, lineHeight: 14, fontWeight: "800", marginTop: 2 }, listTitle: { color: "#343A41", fontSize: 16, lineHeight: 22, fontWeight: "900", marginTop: 13, marginBottom: 2 },
+  eventRow: { minHeight: 64, borderBottomWidth: 1, borderBottomColor: "#EDF0F3", flexDirection: "row", alignItems: "center" }, eventIndex: { width: 26, color: "#3F474F", fontSize: 17, lineHeight: 23, fontWeight: "900" }, eventAvatar: { width: 31, height: 31, borderRadius: 16, backgroundColor: "#EAF3FF", alignItems: "center", justifyContent: "center" }, eventCopy: { flex: 1, marginLeft: 9, gap: 1 }, eventTitle: { color: "#454C54", fontSize: 13, lineHeight: 18, fontWeight: "800" }, eventDetail: { color: "#89929C", fontSize: 10, lineHeight: 14 }, eventTag: { color: "#4A88DF", fontSize: 11, lineHeight: 16, fontWeight: "900" },
+  empty: { marginTop: 10, borderRadius: 15, padding: 16, backgroundColor: "#F6F9FC", gap: 6 }, emptyTitle: { color: "#3D454D", fontSize: 16, lineHeight: 22, fontWeight: "900" }, emptyText: { color: "#798592", fontSize: 12, lineHeight: 18 }, emptyButton: { alignSelf: "flex-start", minHeight: 36, paddingHorizontal: 13, borderRadius: 18, marginTop: 3, justifyContent: "center", backgroundColor: "#247CED" }, emptyButtonText: { color: "#FFFFFF", fontSize: 12, lineHeight: 17, fontWeight: "900" },
+  myCard: { marginTop: 15, borderWidth: 2, borderColor: "#74B4FF", borderRadius: 18, padding: 15, backgroundColor: "#F3F9FF" }, myTop: { flexDirection: "row", alignItems: "center", gap: 10 }, myAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }, myTitle: { color: "#367DD8", fontSize: 14, lineHeight: 20, fontWeight: "900" }, mySubtitle: { color: "#637B95", fontSize: 11, lineHeight: 16, fontWeight: "800", marginTop: 2 }, myMetrics: { flexDirection: "row", justifyContent: "space-between", marginTop: 11 }, metric: { color: "#53687C", fontSize: 12, lineHeight: 17, fontWeight: "800" }, safeBadge: { minHeight: 43, marginTop: 12, borderRadius: 8, paddingHorizontal: 11, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#FFF2CE" }, safeBadgeText: { color: "#D48827", fontSize: 14, lineHeight: 20, fontWeight: "900" }, safeBadgeIcon: { color: "#E2A934", fontSize: 25 }, storyButton: { minHeight: 43, marginTop: 10, borderRadius: 22, backgroundColor: "#287CED", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }, storyButtonText: { color: "#FFFFFF", fontSize: 13, lineHeight: 18, fontWeight: "900" }, pressed: { opacity: 0.86, transform: [{ scale: 0.985 }] },
 });

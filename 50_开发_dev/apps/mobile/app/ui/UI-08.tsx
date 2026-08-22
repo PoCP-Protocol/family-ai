@@ -1,37 +1,22 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import Svg, { Line, Polygon } from "react-native-svg";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColors } from "@/hooks/use-colors";
 import { getGrowthFocus } from "@/lib/family/core-growth";
 import { familyApi } from "@/lib/family/family-api-client";
 import { useFamilyApiSession } from "@/lib/family/family-api-session";
 import { useFamilyMobile } from "@/lib/family/family-state";
 
-interface RemoteReview {
-  state?: string;
-  recorded_actions?: { receipt_id: string; source_ui: string; kind: string; occurred_at: string }[];
-  reflection_prompt?: string | null;
-  next_hint?: { text: string } | null;
-}
-
-interface ReviewItem {
-  id: string;
-  title: string;
-  detail: string;
-  occurredAt: string;
-  source: string;
-}
+interface RemoteReview { recorded_actions?: { receipt_id: string }[]; next_hint?: { text: string } | null; }
 
 export default function GrowthReviewScreen() {
-  const colors = useColors();
   const session = useFamilyApiSession();
-  const { selectedGrowthFocus, lastReceipt, campCompletedDays, uiActionReceipts, activeOnboardingId } = useFamilyMobile();
+  const { selectedGrowthFocus, lastReceipt, campCompletedDays, activeOnboardingId } = useFamilyMobile();
   const focus = getGrowthFocus(selectedGrowthFocus);
   const [remote, setRemote] = useState<RemoteReview | null>(null);
 
@@ -44,124 +29,60 @@ export default function GrowthReviewScreen() {
     return () => { active = false; };
   }, [activeOnboardingId, session.selectedFamily, session.status, session.token]);
 
-  const records = useMemo<ReviewItem[]>(() => {
-    const items: ReviewItem[] = [];
-    if (lastReceipt) {
-      items.push({ id: lastReceipt.actionId, title: "完成一次家庭行动", detail: lastReceipt.reflection || "这次行动已记录，没有填写反思。", occurredAt: lastReceipt.checkedInAt, source: "今日家庭行动" });
-    }
-    campCompletedDays.slice(-5).forEach((day) => {
-      items.push({ id: `camp-${day}`, title: `21 天成长营 Day ${day}`, detail: "完成只表示当日行动发生。", occurredAt: "", source: "成长营行动" });
-    });
-    uiActionReceipts.slice(-5).forEach((receipt) => {
-      items.push({ id: `${receipt.screenId}-${receipt.kind}`, title: receipt.label, detail: receipt.message, occurredAt: receipt.recordedAt, source: `${receipt.screenId} · ${receipt.loop}循环` });
-    });
-    remote?.recorded_actions?.slice(-8).forEach((receipt) => {
-      if (items.some((item) => item.id === receipt.receipt_id)) return;
-      items.push({ id: receipt.receipt_id, title: "家庭行动记录", detail: receipt.kind.replaceAll("_", " "), occurredAt: receipt.occurred_at, source: "家庭同步记录" });
-    });
-    return items.sort((left, right) => (right.occurredAt || "").localeCompare(left.occurredAt || ""));
-  }, [campCompletedDays, lastReceipt, remote?.recorded_actions, uiActionReceipts]);
+  const report = useMemo(() => {
+    const recorded = (remote?.recorded_actions?.length ?? 0) + (lastReceipt ? 1 : 0) + campCompletedDays.length;
+    return {
+      recorded,
+      advantage: lastReceipt ? "家庭已经记录过一次愿意停下来倾听的行动" : "家庭愿意从一次小行动开始了解彼此",
+      attention: focus ? `继续观察“${focus.title}”相关场景，不把一次记录当作结论` : "选择一个最常出现的家庭场景，先从过程开始观察",
+      suggestion: remote?.next_hint?.text ?? "本周只练习一个能坚持的小行动，再回看过程",
+    };
+  }, [campCompletedDays.length, focus, lastReceipt, remote?.next_hint?.text, remote?.recorded_actions?.length]);
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "成长报告", headerBackTitle: "返回" }} />
-      <FlatList
-        refreshControl={<FamilyRefreshControl />}
-        data={records}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.content}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={[styles.eyebrow, { color: colors.tint }]}>阶段回顾</Text>
-            <Text style={[styles.title, { color: colors.text }]}>我们做过什么，比一个总分更重要</Text>
-            <Text style={[styles.subtitle, { color: colors.muted }]}>这里汇总行动和反思来源，不把过程记录自动解释为孩子或家庭已经改变。</Text>
-            <DataSourceBanner />
-            <View style={styles.summaryRow}>
-              <SummaryValue label="行动记录" value={records.length.toString()} color="#2563EB" />
-              <SummaryValue label="成长营" value={`${campCompletedDays.length}/21`} color="#16866D" />
-              <SummaryValue label="当前重点" value={focus?.title ?? "待选择"} color="#F28C45" compact />
-            </View>
-            <View style={[styles.boundaryPanel, { backgroundColor: "#09295A" }]}>
-              <Text style={styles.boundaryLabel}>证据边界</Text>
-              <Text style={styles.boundaryTitle}>行动已记录 ≠ 成长结果</Text>
-              <Text style={styles.boundaryText}>家长反思属于家长视角；只有来源清楚、经过确认的观察才能进入后续评估。</Text>
-            </View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>最近的家庭行动</Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={[styles.recordRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={[styles.recordDot, { backgroundColor: colors.success }]} />
-            <View style={styles.recordCopy}>
-              <Text style={[styles.recordTitle, { color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.recordDetail, { color: colors.muted }]}>{item.detail}</Text>
-              <Text style={[styles.recordSource, { color: colors.tint }]}>{item.source}</Text>
-            </View>
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={[styles.empty, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>还没有行动记录</Text>
-            <Text style={[styles.emptyText, { color: colors.muted }]}>从一件低负担的今日任务开始，完成后这里会回读过程。</Text>
-            <Pressable onPress={() => router.push("/ui/UI-09" as Href)} style={[styles.smallButton, { backgroundColor: colors.tint }]}>
-              <Text style={styles.smallButtonText}>去看今日任务</Text>
-            </Pressable>
-          </View>
-        }
-        ListFooterComponent={
-          <View style={styles.footer}>
-            <Text style={[styles.nextHint, { color: colors.muted }]}>{remote?.next_hint?.text ?? "下一步由家庭决定：继续一个小行动，或先回到成长解读。"}</Text>
-            <Pressable onPress={() => router.push("/ui/UI-04" as Href)} style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
-              <Text style={styles.primaryButtonText}>查看 90 天成长方案</Text>
-              <IconSymbol name="chevron.right" size={20} color="#FFFFFF" />
-            </Pressable>
-          </View>
-        }
-      />
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScrollView contentContainerStyle={styles.content} refreshControl={<FamilyRefreshControl />}>
+        <View style={styles.topBar}>
+          <Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><IconSymbol name="chevron.left" size={27} color="#23272C" /></Pressable>
+          <Text style={styles.topTitle}>家庭成长报告</Text>
+          <IconSymbol name="arrow.up.right.square" size={22} color="#23272C" />
+        </View>
+
+        <View style={styles.profileBanner}>
+          <View style={styles.avatar}><IconSymbol name="person.crop.circle.fill" size={52} color="#FFFFFF" /></View>
+          <View style={styles.profileCopy}><Text style={styles.profileTitle}>家庭过程回顾</Text><Text style={styles.profileMeta}>记录时间：2026-08-22</Text><Text style={styles.profileMeta}>报告编号：家庭私有记录</Text></View>
+          <Text style={styles.sparkle}>✦</Text>
+        </View>
+
+        <Text style={styles.sectionTitle}>成长综合评估</Text>
+        <View style={styles.radarPanel}>
+          <Text style={[styles.radarLabel, styles.labelTop]}>亲子沟通</Text><Text style={[styles.radarLabel, styles.labelRightTop]}>学习习惯</Text><Text style={[styles.radarLabel, styles.labelRightBottom]}>情绪管理</Text><Text style={[styles.radarLabel, styles.labelLeftBottom]}>自律能力</Text><Text style={[styles.radarLabel, styles.labelLeftTop]}>手机依赖</Text>
+          <Svg width={176} height={153} viewBox="0 0 176 153"><Polygon points="88,8 160,59 133,142 43,142 16,59" fill="#D9ECFF" stroke="#8CBFF4" strokeWidth="1.5" /><Polygon points="88,30 139,67 120,124 56,124 37,67" fill="#4B9AF560" stroke="#4B9AF5" strokeWidth="2" /><Line x1="88" y1="8" x2="88" y2="142" stroke="#B9D6F2" /><Line x1="16" y1="59" x2="160" y2="59" stroke="#B9D6F2" /><Line x1="16" y1="59" x2="133" y2="142" stroke="#B9D6F2" /><Line x1="160" y1="59" x2="43" y2="142" stroke="#B9D6F2" /></Svg>
+          <View style={styles.radarCenter}><Text style={styles.centerSmall}>已记录</Text><Text style={styles.centerText}>{report.recorded}</Text><Text style={styles.centerSmall}>次行动</Text></View>
+        </View>
+
+        <ReportRow tone="green" title="优势" text={report.advantage} />
+        <ReportRow tone="coral" title="待观察" text={report.attention} />
+        <ReportRow tone="gold" title="优先建议" text={report.suggestion} />
+
+        <Text style={styles.pathTitle}>推荐成长路径</Text>
+        <View style={styles.pathRow}><PathStep duration="7天" label="修复期" color="#5B9FF4" /><Text style={styles.arrow}>→</Text><PathStep duration="30天" label="养成期" color="#568EE9" /><Text style={styles.arrow}>→</Text><PathStep duration="90天" label="成长计划" color="#2B74D8" /></View>
+
+        <Pressable onPress={() => router.push("/ui/UI-04" as Href)} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryText}>生成个性化方案</Text></Pressable>
+        <Text style={styles.boundary}>这是一份家庭过程回顾，不是儿童诊断、家庭总分或效果结论。</Text>
+      </ScrollView>
     </ScreenContainer>
   );
 }
 
-function SummaryValue({ label, value, color, compact }: { label: string; value: string; color: string; compact?: boolean }) {
-  const colors = useColors();
-  return (
-    <View style={[styles.summaryItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Text style={[compact ? styles.summaryCompactValue : styles.summaryValue, { color }]} numberOfLines={2}>{value}</Text>
-      <Text style={[styles.summaryLabel, { color: colors.muted }]}>{label}</Text>
-    </View>
-  );
-}
+function ReportRow({ tone, title, text }: { tone: "green" | "coral" | "gold"; title: string; text: string }) { return <View style={[styles.reportRow, tone === "green" ? styles.green : tone === "coral" ? styles.coral : styles.gold]}><View style={styles.rowMark}><Text style={styles.rowCheck}>✓</Text></View><Text style={styles.rowTitle}>{title}</Text><Text style={styles.rowText}>{text}</Text></View>; }
+function PathStep({ duration, label, color }: { duration: string; label: string; color: string }) { return <View style={styles.pathStep}><Text style={[styles.pathDuration, { color }]}>{duration}</Text><Text style={styles.pathLabel}>{label}</Text></View>; }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 36, gap: 12 },
-  header: { gap: 15, marginBottom: 4 },
-  eyebrow: { fontSize: 13, lineHeight: 18, fontWeight: "800", letterSpacing: 0.8 },
-  title: { fontSize: 29, lineHeight: 37, fontWeight: "800" },
-  subtitle: { fontSize: 15, lineHeight: 23 },
-  summaryRow: { flexDirection: "row", gap: 9 },
-  summaryItem: { flex: 1, minHeight: 90, borderWidth: 1, borderRadius: 18, padding: 12, justifyContent: "center", gap: 4 },
-  summaryValue: { fontSize: 23, lineHeight: 29, fontWeight: "900" },
-  summaryCompactValue: { fontSize: 15, lineHeight: 20, fontWeight: "800" },
-  summaryLabel: { fontSize: 11, lineHeight: 15 },
-  boundaryPanel: { borderRadius: 23, padding: 19, gap: 6 },
-  boundaryLabel: { color: "#67D5FF", fontSize: 12, lineHeight: 17, fontWeight: "800" },
-  boundaryTitle: { color: "#FFFFFF", fontSize: 19, lineHeight: 25, fontWeight: "800" },
-  boundaryText: { color: "#C4D7EE", fontSize: 13, lineHeight: 20 },
-  sectionTitle: { fontSize: 20, lineHeight: 26, fontWeight: "800" },
-  recordRow: { minHeight: 104, borderWidth: 1, borderRadius: 20, padding: 16, flexDirection: "row", gap: 12 },
-  recordDot: { width: 10, height: 10, borderRadius: 5, marginTop: 6 },
-  recordCopy: { flex: 1, gap: 4 },
-  recordTitle: { fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  recordDetail: { fontSize: 14, lineHeight: 21 },
-  recordSource: { fontSize: 11, lineHeight: 16, fontWeight: "700" },
-  empty: { borderWidth: 1, borderRadius: 22, padding: 20, gap: 8 },
-  emptyTitle: { fontSize: 18, lineHeight: 24, fontWeight: "800" },
-  emptyText: { fontSize: 14, lineHeight: 21 },
-  smallButton: { minHeight: 46, borderRadius: 15, alignItems: "center", justifyContent: "center", marginTop: 4 },
-  smallButtonText: { color: "#FFFFFF", fontSize: 14, lineHeight: 19, fontWeight: "800" },
-  footer: { gap: 12, paddingTop: 12 },
-  nextHint: { fontSize: 13, lineHeight: 20 },
-  primaryButton: { minHeight: 56, borderRadius: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
-  primaryButtonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "800" },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  content: { paddingHorizontal: 14, paddingBottom: 28, backgroundColor: "#FFFFFF" }, topBar: { minHeight: 56, alignItems: "center", justifyContent: "space-between", flexDirection: "row" }, backButton: { width: 42, height: 42, alignItems: "flex-start", justifyContent: "center" }, topTitle: { color: "#20242A", fontSize: 17, lineHeight: 24, fontWeight: "900" },
+  profileBanner: { minHeight: 74, borderRadius: 10, paddingHorizontal: 13, flexDirection: "row", alignItems: "center", backgroundColor: "#4A9BEF", overflow: "hidden" }, avatar: { width: 53, height: 53, borderRadius: 27, backgroundColor: "#FFFFFF28", alignItems: "center", justifyContent: "center" }, profileCopy: { flex: 1, marginLeft: 11, gap: 2 }, profileTitle: { color: "#FFFFFF", fontSize: 17, lineHeight: 23, fontWeight: "900" }, profileMeta: { color: "#E5F2FF", fontSize: 10, lineHeight: 14, fontWeight: "700" }, sparkle: { color: "#D8F1FF", fontSize: 24 },
+  sectionTitle: { color: "#30353B", fontSize: 15, lineHeight: 21, fontWeight: "900", marginTop: 9, marginBottom: 1 }, radarPanel: { height: 182, alignItems: "center", justifyContent: "center", position: "relative" }, radarLabel: { position: "absolute", color: "#50606F", fontSize: 10, lineHeight: 14, fontWeight: "800" }, labelTop: { top: 2 }, labelRightTop: { top: 42, right: 3 }, labelRightBottom: { bottom: 37, right: 4 }, labelLeftBottom: { bottom: 37, left: 4 }, labelLeftTop: { top: 42, left: 3 }, radarCenter: { position: "absolute", width: 72, height: 72, borderRadius: 36, backgroundColor: "#F2F8FF", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#569EF4" }, centerSmall: { color: "#5C7996", fontSize: 10, lineHeight: 13, fontWeight: "800" }, centerText: { color: "#287CEC", fontSize: 23, lineHeight: 25, fontWeight: "900" },
+  reportRow: { minHeight: 31, borderRadius: 8, paddingHorizontal: 8, flexDirection: "row", alignItems: "center", gap: 7, marginTop: 5 }, green: { backgroundColor: "#EDF8F1" }, coral: { backgroundColor: "#FFF1EB" }, gold: { backgroundColor: "#FFF7E7" }, rowMark: { width: 17, height: 17, borderRadius: 9, backgroundColor: "#55B779", alignItems: "center", justifyContent: "center" }, rowCheck: { color: "#FFFFFF", fontSize: 11, lineHeight: 12, fontWeight: "900" }, rowTitle: { color: "#4D5C62", minWidth: 42, fontSize: 12, lineHeight: 16, fontWeight: "900" }, rowText: { flex: 1, color: "#4D575F", fontSize: 10, lineHeight: 14, fontWeight: "700" },
+  pathTitle: { color: "#33383E", fontSize: 14, lineHeight: 20, fontWeight: "900", marginTop: 10, marginBottom: 4 }, pathRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-around" }, pathStep: { width: 72, minHeight: 47, borderRadius: 9, backgroundColor: "#F3F8FF", alignItems: "center", justifyContent: "center" }, pathDuration: { fontSize: 18, lineHeight: 22, fontWeight: "900" }, pathLabel: { color: "#5F6A77", fontSize: 10, lineHeight: 14, fontWeight: "800" }, arrow: { color: "#9AB0C5", fontSize: 20 }, primaryButton: { minHeight: 49, marginTop: 12, borderRadius: 25, backgroundColor: "#1678F2", alignItems: "center", justifyContent: "center" }, primaryText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "900" }, boundary: { color: "#87919B", textAlign: "center", fontSize: 10, lineHeight: 15, marginTop: 9 }, pressed: { opacity: 0.86, transform: [{ scale: 0.985 }] },
 });

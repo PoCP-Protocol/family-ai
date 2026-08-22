@@ -3,7 +3,6 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
@@ -49,9 +48,9 @@ export default function FamilyNoteDetailScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "家庭小记详情", headerBackTitle: "社区" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <DataSourceBanner />
+        <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>动态详情</Text><Text style={styles.topMore}>•••</Text></View>
         <View style={styles.authorRow}><View style={styles.avatar}><IconSymbol name="person.crop.circle.fill" size={43} color="#F28C45" /></View><View style={styles.authorCopy}><View style={styles.authorNameLine}><Text style={[styles.authorName, { color: colors.text }]}>一位成长中的家长</Text><Text style={styles.reviewedTag}>经审核摘要</Text></View><Text style={[styles.authorMeta, { color: colors.muted }]}>家庭经验 · #{topic}</Text></View><Pressable onPress={() => toggleCommunityFollow(exchangeRef)} style={({ pressed }) => [styles.followButton, { borderColor: colors.tint, backgroundColor: interaction?.following ? colors.tint : colors.background }, pressed && styles.pressed]}><Text style={[styles.followText, { color: interaction?.following ? "#FFFFFF" : colors.tint }]}>{interaction?.following ? "已关注" : "关注"}</Text></Pressable></View>
 
         <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
@@ -74,7 +73,7 @@ export default function FamilyNoteDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 42, gap: 14 }, authorRow: { flexDirection: "row", alignItems: "center", gap: 10 }, avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#F28C4518", alignItems: "center", justifyContent: "center" }, authorCopy: { flex: 1, gap: 3 }, authorNameLine: { flexDirection: "row", alignItems: "center", gap: 6 }, authorName: { fontSize: 14, lineHeight: 20, fontWeight: "900" }, reviewedTag: { color: "#16866D", backgroundColor: "#16866D14", borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, fontSize: 8, lineHeight: 11, fontWeight: "900" }, authorMeta: { fontSize: 10, lineHeight: 15 }, followButton: { minHeight: 34, borderWidth: 1.5, borderRadius: 17, paddingHorizontal: 15, alignItems: "center", justifyContent: "center" }, followText: { fontSize: 11, lineHeight: 16, fontWeight: "900" },
+  content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 42, gap: 14 }, topBar: { minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, topBack: { width: 38, height: 38, alignItems: "flex-start", justifyContent: "center" }, topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" }, topMore: { color: "#22272D", fontSize: 18, lineHeight: 20, fontWeight: "900" }, authorRow: { flexDirection: "row", alignItems: "center", gap: 10 }, avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#F28C4518", alignItems: "center", justifyContent: "center" }, authorCopy: { flex: 1, gap: 3 }, authorNameLine: { flexDirection: "row", alignItems: "center", gap: 6 }, authorName: { fontSize: 14, lineHeight: 20, fontWeight: "900" }, reviewedTag: { color: "#16866D", backgroundColor: "#16866D14", borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, fontSize: 8, lineHeight: 11, fontWeight: "900" }, authorMeta: { fontSize: 10, lineHeight: 15 }, followButton: { minHeight: 34, borderWidth: 1.5, borderRadius: 17, paddingHorizontal: 15, alignItems: "center", justifyContent: "center" }, followText: { fontSize: 11, lineHeight: 16, fontWeight: "900" },
   title: { fontSize: 23, lineHeight: 32, fontWeight: "900" }, summary: { fontSize: 14, lineHeight: 24, fontWeight: "600" }, mediaPanel: { minHeight: 160, borderRadius: 23, backgroundColor: "#2563EB", padding: 22, flexDirection: "row", alignItems: "center", gap: 16 }, mediaCopy: { flex: 1, gap: 5 }, mediaTitle: { color: "#FFFFFF", fontSize: 19, lineHeight: 26, fontWeight: "900" }, mediaText: { color: "#D9E8FF", fontSize: 12, lineHeight: 18 },
   sourceCard: { minHeight: 102, borderWidth: 1, borderRadius: 20, padding: 14, flexDirection: "row", alignItems: "flex-start", gap: 10 }, sourceIcon: { width: 45, height: 45, borderRadius: 15, alignItems: "center", justifyContent: "center" }, sourceCopy: { flex: 1, gap: 4 }, sourceTitle: { fontSize: 13, lineHeight: 18, fontWeight: "900" }, sourceText: { fontSize: 11, lineHeight: 18 },
   actionBar: { minHeight: 68, borderTopWidth: 1, borderBottomWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-evenly" }, actionItem: { flex: 1, alignItems: "center", justifyContent: "center", gap: 4 }, actionText: { fontSize: 9, lineHeight: 13, fontWeight: "800", textAlign: "center" }, actionDivider: { width: 1, height: 28 }, sectionHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, sectionTitle: { fontSize: 17, lineHeight: 24, fontWeight: "900" }, sectionHint: { fontSize: 10, lineHeight: 15 },
