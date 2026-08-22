@@ -1,0 +1,18 @@
+.preview-notice {
+  margin: 18px 28px 0;
+  padding: 10px 13px;
+  border: 1px solid #cfe0ff;
+  border-radius: 10px;
+  background: #f4f8ff;
+  color: #31598c;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1000px) {
+  .preview-notice { margin-left: 25px; margin-right: 25px; }
+}
+
+@media (max-width: 680px) {
+  .preview-notice { margin: 14px 18px 0; }
+}
