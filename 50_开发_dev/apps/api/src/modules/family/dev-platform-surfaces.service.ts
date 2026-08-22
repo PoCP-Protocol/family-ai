@@ -11,7 +11,7 @@ import {
   type DevPlatformSurface,
   type DevPlatformSurfaceCard,
   type DevPlatformSurfacesProjection,
-  getFamilyUiArchitectureBinding,
+  getLegacyFamilyUiArchitectureBinding,
 } from '@family/contracts';
 
 type Template = Omit<DevPlatformSurfaceCard, 'surface' | 'data_source' | 'loop' | 'business_capability' | 'primary_objects' | 'state_boundary'> & { surface: DevPlatformSurface };
@@ -32,7 +32,7 @@ export class DevPlatformSurfacesService {
       external_effect_adapter: 'NOOP_NOT_INVOKED',
       model_gateway: 'NOOP_NOT_INVOKED',
       cards: this.templates(flowEvents).map((item) => {
-        const architecture = getFamilyUiArchitectureBinding(item.surface);
+        const architecture = getLegacyFamilyUiArchitectureBinding(item.surface);
         return {
           ...item,
           data_source: 'SYNTHETIC_DEV_ONLY',

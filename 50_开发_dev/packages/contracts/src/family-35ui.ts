@@ -1,67 +1,74 @@
 /**
- * FAMILY-35UI-FULLSTACK-REBASELINE-001
- *
- * Shared implementation-level vocabulary for the 35-UI product baseline.
- * This file intentionally defines TYPES/INVARIANTS only.
- * The machine-readable per-screen mapping lives in:
- *   governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json
+ * FAMILY 35-UI canonical product/runtime vocabulary.
  *
  * UI owns presentation/projection needs; Domain owns canonical truth.
+ * V4.1 canonical business loops and business domains are defined here.
  */
-export const FAMILY_35_UI_IDS = [
+export const FAMILY_UI_IDS = [
   'UI-01','UI-02','UI-03','UI-04','UI-05','UI-06','UI-07','UI-08','UI-09','UI-10',
   'UI-11','UI-12','UI-13','UI-14','UI-15','UI-16','UI-17','UI-18','UI-19','UI-20',
   'UI-21','UI-22','UI-23','UI-24','UI-25','UI-26','UI-27','UI-28','UI-29','UI-30',
   'UI-31','UI-32','UI-33','UI-34','UI-35',
 ] as const;
 
-// 类型名带 `Family35` 前缀,避免与既有 `family-growth-os.ts` 的
-// `FamilyUiId`(松散 `UI-${string}`) 与 `FamilyBusinessLoop`(旧 6 loop: CORE_LOOP...)
-// 在 barrel index.ts 处 `export *` 重名冲突。
-// 两套词汇统一(旧 loop vs V4 六循环)属 G1 契约收敛,由架构师裁决。
-export type Family35UiId = (typeof FAMILY_35_UI_IDS)[number];
+export type FamilyUiId = (typeof FAMILY_UI_IDS)[number];
 
-export type Family35BusinessLoop =
-  | 'GROWTH'
-  | 'PLAN'
-  | 'ASSESSMENT'
-  | 'SERVICE'
-  | 'COMMERCE'
-  | 'COMMUNITY';
+export const FAMILY_BUSINESS_LOOPS = [
+  'GROWTH',
+  'PLAN',
+  'ASSESSMENT',
+  'SERVICE',
+  'COMMERCE',
+  'COMMUNITY',
+] as const;
 
-export type FamilyDomainOwner =
-  | 'FAMILY_CORE'
-  | 'GROWTH_INTELLIGENCE'
-  | 'GROWTH_JOURNEY'
-  | 'RESOURCE_COMMERCE'
-  | 'SERVICE_OS'
-  | 'CONTENT_COMMUNITY'
-  | 'FAMILY_CONTEXT';
+export type FamilyBusinessLoop = (typeof FAMILY_BUSINESS_LOOPS)[number];
 
-export type FamilyAiControlPlane = 'FAMILY_LLM_GATEWAY' | 'NONE';
+export const FAMILY_BUSINESS_DOMAINS = [
+  'FAMILY_CORE',
+  'GROWTH_INTELLIGENCE',
+  'GROWTH_JOURNEY',
+  'RESOURCE_NETWORK',
+  'SERVICE_OS',
+  'COMMERCE_ENTITLEMENT',
+  'CONTENT_COMMUNITY',
+] as const;
+
+export type FamilyDomainOwner = (typeof FAMILY_BUSINESS_DOMAINS)[number];
+
+export const FAMILY_CROSS_DOMAIN_PLATFORMS = ['FAMILY_CONTEXT_PLATFORM'] as const;
+export type FamilyCrossDomainPlatform = (typeof FAMILY_CROSS_DOMAIN_PLATFORMS)[number];
+
+/** Current runtime adapter truth; target control plane is declared separately. */
+export type FamilyRuntimeAiAdapter = 'FAMILY_LLM_GATEWAY' | 'NONE';
+
+/** V4.1 target: model-backed capabilities converge behind the Family AI Control Plane. */
+export type FamilyTargetAiControlPlane = 'FAMILY_AI_CONTROL_PLANE' | 'NONE';
 
 export type FamilyUiCanonicalWriteRule =
   | 'DOMAIN_NAMED_ACTION_ONLY'
   | 'READ_ONLY_OR_DRAFT_ONLY';
 
 export interface FamilyUiCapabilityContract {
-  ui_id: Family35UiId;
+  ui_id: FamilyUiId;
   title: string;
-  loop: Family35BusinessLoop;
+  loop: FamilyBusinessLoop;
   primary_domain: FamilyDomainOwner;
   supporting_domains: FamilyDomainOwner[];
+  platform_dependencies: FamilyCrossDomainPlatform[];
   frontend_route: string;
   projection: string;
   named_actions: string[];
   ai_use_cases: string[];
   skills: string[];
-  ai_control_plane: FamilyAiControlPlane;
+  runtime_ai_adapter: FamilyRuntimeAiAdapter;
+  target_ai_control_plane: FamilyTargetAiControlPlane;
   canonical_write_rule: FamilyUiCanonicalWriteRule;
 }
 
 export interface FamilyUiProjectionEnvelope<T> {
   family_id: string;
-  ui_id: Family35UiId;
+  ui_id: FamilyUiId;
   projection_version: string;
   generated_at: string;
   trace_id: string;
@@ -70,8 +77,8 @@ export interface FamilyUiProjectionEnvelope<T> {
 }
 
 /**
- * AI诊断 is a product capability, not a canonical medical/psychiatric diagnosis.
- * It is an interpretive artifact and must never be persisted as Child Fact directly.
+ * Product-facing AI诊断 is retained.
+ * Internal semantics remain hypothesis/interpretation, never an automatic child Fact.
  */
 export interface GrowthDiagnosticHypothesis {
   hypothesis_id: string;

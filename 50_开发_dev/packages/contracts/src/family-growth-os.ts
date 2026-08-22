@@ -1,12 +1,14 @@
+import type { FamilyUiId } from './family-35ui';
+
 /**
- * Family Growth OS architecture map.
+ * Legacy Family Growth OS surface architecture map.
  *
  * This is a product-architecture boundary, not an effectiveness claim. It
  * maps every supplied UI to one of the six supplied business-loop families so
  * API projections, UI shells, audit events and future AI adapters share a
  * stable vocabulary rather than becoming 34 isolated implementations.
  */
-export const FAMILY_BUSINESS_LOOPS = [
+export const LEGACY_FAMILY_SURFACE_LOOPS = [
   'CORE_LOOP',
   'GROWTH_LOOP',
   'COMMERCE_LOOP',
@@ -15,8 +17,7 @@ export const FAMILY_BUSINESS_LOOPS = [
   'CUSTOMER_BACKEND_LOOP',
 ] as const;
 
-export type FamilyBusinessLoop = typeof FAMILY_BUSINESS_LOOPS[number];
-export type FamilyUiId = `UI-${string}`;
+export type LegacyFamilySurfaceLoop = typeof LEGACY_FAMILY_SURFACE_LOOPS[number];
 
 export type FactPerspectiveRecommendationAction = 'FACT' | 'PERSPECTIVE' | 'RECOMMENDATION' | 'NAMED_ACTION';
 export type ExternalEffectBoundary = 'READ_ONLY' | 'CONTROLLED_DRAFT' | 'NAMED_ACTION' | 'NOOP_ADAPTER';
@@ -24,7 +25,7 @@ export type ExternalEffectBoundary = 'READ_ONLY' | 'CONTROLLED_DRAFT' | 'NAMED_A
 export interface FamilyUiArchitectureBinding {
   ui_id: FamilyUiId;
   route: string;
-  loop: FamilyBusinessLoop;
+  loop: LegacyFamilySurfaceLoop;
   business_capability: string;
   primary_objects: readonly string[];
   state_boundary: ExternalEffectBoundary;
@@ -32,8 +33,8 @@ export interface FamilyUiArchitectureBinding {
   evidence_boundary: FactPerspectiveRecommendationAction;
 }
 
-/** Six supplied business-loop families cover all 34 visual screens exactly once. */
-export const FAMILY_UI_ARCHITECTURE_BINDINGS: readonly FamilyUiArchitectureBinding[] = [
+/** Legacy supplied surface-loop families cover the historical 34-screen mapping exactly once. */
+export const LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS: readonly FamilyUiArchitectureBinding[] = [
   { ui_id: 'UI-01', route: 'home', loop: 'CORE_LOOP', business_capability: 'Family context and today entry', primary_objects: ['Family', 'Person', 'ConsentGrant', 'FamilyTodayProjection'], state_boundary: 'READ_ONLY', ai_boundary: 'MODEL_GATEWAY_NOOP', evidence_boundary: 'FACT' },
   { ui_id: 'UI-02', route: 'growth-assessment', loop: 'GROWTH_LOOP', business_capability: 'Growth assessment intake', primary_objects: ['AssessmentDraft', 'Perspective'], state_boundary: 'CONTROLLED_DRAFT', ai_boundary: 'MODEL_GATEWAY_NOOP', evidence_boundary: 'PERSPECTIVE' },
   { ui_id: 'UI-03', route: 'assessment', loop: 'GROWTH_LOOP', business_capability: 'Assessment evidence review', primary_objects: ['AssessmentDraft', 'EvidenceRef'], state_boundary: 'CONTROLLED_DRAFT', ai_boundary: 'MODEL_GATEWAY_NOOP', evidence_boundary: 'PERSPECTIVE' },
@@ -75,7 +76,7 @@ export const FAMILY_UI_ARCHITECTURE_BINDINGS: readonly FamilyUiArchitectureBindi
  * a distinct capability that cannot truthfully be collapsed into an existing UI.
  * They do not change the exact 34-screen baseline coverage invariant.
  */
-export const FAMILY_SUPPORT_SURFACE_BINDINGS: readonly FamilyUiArchitectureBinding[] = [
+export const LEGACY_FAMILY_SUPPORT_SURFACE_BINDINGS: readonly FamilyUiArchitectureBinding[] = [
   {
     ui_id: 'UI-35', route: 'growth-camp-21', loop: 'GROWTH_LOOP',
     business_capability: '21-day growth camp experience and daily practice',
@@ -84,23 +85,23 @@ export const FAMILY_SUPPORT_SURFACE_BINDINGS: readonly FamilyUiArchitectureBindi
   },
 ] as const;
 
-export function getFamilyUiArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
-  const binding = FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId);
+export function getLegacyFamilyUiArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
+  const binding = LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId);
   if (!binding) throw new Error(`unknown_family_ui_binding:${uiId}`);
   return binding;
 }
 
 /** Resolves supplied UI bindings and explicitly registered support surfaces. */
-export function getFamilyGrowthSurfaceArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
-  const binding = FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId)
-    ?? FAMILY_SUPPORT_SURFACE_BINDINGS.find((item) => item.ui_id === uiId);
+export function getLegacyFamilyGrowthSurfaceArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
+  const binding = LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId)
+    ?? LEGACY_FAMILY_SUPPORT_SURFACE_BINDINGS.find((item) => item.ui_id === uiId);
   if (!binding) throw new Error(`unknown_family_growth_surface_binding:${uiId}`);
   return binding;
 }
 
-export function assertFamilyUiArchitectureCoverage(): void {
-  if (FAMILY_UI_ARCHITECTURE_BINDINGS.length !== 34) throw new Error('family_ui_architecture_coverage_must_be_34');
-  const unique = new Set(FAMILY_UI_ARCHITECTURE_BINDINGS.map((item) => item.ui_id));
+export function assertLegacyFamilyUiArchitectureCoverage(): void {
+  if (LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.length !== 34) throw new Error('family_ui_architecture_coverage_must_be_34');
+  const unique = new Set(LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.map((item) => item.ui_id));
   if (unique.size !== 34) throw new Error('family_ui_architecture_bindings_must_be_unique');
 }
 
@@ -108,7 +109,7 @@ export function assertFamilyUiArchitectureCoverage(): void {
 export interface DevFlowReceiptSummary {
   event_id: string;
   ui_id: FamilyUiId;
-  business_loop: FamilyBusinessLoop;
+  business_loop: LegacyFamilySurfaceLoop;
   command: string;
   event_state: 'DEV_CONFIRMED';
   created_at: string;
@@ -119,7 +120,7 @@ export interface DevFlowReceiptSummary {
 
 export interface FamilyBusinessScenario {
   scenario_id: string;
-  loop: FamilyBusinessLoop;
+  loop: LegacyFamilySurfaceLoop;
   name: string;
   ui_ids: readonly FamilyUiId[];
   trigger: string;
@@ -133,7 +134,7 @@ export interface FamilyBusinessScenario {
  * PDCA verification scenarios. These describe DEV test-flow behaviour only;
  * they neither claim education outcomes nor authorize real world side effects.
  */
-export const FAMILY_BUSINESS_SCENARIOS: readonly FamilyBusinessScenario[] = [
+export const LEGACY_FAMILY_BUSINESS_SCENARIOS: readonly FamilyBusinessScenario[] = [
   {
     scenario_id: 'SCN-CORE-01', loop: 'CORE_LOOP', name: '家庭进入与今日行动',
     ui_ids: ['UI-01'], trigger: 'Guardian opens the family home.',
@@ -186,12 +187,12 @@ export const FAMILY_BUSINESS_SCENARIOS: readonly FamilyBusinessScenario[] = [
   },
 ] as const;
 
-export function assertFamilyBusinessScenarioCoverage(): void {
-  if (FAMILY_BUSINESS_SCENARIOS.length !== FAMILY_BUSINESS_LOOPS.length) {
+export function assertLegacyFamilyBusinessScenarioCoverage(): void {
+  if (LEGACY_FAMILY_BUSINESS_SCENARIOS.length !== LEGACY_FAMILY_SURFACE_LOOPS.length) {
     throw new Error('family_business_scenarios_must_cover_six_loops');
   }
-  const scenarioUis = new Set(FAMILY_BUSINESS_SCENARIOS.flatMap((scenario) => scenario.ui_ids));
-  const bindings = new Set(FAMILY_UI_ARCHITECTURE_BINDINGS.map((binding) => binding.ui_id));
+  const scenarioUis = new Set(LEGACY_FAMILY_BUSINESS_SCENARIOS.flatMap((scenario) => scenario.ui_ids));
+  const bindings = new Set(LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.map((binding) => binding.ui_id));
   for (const uiId of bindings) {
     if (!scenarioUis.has(uiId)) throw new Error(`family_business_scenario_missing_ui:${uiId}`);
   }
@@ -316,7 +317,7 @@ export function assertUi01EntryExecutionQueue(): void {
     if (!UI01_HOME_FEATURES.some((feature) => feature.feature_id === step.source_feature_id)) {
       throw new Error(`ui01_entry_queue_unknown_feature:${step.source_feature_id}`);
     }
-    const targetBindings = step.target_is_support_surface ? FAMILY_SUPPORT_SURFACE_BINDINGS : FAMILY_UI_ARCHITECTURE_BINDINGS;
+    const targetBindings = step.target_is_support_surface ? LEGACY_FAMILY_SUPPORT_SURFACE_BINDINGS : LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS;
     if (!targetBindings.some((binding) => binding.ui_id === step.target_ui_id && binding.route === step.target_route)) {
       throw new Error(`ui01_entry_queue_unknown_target:${step.target_ui_id}`);
     }
