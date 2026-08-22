@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FAMILY_BUSINESS_LOOPS,
+  GROWTH_CORE_LOOPS,
   FAMILY_BUSINESS_SCENARIOS,
   FAMILY_UI_ARCHITECTURE_BINDINGS,
   UI01_HOME_FEATURES,
@@ -20,13 +20,13 @@ describe('Family Growth OS six-loop UI architecture', () => {
   });
 
   it('uses only the six supplied business-loop families', () => {
-    expect(new Set(FAMILY_UI_ARCHITECTURE_BINDINGS.map((item) => item.loop))).toEqual(new Set(FAMILY_BUSINESS_LOOPS));
+    expect(new Set(FAMILY_UI_ARCHITECTURE_BINDINGS.map((item) => item.loop))).toEqual(new Set(GROWTH_CORE_LOOPS));
   });
 
   it('decomposes six PDCA scenarios that collectively cover all 34 UI screens', () => {
     expect(() => assertFamilyBusinessScenarioCoverage()).not.toThrow();
     expect(FAMILY_BUSINESS_SCENARIOS).toHaveLength(6);
-    expect(new Set(FAMILY_BUSINESS_SCENARIOS.map((scenario) => scenario.loop))).toEqual(new Set(FAMILY_BUSINESS_LOOPS));
+    expect(new Set(FAMILY_BUSINESS_SCENARIOS.map((scenario) => scenario.loop))).toEqual(new Set(GROWTH_CORE_LOOPS));
     expect(new Set(FAMILY_BUSINESS_SCENARIOS.flatMap((scenario) => scenario.ui_ids)).size).toBe(34);
   });
 

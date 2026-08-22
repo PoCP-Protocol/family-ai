@@ -15,13 +15,14 @@ export const FAMILY_35_UI_IDS = [
   'UI-31','UI-32','UI-33','UI-34','UI-35',
 ] as const;
 
-// 类型名带 `Family35` 前缀,避免与既有 `family-growth-os.ts` 的
-// `FamilyUiId`(松散 `UI-${string}`) 与 `FamilyBusinessLoop`(旧 6 loop: CORE_LOOP...)
-// 在 barrel index.ts 处 `export *` 重名冲突。
-// 两套词汇统一(旧 loop vs V4 六循环)属 G1 契约收敛,由架构师裁决。
-export type Family35UiId = (typeof FAMILY_35_UI_IDS)[number];
+// G1-A 契约收敛(架构师裁决):本文件是 `FamilyUiId` 与 `FamilyBusinessLoop` 的**唯一 canonical 来源**。
+//  - FamilyUiId       = 严格 UI-01..UI-35 联合(取代 family-growth-os.ts 旧的松散 `UI-${string}`)
+//  - FamilyBusinessLoop = V4 六业务循环(唯一 Business Loop 词汇)
+// 旧 family-growth-os.ts 的 loop 类别已降维改名为 `GrowthCoreLoop`(Growth OS 内部运行语义,非 Business Loop)。
+// 禁止 `type FamilyBusinessLoop = Old | New` 之类的语义 alias。
+export type FamilyUiId = (typeof FAMILY_35_UI_IDS)[number];
 
-export type Family35BusinessLoop =
+export type FamilyBusinessLoop =
   | 'GROWTH'
   | 'PLAN'
   | 'ASSESSMENT'
@@ -45,9 +46,9 @@ export type FamilyUiCanonicalWriteRule =
   | 'READ_ONLY_OR_DRAFT_ONLY';
 
 export interface FamilyUiCapabilityContract {
-  ui_id: Family35UiId;
+  ui_id: FamilyUiId;
   title: string;
-  loop: Family35BusinessLoop;
+  loop: FamilyBusinessLoop;
   primary_domain: FamilyDomainOwner;
   supporting_domains: FamilyDomainOwner[];
   frontend_route: string;
@@ -61,7 +62,7 @@ export interface FamilyUiCapabilityContract {
 
 export interface FamilyUiProjectionEnvelope<T> {
   family_id: string;
-  ui_id: Family35UiId;
+  ui_id: FamilyUiId;
   projection_version: string;
   generated_at: string;
   trace_id: string;

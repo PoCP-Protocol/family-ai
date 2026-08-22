@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   getFamilyGrowthSurfaceArchitectureBinding,
-  type FamilyBusinessLoop,
+  type GrowthCoreLoop,
   type FamilyUiId,
 } from '@family/contracts';
 import { FamilyRepository } from './family.repository';
@@ -11,7 +11,7 @@ export interface DevFlowReceipt {
   event_id: string;
   family_id: string;
   ui_id: FamilyUiId;
-  business_loop: FamilyBusinessLoop;
+  business_loop: GrowthCoreLoop;
   command: string;
   event_state: 'DEV_CONFIRMED';
   data_source: 'SYNTHETIC_DEV_ONLY';
@@ -123,7 +123,7 @@ function mapReceipt(row: Omit<DevFlowReceipt, 'replayed'>, replayed: boolean): D
   return {
     ...row,
     ui_id: row.ui_id as FamilyUiId,
-    business_loop: row.business_loop as FamilyBusinessLoop,
+    business_loop: row.business_loop as GrowthCoreLoop,
     event_state: 'DEV_CONFIRMED',
     data_source: 'SYNTHETIC_DEV_ONLY',
     external_effect: false,

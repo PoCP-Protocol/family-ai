@@ -87,6 +87,22 @@ if (fs.existsSync(mobileDbPath) && fs.existsSync(mobilePackagePath)) {
   }
 }
 
+// G1-A: duplicate semantic type guard — canonical business vocabulary must have exactly one owner.
+const contractsSrcDir = path.join(root, 'packages', 'contracts', 'src');
+if (fs.existsSync(contractsSrcDir)) {
+  const tsFiles = fs.readdirSync(contractsSrcDir).filter((f) => f.endsWith('.ts'));
+  let loopDecls = 0, uiIdDecls = 0, legacyLoop = false;
+  for (const f of tsFiles) {
+    const src = read(path.join(contractsSrcDir, f));
+    loopDecls += (src.match(/export type FamilyBusinessLoop\b/g) || []).length;
+    uiIdDecls += (src.match(/export type FamilyUiId\b/g) || []).length;
+    if (/\bFAMILY_BUSINESS_LOOPS\b/.test(src)) legacyLoop = true;
+  }
+  assert(loopDecls === 1, `FamilyBusinessLoop must have exactly 1 canonical declaration, found ${loopDecls}`);
+  assert(uiIdDecls === 1, `FamilyUiId must have exactly 1 canonical declaration, found ${uiIdDecls}`);
+  assert(!legacyLoop, 'legacy FAMILY_BUSINESS_LOOPS must be renamed to GROWTH_CORE_LOOPS (contract semantic collision)');
+}
+
 const domainCounts = {};
 for (const s of matrix.screens) domainCounts[s.primary_domain] = (domainCounts[s.primary_domain] || 0) + 1;
 

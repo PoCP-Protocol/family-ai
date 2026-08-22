@@ -1,3 +1,5 @@
+import type { FamilyUiId } from './family-35ui';
+
 /**
  * Family Growth OS architecture map.
  *
@@ -6,7 +8,9 @@
  * API projections, UI shells, audit events and future AI adapters share a
  * stable vocabulary rather than becoming 34 isolated implementations.
  */
-export const FAMILY_BUSINESS_LOOPS = [
+// G1-A: 旧 "Business Loop" 类别是 Growth OS 内部运行语义,降维改名 GrowthCoreLoop。
+// canonical Business Loop(六循环)与 canonical FamilyUiId(严格 UI-01..35)由 ./family-35ui 拥有。
+export const GROWTH_CORE_LOOPS = [
   'CORE_LOOP',
   'GROWTH_LOOP',
   'COMMERCE_LOOP',
@@ -15,8 +19,7 @@ export const FAMILY_BUSINESS_LOOPS = [
   'CUSTOMER_BACKEND_LOOP',
 ] as const;
 
-export type FamilyBusinessLoop = typeof FAMILY_BUSINESS_LOOPS[number];
-export type FamilyUiId = `UI-${string}`;
+export type GrowthCoreLoop = typeof GROWTH_CORE_LOOPS[number];
 
 export type FactPerspectiveRecommendationAction = 'FACT' | 'PERSPECTIVE' | 'RECOMMENDATION' | 'NAMED_ACTION';
 export type ExternalEffectBoundary = 'READ_ONLY' | 'CONTROLLED_DRAFT' | 'NAMED_ACTION' | 'NOOP_ADAPTER';
@@ -24,7 +27,7 @@ export type ExternalEffectBoundary = 'READ_ONLY' | 'CONTROLLED_DRAFT' | 'NAMED_A
 export interface FamilyUiArchitectureBinding {
   ui_id: FamilyUiId;
   route: string;
-  loop: FamilyBusinessLoop;
+  loop: GrowthCoreLoop;
   business_capability: string;
   primary_objects: readonly string[];
   state_boundary: ExternalEffectBoundary;
@@ -108,7 +111,7 @@ export function assertFamilyUiArchitectureCoverage(): void {
 export interface DevFlowReceiptSummary {
   event_id: string;
   ui_id: FamilyUiId;
-  business_loop: FamilyBusinessLoop;
+  business_loop: GrowthCoreLoop;
   command: string;
   event_state: 'DEV_CONFIRMED';
   created_at: string;
@@ -119,7 +122,7 @@ export interface DevFlowReceiptSummary {
 
 export interface FamilyBusinessScenario {
   scenario_id: string;
-  loop: FamilyBusinessLoop;
+  loop: GrowthCoreLoop;
   name: string;
   ui_ids: readonly FamilyUiId[];
   trigger: string;
@@ -187,7 +190,7 @@ export const FAMILY_BUSINESS_SCENARIOS: readonly FamilyBusinessScenario[] = [
 ] as const;
 
 export function assertFamilyBusinessScenarioCoverage(): void {
-  if (FAMILY_BUSINESS_SCENARIOS.length !== FAMILY_BUSINESS_LOOPS.length) {
+  if (FAMILY_BUSINESS_SCENARIOS.length !== GROWTH_CORE_LOOPS.length) {
     throw new Error('family_business_scenarios_must_cover_six_loops');
   }
   const scenarioUis = new Set(FAMILY_BUSINESS_SCENARIOS.flatMap((scenario) => scenario.ui_ids));
