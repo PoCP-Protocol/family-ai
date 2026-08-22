@@ -3361,4 +3361,6 @@ h3 {
   .family-portal-context h2 { margin: 8px 0; color: #09295a; font-size: 1.14rem; }
   .family-portal-context strong { display: block; margin: 8px 0; color: #16866d; font-size: .92rem; }
   .family-portal-context p { margin: 0; color: #607896; font-size: .82rem; line-height: 1.7; }
+  .family-portal-context [data-family-portal-card] { border-color: rgba(37, 99, 235, .16); background: linear-gradient(145deg, #f8fbff, #ffffff); }
+  .family-portal-context [data-family-portal-card='operations'] { border-color: rgba(22, 134, 109, .16); background: linear-gradient(145deg, #f6fcfa, #ffffff); }
 }

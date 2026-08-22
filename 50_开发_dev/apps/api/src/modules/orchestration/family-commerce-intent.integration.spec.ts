@@ -123,6 +123,12 @@ describe('Family commerce intent -> entitlement DEV/TEST slice', () => {
     expect(customer).toMatchObject({ tenant_id: seed.tenantId, family_id: seed.familyId, visibility: 'FAMILY_PRIVATE', projection_version: 1 });
     expect(customer.order_intents.map((row: any) => row.order_intent_id)).toContain(body.intent.order_intent_id);
     expect(customer.entitlements.map((row: any) => row.entitlement_id)).toContain(body.entitlement.entitlement_id);
+
+    const queue = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/customer-projection`, 'GET', seed.token);
+    expect(queue.status).toBe(200);
+    expect((await queue.json()).operations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ page_id: 'UI-14', operation_kind: 'DOMAIN_COMMAND', fixture_ref: body.intent.order_intent_id, source: 'DOMAIN_COMMAND_ADAPTER', external_effect: false }),
+    ]));
   });
 
   it('cancels only the trusted family intent using row_version and revokes its local entitlement receipt', async () => {

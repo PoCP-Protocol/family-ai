@@ -23,6 +23,7 @@ export function createFamilyApiAdapter({ baseUrl, bearerToken, familyId }) {
     getFamily: () => read(''),
     getToday: () => read('/today'),
     getJourneyPlan: () => read('/growth/journey-plan'),
+    getExperienceCustomerProjection: () => read('/orchestration/test-loop/experience/customer-projection'),
     /** @param {string} onboardingId */
     getServiceJourney: (onboardingId) => read(`/growth/onboardings/${onboardingId}/service-journey`),
     getCoreGrowthPreview: () => read('/dev/core-growth'),

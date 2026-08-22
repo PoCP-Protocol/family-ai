@@ -33,6 +33,8 @@ describe("UI-05 original companion service baseline contract", () => {
 
   it("reuses the existing service journey read projection without adding payment or outbound actions", () => {
     expect(source).toContain("familyApi.getServiceJourney");
+    expect(source).toContain("familyApi.getJourneyPlan");
+    expect(source).toContain("familyApi.reviewJourneyPhase");
     expect(source).not.toContain("支付");
     expect(source).not.toContain("购买");
     expect(source).not.toContain("分享");

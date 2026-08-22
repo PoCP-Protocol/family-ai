@@ -30,6 +30,13 @@ interface OperationRow {
   created_at: string;
 }
 
+interface DomainCommandRow {
+  operation_id: string;
+  page_id: string;
+  fixture_ref: string;
+  created_at: string;
+}
+
 @Injectable()
 export class TestExperienceService {
   constructor(
@@ -221,25 +228,53 @@ export class TestExperienceService {
   async customerProjection(familyId: string): Promise<TestExperienceCustomerProjection> {
     requireDevSyntheticTestLoop();
     await this.assertSyntheticFamilyEligible(familyId);
-    const rows = await this.repo.query<OperationRow>(
+    const [rows, domainEvents] = await Promise.all([
+      this.repo.query<OperationRow>(
       `select operation_id, page_id, operation_kind, fixture_ref, fixture_version, status,
               environment, source, external_effect, created_at
        from test_experience_operations
        where family_id=$1
        order by created_at desc, operation_id desc`,
       [familyId],
-    );
-    return {
-      environment: this.environment(),
-      source: 'TEST_FIXTURE',
-      operations: rows.rows.map((row) => ({
+      ),
+      this.repo.query<DomainCommandRow>(
+        `select event_id::text as operation_id, source_page_id as page_id,
+                coalesce(object_id, event_id::text) as fixture_ref, occurred_at::text as created_at
+           from family_product_events
+          where family_id=$1
+            and source_page_id = any($2::varchar[])
+            and object_type <> 'TestExperienceOperation'
+          order by occurred_at desc, event_id desc`,
+        [familyId, ['UI-13', 'UI-14', 'UI-15', 'UI-16', 'UI-17', 'UI-18', 'UI-19', 'UI-20', 'UI-21', 'UI-22', 'UI-23', 'UI-24']],
+      ),
+    ]);
+    const operations = [
+      ...rows.rows.map((row) => ({
         operation_id: row.operation_id,
+        page_id: row.page_id,
         operation_kind: row.operation_kind,
         fixture_ref: row.fixture_ref,
         status: row.status,
+        source: 'TEST_FIXTURE' as const,
+        external_effect: false as const,
         created_at: row.created_at,
       })),
-      text_equivalent: '以下显示当前家庭的体验回执。它们不代表订单、权益、预约、活动资格、社区内容或家庭档案。',
+      ...domainEvents.rows.map((row) => ({
+        operation_id: row.operation_id,
+        page_id: row.page_id,
+        operation_kind: 'DOMAIN_COMMAND' as const,
+        fixture_ref: row.fixture_ref,
+        status: 'CONFIRMED' as const,
+        source: 'DOMAIN_COMMAND_ADAPTER' as const,
+        external_effect: false as const,
+        created_at: row.created_at,
+      })),
+    ].sort((left, right) => right.created_at.localeCompare(left.created_at));
+    return {
+      environment: this.environment(),
+      source: domainEvents.rows.length > 0 ? 'DOMAIN_COMMAND_ADAPTER' : 'TEST_FIXTURE',
+      operations,
+      text_equivalent: '以下显示当前家庭的受控操作回执。它们仅记录家庭范围内的开发或测试动作，不代表支付、权益发放、真人预约、活动资格、社区发布或家庭档案变更。',
     };
   }
 }

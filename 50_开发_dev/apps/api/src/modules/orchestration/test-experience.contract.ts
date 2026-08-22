@@ -35,12 +35,15 @@ export interface TestExperienceOperationResult {
 
 export interface TestExperienceCustomerProjection {
   environment: 'DEV' | 'TEST';
-  source: 'TEST_FIXTURE';
+  source: 'TEST_FIXTURE' | 'DOMAIN_COMMAND_ADAPTER';
   operations: Array<{
     operation_id: string;
-    operation_kind: TestExperienceOperationResult['operation_kind'];
+    page_id: string;
+    operation_kind: TestExperienceOperationResult['operation_kind'] | 'DOMAIN_COMMAND';
     fixture_ref: string;
     status: 'CREATED' | 'CONFIRMED' | 'CANCELLED';
+    source: 'TEST_FIXTURE' | 'DOMAIN_COMMAND_ADAPTER';
+    external_effect: false;
     created_at: string;
   }>;
   text_equivalent: string;

@@ -8,6 +8,11 @@ describe('Family API tenant-scoped Web adapter', () => {
     expect(source).toContain("getTenantScopedUiProjection: () => read('/tenant-scoped/ui-projection')");
   });
 
+  it('reads the established family-scoped operations receipt projection for the portal status card', () => {
+    expect(source).toContain("getExperienceCustomerProjection: () => read('/orchestration/test-loop/experience/customer-projection')");
+    expect(source).toContain("getJourneyPlan: () => read('/growth/journey-plan')");
+  });
+
   it('uses bearer-only credentials when a short-lived bearer is supplied', () => {
     expect(source).toContain("credentials: bearerToken ? 'omit' : 'include'");
     expect(source).toContain('Authorization: `Bearer ${bearerToken}`');
