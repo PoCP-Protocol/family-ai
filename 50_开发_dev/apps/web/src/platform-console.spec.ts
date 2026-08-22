@@ -48,8 +48,12 @@ describe('正式多租户 Web 控制台', () => {
     expect(main).toContain('getExperienceCustomerProjection');
     expect(source).toContain('receiptPageFilter');
     expect(source).toContain('receiptStatusFilter');
+    expect(source).toContain('receiptFromDate');
+    expect(source).toContain('receiptSourceFilter');
+    expect(source).toContain('receiptAuthorizationFilter');
+    expect(source).toContain('receiptExport');
     expect(source).toContain('receiptPageLabel');
-    expect(source).toContain('建立真实家庭会话后，可按页面和状态查看当前家庭的受控回执。');
+    expect(source).toContain('建立真实家庭会话后，可按页面、状态、日期、来源和授权状态查看当前家庭的受控回执。');
     expect(source).toContain("item.source === 'DOMAIN_COMMAND_ADAPTER'");
   });
 });

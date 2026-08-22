@@ -152,6 +152,10 @@ describe('DEV/TEST formal experience workflows', () => {
       page_id: 'UI-16', action: 'CREATE_INVITE', fixture_ref: 'CAMPAIGN_FAMILY_MOMENTS', fixture_version: TEST_EXPERIENCE_FIXTURE_VERSION,
     });
     expect(mismatch.status).toBe(400);
+    const salonCatalogWrite = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations`, 'POST', seed.token, {
+      page_id: 'UI-22', action: 'CREATE_EVENT', fixture_ref: 'EVENT_PARENT_CHILD_SALON_2025_05_25', fixture_version: TEST_EXPERIENCE_FIXTURE_VERSION,
+    });
+    expect(salonCatalogWrite.status).toBe(400);
     expect(Number((await pool!.query('select count(*) n from test_experience_operations')).rows[0].n)).toBe(0);
 
     await cleanFamilyCoreTables(pool!);

@@ -34,6 +34,7 @@ interface DomainCommandRow {
   operation_id: string;
   page_id: string;
   fixture_ref: string;
+  event_type: string;
   created_at: string;
 }
 
@@ -243,7 +244,7 @@ export class TestExperienceService {
       ),
       this.repo.query<DomainCommandRow>(
         `select event_id::text as operation_id, source_page_id as page_id,
-                coalesce(object_id, event_id::text) as fixture_ref, occurred_at::text as created_at
+                coalesce(object_id, event_id::text) as fixture_ref, event_type, occurred_at::text as created_at
            from family_product_events
           where family_id=$1
             and source_page_id = any($2::varchar[])
@@ -260,6 +261,7 @@ export class TestExperienceService {
         fixture_ref: row.fixture_ref,
         status: row.status,
         source: 'TEST_FIXTURE' as const,
+        authorization_status: 'FAMILY_SCOPE_AUTHORIZED' as const,
         external_effect: false as const,
         created_at: operationTimestamp(row.created_at),
       })),
@@ -268,8 +270,9 @@ export class TestExperienceService {
         page_id: row.page_id,
         operation_kind: 'DOMAIN_COMMAND' as const,
         fixture_ref: row.fixture_ref,
-        status: 'CONFIRMED' as const,
+        status: row.event_type === 'booking_request_cancelled' ? 'CANCELLED' as const : 'CONFIRMED' as const,
         source: 'DOMAIN_COMMAND_ADAPTER' as const,
+        authorization_status: 'FAMILY_SCOPE_AUTHORIZED' as const,
         external_effect: false as const,
         created_at: operationTimestamp(row.created_at),
       })),

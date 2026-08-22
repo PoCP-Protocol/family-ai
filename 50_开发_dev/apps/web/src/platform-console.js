@@ -5,8 +5,9 @@ const tenants = [
 
 /** @typedef {{ benefit_status?: string, remaining_units?: number|string, service_offering_ref?: string, channel?: string, booking_status?: string, external_effect?: boolean }} TenantProjectionRow */
 /** @typedef {{ tenant: { tenant_id: string, tenant_ref: string, display_name: string }, commercial?: { entitlement_assets?: TenantProjectionRow[], membership_assets?: TenantProjectionRow[] }, service?: { booking_records?: TenantProjectionRow[] } }} TenantScopedUiProjection */
-/** @typedef {{ operation_id: string, page_id: string, operation_kind: string, fixture_ref: string, status: 'CREATED'|'CONFIRMED'|'CANCELLED', source: 'TEST_FIXTURE'|'DOMAIN_COMMAND_ADAPTER', external_effect: false, created_at: string }} FamilyOperationReceipt */
+/** @typedef {{ operation_id: string, page_id: string, operation_kind: string, fixture_ref: string, status: 'CREATED'|'CONFIRMED'|'CANCELLED', source: 'TEST_FIXTURE'|'DOMAIN_COMMAND_ADAPTER', authorization_status: 'FAMILY_SCOPE_AUTHORIZED', external_effect: false, created_at: string }} FamilyOperationReceipt */
 /** @typedef {{ operations?: FamilyOperationReceipt[] }} FamilyOperationsProjection */
+/** @typedef {{ page: string, status: string, from: string, to: string, source: string, authorization: string }} ReceiptFilters */
 
 const roleNames = {
   PLATFORM_ADMIN: '平台管理员',
@@ -87,16 +88,46 @@ function assets(projection) {
 function safeReceipts(projection) { return Array.isArray(projection?.operations) ? /** @type {FamilyOperationReceipt[]} */ (projection.operations) : []; }
 /** @param {string} pageId */
 function receiptPageLabel(pageId) { return ({ 'UI-13': '成长商城', 'UI-14': '课程与工具', 'UI-15': '邀请同行', 'UI-16': '一起参与', 'UI-17': '成长积分', 'UI-18': '我的服务', 'UI-19': '专家陪伴', 'UI-20': '专家介绍', 'UI-21': '咨询预约', 'UI-22': '主题活动', 'UI-23': '亲子活动', 'UI-24': '服务进度' })[pageId] ?? pageId; }
-/** @param {FamilyOperationsProjection|null} receiptProjection @param {'live'|'loading'|'preview'} receiptState @param {string} pageFilter @param {string} statusFilter */
-function operations(receiptProjection, receiptState, pageFilter, statusFilter) {
+/** @param {FamilyOperationReceipt[]} receipts @param {ReceiptFilters} filters */
+function filterReceipts(receipts, filters) {
+  return receipts.filter((item) => {
+    const receiptDate = item.created_at.slice(0, 10);
+    return (filters.page === 'ALL' || item.page_id === filters.page)
+      && (filters.status === 'ALL' || item.status === filters.status)
+      && (filters.source === 'ALL' || item.source === filters.source)
+      && (filters.authorization === 'ALL' || item.authorization_status === filters.authorization)
+      && (!filters.from || receiptDate >= filters.from)
+      && (!filters.to || receiptDate <= filters.to);
+  });
+}
+/** @param {string} value */
+function csvCell(value) { return `"${value.replace(/"/g, '""')}"`; }
+/** @param {FamilyOperationReceipt[]} receipts */
+function receiptCsv(receipts) {
+  const header = ['页面', '动作', '状态', '来源', '授权状态', '外部效果', '回执日期'];
+  const rows = receipts.map((item) => [receiptPageLabel(item.page_id), item.operation_kind, item.status, item.source, item.authorization_status, '未执行', item.created_at]);
+  return `\uFEFF${[header, ...rows].map((row) => row.map((value) => csvCell(String(value))).join(',')).join('\n')}`;
+}
+/** @param {FamilyOperationReceipt[]} receipts */
+function downloadReceiptCsv(receipts) {
+  const blob = new Blob([receiptCsv(receipts)], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
+  anchor.href = url; anchor.download = `family-operation-receipts-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.append(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url);
+}
+/** @param {FamilyOperationsProjection|null} receiptProjection @param {'live'|'loading'|'preview'} receiptState @param {ReceiptFilters} filters @param {{ count: number, at: string }|null} exportAudit */
+function operations(receiptProjection, receiptState, filters, exportAudit) {
   const receipts = safeReceipts(receiptProjection);
   const pages = [...new Set(receipts.map((item) => item.page_id))].sort();
   const statuses = [...new Set(receipts.map((item) => item.status))].sort();
-  const filtered = receipts.filter((item) => (pageFilter === 'ALL' || item.page_id === pageFilter) && (statusFilter === 'ALL' || item.status === statusFilter));
+  const sources = [...new Set(receipts.map((item) => item.source))].sort();
+  const authorizations = [...new Set(receipts.map((item) => item.authorization_status))].sort();
+  const filtered = filterReceipts(receipts, filters);
+  const exportReceipt = exportAudit ? `<p class="muted receipt-export-audit">已在本机生成 ${exportAudit.count} 条回执表格 · ${escapeHtml(exportAudit.at.slice(0, 16).replace('T', ' '))}。未发送、分享或通知任何外部对象。</p>` : '';
   const queue = receiptState === 'live'
-    ? (filtered.length ? `<div class="table-panel receipt-panel"><div class="filter-row receipt-filters"><label>页面<select id="receiptPageFilter"><option value="ALL">全部页面</option>${pages.map((page) => `<option value="${escapeHtml(page)}" ${page === pageFilter ? 'selected' : ''}>${escapeHtml(receiptPageLabel(page))}</option>`).join('')}</select></label><label>状态<select id="receiptStatusFilter"><option value="ALL">全部状态</option>${statuses.map((status) => `<option value="${escapeHtml(status)}" ${status === statusFilter ? 'selected' : ''}>${escapeHtml(status)}</option>`).join('')}</select></label></div><table><thead><tr><th>页面</th><th>受控动作</th><th>状态</th><th>来源</th><th>外部效果</th></tr></thead><tbody>${filtered.map((item) => `<tr><td><b>${escapeHtml(receiptPageLabel(item.page_id))}</b><small>${escapeHtml(item.page_id)}</small></td><td>${escapeHtml(item.operation_kind)}<small>${escapeHtml(item.fixture_ref)}</small></td><td>${pill(escapeHtml(item.status), item.status === 'CANCELLED' ? 'amber' : 'green')}</td><td>${item.source === 'DOMAIN_COMMAND_ADAPTER' ? '领域命令回执' : '测试体验回执'}</td><td>${pill('未执行', 'blue')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">当前筛选没有家庭回执。</p>')
-    : `<p class="muted">${receiptState === 'loading' ? '正在读取当前家庭的运营回执…' : '建立真实家庭会话后，可按页面和状态查看当前家庭的受控回执。'}</p>`;
-  return `<section class="workspace-grid"><article class="panel wide"><span class="eyebrow">运营漏斗</span><h3>把家庭行动与服务质量放在同一张图上</h3><div class="funnel"><div style="--w:100%"><b>326</b><span>进入首页</span></div><div style="--w:78%"><b>255</b><span>选择主题</span></div><div style="--w:56%"><b>183</b><span>完成首个行动</span></div><div style="--w:32%"><b>104</b><span>进入陪伴计划</span></div><div style="--w:18%"><b>58</b><span>使用服务权益</span></div></div></article><article class="panel"><span class="eyebrow">风险队列</span><h3>运营需要先处理什么</h3><ul class="signal-list"><li><i class="dot red"></i><span>1 条内容举报待审核</span></li><li><i class="dot amber"></i><span>3 个服务需求接近 SLA</span></li><li><i class="dot blue"></i><span>5 个权益即将到期</span></li></ul></article><article class="panel wide"><span class="eyebrow">家庭受控回执</span><h3>按页面和状态回看当前家庭操作</h3>${queue}</article></section>`;
+    ? `<div class="table-panel receipt-panel"><div class="filter-row receipt-filters"><label>页面<select id="receiptPageFilter"><option value="ALL">全部页面</option>${pages.map((page) => `<option value="${escapeHtml(page)}" ${page === filters.page ? 'selected' : ''}>${escapeHtml(receiptPageLabel(page))}</option>`).join('')}</select></label><label>状态<select id="receiptStatusFilter"><option value="ALL">全部状态</option>${statuses.map((status) => `<option value="${escapeHtml(status)}" ${status === filters.status ? 'selected' : ''}>${escapeHtml(status)}</option>`).join('')}</select></label><label>开始日期<input id="receiptFromDate" type="date" value="${escapeHtml(filters.from)}" /></label><label>结束日期<input id="receiptToDate" type="date" value="${escapeHtml(filters.to)}" /></label><label>来源<select id="receiptSourceFilter"><option value="ALL">全部来源</option>${sources.map((source) => `<option value="${escapeHtml(source)}" ${source === filters.source ? 'selected' : ''}>${source === 'DOMAIN_COMMAND_ADAPTER' ? '领域命令回执' : '测试体验回执'}</option>`).join('')}</select></label><label>授权<select id="receiptAuthorizationFilter"><option value="ALL">全部授权</option>${authorizations.map((status) => `<option value="${escapeHtml(status)}" ${status === filters.authorization ? 'selected' : ''}>家庭范围已授权</option>`).join('')}</select></label><button class="secondary-btn" id="receiptExport" ${filtered.length ? '' : 'disabled'}>导出当前表格</button></div>${filtered.length ? `<table><thead><tr><th>页面</th><th>受控动作</th><th>状态</th><th>来源</th><th>授权状态</th><th>外部效果</th><th>日期</th></tr></thead><tbody>${filtered.map((item) => `<tr><td><b>${escapeHtml(receiptPageLabel(item.page_id))}</b><small>${escapeHtml(item.page_id)}</small></td><td>${escapeHtml(item.operation_kind)}<small>${escapeHtml(item.fixture_ref)}</small></td><td>${pill(escapeHtml(item.status), item.status === 'CANCELLED' ? 'amber' : 'green')}</td><td>${item.source === 'DOMAIN_COMMAND_ADAPTER' ? '领域命令回执' : '测试体验回执'}</td><td>家庭范围已授权</td><td>${pill('未执行', 'blue')}</td><td>${escapeHtml(item.created_at.slice(0, 10))}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">当前筛选没有家庭回执。</p>'}${exportReceipt}</div>`
+    : `<p class="muted">${receiptState === 'loading' ? '正在读取当前家庭的运营回执…' : '建立真实家庭会话后，可按页面、状态、日期、来源和授权状态查看当前家庭的受控回执。'}</p>`;
+  return `<section class="workspace-grid"><article class="panel wide"><span class="eyebrow">运营漏斗</span><h3>把家庭行动与服务质量放在同一张图上</h3><div class="funnel"><div style="--w:100%"><b>326</b><span>进入首页</span></div><div style="--w:78%"><b>255</b><span>选择主题</span></div><div style="--w:56%"><b>183</b><span>完成首个行动</span></div><div style="--w:32%"><b>104</b><span>进入陪伴计划</span></div><div style="--w:18%"><b>58</b><span>使用服务权益</span></div></div></article><article class="panel"><span class="eyebrow">风险队列</span><h3>运营需要先处理什么</h3><ul class="signal-list"><li><i class="dot red"></i><span>1 条内容举报待审核</span></li><li><i class="dot amber"></i><span>3 个服务需求接近 SLA</span></li><li><i class="dot blue"></i><span>5 个权益即将到期</span></li></ul></article><article class="panel wide"><span class="eyebrow">家庭受控回执</span><h3>按筛选条件回看当前家庭操作</h3>${queue}</article></section>`;
 }
 function tenant() { return `<section class="workspace-grid"><article class="panel"><span class="eyebrow">当前租户上下文</span><h3>复用 Family 既有数据隔离</h3><dl class="tenant-kv"><dt>tenant_id</dt><dd>tenant_bangyang</dd><dt>家庭绑定</dt><dd>tenant_family_bindings</dd><dt>策略档案</dt><dd>tenant_policy_profiles</dd><dt>供给范围</dt><dd>当前租户专家、服务与时段</dd></dl></article><article class="panel"><span class="eyebrow">角色与权限</span><h3>前端只适配，不做授权裁决</h3><p class="muted">所有读取与行动继续由 Bearer、账户成员资格、家庭范围及服务端策略校验。切换租户或角色仅在拥有已有授权时发生。</p><div class="role-list"><span>${pill('平台管理员','violet')}</span><span>${pill('租户管理员','blue')}</span><span>${pill('运营负责人','green')}</span><span>${pill('家庭顾问','amber')}</span></div></article></section>`; }
 const renderers = { overview, families, journeys, services, content, assets, operations, tenant };
@@ -109,19 +140,27 @@ export function createPlatformConsole(root, options = {}) {
   let receiptProjection = options.initialOperations ?? null;
   /** @type {'live'|'loading'|'preview'} */
   let receiptState = receiptProjection ? 'live' : options.loadFamilyOperations ? 'loading' : 'preview';
-  let receiptPageFilter = 'ALL'; let receiptStatusFilter = 'ALL';
+  /** @type {ReceiptFilters} */
+  let receiptFilters = { page: 'ALL', status: 'ALL', from: '', to: '', source: 'ALL', authorization: 'ALL' };
+  /** @type {{ count: number, at: string }|null} */
+  let receiptExportAudit = null;
   const render = () => {
     const previewTenant = tenants.find((item) => item.id === tenantId) ?? tenants[0]; const tenant = projection ? { id: projection.tenant.tenant_id, name: projection.tenant.display_name, short: projection.tenant.tenant_ref, city: '已授权会话', families: '当前家庭' } : previewTenant; const copy = pageCopy[active];
     const visibleNav = nav.filter(([id]) => (roleVisibility[role] ?? roleVisibility.TENANT_OPERATOR).includes(id));
     if (!visibleNav.some(([id]) => id === active)) active = 'overview';
     const runtimeNotice = projectionState === 'live' ? '已加载真实 tenant-scoped 读取投影：当前显示内容已同时通过家庭会话、账户成员资格、tenant policy profile 与 tenant/family 双重范围校验；前端不在 Web 端自行裁决高风险策略。' : projectionState === 'loading' ? '正在通过 Family API 读取当前家庭的 tenant-scoped 投影；不会在前端生成或放大任何授权，也不在 Web 端自行裁决高风险策略。' : '开发预览：未建立真实家庭会话，页面不展示伪造的商业、服务或会员数据。真实读取仍由 Family API 的账户成员资格、tenant policy profile 与 Family Scope Guard 校验；前端切换不构成授权，且不在 Web 端自行裁决高风险策略。';
-    const content = active === 'operations' ? operations(receiptProjection, receiptState, receiptPageFilter, receiptStatusFilter) : renderers[active](projection);
+    const content = active === 'operations' ? operations(receiptProjection, receiptState, receiptFilters, receiptExportAudit) : renderers[active](projection);
     root.innerHTML = `<div class="console-shell"><aside class="sidebar"><div class="brand"><span class="brand-mark">F</span><div><b>Family AI</b><small>成长运营平台</small></div></div><div class="tenant-select"><span class="eyebrow">当前租户</span><select id="tenantSelect" ${projection ? 'disabled' : ''}>${projection ? `<option>${escapeHtml(tenant.name)}</option>` : tenants.map((item)=>`<option value="${item.id}" ${item.id===tenantId?'selected':''}>${item.name}</option>`).join('')}</select><small>${escapeHtml(tenant.city)} · ${escapeHtml(tenant.families)} 个家庭</small></div><nav>${visibleNav.map(([id,label,icon])=>`<button class="nav-item ${active===id?'active':''}" data-page="${id}"><span>${icon}</span>${label}</button>`).join('')}</nav><div class="sidebar-foot"><span class="secure-dot"></span><small>${projection ? '真实范围已加载' : '开发预览范围'}</small></div></aside><main class="console-main"><header class="topbar"><div class="crumb"><span>Family AI</span><b>/</b><strong>${escapeHtml(tenant.short)}</strong></div><div class="top-actions"><select id="roleSelect" class="role-select" aria-label="开发预览角色">${Object.entries(roleNames).map(([id,label])=>`<option value="${id}" ${id===role?'selected':''}>${label}</option>`).join('')}</select><button class="help">?</button><button class="user">林</button></div></header><div class="preview-notice">${runtimeNotice}</div><section class="hero"><div><span class="eyebrow">${copy.kicker}</span><h1>${copy.title}</h1><p>${copy.intro}</p></div><div class="hero-actions"><button class="secondary-btn">查看帮助</button><button class="primary-btn" id="quickAction">新建受控任务 <span>+</span></button></div></section><section class="content-area">${content}</section></main></div>`;
     root.querySelectorAll('[data-page]').forEach((button)=>button.addEventListener('click',()=>{active=/** @type {keyof typeof renderers} */ (/** @type {HTMLElement} */ (button).dataset.page ?? 'overview');render();}));
     root.querySelector('#tenantSelect')?.addEventListener('change',(event)=>{tenantId=/** @type {HTMLSelectElement} */ (event.target).value;render();});
     root.querySelector('#roleSelect')?.addEventListener('change',(event)=>{role=/** @type {keyof typeof roleVisibility} */ (/** @type {HTMLSelectElement} */ (event.target).value);render();});
-    root.querySelector('#receiptPageFilter')?.addEventListener('change',(event)=>{receiptPageFilter=/** @type {HTMLSelectElement} */ (event.target).value;render();});
-    root.querySelector('#receiptStatusFilter')?.addEventListener('change',(event)=>{receiptStatusFilter=/** @type {HTMLSelectElement} */ (event.target).value;render();});
+    root.querySelector('#receiptPageFilter')?.addEventListener('change',(event)=>{receiptFilters.page=/** @type {HTMLSelectElement} */ (event.target).value;render();});
+    root.querySelector('#receiptStatusFilter')?.addEventListener('change',(event)=>{receiptFilters.status=/** @type {HTMLSelectElement} */ (event.target).value;render();});
+    root.querySelector('#receiptFromDate')?.addEventListener('change',(event)=>{receiptFilters.from=/** @type {HTMLInputElement} */ (event.target).value;render();});
+    root.querySelector('#receiptToDate')?.addEventListener('change',(event)=>{receiptFilters.to=/** @type {HTMLInputElement} */ (event.target).value;render();});
+    root.querySelector('#receiptSourceFilter')?.addEventListener('change',(event)=>{receiptFilters.source=/** @type {HTMLSelectElement} */ (event.target).value;render();});
+    root.querySelector('#receiptAuthorizationFilter')?.addEventListener('change',(event)=>{receiptFilters.authorization=/** @type {HTMLSelectElement} */ (event.target).value;render();});
+    root.querySelector('#receiptExport')?.addEventListener('click',()=>{const rows=filterReceipts(safeReceipts(receiptProjection),receiptFilters);if(rows.length){downloadReceiptCsv(rows);receiptExportAudit={count:rows.length,at:new Date().toISOString()};root.dataset.receiptExportAudit=`LOCAL_CSV:${rows.length}`;render();}});
     root.querySelector('#quickAction')?.addEventListener('click',()=>window.alert('此演示仅展示受控任务入口。实际写入仍由现有 Family API、角色、租户与家庭范围策略校验。'));
   };
   render();

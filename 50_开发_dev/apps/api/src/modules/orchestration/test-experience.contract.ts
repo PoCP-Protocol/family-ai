@@ -43,6 +43,7 @@ export interface TestExperienceCustomerProjection {
     fixture_ref: string;
     status: 'CREATED' | 'CONFIRMED' | 'CANCELLED';
     source: 'TEST_FIXTURE' | 'DOMAIN_COMMAND_ADAPTER';
+    authorization_status: 'FAMILY_SCOPE_AUTHORIZED';
     external_effect: false;
     created_at: string;
   }>;
