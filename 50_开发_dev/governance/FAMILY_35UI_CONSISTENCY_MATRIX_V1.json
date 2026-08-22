@@ -1,0 +1,1183 @@
+{
+  "schema_version": "FAMILY_35UI_CONSISTENCY_MATRIX_V1",
+  "layered_on": "FAMILY_AI_PLATFORM_V4_1",
+  "generated_by": "tools/validate-35ui-consistency.mjs --emit",
+  "truth_note": "named_actions_implemented 仅统计归一化名字精确匹配到后端 @Require*Action guard 的动作。naming_divergence = 后端存在疑似改名的 guard(advisory,须架构师裁决词汇统一),不计入 implemented。35_UI_BACKEND_COMPLETE=NO;本矩阵不解除任何 Gate,只登记现状与关闭它的 Gate。",
+  "runtime_status_source": "governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json",
+  "summary": {
+    "screens": 35,
+    "frontend_canonical": "apps/mobile (V4.1)",
+    "frontend_canonical_coverage": "35/35",
+    "web_35ui_coverage": "0/35 (ABSENT_BY_DESIGN)",
+    "contract_coverage": "35/35",
+    "named_actions_declared": 56,
+    "named_actions_defined_in_specs": 3,
+    "named_actions_implemented_exact": 3,
+    "named_actions_naming_divergence": 44,
+    "verdicts": {
+      "BACKEND_WIRED": 2,
+      "DECLARED_ONLY_GATED": 25,
+      "READONLY_BY_DESIGN": 7,
+      "PARTIAL_BACKEND": 1
+    },
+    "three_vocabularies": {
+      "matrix_style": "SCREAMING_SNAKE (named_actions in RUNTIME_MATRIX)",
+      "specs_registry_style": "PascalCase (specs/actions/*.action.yaml)",
+      "backend_guard_style": "PascalCase (@Require*Action guards)",
+      "note": "declared/defined_in_specs/implemented 三者归一化后基本不互认,须架构师裁决唯一权威动作词汇表"
+    },
+    "specs_action_registry": [
+      "AddChild",
+      "AddParent",
+      "AssignLifeStage",
+      "CloseInterventionCycle",
+      "CompleteGrowthAction",
+      "CompleteGrowthReview",
+      "ConfirmGrowthPriority",
+      "CreateFamily",
+      "CreateFamilyRelationship",
+      "GrantConsent",
+      "RecordNextStepDecision",
+      "RecordOutcomeObservation",
+      "StartIntervention"
+    ],
+    "backend_guard_vocabulary": [
+      "AddChild",
+      "CompleteAction",
+      "ConfirmGrowthIntent",
+      "ConfirmGrowthPriority",
+      "ConfirmJourneyPlan",
+      "CreateJourneyPlan",
+      "DecideGrowthService",
+      "ExecuteFamilyPageObjectAction",
+      "ExecuteTestExperienceAction",
+      "GrantConsent",
+      "InviteAdult",
+      "ManageMembershipEntitlement",
+      "PauseJourneyPlan",
+      "ReadFamily",
+      "RecordPerspective",
+      "RequestGrowthHelp",
+      "ReviewJourneyPhase",
+      "StartIntervention",
+      "SubmitCommerceIntent",
+      "SubmitServiceBooking",
+      "SubmitServiceFollowUp"
+    ]
+  },
+  "screens": [
+    {
+      "ui_id": "UI-01",
+      "title": "家庭成长首页",
+      "loop": "GROWTH",
+      "primary_domain": "FAMILY_CORE",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/(tabs)/index.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "FamilyHomeProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "REQUEST_GROWTH_HELP"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [
+        "REQUEST_GROWTH_HELP"
+      ],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "BACKEND_WIRED",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-02",
+      "title": "家庭测评",
+      "loop": "ASSESSMENT",
+      "primary_domain": "GROWTH_INTELLIGENCE",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-02.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "AssessmentSessionProjection",
+      "runtime_status": "GATE_BOUNDARY",
+      "named_actions_declared": [
+        "START_ASSESSMENT",
+        "SAVE_ASSESSMENT_RESPONSE",
+        "SUBMIT_ASSESSMENT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "START_ASSESSMENT",
+          "backend_guard_candidates": [
+            "StartIntervention"
+          ]
+        },
+        {
+          "declared_action": "SUBMIT_ASSESSMENT",
+          "backend_guard_candidates": [
+            "SubmitCommerceIntent",
+            "SubmitServiceBooking",
+            "SubmitServiceFollowUp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G2+ business gate (payment/human/child/public)"
+    },
+    {
+      "ui_id": "UI-03",
+      "title": "家庭成长解读 / AI诊断",
+      "loop": "ASSESSMENT",
+      "primary_domain": "GROWTH_INTELLIGENCE",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-03.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "GrowthDiagnosisProjection",
+      "runtime_status": "GATE_BOUNDARY",
+      "named_actions_declared": [
+        "CONFIRM_GROWTH_INTENT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [
+        "CONFIRM_GROWTH_INTENT"
+      ],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "BACKEND_WIRED",
+      "closing_gate": "G2+ business gate (payment/human/child/public)"
+    },
+    {
+      "ui_id": "UI-04",
+      "title": "90 天成长方案",
+      "loop": "PLAN",
+      "primary_domain": "GROWTH_JOURNEY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-04.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "GrowthPlanProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "ACCEPT_GROWTH_PLAN",
+        "PAUSE_GROWTH_PLAN"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "ACCEPT_GROWTH_PLAN",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "ConfirmGrowthPriority",
+            "DecideGrowthService",
+            "RequestGrowthHelp"
+          ]
+        },
+        {
+          "declared_action": "PAUSE_GROWTH_PLAN",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "ConfirmGrowthPriority",
+            "DecideGrowthService",
+            "PauseJourneyPlan",
+            "RequestGrowthHelp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-05",
+      "title": "90 天陪跑",
+      "loop": "PLAN",
+      "primary_domain": "GROWTH_JOURNEY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-05.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "ProgramDeliveryProjection",
+      "runtime_status": "LOCAL_DRAFT",
+      "named_actions_declared": [
+        "RECORD_PROGRAM_CHECKIN",
+        "PAUSE_PROGRAM",
+        "RESUME_PROGRAM"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "RECORD_PROGRAM_CHECKIN",
+          "backend_guard_candidates": [
+            "RecordPerspective"
+          ]
+        },
+        {
+          "declared_action": "PAUSE_PROGRAM",
+          "backend_guard_candidates": [
+            "PauseJourneyPlan"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C (promote local draft to canonical)"
+    },
+    {
+      "ui_id": "UI-06",
+      "title": "我的会员",
+      "loop": "COMMERCE",
+      "primary_domain": "COMMERCE_ENTITLEMENT",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-06.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "MembershipProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "SUBMIT_RENEWAL_INTENT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "SUBMIT_RENEWAL_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "SubmitCommerceIntent",
+            "SubmitServiceBooking",
+            "SubmitServiceFollowUp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-07",
+      "title": "成长测评入口",
+      "loop": "ASSESSMENT",
+      "primary_domain": "GROWTH_INTELLIGENCE",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-07.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "AssessmentCatalogProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "START_ASSESSMENT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "START_ASSESSMENT",
+          "backend_guard_candidates": [
+            "StartIntervention"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-08",
+      "title": "成长报告",
+      "loop": "ASSESSMENT",
+      "primary_domain": "GROWTH_INTELLIGENCE",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-08.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "GrowthReportProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "ACKNOWLEDGE_GROWTH_REPORT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "ACKNOWLEDGE_GROWTH_REPORT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "ConfirmGrowthPriority",
+            "DecideGrowthService",
+            "RequestGrowthHelp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-09",
+      "title": "今日成长任务",
+      "loop": "GROWTH",
+      "primary_domain": "GROWTH_JOURNEY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-09.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "TodayTaskProjection",
+      "runtime_status": "TEST_LOOP_FIXTURE",
+      "named_actions_declared": [
+        "START_GROWTH_ACTION",
+        "COMPLETE_GROWTH_ACTION",
+        "RECORD_REFLECTION",
+        "SKIP_GROWTH_ACTION"
+      ],
+      "named_actions_defined_in_specs": [
+        "COMPLETE_GROWTH_ACTION"
+      ],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "START_GROWTH_ACTION",
+          "backend_guard_candidates": [
+            "CompleteAction",
+            "ConfirmGrowthIntent",
+            "ConfirmGrowthPriority",
+            "DecideGrowthService",
+            "ExecuteFamilyPageObjectAction",
+            "ExecuteTestExperienceAction",
+            "RequestGrowthHelp",
+            "StartIntervention"
+          ]
+        },
+        {
+          "declared_action": "COMPLETE_GROWTH_ACTION",
+          "backend_guard_candidates": [
+            "CompleteAction",
+            "ConfirmGrowthIntent",
+            "ConfirmGrowthPriority",
+            "DecideGrowthService",
+            "ExecuteFamilyPageObjectAction",
+            "ExecuteTestExperienceAction",
+            "RequestGrowthHelp"
+          ]
+        },
+        {
+          "declared_action": "RECORD_REFLECTION",
+          "backend_guard_candidates": [
+            "RecordPerspective"
+          ]
+        },
+        {
+          "declared_action": "SKIP_GROWTH_ACTION",
+          "backend_guard_candidates": [
+            "CompleteAction",
+            "ConfirmGrowthIntent",
+            "ConfirmGrowthPriority",
+            "DecideGrowthService",
+            "ExecuteFamilyPageObjectAction",
+            "ExecuteTestExperienceAction",
+            "RequestGrowthHelp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C/G2 (real effect beyond fixture)"
+    },
+    {
+      "ui_id": "UI-10",
+      "title": "孩子成长小助手",
+      "loop": "GROWTH",
+      "primary_domain": "GROWTH_JOURNEY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-10.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "ChildAssistantProjection",
+      "runtime_status": "GATE_BOUNDARY",
+      "named_actions_declared": [
+        "SAVE_CHILD_PERSPECTIVE_DRAFT",
+        "REQUEST_HUMAN_HELP"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "SAVE_CHILD_PERSPECTIVE_DRAFT",
+          "backend_guard_candidates": [
+            "AddChild",
+            "RecordPerspective"
+          ]
+        },
+        {
+          "declared_action": "REQUEST_HUMAN_HELP",
+          "backend_guard_candidates": [
+            "RequestGrowthHelp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G2+ business gate (payment/human/child/public)"
+    },
+    {
+      "ui_id": "UI-11",
+      "title": "我们的成长节奏",
+      "loop": "GROWTH",
+      "primary_domain": "GROWTH_JOURNEY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-11.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "GrowthRhythmProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "PAUSE_JOURNEY",
+        "RESUME_JOURNEY"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "PAUSE_JOURNEY",
+          "backend_guard_candidates": [
+            "ConfirmJourneyPlan",
+            "CreateJourneyPlan",
+            "PauseJourneyPlan",
+            "ReviewJourneyPhase"
+          ]
+        },
+        {
+          "declared_action": "RESUME_JOURNEY",
+          "backend_guard_candidates": [
+            "ConfirmJourneyPlan",
+            "CreateJourneyPlan",
+            "PauseJourneyPlan",
+            "ReviewJourneyPhase"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-12",
+      "title": "成长故事卡",
+      "loop": "COMMUNITY",
+      "primary_domain": "CONTENT_COMMUNITY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-12.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "GrowthStoryProjection",
+      "runtime_status": "LOCAL_DRAFT",
+      "named_actions_declared": [
+        "SAVE_PRIVATE_GROWTH_STORY",
+        "CREATE_SHARE_DRAFT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "SAVE_PRIVATE_GROWTH_STORY",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "ConfirmGrowthPriority",
+            "DecideGrowthService",
+            "RequestGrowthHelp"
+          ]
+        },
+        {
+          "declared_action": "CREATE_SHARE_DRAFT",
+          "backend_guard_candidates": [
+            "CreateJourneyPlan"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C (promote local draft to canonical)"
+    },
+    {
+      "ui_id": "UI-13",
+      "title": "家庭成长商城",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_NETWORK",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-13.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "ResourceCatalogProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "NONE"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "READONLY_BY_DESIGN",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-14",
+      "title": "成长方案详情",
+      "loop": "COMMERCE",
+      "primary_domain": "RESOURCE_NETWORK",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-14.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "ResourceDetailProjection",
+      "runtime_status": "TEST_LOOP_FIXTURE",
+      "named_actions_declared": [
+        "SUBMIT_ORDER_INTENT",
+        "CANCEL_ORDER_INTENT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "SUBMIT_ORDER_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "SubmitCommerceIntent",
+            "SubmitServiceBooking",
+            "SubmitServiceFollowUp"
+          ]
+        },
+        {
+          "declared_action": "CANCEL_ORDER_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "SubmitCommerceIntent"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C/G2 (real effect beyond fixture)"
+    },
+    {
+      "ui_id": "UI-15",
+      "title": "邀请有礼",
+      "loop": "COMMERCE",
+      "primary_domain": "COMMERCE_ENTITLEMENT",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-15.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "InvitationProjection",
+      "runtime_status": "TEST_LOOP_FIXTURE",
+      "named_actions_declared": [
+        "CREATE_INVITATION_DRAFT",
+        "CANCEL_INVITATION_DRAFT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "CREATE_INVITATION_DRAFT",
+          "backend_guard_candidates": [
+            "CreateJourneyPlan"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C/G2 (real effect beyond fixture)"
+    },
+    {
+      "ui_id": "UI-16",
+      "title": "家庭同行计划",
+      "loop": "COMMERCE",
+      "primary_domain": "COMMERCE_ENTITLEMENT",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-16.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "CohortIntentProjection",
+      "runtime_status": "TEST_LOOP_FIXTURE",
+      "named_actions_declared": [
+        "SAVE_COHORT_INTENT",
+        "CANCEL_COHORT_INTENT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "SAVE_COHORT_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "SubmitCommerceIntent"
+          ]
+        },
+        {
+          "declared_action": "CANCEL_COHORT_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "SubmitCommerceIntent"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C/G2 (real effect beyond fixture)"
+    },
+    {
+      "ui_id": "UI-17",
+      "title": "成长积分",
+      "loop": "COMMERCE",
+      "primary_domain": "COMMERCE_ENTITLEMENT",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-17.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "PointsProjection",
+      "runtime_status": "GATE_BOUNDARY",
+      "named_actions_declared": [
+        "CLAIM_POINTS_TASK"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G2+ business gate (payment/human/child/public)"
+    },
+    {
+      "ui_id": "UI-18",
+      "title": "会员中心",
+      "loop": "COMMERCE",
+      "primary_domain": "COMMERCE_ENTITLEMENT",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-18.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "MembershipCenterProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "SUBMIT_RENEWAL_INTENT",
+        "CONSUME_MEMBERSHIP_BENEFIT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "SUBMIT_RENEWAL_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "SubmitCommerceIntent",
+            "SubmitServiceBooking",
+            "SubmitServiceFollowUp"
+          ]
+        },
+        {
+          "declared_action": "CONSUME_MEMBERSHIP_BENEFIT",
+          "backend_guard_candidates": [
+            "ManageMembershipEntitlement"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-19",
+      "title": "名师专区",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-19.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "ExpertCatalogProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "NONE"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "READONLY_BY_DESIGN",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-20",
+      "title": "名师详情",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-20.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "ExpertDetailProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "NONE"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "READONLY_BY_DESIGN",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-21",
+      "title": "在线咨询预约",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-21.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "ConsultationBookingProjection",
+      "runtime_status": "TEST_LOOP_FIXTURE",
+      "named_actions_declared": [
+        "REQUEST_SERVICE_BOOKING",
+        "CANCEL_SERVICE_BOOKING"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "REQUEST_SERVICE_BOOKING",
+          "backend_guard_candidates": [
+            "DecideGrowthService",
+            "RequestGrowthHelp",
+            "SubmitServiceBooking",
+            "SubmitServiceFollowUp"
+          ]
+        },
+        {
+          "declared_action": "CANCEL_SERVICE_BOOKING",
+          "backend_guard_candidates": [
+            "DecideGrowthService",
+            "SubmitServiceBooking",
+            "SubmitServiceFollowUp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C/G2 (real effect beyond fixture)"
+    },
+    {
+      "ui_id": "UI-22",
+      "title": "沙龙活动",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-22.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "ActivityCatalogProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "NONE"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "READONLY_BY_DESIGN",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-23",
+      "title": "活动详情",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-23.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "ActivityDetailProjection",
+      "runtime_status": "TEST_LOOP_FIXTURE",
+      "named_actions_declared": [
+        "SAVE_ACTIVITY_INTENT",
+        "CANCEL_ACTIVITY_INTENT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "SAVE_ACTIVITY_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "SubmitCommerceIntent"
+          ]
+        },
+        {
+          "declared_action": "CANCEL_ACTIVITY_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "SubmitCommerceIntent"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C/G2 (real effect beyond fixture)"
+    },
+    {
+      "ui_id": "UI-24",
+      "title": "我的咨询与活动",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-24.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "MyConsultationsProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "NONE"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "READONLY_BY_DESIGN",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-25",
+      "title": "家长社区",
+      "loop": "COMMUNITY",
+      "primary_domain": "CONTENT_COMMUNITY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-25.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "CommunityFeedProjection",
+      "runtime_status": "GATE_BOUNDARY",
+      "named_actions_declared": [
+        "BOOKMARK_CONTENT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G2+ business gate (payment/human/child/public)"
+    },
+    {
+      "ui_id": "UI-26",
+      "title": "发布家庭小记",
+      "loop": "COMMUNITY",
+      "primary_domain": "CONTENT_COMMUNITY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-26.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "FamilyNoteDraftProjection",
+      "runtime_status": "TEST_LOOP_FIXTURE",
+      "named_actions_declared": [
+        "SAVE_FAMILY_NOTE_DRAFT",
+        "SUBMIT_NOTE_FOR_REVIEW"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "SAVE_FAMILY_NOTE_DRAFT",
+          "backend_guard_candidates": [
+            "ExecuteFamilyPageObjectAction",
+            "ReadFamily"
+          ]
+        },
+        {
+          "declared_action": "SUBMIT_NOTE_FOR_REVIEW",
+          "backend_guard_candidates": [
+            "ReviewJourneyPhase",
+            "SubmitCommerceIntent",
+            "SubmitServiceBooking",
+            "SubmitServiceFollowUp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C/G2 (real effect beyond fixture)"
+    },
+    {
+      "ui_id": "UI-27",
+      "title": "家庭小记详情",
+      "loop": "COMMUNITY",
+      "primary_domain": "CONTENT_COMMUNITY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-27.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "FamilyNoteDetailProjection",
+      "runtime_status": "NOT_IMPLEMENTED",
+      "named_actions_declared": [
+        "SAVE_COMMUNITY_RESPONSE_DRAFT",
+        "TOGGLE_BOOKMARK",
+        "TOGGLE_FOLLOW"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "TOGGLE_FOLLOW",
+          "backend_guard_candidates": [
+            "SubmitServiceFollowUp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C (build projection + wiring)"
+    },
+    {
+      "ui_id": "UI-28",
+      "title": "我的社区",
+      "loop": "COMMUNITY",
+      "primary_domain": "CONTENT_COMMUNITY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-28.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "MyCommunityProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "NONE"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "READONLY_BY_DESIGN",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-29",
+      "title": "成长成果",
+      "loop": "ASSESSMENT",
+      "primary_domain": "GROWTH_INTELLIGENCE",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-29.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "GrowthOutcomeProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "CONFIRM_MILESTONE"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "CONFIRM_MILESTONE",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "ConfirmGrowthPriority",
+            "ConfirmJourneyPlan"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-30",
+      "title": "年度陪伴方案",
+      "loop": "COMMERCE",
+      "primary_domain": "COMMERCE_ENTITLEMENT",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-30.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "AnnualCompanionProjection",
+      "runtime_status": "GATE_BOUNDARY",
+      "named_actions_declared": [
+        "SUBMIT_MEMBERSHIP_INTENT",
+        "SUBMIT_RENEWAL_INTENT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "SUBMIT_MEMBERSHIP_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "ManageMembershipEntitlement",
+            "SubmitCommerceIntent",
+            "SubmitServiceBooking",
+            "SubmitServiceFollowUp"
+          ]
+        },
+        {
+          "declared_action": "SUBMIT_RENEWAL_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "SubmitCommerceIntent",
+            "SubmitServiceBooking",
+            "SubmitServiceFollowUp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G2+ business gate (payment/human/child/public)"
+    },
+    {
+      "ui_id": "UI-31",
+      "title": "我的服务",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-31.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "MyServicesProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "NONE"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [],
+      "consistency_verdict": "READONLY_BY_DESIGN",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-32",
+      "title": "订单与资产",
+      "loop": "COMMERCE",
+      "primary_domain": "COMMERCE_ENTITLEMENT",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-32.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "OrdersAssetsProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "CANCEL_ORDER_INTENT"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "CANCEL_ORDER_INTENT",
+          "backend_guard_candidates": [
+            "ConfirmGrowthIntent",
+            "SubmitCommerceIntent"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-33",
+      "title": "家庭档案",
+      "loop": "GROWTH",
+      "primary_domain": "FAMILY_CORE",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-33.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "FamilyProfileProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "UPDATE_FAMILY_PROFILE",
+        "GRANT_CONSENT",
+        "WITHDRAW_CONSENT",
+        "UPDATE_VISIBILITY"
+      ],
+      "named_actions_defined_in_specs": [
+        "GRANT_CONSENT"
+      ],
+      "named_actions_implemented": [
+        "GRANT_CONSENT"
+      ],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "UPDATE_FAMILY_PROFILE",
+          "backend_guard_candidates": [
+            "ExecuteFamilyPageObjectAction",
+            "ReadFamily"
+          ]
+        },
+        {
+          "declared_action": "WITHDRAW_CONSENT",
+          "backend_guard_candidates": [
+            "GrantConsent"
+          ]
+        }
+      ],
+      "consistency_verdict": "PARTIAL_BACKEND",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-34",
+      "title": "服务记录",
+      "loop": "SERVICE",
+      "primary_domain": "SERVICE_OS",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-34.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "ServiceRecordsProjection",
+      "runtime_status": "READ_ONLY_PROJECTION",
+      "named_actions_declared": [
+        "SUBMIT_SERVICE_FEEDBACK"
+      ],
+      "named_actions_defined_in_specs": [],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "SUBMIT_SERVICE_FEEDBACK",
+          "backend_guard_candidates": [
+            "DecideGrowthService",
+            "SubmitCommerceIntent",
+            "SubmitServiceBooking",
+            "SubmitServiceFollowUp"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1/G2 (write path per owning domain)"
+    },
+    {
+      "ui_id": "UI-35",
+      "title": "21 天智慧父母成长营",
+      "loop": "PLAN",
+      "primary_domain": "GROWTH_JOURNEY",
+      "canonical_frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-35.tsx",
+      "frontend_canonical_present": true,
+      "web_status": "ABSENT_BY_DESIGN",
+      "contract_present": true,
+      "projection": "Program21Projection",
+      "runtime_status": "TEST_LOOP_FIXTURE",
+      "named_actions_declared": [
+        "START_PROGRAM",
+        "COMPLETE_GROWTH_ACTION",
+        "RECORD_STAGE_REVIEW",
+        "PAUSE_PROGRAM",
+        "RESUME_PROGRAM"
+      ],
+      "named_actions_defined_in_specs": [
+        "COMPLETE_GROWTH_ACTION"
+      ],
+      "named_actions_implemented": [],
+      "named_actions_naming_divergence": [
+        {
+          "declared_action": "START_PROGRAM",
+          "backend_guard_candidates": [
+            "StartIntervention"
+          ]
+        },
+        {
+          "declared_action": "COMPLETE_GROWTH_ACTION",
+          "backend_guard_candidates": [
+            "CompleteAction",
+            "ConfirmGrowthIntent",
+            "ConfirmGrowthPriority",
+            "DecideGrowthService",
+            "ExecuteFamilyPageObjectAction",
+            "ExecuteTestExperienceAction",
+            "RequestGrowthHelp"
+          ]
+        },
+        {
+          "declared_action": "RECORD_STAGE_REVIEW",
+          "backend_guard_candidates": [
+            "RecordPerspective",
+            "ReviewJourneyPhase"
+          ]
+        },
+        {
+          "declared_action": "PAUSE_PROGRAM",
+          "backend_guard_candidates": [
+            "PauseJourneyPlan"
+          ]
+        }
+      ],
+      "consistency_verdict": "DECLARED_ONLY_GATED",
+      "closing_gate": "G1-C/G2 (real effect beyond fixture)"
+    }
+  ]
+}
