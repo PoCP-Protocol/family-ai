@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { BadRequestException, Body, Controller, Get, Headers, Inject, Param, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ActorId, FamilyContext, FamilyPlatformAuthGuard, RequireFamilyAction } from '../auth/family-platform-auth.guard';
 import { projectTaskCheckinResult } from '@family/contracts';
-import type { AddChildResponse, AddParentResponse, AssignLifeStageResponse, AuditMeta, BuildGrowthProfileDraftsResponse, CompleteGrowthActionResponse, CompleteGrowthReviewResponse, ConfirmGrowthPriorityResponse, ConfirmGrowthProfileResponse, ConfirmJourneyPlanResponse, CreateFamilyRelationshipResponse, CreateFamilyResponse, CreateJourneyPlanResponse, FamilyAggregateResponse, FamilyTimelineResponse, GrantConsentResponse, GrowthActionDto, GrowthInsightResponse, GrowthPriorityInsightResponse, InterventionCardDto, JourneyPlanProjection, PauseJourneyPlanResponse, PerspectiveSummaryResponse, RecordNextStepDecisionResponse, RecordOutcomeObservationResponse, RecordPerspectiveResponse, ReviewJourneyPhaseResponse, StartGrowthOnboardingResponse, StartInterventionResponse } from '@family/contracts';
+import type { AddChildResponse, AddParentResponse, AssignLifeStageResponse, AuditMeta, BuildGrowthProfileDraftsResponse, CompleteGrowthActionResponse, CompleteGrowthReviewResponse, ConfirmGrowthPriorityResponse, ConfirmGrowthProfileResponse, ConfirmJourneyPlanResponse, CreateFamilyRelationshipResponse, CreateFamilyResponse, CreateJourneyPlanResponse, FamilyAggregateResponse, FamilyContextPurpose, FamilyContextResolutionDto, FamilyTimelineResponse, GrantConsentResponse, GrowthActionDto, GrowthInsightResponse, GrowthPriorityInsightResponse, InterventionCardDto, InterventionLibraryProjection, JourneyPlanProjection, PauseJourneyPlanResponse, PerspectiveSummaryResponse, RecordNextStepDecisionResponse, RecordOutcomeObservationResponse, RecordPerspectiveResponse, ReviewJourneyPhaseResponse, StartGrowthOnboardingResponse, StartInterventionResponse } from '@family/contracts';
 import { validateAddChildRequest } from './add-child.dto';
 import { validateAddParentRequest } from './add-parent.dto';
 import { validateAssignLifeStageRequest } from './assign-life-stage.dto';
@@ -21,9 +21,11 @@ import { validateRecordPerspectiveRequest } from './record-perspective.dto';
 import { validateStartGrowthOnboardingRequest } from './start-growth-onboarding.dto';
 import { validateStartInterventionRequest } from './start-intervention.dto';
 import { FamilyService } from './family.service';
+import { FamilyContextResolverService } from './family-context-resolver.service';
 import { GrowthActionService } from './growth-action.service';
 import { GrowthPriorityService } from './growth-priority.service';
 import { GrowthReviewService } from './growth-review.service';
+import { InterventionLibraryService } from './intervention-library.service';
 import { InterventionService } from './intervention.service';
 import { JourneyPlanService } from './journey-plan.service';
 import { OnboardingService } from './onboarding.service';
@@ -38,7 +40,9 @@ import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.s
 export class FamilyController {
   constructor(
     @Inject(FamilyService) private readonly familyService: FamilyService,
+    @Inject(FamilyContextResolverService) private readonly familyContextResolverService: FamilyContextResolverService,
     @Inject(GrowthPriorityService) private readonly growthPriorityService: GrowthPriorityService,
+    @Inject(InterventionLibraryService) private readonly interventionLibraryService: InterventionLibraryService,
     @Inject(InterventionService) private readonly interventionService: InterventionService,
     @Inject(JourneyPlanService) private readonly journeyPlanService: JourneyPlanService,
     @Inject(GrowthActionService) private readonly growthActionService: GrowthActionService,
@@ -644,6 +648,28 @@ export class FamilyController {
     const request = validateConfirmGrowthPriorityRequest(familyId, onboardingId, idempotencyKey, body);
     const meta = buildAuditMeta(actorId, correlationId, source);
     return this.growthPriorityService.confirmGrowthPriority(request, meta);
+  }
+
+  @RequireFamilyAction('ReadFamily')
+  @Get(':familyId/growth/interventions')
+  async listInterventionLibrary(
+    @Param('familyId') familyId: string,
+    @ActorId() actorId: string,
+  ): Promise<InterventionLibraryProjection> {
+    assertReadContext(familyId, actorId);
+    return this.interventionLibraryService.listPublishedForFamily(familyId, actorId!);
+  }
+
+  @RequireFamilyAction('ReadFamily')
+  @Get(':familyId/growth/subjects/:subjectPersonId/context/:purpose')
+  async resolveFamilyContext(
+    @Param('familyId') familyId: string,
+    @Param('subjectPersonId') subjectPersonId: string,
+    @Param('purpose') purpose: FamilyContextPurpose,
+    @ActorId() actorId: string,
+  ): Promise<FamilyContextResolutionDto> {
+    assertReadContext(familyId, actorId);
+    return this.familyContextResolverService.resolve({ familyId, subjectPersonId, purpose, actorId: actorId! });
   }
 
   @Get(':familyId/growth/interventions/LISTEN_BEFORE_RESPOND')

@@ -38,6 +38,9 @@ export function createFamilyApiAdapter({ baseUrl, bearerToken, familyId }) {
     getFamily: () => read(''),
     getToday: () => read('/today'),
     getJourneyPlan: () => read('/growth/journey-plan'),
+    getInterventionLibrary: () => read('/growth/interventions'),
+    /** @param {string} subjectPersonId @param {'GROWTH_GUIDANCE'|'AI_PERSONALIZATION'} purpose */
+    resolveFamilyContext: (subjectPersonId, purpose) => read(`/growth/subjects/${encodeURIComponent(subjectPersonId)}/context/${purpose}`),
     getExperienceCustomerProjection: () => read('/orchestration/test-loop/experience/customer-projection'),
     /** @param {string} operationId @param {{ follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null, assigned_to_account_id?: string|null, follow_up_due_date?: string|null }} input */
     updateOperationFollowUp: (operationId, input) => write(`/orchestration/test-loop/experience/operations/${operationId}/follow-up`, input),

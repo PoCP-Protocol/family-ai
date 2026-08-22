@@ -40,6 +40,7 @@ function mountFamilyPortal() {
       <section><span>家庭成长方式</span><h2>先看见，再行动</h2><p>每一次记录、计划、服务和权益都回到同一个家庭成长旅程中。</p></section>
       <section><span>本周建议</span><strong>先完成今晚的一件小事</strong><p>完成后再回看下一步，不需要一次做完所有改变。</p></section>
       <section data-family-portal-card="journey"><span>计划阶段</span><strong data-family-portal-plan>连接家庭会话后显示</strong><p data-family-portal-plan-detail>计划阶段由同一 90 天成长计划读取。</p></section>
+      <section data-family-portal-card="interventions"><span>家庭练习内容</span><strong data-family-portal-interventions>连接家庭会话后显示</strong><p data-family-portal-interventions-detail>仅展示已审核、已发布的家庭练习。</p></section>
       <section data-family-portal-card="operations"><span>运营回执</span><strong data-family-portal-operations>连接家庭会话后显示</strong><p data-family-portal-operations-detail>课程、服务和权益操作均以家庭私有回执回读。</p></section>
       <section><span>家庭资料</span><p>家庭档案、同意范围与服务记录始终由现有 Family API 按当前家庭范围读取。</p></section>
     </aside>
@@ -65,15 +66,23 @@ function mountFamilyPortal() {
     portal.navigate(/** @type {HTMLElement} */ (button).dataset.familyRoute ?? 'home');
   }));
   const familyId = searchParams.get('familyId') ?? defaultTestLoopConfig.familyId;
+  const childId = searchParams.get('childId');
   const apiBaseUrl = searchParams.get('apiBaseUrl') ?? defaultTestLoopConfig.apiBaseUrl;
   const planTitle = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-plan]'));
   const planDetail = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-plan-detail]'));
   const operationTitle = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-operations]'));
   const operationDetail = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-operations-detail]'));
-  if (isDevTestRuntime && bearerToken && familyId && planTitle && planDetail && operationTitle && operationDetail) {
+  const interventionTitle = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-interventions]'));
+  const interventionDetail = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-interventions-detail]'));
+  if (isDevTestRuntime && bearerToken && familyId && planTitle && planDetail && operationTitle && operationDetail && interventionTitle && interventionDetail) {
     const adapter = createFamilyApiAdapter({ baseUrl: apiBaseUrl, bearerToken, familyId });
-    Promise.all([adapter.getJourneyPlan(), adapter.getExperienceCustomerProjection()])
-      .then(([journeyResult, operationsResult]) => {
+    Promise.all([
+      adapter.getJourneyPlan(),
+      adapter.getExperienceCustomerProjection(),
+      adapter.getInterventionLibrary(),
+      childId ? adapter.resolveFamilyContext(childId, 'GROWTH_GUIDANCE') : Promise.resolve(null),
+    ])
+      .then(([journeyResult, operationsResult, libraryResult, contextResult]) => {
         const plan = journeyResult?.plan;
         const phase = plan?.current_phase ?? '尚未开始';
         const phases = Array.isArray(plan?.phases) ? /** @type {{ phase?: string, status?: string }[]} */ (plan.phases) : [];
@@ -81,16 +90,26 @@ function mountFamilyPortal() {
         const currentPhase = phases.find((item) => item.phase === phase);
         const operationCount = operations.length;
         const pendingCount = operations.filter((item) => item.status !== 'CANCELLED').length;
+        const interventions = Array.isArray(libraryResult?.items)
+          ? /** @type {{ review_status?: string, intervention?: { name_zh?: string } }[]} */ (libraryResult.items).filter((item) => item.review_status === 'PUBLISHED')
+          : [];
+        const context = /** @type {{ consent?: { allowed?: boolean }, action_bridge_status?: string } | null} */ (contextResult);
         planTitle.textContent = `当前阶段 · ${phase}`;
         planDetail.textContent = currentPhase?.status === 'REVIEW_DUE' ? '这一阶段可以回顾：继续下一阶段，或先调整节奏。' : `计划状态：${currentPhase?.status ?? plan?.status ?? '未连接'}`;
         operationTitle.textContent = `家庭回执 · ${operationCount} 条`;
         operationDetail.textContent = pendingCount > 0 ? `${pendingCount} 条受控操作已记录，均未触发外部效果。` : '当前没有待回看的受控操作。';
+        interventionTitle.textContent = `已审核练习 · ${interventions.length} 项`;
+        interventionDetail.textContent = interventions.length > 0
+          ? `${interventions[0]?.intervention?.name_zh ?? '家庭练习'}可用于成长计划；${context?.consent?.allowed ? '成长使用同意已确认' : '当前仅展示通用内容'}，行动仍需家长确认。`
+          : '当前没有可用的已发布家庭练习。';
       })
       .catch(() => {
         planTitle.textContent = '暂时无法读取计划';
         planDetail.textContent = '请检查当前家庭会话后重试。';
         operationTitle.textContent = '暂时无法读取回执';
         operationDetail.textContent = '运营回执仍以当前家庭范围为准。';
+        interventionTitle.textContent = '暂时无法读取练习内容';
+        interventionDetail.textContent = '仅在家庭会话和审核状态有效时展示。';
       });
   }
   appRoot.dataset.clientSurface = 'web-family-portal';

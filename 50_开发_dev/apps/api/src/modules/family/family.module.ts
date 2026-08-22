@@ -9,6 +9,8 @@ import { GrowthActionService } from './growth-action.service';
 import { GrowthPriorityService } from './growth-priority.service';
 import { GrowthReviewService } from './growth-review.service';
 import { GrowthSubjectResolver } from './growth-subject.resolver';
+import { FamilyContextResolverService } from './family-context-resolver.service';
+import { InterventionLibraryService } from './intervention-library.service';
 import { InterventionService } from './intervention.service';
 import { JourneyPlanService } from './journey-plan.service';
 import { OnboardingService } from './onboarding.service';
@@ -32,9 +34,11 @@ import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.s
 		FamilyAggregateRepository,
 		EvidenceSynthesisService,
 		FamilyService,
-		GrowthSubjectResolver,
-		GrowthPriorityService,
-		InterventionService,
+			GrowthSubjectResolver,
+			GrowthPriorityService,
+			FamilyContextResolverService,
+			InterventionLibraryService,
+			InterventionService,
 		JourneyPlanService,
 		GrowthActionService,
 		GrowthReviewService,
@@ -47,6 +51,6 @@ import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.s
 
 		],
 	// M3-101A-C:导出 InterventionService,供 Principal Action Bridge 调用既有 StartIntervention Named Action(不复制其 canonical 门)。
-	exports: [InterventionService],
+		exports: [InterventionService, InterventionLibraryService],
 })
 export class FamilyModule {}

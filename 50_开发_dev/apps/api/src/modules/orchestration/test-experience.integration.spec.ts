@@ -150,16 +150,19 @@ describe('DEV/TEST formal experience workflows', () => {
     const operation = await create.json();
     const key = `followup-${randomUUID()}`;
     const followUp = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations/${operation.operation_id}/follow-up`, 'POST', seed.token, {
-      follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, follow_up_due_date: '2026-09-01',
+      follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, follow_up_due_date: '2026-09-01', case_priority: 'HIGH',
     }, { 'idempotency-key': key });
     expect(followUp.status).toBe(201);
-    expect(await followUp.json()).toMatchObject({ operation_id: operation.operation_id, follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, follow_up_due_date: '2026-09-01', external_effect: false });
-    const row = (await pool!.query(`select follow_up_status, operator_note, assigned_to_account_id::text, due_date::text from family_operation_followups where family_id=$1 and operation_id=$2`, [seed.familyId, operation.operation_id])).rows[0];
-    expect(row).toEqual({ follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, due_date: '2026-09-01' });
+    const followUpBody = await followUp.json();
+    expect(followUpBody).toMatchObject({ operation_id: operation.operation_id, follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, follow_up_due_date: '2026-09-01', case_priority: 'HIGH', sla_status: expect.stringMatching(/ON_TRACK|DUE_SOON/), external_effect: false });
+    expect(followUpBody.case_id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(followUpBody.sla_target_at).toContain('T');
+    const row = (await pool!.query(`select follow_up_status, operator_note, assigned_to_account_id::text, due_date::text, case_id::text, case_priority, sla_target_at is not null as has_sla from family_operation_followups where family_id=$1 and operation_id=$2`, [seed.familyId, operation.operation_id])).rows[0];
+    expect(row).toMatchObject({ follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, due_date: '2026-09-01', case_id: followUpBody.case_id, case_priority: 'HIGH', has_sla: true });
     expect((await pool!.query(`select status, external_effect from test_experience_operations where operation_id=$1`, [operation.operation_id])).rows[0]).toEqual({ status: 'CONFIRMED', external_effect: false });
     const projection = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/customer-projection`, 'GET', seed.token);
     expect((await projection.json()).operations).toEqual(expect.arrayContaining([
-      expect.objectContaining({ operation_id: operation.operation_id, follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, follow_up_due_date: '2026-09-01' }),
+      expect.objectContaining({ operation_id: operation.operation_id, follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, follow_up_due_date: '2026-09-01', case_id: followUpBody.case_id, case_priority: 'HIGH' }),
     ]));
     const other = await seedGuardian();
     const crossFamily = await request(`/families/${other.familyId}/orchestration/test-loop/experience/operations/${operation.operation_id}/follow-up`, 'POST', other.token, { follow_up_status: 'PROCESSED' });
@@ -183,6 +186,7 @@ describe('DEV/TEST formal experience workflows', () => {
     expect(batch.status).toBe(201);
     expect(await batch.json()).toMatchObject({ operation_ids: ids, updated_count: 2, follow_up_status: 'PROCESSED', external_effect: false });
     expect((await pool!.query(`select count(*)::int as count from family_operation_followups where family_id=$1 and follow_up_status='PROCESSED'`, [seed.familyId])).rows[0].count).toBe(2);
+    expect((await pool!.query(`select count(*)::int as count from family_operation_followups where family_id=$1 and resolved_at is not null and resolution_summary is not null`, [seed.familyId])).rows[0].count).toBe(2);
     const other = await seedGuardian();
     const crossFamily = await request(`/families/${other.familyId}/orchestration/test-loop/experience/operations/follow-up/batch-process`, 'POST', other.token, { operation_ids: ids });
     expect(crossFamily.status).toBe(404);
@@ -205,7 +209,7 @@ describe('DEV/TEST formal experience workflows', () => {
     expect(await assigned.json()).toMatchObject({ operation_ids: operationIds, updated_count: 2, assigned_to_account_id: seed.accountId, follow_up_due_date: '2000-01-01', external_effect: false });
     const metrics = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations/follow-up/metrics`, 'GET', seed.token);
     expect(metrics.status).toBe(200);
-    expect(await metrics.json()).toMatchObject({ pending: 2, overdue: 2, assignee_workload: [expect.objectContaining({ account_id: seed.accountId, pending_count: 2, overdue_count: 2 })] });
+    expect(await metrics.json()).toMatchObject({ pending: 2, overdue: 2, due_soon: expect.any(Number), sla_met: expect.any(Number), sla_breached: expect.any(Number), resolution_rate: expect.any(Number), assignee_workload: [expect.objectContaining({ account_id: seed.accountId, pending_count: 2, overdue_count: 2 })] });
     const other = await seedGuardian();
     const crossFamily = await request(`/families/${other.familyId}/orchestration/test-loop/experience/operations/follow-up/batch-assign`, 'POST', other.token, {
       operation_ids: operationIds, assigned_to_account_id: other.accountId,

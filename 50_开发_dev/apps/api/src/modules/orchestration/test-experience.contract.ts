@@ -50,6 +50,12 @@ export interface TestExperienceCustomerProjection {
     assigned_to_account_id: string | null;
     assigned_to_display_name: string | null;
     follow_up_due_date: string | null;
+    case_id: string | null;
+    case_priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT' | null;
+    sla_target_at: string | null;
+    sla_status: 'NOT_STARTED' | 'ON_TRACK' | 'DUE_SOON' | 'OVERDUE' | 'MET' | 'BREACHED';
+    resolved_at: string | null;
+    resolution_summary: string | null;
     external_effect: false;
     created_at: string;
   }>;
@@ -61,6 +67,8 @@ export interface UpdateOperationFollowUpDto {
   operator_note?: string | null;
   assigned_to_account_id?: string | null;
   follow_up_due_date?: string | null;
+  case_priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  resolution_summary?: string | null;
 }
 
 export interface OperationFollowUpResult {
@@ -71,6 +79,12 @@ export interface OperationFollowUpResult {
   assigned_to_account_id: string | null;
   assigned_to_display_name: string | null;
   follow_up_due_date: string | null;
+  case_id: string;
+  case_priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  sla_target_at: string;
+  sla_status: 'ON_TRACK' | 'DUE_SOON' | 'OVERDUE' | 'MET' | 'BREACHED';
+  resolved_at: string | null;
+  resolution_summary: string | null;
   external_effect: false;
   text_equivalent: string;
 }
@@ -112,6 +126,10 @@ export interface OperationFollowUpWorkspaceMetrics {
   pending: number;
   processed: number;
   overdue: number;
+  due_soon: number;
+  sla_met: number;
+  sla_breached: number;
+  resolution_rate: number;
   assignee_workload: Array<OperationFollowUpAssignee & { pending_count: number; overdue_count: number }>;
 }
 

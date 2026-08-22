@@ -118,7 +118,7 @@ describe('运营控制台家庭回执筛选', () => {
     assignee.value = 'operator-1'; dueDate.value = '2000-01-01';
     root.querySelector<HTMLButtonElement>(`[data-save-followup="${operationId}"]`)?.click();
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(updateFollowUp).toHaveBeenCalledWith(operationId, { follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请顾问在本周内回看。', assigned_to_account_id: 'operator-1', follow_up_due_date: '2000-01-01' });
+    expect(updateFollowUp).toHaveBeenCalledWith(operationId, { follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请顾问在本周内回看。', assigned_to_account_id: 'operator-1', follow_up_due_date: '2000-01-01', case_priority: 'NORMAL', resolution_summary: null });
     expect(root.textContent).toContain('已记录人工跟进状态与备注。');
     expect(root.querySelector<HTMLTextAreaElement>(`[data-followup-note="${operationId}"]`)?.value).toBe('请顾问在本周内回看。');
     root.querySelector<HTMLInputElement>(`[data-operation-select="${operationId}"]`)?.click();

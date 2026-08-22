@@ -526,6 +526,79 @@ export interface InterventionCardDto {
   policy_version: InterventionPolicyVersion;
 }
 
+export type InterventionLibraryReviewStatus = 'DRAFT' | 'IN_REVIEW' | 'PUBLISHED' | 'RETIRED';
+export type InterventionLibraryScope = 'GLOBAL' | 'TENANT';
+
+export interface InterventionLibrarySourceRefDto {
+  source_type: string;
+  source_ref: string;
+  evidence_grade: string;
+}
+
+export interface InterventionLibraryItemDto {
+  intervention: InterventionCardDto;
+  content_version: number;
+  scope: InterventionLibraryScope;
+  tenant_id: string | null;
+  review_status: InterventionLibraryReviewStatus;
+  evidence_grade: string;
+  risk_level: string;
+  human_requirement: string;
+  required_consent_purposes: string[];
+  source_refs: InterventionLibrarySourceRefDto[];
+  reviewed_by_actor_id: string | null;
+  reviewed_at: string | null;
+  evidence_boundary: 'PRACTICE_CONTENT_NOT_DIAGNOSIS_OR_GUARANTEED_OUTCOME';
+}
+
+export interface InterventionLibraryProjection {
+  family_id: string;
+  items: InterventionLibraryItemDto[];
+  generated_at: string;
+  boundary: 'READ_ONLY_APPROVED_INTERVENTION_LIBRARY';
+}
+
+export type FamilyContextPurpose = 'GROWTH_GUIDANCE' | 'AI_PERSONALIZATION';
+
+export interface FamilyConsentResolutionDto {
+  allowed: boolean;
+  required_purposes: string[];
+  granted_purposes: string[];
+  missing_purposes: string[];
+  reason: string;
+}
+
+export interface MinimalFamilyGrowthContextDto {
+  context_version: 'v1';
+  family_ref: string;
+  subject_ref: string;
+  life_stage: string;
+  confirmed_growth_priority: string[];
+  active_intervention: string[];
+  recent_growth_action_state: string[];
+  recent_permitted_observation_summary: string[];
+}
+
+export interface FamilyContextResolutionDto {
+  family_id: string;
+  subject_person_id: string;
+  purpose: FamilyContextPurpose;
+  consent: FamilyConsentResolutionDto;
+  ai_personalization: FamilyConsentResolutionDto;
+  rule_based_context: MinimalFamilyGrowthContextDto | null;
+  ai_context: MinimalFamilyGrowthContextDto | null;
+  approved_intervention_codes: string[];
+  recommendation_source: 'APPROVED_INTERVENTION_LIBRARY';
+  model_gateway_status: 'NOT_CALLED' | 'BLOCKED_BY_CONSENT';
+  action_bridge_status: 'HUMAN_CONFIRMATION_REQUIRED';
+  boundaries: {
+    context: 'MINIMUM_NECESSARY_ALLOWLIST';
+    recommendation: 'PROPOSAL_NOT_DECISION';
+    action: 'NAMED_ACTION_ONLY';
+    ontology: 'AI_CANNOT_WRITE_CORE_ONTOLOGY';
+  };
+}
+
 export interface InterventionEpisodeDto {
   episode_id: string;
   family_id: string;

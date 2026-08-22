@@ -13,6 +13,11 @@ describe('Family API tenant-scoped Web adapter', () => {
     expect(source).toContain("getJourneyPlan: () => read('/growth/journey-plan')");
   });
 
+  it('reads the approved intervention library and minimum family context through the same bearer family scope', () => {
+    expect(source).toContain("getInterventionLibrary: () => read('/growth/interventions')");
+    expect(source).toContain('resolveFamilyContext: (subjectPersonId, purpose) => read(`/growth/subjects/${encodeURIComponent(subjectPersonId)}/context/${purpose}`)');
+  });
+
   it('writes an operation follow-up only through the existing family-scoped controlled endpoint with an idempotency key', () => {
     expect(source).toContain("updateOperationFollowUp: (operationId, input) => write(`/orchestration/test-loop/experience/operations/${operationId}/follow-up`, input)");
     expect(source).toContain("method: 'POST'");
