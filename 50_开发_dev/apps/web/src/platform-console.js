@@ -17,6 +17,14 @@ const nav = [
   ['operations', '运营工作台', '◫'], ['tenant', '租户设置', '⚙'],
 ];
 
+const roleVisibility = {
+  PLATFORM_ADMIN: nav.map(([id]) => id),
+  TENANT_ADMIN: nav.map(([id]) => id),
+  TENANT_OPERATOR: ['overview', 'families', 'journeys', 'services', 'content', 'assets', 'operations'],
+  SERVICE_ADVISOR: ['overview', 'families', 'journeys', 'services'],
+  FAMILY_MEMBER: ['overview', 'journeys', 'services', 'assets'],
+};
+
 const pageCopy = {
   overview: { kicker: '今日运营总览', title: '让每个家庭的下一步都清晰可见', intro: '从家庭目标、行动、服务到权益，所有数据均在当前租户与授权范围内查看。' },
   families: { kicker: '家庭工作台', title: '家庭不是名单，而是持续的成长关系', intro: '按当前租户筛选家庭队列，进入家庭后仍需由服务端 Family Scope Guard 做对象级授权。' },
@@ -51,9 +59,12 @@ export function createPlatformConsole(root, options = {}) {
   let active = 'overview'; let tenantId = options.tenantId ?? tenants[0].id; let role = options.role ?? 'TENANT_OPERATOR';
   const render = () => {
     const tenant = tenants.find((item) => item.id === tenantId) ?? tenants[0]; const copy = pageCopy[active];
-    root.innerHTML = `<div class="console-shell"><aside class="sidebar"><div class="brand"><span class="brand-mark">F</span><div><b>Family AI</b><small>成长运营平台</small></div></div><div class="tenant-select"><span class="eyebrow">当前租户</span><select id="tenantSelect">${tenants.map((item)=>`<option value="${item.id}" ${item.id===tenantId?'selected':''}>${item.name}</option>`).join('')}</select><small>${tenant.city} · ${tenant.families} 个家庭</small></div><nav>${nav.map(([id,label,icon])=>`<button class="nav-item ${active===id?'active':''}" data-page="${id}"><span>${icon}</span>${label}</button>`).join('')}</nav><div class="sidebar-foot"><span class="secure-dot"></span><small>现有租户范围已加载</small></div></aside><main class="console-main"><header class="topbar"><div class="crumb"><span>Family AI</span><b>/</b><strong>${tenant.short}</strong></div><div class="top-actions"><span class="role-chip">${roleNames[role] ?? role}</span><button class="help">?</button><button class="user">林</button></div></header><div class="preview-notice">开发预览：队列与指标将由既有 Family API 的 tenant-scoped 投影替换；前端租户切换不构成授权。</div><section class="hero"><div><span class="eyebrow">${copy.kicker}</span><h1>${copy.title}</h1><p>${copy.intro}</p></div><div class="hero-actions"><button class="secondary-btn">查看帮助</button><button class="primary-btn" id="quickAction">新建受控任务 <span>+</span></button></div></section><section class="content-area">${renderers[active]()}</section></main></div>`;
+    const visibleNav = nav.filter(([id]) => (roleVisibility[role] ?? roleVisibility.TENANT_OPERATOR).includes(id));
+    if (!visibleNav.some(([id]) => id === active)) active = 'overview';
+    root.innerHTML = `<div class="console-shell"><aside class="sidebar"><div class="brand"><span class="brand-mark">F</span><div><b>Family AI</b><small>成长运营平台</small></div></div><div class="tenant-select"><span class="eyebrow">当前租户</span><select id="tenantSelect">${tenants.map((item)=>`<option value="${item.id}" ${item.id===tenantId?'selected':''}>${item.name}</option>`).join('')}</select><small>${tenant.city} · ${tenant.families} 个家庭</small></div><nav>${visibleNav.map(([id,label,icon])=>`<button class="nav-item ${active===id?'active':''}" data-page="${id}"><span>${icon}</span>${label}</button>`).join('')}</nav><div class="sidebar-foot"><span class="secure-dot"></span><small>现有租户范围已加载</small></div></aside><main class="console-main"><header class="topbar"><div class="crumb"><span>Family AI</span><b>/</b><strong>${tenant.short}</strong></div><div class="top-actions"><select id="roleSelect" class="role-select" aria-label="开发预览角色">${Object.entries(roleNames).map(([id,label])=>`<option value="${id}" ${id===role?'selected':''}>${label}</option>`).join('')}</select><button class="help">?</button><button class="user">林</button></div></header><div class="preview-notice">开发预览：导航仅演示现有角色可见范围。真实读取与行动仍由 Family API 的账户成员资格、tenant policy profile 与 Family Scope Guard 校验；前端切换不构成授权。</div><section class="hero"><div><span class="eyebrow">${copy.kicker}</span><h1>${copy.title}</h1><p>${copy.intro}</p></div><div class="hero-actions"><button class="secondary-btn">查看帮助</button><button class="primary-btn" id="quickAction">新建受控任务 <span>+</span></button></div></section><section class="content-area">${renderers[active]()}</section></main></div>`;
     root.querySelectorAll('[data-page]').forEach((button)=>button.addEventListener('click',()=>{active=button.dataset.page;render();}));
     root.querySelector('#tenantSelect')?.addEventListener('change',(event)=>{tenantId=event.target.value;render();});
+    root.querySelector('#roleSelect')?.addEventListener('change',(event)=>{role=event.target.value;render();});
     root.querySelector('#quickAction')?.addEventListener('click',()=>window.alert('此演示仅展示受控任务入口。实际写入仍由现有 Family API、角色、租户与家庭范围策略校验。'));
   };
   render();
