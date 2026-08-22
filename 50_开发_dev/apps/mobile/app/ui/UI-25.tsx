@@ -22,6 +22,8 @@ export default function ParentCommunityScreen() {
   const [projection, setProjection] = useState<FamilyApiPlatformSurfacesProjection | null>(null);
   const [query, setQuery] = useState("");
   const [channel, setChannel] = useState<(typeof CHANNELS)[number]>("推荐");
+  const [visibleCount, setVisibleCount] = useState(4);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
@@ -41,6 +43,12 @@ export default function ParentCommunityScreen() {
       return matchesQuery && matchesChannel;
     });
   }, [channel, feed?.entries, query]);
+  const visibleEntries = entries.slice(0, visibleCount);
+  const loadMore = () => {
+    if (loadingMore || visibleCount >= entries.length) return;
+    setLoadingMore(true);
+    setTimeout(() => { setVisibleCount((count) => Math.min(count + 4, entries.length)); setLoadingMore(false); }, 260);
+  };
 
   const openDetail = (exchangeRef: string) => router.push(`/ui/UI-27?exchangeRef=${encodeURIComponent(exchangeRef)}` as Href);
 
@@ -49,7 +57,7 @@ export default function ParentCommunityScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
-        data={entries}
+        data={visibleEntries}
         keyExtractor={(item) => item.exchangeRef}
         contentContainerStyle={styles.content}
         ListHeaderComponent={<View style={styles.header}>
@@ -70,7 +78,9 @@ export default function ParentCommunityScreen() {
           </Pressable>;
         }}
         ListEmptyComponent={<View style={styles.empty}><Text style={[styles.emptyTitle, { color: colors.text }]}>暂时没有匹配的内容</Text><Text style={[styles.emptyText, { color: colors.muted }]}>换一个频道或关键词再看看。</Text></View>}
-        ListFooterComponent={<View style={[styles.boundary, { borderColor: colors.border }]}><IconSymbol name="shield.fill" size={20} color={colors.success} /><Text style={[styles.boundaryText, { color: colors.muted }]}>这里展示的是家长经验与个人视角，不是对孩子或家庭的诊断，也不证明教育效果。</Text></View>}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.45}
+        ListFooterComponent={<View style={styles.footer}><View style={[styles.boundary, { borderColor: colors.border }]}><IconSymbol name="shield.fill" size={20} color={colors.success} /><Text style={[styles.boundaryText, { color: colors.muted }]}>这里展示的是家长经验与个人视角，不是对孩子或家庭的诊断，也不证明教育效果。</Text></View>{loadingMore ? <View style={styles.moreLoading}><Text style={[styles.moreText, { color: colors.muted }]}>正在加载更多经验</Text></View> : visibleCount < entries.length ? <Pressable onPress={loadMore} style={({ pressed }) => [styles.moreButton, { borderColor: colors.tint }, pressed && styles.pressed]}><Text style={[styles.moreText, { color: colors.tint }]}>继续浏览更多经验</Text></Pressable> : null}</View>}
       />
       <Pressable onPress={() => router.push("/ui/UI-26" as Href)} style={({ pressed }) => [styles.fab, pressed && styles.pressed]}><IconSymbol name="square.and.pencil" size={23} color="#FFFFFF" /><Text style={styles.fabText}>写小记</Text></Pressable>
     </ScreenContainer>
@@ -85,6 +95,6 @@ const styles = StyleSheet.create({
   topicPanel: { minHeight: 102, borderWidth: 1, borderRadius: 21, paddingVertical: 13, paddingHorizontal: 8, flexDirection: "row", justifyContent: "space-between" }, topicItem: { width: 61, alignItems: "center", gap: 7 }, topicIcon: { width: 43, height: 43, borderRadius: 14, alignItems: "center", justifyContent: "center" }, topicLabel: { fontSize: 9, lineHeight: 13, textAlign: "center", fontWeight: "800" },
   sectionLine: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }, sectionTitle: { fontSize: 17, lineHeight: 24, fontWeight: "900" }, sectionIntro: { maxWidth: 275, fontSize: 11, lineHeight: 17, marginTop: 2 }, mineLink: { fontSize: 11, lineHeight: 17, fontWeight: "900", paddingTop: 3 },
   postCard: { borderWidth: 1, borderRadius: 21, padding: 14, gap: 10, marginBottom: 9 }, authorRow: { flexDirection: "row", alignItems: "center", gap: 10 }, avatar: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" }, authorCopy: { flex: 1, gap: 2 }, authorNameRow: { flexDirection: "row", alignItems: "center", gap: 6 }, authorName: { fontSize: 13, lineHeight: 18, fontWeight: "900" }, reviewedTag: { borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, fontSize: 8, lineHeight: 11, fontWeight: "900" }, authorMeta: { fontSize: 9, lineHeight: 13 }, postTitle: { fontSize: 17, lineHeight: 24, fontWeight: "900" }, postSummary: { fontSize: 12, lineHeight: 19 }, mediaStrip: { minHeight: 82, borderRadius: 17, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 10 }, mediaText: { flex: 1, fontSize: 12, lineHeight: 18, fontWeight: "800" }, actionRow: { borderTopWidth: 1, paddingTop: 10, flexDirection: "row", justifyContent: "space-between" }, readAction: { flexDirection: "row", alignItems: "center", gap: 5 }, bookmarkAction: { minHeight: 28, flexDirection: "row", alignItems: "center", gap: 5 }, actionText: { fontSize: 10, lineHeight: 14, fontWeight: "800" },
-  empty: { minHeight: 160, alignItems: "center", justifyContent: "center", gap: 5 }, emptyTitle: { fontSize: 16, lineHeight: 22, fontWeight: "900" }, emptyText: { fontSize: 12, lineHeight: 18 }, boundary: { minHeight: 70, borderTopWidth: 1, paddingTop: 15, flexDirection: "row", alignItems: "flex-start", gap: 8 }, boundaryText: { flex: 1, fontSize: 11, lineHeight: 17 },
+  empty: { minHeight: 160, alignItems: "center", justifyContent: "center", gap: 5 }, emptyTitle: { fontSize: 16, lineHeight: 22, fontWeight: "900" }, emptyText: { fontSize: 12, lineHeight: 18 }, footer: { gap: 10 }, boundary: { minHeight: 70, borderTopWidth: 1, paddingTop: 15, flexDirection: "row", alignItems: "flex-start", gap: 8 }, boundaryText: { flex: 1, fontSize: 11, lineHeight: 17 }, moreLoading: { minHeight: 40, alignItems: "center", justifyContent: "center" }, moreButton: { minHeight: 42, borderWidth: 1, borderRadius: 17, alignItems: "center", justifyContent: "center" }, moreText: { fontSize: 11, lineHeight: 16, fontWeight: "900" },
   fab: { position: "absolute", right: 18, bottom: 23, minHeight: 48, borderRadius: 24, backgroundColor: "#F28C45", paddingHorizontal: 18, flexDirection: "row", alignItems: "center", gap: 7 }, fabText: { color: "#FFFFFF", fontSize: 13, lineHeight: 18, fontWeight: "900" }, pressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
 });

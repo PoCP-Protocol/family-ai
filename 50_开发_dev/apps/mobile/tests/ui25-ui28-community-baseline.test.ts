@@ -27,4 +27,9 @@ describe("UI-25 至 UI-28 原图社区循环契约", () => {
     expect(batch).not.toMatch(/Share\.share|Linking\.openURL|公开发布成功/);
     expect(batch).toContain("不会增加公共计数");
   });
+  it("为社区长列表保留统一下拉刷新和受控增量浏览", () => {
+    const ui25 = source("UI-25"); const ui27 = source("UI-27");
+    expect(ui25).toContain("FamilyRefreshControl"); expect(ui25).toContain("onEndReached={loadMore}"); expect(ui25).toContain("继续浏览更多经验");
+    expect(ui27).toContain("FamilyRefreshControl"); expect(ui27).toContain("loadMoreRelated"); expect(ui27).toContain("继续浏览其他经验");
+  });
 });

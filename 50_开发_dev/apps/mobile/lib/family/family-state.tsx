@@ -46,18 +46,24 @@ export function FamilyMobileProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
+    let settled = false;
+    const finishHydration = (payload: Record<string, never> | FamilyMobileState) => {
+      if (!active || settled) return;
+      settled = true;
+      dispatch({ type: "hydrate", payload });
+      setHasHydrated(true);
+    };
+    const fallbackTimer = setTimeout(() => {
+      finishHydration({});
+    }, 1200);
     AsyncStorage.getItem(STORAGE_KEY)
       .then((value) => {
-        if (!active) return;
-        dispatch({ type: "hydrate", payload: value ? JSON.parse(value) : {} });
-        setHasHydrated(true);
+        finishHydration(value ? JSON.parse(value) : {});
       })
       .catch(() => {
-        if (!active) return;
-        dispatch({ type: "hydrate", payload: {} });
-        setHasHydrated(true);
+        finishHydration({});
       });
-    return () => { active = false; };
+    return () => { active = false; clearTimeout(fallbackTimer); };
   }, []);
 
   useEffect(() => {

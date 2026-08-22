@@ -3,7 +3,6 @@ import { router, Stack } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -52,7 +51,7 @@ export default function GrowthOutcomesScreen() {
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
-      <Stack.Screen options={{ headerShown: true, title: "成长成果", headerBackTitle: "返回" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <FlatList
         refreshControl={<FamilyRefreshControl />}
         data={evidence}
@@ -60,8 +59,9 @@ export default function GrowthOutcomesScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={27} color="#22272D" /></Pressable><Text style={styles.topTitle}>成长成果</Text><View style={styles.topSpacer} /></View>
             <View style={styles.hero}>
-              <Text style={styles.heroEyebrow}>这段时间的家庭回看</Text>
+              <Text style={styles.heroEyebrow}>本周成长慢谈</Text>
               <View style={styles.heroBody}>
                 <View><Text style={styles.heroMetric}>{completed}</Text><Text style={styles.heroLabel}>已留下的行动片段</Text></View>
                 <View style={styles.ring}><Text style={styles.ringValue}>{state.campCompletedDays.length}</Text><Text style={styles.ringLabel}>成长营小结</Text></View>
@@ -69,7 +69,6 @@ export default function GrowthOutcomesScreen() {
               </View>
               <View style={styles.heroFoot}><Text style={styles.heroFootText}>过程记录不代表效果结论；只帮助我们看见已经走过的路。</Text></View>
             </View>
-            <DataSourceBanner />
             {loading ? <ActivityIndicator color={colors.tint} /> : null}
             <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.panelTitleRow}><Text style={[styles.panelTitle, { color: colors.text }]}>我们正在练习的事</Text><Text style={styles.panelAction}>家庭过程</Text></View>
@@ -87,5 +86,5 @@ export default function GrowthOutcomesScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 16, paddingBottom: 38, gap: 12 }, header: { gap: 12 }, hero: { borderRadius: 24, backgroundColor: "#2563EB", padding: 18, gap: 14 }, heroEyebrow: { color: "#DCEBFF", fontSize: 14, lineHeight: 20, fontWeight: "800" }, heroBody: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, heroMetric: { color: "#FFFFFF", fontSize: 29, lineHeight: 35, textAlign: "center", fontWeight: "900" }, heroLabel: { width: 86, color: "#DCEBFF", fontSize: 10, lineHeight: 15, textAlign: "center" }, ring: { width: 88, height: 88, borderRadius: 44, borderWidth: 7, borderColor: "#E3F2FF", alignItems: "center", justifyContent: "center" }, ringValue: { color: "#FFFFFF", fontSize: 22, lineHeight: 27, fontWeight: "900" }, ringLabel: { color: "#DCEBFF", fontSize: 9, lineHeight: 13 }, heroFoot: { borderRadius: 12, backgroundColor: "#FFFFFF24", padding: 10 }, heroFootText: { color: "#E8F2FF", fontSize: 11, lineHeight: 16 }, panel: { borderWidth: 1, borderRadius: 20, padding: 15, gap: 14 }, panelTitleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, panelTitle: { fontSize: 17, lineHeight: 23, fontWeight: "900" }, panelAction: { color: "#2563EB", fontSize: 12, fontWeight: "700" }, badgesRow: { flexDirection: "row", gap: 8 }, badge: { flex: 1, alignItems: "center", gap: 5 }, badgeIcon: { width: 46, height: 46, borderRadius: 18, alignItems: "center", justifyContent: "center" }, badgeLabel: { fontSize: 12, lineHeight: 17, fontWeight: "800", textAlign: "center" }, badgeDetail: { fontSize: 9, lineHeight: 13, textAlign: "center" }, sectionTitleRow: { flexDirection: "row", justifyContent: "space-between", paddingTop: 4 }, sectionTitle: { fontSize: 17, lineHeight: 23, fontWeight: "900" }, sectionHint: { fontSize: 11, lineHeight: 16 }, evidenceCard: { minHeight: 84, borderWidth: 1, borderRadius: 18, padding: 13, flexDirection: "row", gap: 10, marginTop: 10 }, evidenceDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#2563EB", marginTop: 5 }, evidenceCopy: { flex: 1, gap: 3 }, evidenceKind: { fontSize: 10, lineHeight: 14, fontWeight: "800" }, evidenceTitle: { fontSize: 14, lineHeight: 20, fontWeight: "900" }, evidenceDetail: { fontSize: 12, lineHeight: 18 }, empty: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 6, marginTop: 10 }, emptyTitle: { fontSize: 15, lineHeight: 21, fontWeight: "900" }, emptyCopy: { fontSize: 12, lineHeight: 18 }, primaryButton: { marginTop: 18, minHeight: 52, borderRadius: 16, backgroundColor: "#2563EB", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }, primaryText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "900" }, pressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
+  content: { padding: 16, paddingBottom: 38, gap: 12 }, header: { gap: 12 }, topBar: { minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, topBack: { width: 38, height: 38, alignItems: "flex-start", justifyContent: "center" }, topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" }, topSpacer: { width: 38 }, hero: { borderRadius: 24, backgroundColor: "#2563EB", padding: 18, gap: 14 }, heroEyebrow: { color: "#DCEBFF", fontSize: 14, lineHeight: 20, fontWeight: "800" }, heroBody: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, heroMetric: { color: "#FFFFFF", fontSize: 29, lineHeight: 35, textAlign: "center", fontWeight: "900" }, heroLabel: { width: 86, color: "#DCEBFF", fontSize: 10, lineHeight: 15, textAlign: "center" }, ring: { width: 88, height: 88, borderRadius: 44, borderWidth: 7, borderColor: "#E3F2FF", alignItems: "center", justifyContent: "center" }, ringValue: { color: "#FFFFFF", fontSize: 22, lineHeight: 27, fontWeight: "900" }, ringLabel: { color: "#DCEBFF", fontSize: 9, lineHeight: 13 }, heroFoot: { borderRadius: 12, backgroundColor: "#FFFFFF24", padding: 10 }, heroFootText: { color: "#E8F2FF", fontSize: 11, lineHeight: 16 }, panel: { borderWidth: 1, borderRadius: 20, padding: 15, gap: 14 }, panelTitleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, panelTitle: { fontSize: 17, lineHeight: 23, fontWeight: "900" }, panelAction: { color: "#2563EB", fontSize: 12, fontWeight: "700" }, badgesRow: { flexDirection: "row", gap: 8 }, badge: { flex: 1, alignItems: "center", gap: 5 }, badgeIcon: { width: 46, height: 46, borderRadius: 18, alignItems: "center", justifyContent: "center" }, badgeLabel: { fontSize: 12, lineHeight: 17, fontWeight: "800", textAlign: "center" }, badgeDetail: { fontSize: 9, lineHeight: 13, textAlign: "center" }, sectionTitleRow: { flexDirection: "row", justifyContent: "space-between", paddingTop: 4 }, sectionTitle: { fontSize: 17, lineHeight: 23, fontWeight: "900" }, sectionHint: { fontSize: 11, lineHeight: 16 }, evidenceCard: { minHeight: 84, borderWidth: 1, borderRadius: 18, padding: 13, flexDirection: "row", gap: 10, marginTop: 10 }, evidenceDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#2563EB", marginTop: 5 }, evidenceCopy: { flex: 1, gap: 3 }, evidenceKind: { fontSize: 10, lineHeight: 14, fontWeight: "800" }, evidenceTitle: { fontSize: 14, lineHeight: 20, fontWeight: "900" }, evidenceDetail: { fontSize: 12, lineHeight: 18 }, empty: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 6, marginTop: 10 }, emptyTitle: { fontSize: 15, lineHeight: 21, fontWeight: "900" }, emptyCopy: { fontSize: 12, lineHeight: 18 }, primaryButton: { marginTop: 18, minHeight: 52, borderRadius: 16, backgroundColor: "#2563EB", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }, primaryText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "900" }, pressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
 });
