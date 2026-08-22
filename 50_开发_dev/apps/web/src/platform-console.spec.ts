@@ -42,4 +42,14 @@ describe('正式多租户 Web 控制台', () => {
     expect(source).toContain('tenant/family 双重范围校验');
     expect(source).toContain('不会在前端生成或放大任何授权');
   });
+
+  it('在同一家庭会话下提供受控回执的页面和状态筛选，不伪造无会话运营数据', () => {
+    expect(main).toContain('loadFamilyOperations');
+    expect(main).toContain('getExperienceCustomerProjection');
+    expect(source).toContain('receiptPageFilter');
+    expect(source).toContain('receiptStatusFilter');
+    expect(source).toContain('receiptPageLabel');
+    expect(source).toContain('建立真实家庭会话后，可按页面和状态查看当前家庭的受控回执。');
+    expect(source).toContain("item.source === 'DOMAIN_COMMAND_ADAPTER'");
+  });
 });

@@ -111,12 +111,18 @@ describe('90-day Family Journey Plan PostgreSQL integration', () => {
       `select action_id from growth_actions where journey_plan_id = $1 and day_index = 1`,
       [created.plan.plan_id],
     );
+    const dueTodayAction = await pool.query<{ action_id: string; day_index: number; journey_phase: string }>(
+      `select action_id, day_index, journey_phase
+       from growth_actions where journey_plan_id = $1 and due_date = current_date and status = 'PENDING'
+       order by day_index limit 1`,
+      [created.plan.plan_id],
+    );
     const todayAction = await growthActionService.getTodayAction(f.familyId, f.guardianId);
     expect(todayAction).toMatchObject({
-      action_id: firstActionId.rows[0].action_id,
+      action_id: dueTodayAction.rows[0].action_id,
       journey_plan_id: created.plan.plan_id,
-      journey_phase: 'SEE',
-      day_index: 1,
+      journey_phase: dueTodayAction.rows[0].journey_phase,
+      day_index: dueTodayAction.rows[0].day_index,
       boundary: 'ACTION_IS_NOT_OUTCOME',
     });
     const completed = await growthActionService.completeGrowthAction({

@@ -126,7 +126,7 @@ describe('DEV/TEST formal experience workflows', () => {
     const body = await projection.json();
     expect(body).toMatchObject({ environment: 'DEV', source: 'TEST_FIXTURE' });
     expect(body.operations.map((operation: any) => operation.operation_id).sort()).toEqual(operationIds.sort());
-    expect(body.text_equivalent).toContain('家庭的体验回执');
+    expect(body.text_equivalent).toContain('家庭的受控操作回执');
   });
 
   it('cancels only an operation belonging to the trusted family and keeps external effect false', async () => {

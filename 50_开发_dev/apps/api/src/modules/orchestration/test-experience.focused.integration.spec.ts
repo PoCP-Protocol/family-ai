@@ -129,7 +129,7 @@ describe('Test Experience Operation → Cancel → Customer Projection', () => {
     const body = await projection.json();
     expect(body).toMatchObject({ environment: 'DEV', source: 'TEST_FIXTURE' });
     expect(body.operations.map((operation: any) => operation.operation_id).sort()).toEqual(operationIds.sort());
-    expect(body.text_equivalent).toContain('家庭的体验回执');
+    expect(body.text_equivalent).toContain('家庭的受控操作回执');
   });
 
   it('projects an expert live interest into the same family private service-record read model without duplicating on replay', async () => {
@@ -220,6 +220,12 @@ describe('Test Experience Operation → Cancel → Customer Projection', () => {
         visibility: 'FAMILY_PRIVATE',
         external_effect: false,
       }),
+    ]));
+
+    const queue = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/customer-projection`, 'GET', seed.token);
+    expect(queue.status).toBe(200);
+    expect((await queue.json()).operations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ operation_id: operation.operation_id, page_id: 'UI-23', operation_kind: 'EVENT_REGISTRATION', status: 'CONFIRMED', source: 'TEST_FIXTURE', external_effect: false }),
     ]));
 
     const replay = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations`, 'POST', seed.token, body, { 'idempotency-key': key });

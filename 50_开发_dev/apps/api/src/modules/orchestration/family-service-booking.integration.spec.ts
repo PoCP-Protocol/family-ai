@@ -143,6 +143,12 @@ describe('Family service offering -> booking request -> service record DEV/TEST 
     expect(customer).toMatchObject({ tenant_id: seed.tenantId, family_id: seed.familyId, visibility: 'FAMILY_PRIVATE', projection_version: 1 });
     expect(customer.bookings.map((row: any) => row.booking_request_id)).toContain(body.booking.booking_request_id);
     expect(customer.service_records.map((row: any) => row.source_booking_request_id)).toContain(body.booking.booking_request_id);
+
+    const queue = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/customer-projection`, 'GET', seed.token);
+    expect(queue.status).toBe(200);
+    expect((await queue.json()).operations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ page_id: 'UI-21', operation_kind: 'DOMAIN_COMMAND', fixture_ref: body.booking.booking_request_id, status: 'CONFIRMED', source: 'DOMAIN_COMMAND_ADAPTER', external_effect: false }),
+    ]));
   });
 
   it('cancels only the trusted family booking with row_version, releases slot capacity and cancels the local service record', async () => {

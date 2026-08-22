@@ -27,7 +27,7 @@ interface OperationRow {
   environment: 'DEV' | 'TEST';
   source: 'TEST_FIXTURE';
   external_effect: boolean;
-  created_at: string;
+  created_at: string | Date;
 }
 
 interface DomainCommandRow {
@@ -35,6 +35,10 @@ interface DomainCommandRow {
   page_id: string;
   fixture_ref: string;
   created_at: string;
+}
+
+function operationTimestamp(value: string | Date): string {
+  return value instanceof Date ? value.toISOString() : String(value);
 }
 
 @Injectable()
@@ -257,7 +261,7 @@ export class TestExperienceService {
         status: row.status,
         source: 'TEST_FIXTURE' as const,
         external_effect: false as const,
-        created_at: row.created_at,
+        created_at: operationTimestamp(row.created_at),
       })),
       ...domainEvents.rows.map((row) => ({
         operation_id: row.operation_id,
@@ -267,7 +271,7 @@ export class TestExperienceService {
         status: 'CONFIRMED' as const,
         source: 'DOMAIN_COMMAND_ADAPTER' as const,
         external_effect: false as const,
-        created_at: row.created_at,
+        created_at: operationTimestamp(row.created_at),
       })),
     ].sort((left, right) => right.created_at.localeCompare(left.created_at));
     return {

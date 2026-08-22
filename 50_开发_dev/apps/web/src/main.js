@@ -103,13 +103,14 @@ if (searchParams.get('product') === 'console') {
   // 的租户/家庭范围语义，不在 Web 端创建平行的 tenant 或 IAM 本体。
   const familyId = searchParams.get('familyId') ?? undefined;
   const apiBaseUrl = searchParams.get('apiBaseUrl') ?? 'http://localhost:3000';
-  const loadTenantScopedProjection = familyId && bearerToken
-    ? () => createFamilyApiAdapter({ baseUrl: apiBaseUrl, bearerToken, familyId }).getTenantScopedUiProjection()
-    : undefined;
+  const familyAdapter = familyId && bearerToken ? createFamilyApiAdapter({ baseUrl: apiBaseUrl, bearerToken, familyId }) : undefined;
+  const loadTenantScopedProjection = familyAdapter ? () => familyAdapter.getTenantScopedUiProjection() : undefined;
+  const loadFamilyOperations = familyAdapter ? () => familyAdapter.getExperienceCustomerProjection() : undefined;
   createPlatformConsole(root, {
     tenantId: searchParams.get('tenantId') ?? 'tenant_bangyang',
     role: /** @type {'PLATFORM_ADMIN'|'TENANT_ADMIN'|'TENANT_OPERATOR'|'SERVICE_ADVISOR'|'FAMILY_MEMBER'} */ (searchParams.get('role') ?? 'TENANT_OPERATOR'),
     loadTenantScopedProjection,
+    loadFamilyOperations,
   });
 } else if (searchParams.get('product') === 'test-loop' || window.location.hash === '#test-loop') {
   // 历史链接仍指向同一家庭门户，避免保留第二套产品入口。
