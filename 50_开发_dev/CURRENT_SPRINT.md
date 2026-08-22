@@ -1,11 +1,40 @@
 # Current Sprint
 
+task_id: FAMILY-35UI-FULLSTACK-REBASELINE-001
+gate: G0 (PRODUCT_AND_TECH_ARCHITECTURE_FREEZE)
+status: IN_PROGRESS
+
+## Current Executable Truth (2026-08-22, 架构师裁决)
+
+```text
+TASK              = FAMILY-35UI-FULLSTACK-REBASELINE-001
+GATE              = G0 ALIGNMENT_FOUNDATION (Product + Tech Architecture Freeze)
+BASE_SHA          = 708cf542ab130642f2248bbebecc997930d10a49
+WORK_BRANCH       = platform/35ui-fullstack-rebaseline-001
+SINGLE_WRITER     = YES (本 Claude Code 会话)
+TECH_ARCHITECTURE = FAMILY_AI_PLATFORM_V4 = FROZEN (architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4.md)
+G0_CODE_AUTHORIZED= YES (仅 governance/architecture/contracts/validators/ci/status/evidence/inventory)
+G1_AUTHORIZED     = NO
+G2_AUTHORIZED     = NO
+PILOT/PRODUCTION  = HOLD
+DIRECT_PUSH_MAIN  = NO   AUTO_MERGE = NO   AGENT_SELF_AUTHORIZATION = NO
+PRIOR_TASK        = FAMILY-35UI-ARCHITECTURE-REBASELINE-001 = ABSORBED_INTO_G0
+35_UI_FRONTEND_BASELINE = KEEP; 35_UI_BACKEND_COMPLETE = NO
+```
+
+Program: `governance/FAMILY_35UI_PROGRAM_V1.yaml` · Status: `governance/FAMILY_35UI_PROGRAM_STATUS_V1.md`.
+
+以下 M3-RB-002 / M2 段落标记为 HISTORICAL_IMPORTED_CONTEXT,保留不删,不再作为 Current。
+
+---
+
+# HISTORICAL_IMPORTED_CONTEXT — M3-RB-002 (前 Current, PASS_CLOSED)
+
 sprint_id: M3-RB-002
 sprint_name: Family 1.0 MOS V3.3 Execution Rebaseline
-sprint_goal: Converge STRATEGY = ROADMAP = WBS = PLAN_SSOT = PROJECT_STATUS = CURRENT_SPRINT = M3 EXECUTION onto V3.3
 status: PASS_CLOSED
 
-## M3-RB-002 Current Status
+## M3-RB-002 Status
 
 ```text
 M3_RB_001 = PASS_CLOSED

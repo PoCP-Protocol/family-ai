@@ -10,6 +10,8 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
+    "validate:35ui": "node tools/validate-35ui-alignment.mjs",
+    "validate:35ui:strict": "node tools/validate-35ui-alignment.mjs --strict-runtime",
     "dev": "turbo run dev --parallel",
     "db:migrate": "node tools/migrate.mjs up",
     "db:migrate:status": "node tools/migrate.mjs status",

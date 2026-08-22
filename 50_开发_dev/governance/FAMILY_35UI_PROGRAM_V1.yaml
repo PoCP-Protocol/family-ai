@@ -1,0 +1,60 @@
+schema_version: FAMILY_35UI_PROGRAM_V1
+task_id: FAMILY-35UI-FULLSTACK-REBASELINE-001
+base:
+  repository: PoCP-Protocol/family-ai
+  branch: main
+  sha: 708cf542ab130642f2248bbebecc997930d10a49
+product_baseline:
+  ui_start: UI-01
+  ui_end: UI-35
+  count: 35
+  ai_diagnosis: KEEP
+tech_architecture:
+  ssot: architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4.md
+  id: FAMILY_AI_PLATFORM_V4
+  status: FROZEN
+  note: G0 同时冻结产品基线(35UI matrix)与技术架构(V4);二者共同成为 G1+ 施工依据。
+governance:
+  direct_push_main: NO
+  auto_merge: NO
+  agent_self_authorization: NO
+  exact_head_review_required: YES
+  docs_may_claim_more_than_code: NO
+  mobile_direct_model_provider: FORBIDDEN
+  mobile_canonical_domain_database: FORBIDDEN
+gates:
+  - id: G0
+    name: PRODUCT_AND_TECH_ARCHITECTURE_FREEZE
+    scope:
+      - machine_35ui_matrix
+      - shared_contracts
+      - structural_validator
+      - current_state_gap_report
+      - tech_architecture_v4_freeze
+      - second_control_plane_inventory
+    authorized: YES
+    coding_authority: [governance, architecture, shared_contracts, validators, ci, status, evidence, inventory]
+    not_authorized: [business_runtime, db_schema, api_business_impl, mobile_runtime_removal, ui_baseline_change]
+  - id: G1
+    name: FAMILY_CORE_CONTEXT
+    ui: [UI-01, UI-33]
+    authorized: NO
+  - id: G2
+    name: ASSESSMENT_AI_DIAGNOSIS
+    ui: [UI-02, UI-03, UI-07, UI-08]
+    authorized: NO
+  - id: G3
+    name: GROWTH_JOURNEY
+    ui: [UI-04, UI-05, UI-09, UI-10, UI-11, UI-12, UI-29, UI-35]
+  - id: G4
+    name: RESOURCE_COMMERCE
+    ui: [UI-06, UI-13, UI-14, UI-15, UI-16, UI-17, UI-18, UI-30, UI-32]
+  - id: G5
+    name: SERVICE_OS
+    ui: [UI-19, UI-20, UI-21, UI-22, UI-23, UI-24, UI-31, UI-34]
+  - id: G6
+    name: CONTENT_COMMUNITY
+    ui: [UI-25, UI-26, UI-27, UI-28]
+  - id: G7
+    name: CROSS_LOOP_E2E
+final_gate: FAMILY_35UI_FULLSTACK_V1_READY
