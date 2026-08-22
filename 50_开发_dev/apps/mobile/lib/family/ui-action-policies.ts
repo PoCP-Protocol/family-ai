@@ -1,6 +1,6 @@
 import type { FamilyLoop } from "./ui-registry";
 
-export type ControlledActionKind = "assessment_draft" | "plan_decision" | "commerce_intent" | "service_intent" | "community_draft" | "profile_update";
+export type ControlledActionKind = "assessment_draft" | "plan_decision" | "commerce_intent" | "service_intent" | "community_draft" | "profile_update" | "asset_export";
 
 export interface UiActionPolicy {
   screenId: `UI-${string}`;
@@ -22,7 +22,11 @@ export const UI_ACTION_POLICIES: Partial<Record<`UI-${string}`, UiActionPolicy>>
   "UI-23": { screenId: "UI-23", loop: "服务", kind: "service_intent", receiptMessage: "活动参与意向已保存，未报名、未外发通知。" },
   "UI-26": { screenId: "UI-26", loop: "社区", kind: "community_draft", receiptMessage: "家庭小记已保存为私有草稿，未公开发布。" },
   "UI-30": { screenId: "UI-30", loop: "商业", kind: "commerce_intent", receiptMessage: "年度陪伴确认意向已保存；Dev 环境仅内部激活，不扣款。" },
+  "UI-29": { screenId: "UI-29", loop: "成长", kind: "asset_export", receiptMessage: "成长成果导出预览已生成；未创建文件或外发内容。" },
+  "UI-31": { screenId: "UI-31", loop: "服务", kind: "asset_export", receiptMessage: "服务摘要导出预览已生成；未创建文件或外发内容。" },
+  "UI-32": { screenId: "UI-32", loop: "商业", kind: "asset_export", receiptMessage: "家庭资产导出预览已生成；未创建文件或外发内容。" },
   "UI-33": { screenId: "UI-33", loop: "成长", kind: "profile_update", receiptMessage: "家庭档案修改已保存为待确认草稿。" },
+  "UI-34": { screenId: "UI-34", loop: "服务", kind: "asset_export", receiptMessage: "服务记录导出预览已生成；未创建文件或外发内容。" },
 };
 
 export function getUiActionPolicy(screenId: string) {

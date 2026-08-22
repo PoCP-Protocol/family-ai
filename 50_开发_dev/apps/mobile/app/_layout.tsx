@@ -21,6 +21,7 @@ import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-run
 import { FamilyMobileProvider } from "@/lib/family/family-state";
 import { FamilyApiSessionProvider } from "@/lib/family/family-api-session";
 import { FamilyMobileHydrationGate } from "@/components/family/family-mobile-hydration-gate";
+import { AssetActionsOverlay } from "@/components/family/asset-actions-overlay";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -96,6 +97,7 @@ export default function RootLayout() {
             <Stack.Screen name="oauth/callback" />
           </Stack>
           <StatusBar style="auto" />
+          <AssetActionsOverlay />
           </FamilyMobileHydrationGate>
             </FamilyMobileProvider>
           </FamilyApiSessionProvider>

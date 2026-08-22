@@ -42,6 +42,8 @@ const MAPPING = {
   "mappin.circle.fill": "location-on",
   "clock.fill": "schedule",
   "arrow.up.right.square": "open-in-new",
+  "doc.text.fill": "description",
+  "square.and.arrow.up": "ios-share",
   "square.and.pencil": "edit-note",
   "bookmark.fill": "bookmark",
   "eye.fill": "visibility",
