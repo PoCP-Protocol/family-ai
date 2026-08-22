@@ -14,11 +14,15 @@ import { getUiActionPolicy } from "@/lib/family/ui-action-policies";
 import { haptic } from "@/lib/haptics";
 
 interface RemoteJourneyPlan {
-  plan?: { status?: string; current_phase?: string; phases?: { phase: string; status: string }[] } | null;
+  plan?: { plan_id?: string; status?: string; current_phase?: string; phases?: { phase: string; status: string }[] } | null;
 }
 
 interface RemotePlanPreview {
   structure?: { stages?: { stage_id: string; small_action: string }[] };
+}
+
+interface RemoteGrowthPriority {
+  active_priority?: { priority_id?: string } | null;
 }
 
 type BaselineWeek = {
@@ -50,6 +54,9 @@ export default function JourneyPlanScreen() {
   const { activeOnboardingId, recordUiAction } = useFamilyMobile();
   const [remoteJourney, setRemoteJourney] = useState<RemoteJourneyPlan | null>(null);
   const [remotePreview, setRemotePreview] = useState<RemotePlanPreview | null>(null);
+  const [remotePriority, setRemotePriority] = useState<RemoteGrowthPriority | null>(null);
+  const [activationState, setActivationState] = useState<"idle" | "submitting">("idle");
+  const [activationMessage, setActivationMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
@@ -60,6 +67,9 @@ export default function JourneyPlanScreen() {
     if (activeOnboardingId) {
       familyApi.getPlanPreview<RemotePlanPreview>(session.token, session.selectedFamily.family_id, activeOnboardingId)
         .then((result) => { if (active) setRemotePreview(result); })
+        .catch(() => undefined);
+      familyApi.getGrowthPriority<RemoteGrowthPriority>(session.token, session.selectedFamily.family_id, activeOnboardingId)
+        .then((result) => { if (active) setRemotePriority(result); })
         .catch(() => undefined);
     }
     return () => { active = false; };
@@ -76,11 +86,55 @@ export default function JourneyPlanScreen() {
     });
   }, [remotePreview]);
 
-  const beginPlan = () => {
-    const policy = getUiActionPolicy("UI-04");
-    if (policy) recordUiAction(policy, "家庭已选择开始执行当前成长计划");
-    haptic.success();
-    router.push("/ui/UI-05" as Href);
+  const beginPlan = async () => {
+    if (activationState === "submitting") return;
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      setActivationMessage("请先连接家庭账户，再开始这段成长计划。");
+      return;
+    }
+    if (!activeOnboardingId) {
+      setActivationMessage("请先完成家庭测评和成长解读，再开始计划。");
+      router.push("/ui/UI-02" as Href);
+      return;
+    }
+
+    setActivationState("submitting");
+    setActivationMessage(null);
+    try {
+      let currentPlan = plan;
+      if (!currentPlan?.plan_id) {
+        const priorityId = remotePriority?.active_priority?.priority_id;
+        if (!priorityId) throw new Error("GROWTH_PRIORITY_REQUIRED");
+        const created = await familyApi.createJourneyPlan<RemoteJourneyPlan>(
+          session.token,
+          session.selectedFamily.family_id,
+          activeOnboardingId,
+          priorityId,
+          `ui04-create-${activeOnboardingId}`,
+        );
+        currentPlan = created.plan;
+      }
+      if (!currentPlan?.plan_id) throw new Error("JOURNEY_PLAN_REQUIRED");
+      if (currentPlan.status === "DRAFT") {
+        const confirmed = await familyApi.confirmJourneyPlan<RemoteJourneyPlan>(
+          session.token,
+          session.selectedFamily.family_id,
+          currentPlan.plan_id,
+          `ui04-confirm-${currentPlan.plan_id}`,
+        );
+        currentPlan = confirmed.plan;
+      }
+      setRemoteJourney({ plan: currentPlan });
+      const policy = getUiActionPolicy("UI-04");
+      if (policy) recordUiAction(policy, "家庭已确认并开始执行当前成长计划");
+      haptic.success();
+      router.push("/ui/UI-05" as Href);
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "PLAN_ACTIVATION_FAILED";
+      setActivationMessage(code === "GROWTH_PRIORITY_REQUIRED" ? "请先在成长解读中确认当前关注方向。" : "暂时无法开启计划，请稍后重试。");
+    } finally {
+      setActivationState("idle");
+    }
   };
 
   return (
@@ -143,7 +197,8 @@ export default function JourneyPlanScreen() {
           }}
         />
         <View style={styles.fixedFooter}>
-          <Pressable onPress={beginPlan} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryButtonText}>开始执行计划</Text></Pressable>
+          {activationMessage ? <Text style={styles.activationMessage}>{activationMessage}</Text> : null}
+          <Pressable disabled={activationState === "submitting"} onPress={beginPlan} style={({ pressed }) => [styles.primaryButton, (pressed || activationState === "submitting") && styles.pressed]}><Text style={styles.primaryButtonText}>{activationState === "submitting" ? "正在开启计划" : "开始执行计划"}</Text></Pressable>
         </View>
       </View>
     </ScreenContainer>
@@ -191,5 +246,6 @@ const styles = StyleSheet.create({
   fixedFooter: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: "#FFFFFF", paddingHorizontal: 19, paddingTop: 11, paddingBottom: 13, borderTopWidth: 1, borderTopColor: "#F2F2F2" },
   primaryButton: { minHeight: 54, borderRadius: 27, alignItems: "center", justifyContent: "center", backgroundColor: "#FF8A1F" },
   primaryButtonText: { color: "#FFFFFF", fontSize: 19, lineHeight: 26, fontWeight: "900" },
+  activationMessage: { marginHorizontal: 4, marginBottom: 8, color: "#A0532C", fontSize: 12, lineHeight: 18, textAlign: "center" },
   pressed: { opacity: 0.86, transform: [{ scale: 0.985 }] },
 });

@@ -13,24 +13,24 @@ const config: AppConfig = {
   guardianPersonId: '11111111-1111-4111-8111-111111111111',
 };
 
-describe('M2-102 Family web perspective capture', () => {
-  it('renders Chinese F01/F02 shell before onboarding starts', () => {
+describe('Family web portal perspective capture', () => {
+  it('renders the parent-facing family portal shell before onboarding starts', () => {
     const root = document.createElement('main');
 
     createGrowthApp(root, config);
 
-    expect(root.textContent).toContain('F01 家庭上下文');
-    expect(root.textContent).toContain('F02 成长入口');
+    expect(root.textContent).toContain('家庭成长空间');
+    expect(root.textContent).toContain('今天从这里开始');
     expect(root.textContent).toContain('启动亲子沟通成长旅程');
     expect(root.textContent).toContain('确定性流程');
   });
 
-  it('does not render future Principal AI prototype capabilities in M2 runtime', () => {
+  it('uses the existing Family API core without rendering unrelated AI prototype capabilities', () => {
     const root = document.createElement('main');
 
     createGrowthApp(root, config);
 
-    expect(root.textContent).toContain('Family Core · M2-102');
+    expect(root.textContent).toContain('Family AI · 家庭成长陪伴');
     expect(root.textContent).toContain('确定性流程');
     expect(root.textContent).not.toContain('Principal AI');
     expect(root.textContent).not.toContain('法咪莉校长');
@@ -44,6 +44,8 @@ describe('M2-102 Family web perspective capture', () => {
     expect(root.textContent).not.toContain('总分');
     expect(root.textContent).not.toContain('排名');
     expect(root.textContent).not.toContain('保证有效');
+    expect(root.dataset.clientSurface).toBe('web-family-portal');
+    expect(root.dataset.platformCore).toBe('existing-family-api');
   });
 
   it('submits StartGrowthOnboarding with named-action headers and no AI personalization payload', async () => {

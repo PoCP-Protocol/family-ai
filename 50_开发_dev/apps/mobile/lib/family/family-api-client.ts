@@ -310,6 +310,36 @@ export class FamilyApiClient {
   getJourneyPlan<T>(token: string, familyId: string) {
     return this.request<T>(`/families/${familyId}/growth/journey-plan`, { token });
   }
+
+  getGrowthPriority<T>(token: string, familyId: string, onboardingId: string) {
+    return this.request<T>(`/families/${familyId}/growth/onboardings/${onboardingId}/priority`, { token });
+  }
+
+  createJourneyPlan<T>(token: string, familyId: string, onboardingId: string, priorityId: string, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/growth/onboardings/${onboardingId}/journey-plan`, {
+      method: "POST",
+      token,
+      body: { priority_id: priorityId },
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-journey-plan"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
+  confirmJourneyPlan<T>(token: string, familyId: string, planId: string, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/growth/journey-plans/${planId}/confirm`, {
+      method: "POST",
+      token,
+      body: {},
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-journey-plan-confirm"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
 }
 
 function safeJson(raw: string) {

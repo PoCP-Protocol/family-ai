@@ -6,9 +6,12 @@ const source = readFileSync(resolve(process.cwd(), 'src/platform-console.js'), '
 const main = readFileSync(resolve(process.cwd(), 'src/main.js'), 'utf8');
 
 describe('正式多租户 Web 控制台', () => {
-  it('将控制台作为默认 Web 入口，同时保留历史产品路由', () => {
+  it('将控制台保留为显式运营入口，家庭门户作为默认 Web 入口', () => {
     expect(main).toContain("createPlatformConsole");
-    expect(main).toContain("searchParams.get('product') === 'console' || !searchParams.get('product')");
+    expect(main).toContain("searchParams.get('product') === 'console'");
+    expect(main).toContain("searchParams.get('product') === 'family' || !searchParams.get('product')");
+    expect(main).toContain('mountFamilyPortal');
+    expect(main).toContain("searchParams.get('product') === 'growth-onboarding'");
     expect(main).toContain("searchParams.get('product') === 'test-loop'");
   });
 

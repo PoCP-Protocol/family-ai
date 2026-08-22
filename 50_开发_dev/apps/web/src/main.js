@@ -1,52 +1,88 @@
-import { createGrowthApp, defaultConfig } from './app.js';
 import { createWafCommunityApp } from './waf.js';
 import { createPrincipalApp, defaultPrincipalConfig } from './principal.js';
 import { createTestLoopApp, defaultTestLoopConfig } from './test-loop.js';
 import { createPlatformConsole } from './platform-console.js';
 import { createFamilyApiAdapter } from './family-api-adapter.js';
+import { createGrowthApp, defaultConfig } from './app.js';
 
 const root = /** @type {HTMLElement | null} */ (document.querySelector('#app'));
 
 if (!root) {
   throw new Error('Missing #app root element.');
 }
+const appRoot = root;
 
 const searchParams = new URLSearchParams(window.location.search);
+const bearerToken = window.sessionStorage.getItem('family-ui01-ui09-synthetic-bearer') ?? undefined;
+const isDevTestRuntime = searchParams.get('runtime') === 'dev-test' && Boolean(bearerToken);
 
-if (searchParams.get('product') === 'console' || !searchParams.get('product')) {
+/**
+ * 家庭门户复用现有 35 UI Web 流程、Family API 与已注册的 Dev/Test 受控命令。
+ * 无会话时只展示页面基线；有会话且显式进入 Dev/Test 时才读取/写入受控测试数据。
+ */
+function mountFamilyPortal() {
+  appRoot.innerHTML = `<div class="family-portal-layout">
+    <aside class="family-portal-rail" aria-label="家庭成长导航">
+      <a class="family-portal-brand" href="?product=family"><span>F</span><strong>Family AI</strong><small>家庭成长空间</small></a>
+      <nav class="family-portal-nav" aria-label="家庭成长主要入口">
+        <button data-family-route="home"><span>⌂</span>今天</button>
+        <button data-family-route="growth-assessment"><span>◌</span>成长测评</button>
+        <button data-family-route="core-plan"><span>↗</span>成长计划</button>
+        <button data-family-route="commerce-mall"><span>◇</span>课程与权益</button>
+        <button data-family-route="teacher-zone"><span>◎</span>专家与服务</button>
+        <button data-family-route="parent-community"><span>◍</span>家长社区</button>
+        <button data-family-route="family-profile"><span>□</span>家庭档案</button>
+      </nav>
+      <div class="family-portal-rail-foot"><a href="?product=growth-onboarding">开始一段成长旅程</a><a href="?product=console">进入运营工作台</a></div>
+    </aside>
+    <section class="family-portal-stage" aria-label="家庭成长页面"><div id="family-portal-experience"></div></section>
+    <aside class="family-portal-context" aria-label="家庭成长提示">
+      <section><span>家庭成长方式</span><h2>先看见，再行动</h2><p>每一次记录、计划、服务和权益都回到同一个家庭成长旅程中。</p></section>
+      <section><span>本周建议</span><strong>先完成今晚的一件小事</strong><p>完成后再回看下一步，不需要一次做完所有改变。</p></section>
+      <section><span>家庭资料</span><p>家庭档案、同意范围与服务记录始终由现有 Family API 按当前家庭范围读取。</p></section>
+    </aside>
+  </div>`;
+  const experienceRoot = /** @type {HTMLElement | null} */ (appRoot.querySelector('#family-portal-experience'));
+  if (!experienceRoot) throw new Error('Missing family portal experience root.');
+  const portal = createTestLoopApp(experienceRoot, {
+    ...defaultTestLoopConfig,
+    apiBaseUrl: searchParams.get('apiBaseUrl') ?? defaultTestLoopConfig.apiBaseUrl,
+    familyId: searchParams.get('familyId') ?? defaultTestLoopConfig.familyId,
+    initialPage: searchParams.get('page') ?? undefined,
+    onboardingId: searchParams.get('onboardingId') ?? undefined,
+    firstSliceApiMode: isDevTestRuntime ? 'synthetic-api' : 'disabled',
+    coreGrowthApiMode: isDevTestRuntime ? 'synthetic-api' : 'disabled',
+    platformSurfacesApiMode: isDevTestRuntime ? 'synthetic-api' : 'disabled',
+    commerceCatalogApiMode: isDevTestRuntime ? 'synthetic-api' : 'disabled',
+    membershipProjectionApiMode: isDevTestRuntime ? 'synthetic-api' : 'disabled',
+    serviceRecordsApiMode: isDevTestRuntime ? 'synthetic-api' : 'disabled',
+    authToken: bearerToken,
+    authActorId: searchParams.get('actorPersonId') ?? undefined,
+  });
+  appRoot.querySelectorAll('[data-family-route]').forEach((button) => button.addEventListener('click', () => {
+    portal.navigate(/** @type {HTMLElement} */ (button).dataset.familyRoute ?? 'home');
+  }));
+  appRoot.dataset.clientSurface = 'web-family-portal';
+  appRoot.dataset.platformCore = 'existing-family-api';
+  appRoot.dataset.runtime = isDevTestRuntime ? 'DEV_TEST_CONTROLLED' : 'BASELINE_READONLY';
+}
+
+if (searchParams.get('product') === 'console') {
   // 正式 Web 默认入口：仅展示现有 tenant_family_bindings、account membership 与 Family API
   // 的租户/家庭范围语义，不在 Web 端创建平行的 tenant 或 IAM 本体。
   const familyId = searchParams.get('familyId') ?? undefined;
-  const bearerToken = window.sessionStorage.getItem('family-ui01-ui09-synthetic-bearer') ?? undefined;
   const apiBaseUrl = searchParams.get('apiBaseUrl') ?? 'http://localhost:3000';
   const loadTenantScopedProjection = familyId && bearerToken
     ? () => createFamilyApiAdapter({ baseUrl: apiBaseUrl, bearerToken, familyId }).getTenantScopedUiProjection()
     : undefined;
   createPlatformConsole(root, {
     tenantId: searchParams.get('tenantId') ?? 'tenant_bangyang',
-    role: searchParams.get('role') ?? 'TENANT_OPERATOR',
+    role: /** @type {'PLATFORM_ADMIN'|'TENANT_ADMIN'|'TENANT_OPERATOR'|'SERVICE_ADVISOR'|'FAMILY_MEMBER'} */ (searchParams.get('role') ?? 'TENANT_OPERATOR'),
     loadTenantScopedProjection,
   });
 } else if (searchParams.get('product') === 'test-loop' || window.location.hash === '#test-loop') {
-  // ARCH-GO-TEST-FULL-FUNCTION-001: DEV synthetic internal demo only; server capability gate remains authoritative.
-  createTestLoopApp(root, {
-    ...defaultTestLoopConfig,
-    apiBaseUrl: searchParams.get('apiBaseUrl') ?? defaultTestLoopConfig.apiBaseUrl,
-    familyId: searchParams.get('familyId') ?? defaultTestLoopConfig.familyId,
-    initialPage: searchParams.get('page') ?? undefined,
-    onboardingId: searchParams.get('onboardingId') ?? undefined,
-    // Internal synthetic/dev demo only. The value is intentionally opt-in and
-    // the Bearer is read from sessionStorage rather than embedded in a page.
-    firstSliceApiMode: searchParams.get('firstSliceApi') === 'synthetic-api' ? 'synthetic-api' : 'disabled',
-    coreGrowthApiMode: searchParams.get('coreGrowthApi') === 'synthetic-api' ? 'synthetic-api' : 'disabled',
-    platformSurfacesApiMode: searchParams.get('platformSurfacesApi') === 'synthetic-api' ? 'synthetic-api' : 'disabled',
-    commerceCatalogApiMode: searchParams.get('commerceCatalogApi') === 'synthetic-api' ? 'synthetic-api' : 'disabled',
-    membershipProjectionApiMode: searchParams.get('membershipProjectionApi') === 'synthetic-api' ? 'synthetic-api' : 'disabled',
-    serviceRecordsApiMode: searchParams.get('serviceRecordsApi') === 'synthetic-api' ? 'synthetic-api' : 'disabled',
-    authToken: window.sessionStorage.getItem('family-ui01-ui09-synthetic-bearer') ?? undefined,
-    // Local DEV browser harness may provide an existing test actor; it is not embedded in the page.
-    authActorId: searchParams.get('actorPersonId') ?? undefined,
-  });
+  // 历史链接仍指向同一家庭门户，避免保留第二套产品入口。
+  mountFamilyPortal();
 } else if (searchParams.get('product') === 'principal' || window.location.hash === '#principal') {
   // W2-101 消费端法咪莉校长(WF1-C 内部级);确定性、零外呼、x-actor-id。
   createPrincipalApp(root, {
@@ -60,7 +96,8 @@ if (searchParams.get('product') === 'console' || !searchParams.get('product')) {
   });
 } else if (searchParams.get('product') === 'waf' || window.location.hash === '#waf') {
   createWafCommunityApp(root);
-} else {
+} else if (searchParams.get('product') === 'growth-onboarding') {
+  // 既有成长登记/视角采集流程继续复用原 Family API，实现为家庭门户中的深层入口。
   const config = {
     ...defaultConfig,
     apiBaseUrl: searchParams.get('apiBaseUrl') ?? defaultConfig.apiBaseUrl,
@@ -73,4 +110,9 @@ if (searchParams.get('product') === 'console' || !searchParams.get('product')) {
   };
 
   createGrowthApp(root, config);
+} else if (searchParams.get('product') === 'family' || !searchParams.get('product')) {
+  mountFamilyPortal();
+} else {
+  // 无法识别的入口不降级为其他产品，避免混淆家庭门户与运营控制台的使用语境。
+  window.location.replace('?product=family');
 }

@@ -67,6 +67,8 @@ function authHeaders(config) {
  * @param {AppConfig} config
  */
 export function createGrowthApp(root, config = defaultConfig) {
+  root.dataset.clientSurface = 'web-family-portal';
+  root.dataset.platformCore = 'existing-family-api';
   const state = {
     status: 'idle',
     message: '请先启动成长入口，再记录父母视角与孩子视角。安全等级由服务端策略派生。',
@@ -106,7 +108,7 @@ export function createGrowthApp(root, config = defaultConfig) {
 
         <section class="topbar" aria-label="成长旅程介绍">
           <div class="hero-copy">
-            <p class="eyebrow">Family Core · M2-102</p>
+            <p class="eyebrow">Family AI · 家庭成长陪伴</p>
             <h1 id="family-home-title">让沟通，<br><span>从被听见开始</span></h1>
             <p class="hero-lead">不急着下结论。先记录彼此的视角，再找到这一周最值得练习的一件小事。</p>
             <div class="hero-meta" aria-label="当前主题">
@@ -119,7 +121,7 @@ export function createGrowthApp(root, config = defaultConfig) {
 
         <section class="workspace" aria-label="成长工作台">
           <aside class="family-panel" aria-label="家庭上下文">
-            <p class="eyebrow">F01 家庭上下文</p>
+            <p class="eyebrow">家庭成长空间</p>
             <h2>我们的成长旅程</h2>
             <div class="stage-card">
               <span class="stage-icon" aria-hidden="true">芽</span>
@@ -135,7 +137,7 @@ export function createGrowthApp(root, config = defaultConfig) {
             </nav>
             <p class="privacy-note"><span aria-hidden="true">◇</span> 记录只用于本次家庭成长旅程，并遵循同意范围。</p>
             <details class="technical-details">
-              <summary>查看数据标识</summary>
+              <summary>查看家庭信息</summary>
               <dl>
                 <div><dt>家庭</dt><dd>${config.familyId}</dd></div>
                 <div><dt>监护人</dt><dd>${config.guardianPersonId}</dd></div>
@@ -148,7 +150,7 @@ export function createGrowthApp(root, config = defaultConfig) {
             <section class="onboarding-panel" aria-labelledby="onboarding-title">
               <div class="panel-heading">
                 <div>
-                  <p class="eyebrow"><span class="step-number">01</span> F02 成长入口</p>
+                  <p class="eyebrow"><span class="step-number">01</span> 今天从这里开始</p>
                   <h2 id="onboarding-title">启动亲子沟通成长旅程</h2>
                   <p class="section-description">先完成一个简短确认，系统会根据安全规则决定接下来的记录方式。</p>
                 </div>
