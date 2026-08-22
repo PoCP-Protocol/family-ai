@@ -38,11 +38,11 @@ function mountFamilyPortal() {
     <section class="family-portal-stage" aria-label="家庭成长页面"><div id="family-portal-experience"></div></section>
     <aside class="family-portal-context" aria-label="家庭成长提示">
       <section><span>家庭成长方式</span><h2>先看见，再行动</h2><p>每一次记录、计划、服务和权益都回到同一个家庭成长旅程中。</p></section>
-      <section><span>本周建议</span><strong>先完成今晚的一件小事</strong><p>完成后再回看下一步，不需要一次做完所有改变。</p></section>
+      <section><span>本周建议</span><strong data-family-portal-today>连接家庭会话后显示</strong><p data-family-portal-today-detail>今天的一项小行动会从同一家庭成长计划读取。</p></section>
       <section data-family-portal-card="journey"><span>计划阶段</span><strong data-family-portal-plan>连接家庭会话后显示</strong><p data-family-portal-plan-detail>计划阶段由同一 90 天成长计划读取。</p></section>
       <section data-family-portal-card="interventions"><span>家庭练习内容</span><strong data-family-portal-interventions>连接家庭会话后显示</strong><p data-family-portal-interventions-detail>仅展示已审核、已发布的家庭练习。</p></section>
       <section data-family-portal-card="operations"><span>运营回执</span><strong data-family-portal-operations>连接家庭会话后显示</strong><p data-family-portal-operations-detail>课程、服务和权益操作均以家庭私有回执回读。</p></section>
-      <section><span>家庭资料</span><p>家庭档案、同意范围与服务记录始终由现有 Family API 按当前家庭范围读取。</p></section>
+      <section><span>家庭资料</span><strong data-family-portal-assets>连接家庭会话后显示</strong><p data-family-portal-assets-detail>家庭档案、同意范围与服务记录始终由现有 Family API 按当前家庭范围读取。</p></section>
     </aside>
   </div>`;
   const experienceRoot = /** @type {HTMLElement | null} */ (appRoot.querySelector('#family-portal-experience'));
@@ -74,15 +74,21 @@ function mountFamilyPortal() {
   const operationDetail = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-operations-detail]'));
   const interventionTitle = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-interventions]'));
   const interventionDetail = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-interventions-detail]'));
-  if (isDevTestRuntime && bearerToken && familyId && planTitle && planDetail && operationTitle && operationDetail && interventionTitle && interventionDetail) {
+  const todayTitle = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-today]'));
+  const todayDetail = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-today-detail]'));
+  const assetsTitle = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-assets]'));
+  const assetsDetail = /** @type {HTMLElement | null} */ (appRoot.querySelector('[data-family-portal-assets-detail]'));
+  if (isDevTestRuntime && bearerToken && familyId && planTitle && planDetail && operationTitle && operationDetail && interventionTitle && interventionDetail && todayTitle && todayDetail && assetsTitle && assetsDetail) {
     const adapter = createFamilyApiAdapter({ baseUrl: apiBaseUrl, bearerToken, familyId });
     Promise.all([
       adapter.getJourneyPlan(),
       adapter.getExperienceCustomerProjection(),
       adapter.getInterventionLibrary(),
       childId ? adapter.resolveFamilyContext(childId, 'GROWTH_GUIDANCE') : Promise.resolve(null),
+      adapter.getToday(),
+      adapter.getTenantScopedUiProjection(),
     ])
-      .then(([journeyResult, operationsResult, libraryResult, contextResult]) => {
+      .then(([journeyResult, operationsResult, libraryResult, contextResult, todayResult, tenantProjection]) => {
         const plan = journeyResult?.plan;
         const phase = plan?.current_phase ?? '尚未开始';
         const phases = Array.isArray(plan?.phases) ? /** @type {{ phase?: string, status?: string }[]} */ (plan.phases) : [];
@@ -102,6 +108,19 @@ function mountFamilyPortal() {
         interventionDetail.textContent = interventions.length > 0
           ? `${interventions[0]?.intervention?.name_zh ?? '家庭练习'}可用于成长计划；${context?.consent?.allowed ? '成长使用同意已确认' : '当前仅展示通用内容'}，行动仍需家长确认。`
           : '当前没有可用的已发布家庭练习。';
+        const today = /** @type {{ assignment_text?: string, journey_phase?: string, day_index?: number }|null} */ (todayResult);
+        todayTitle.textContent = today?.assignment_text ?? '今天还没有安排成长行动';
+        todayDetail.textContent = today?.assignment_text
+          ? `来自${today.journey_phase ?? '当前'}阶段 · 第 ${today.day_index ?? 1} 天；完成只记录行动过程。`
+          : '可先完成家庭测评或确认成长计划，再回来查看今天的一件小事。';
+        const projection = /** @type {{ commercial?: { entitlement_assets?: unknown[], membership_assets?: unknown[] }, service?: { booking_records?: unknown[] } }} */ (tenantProjection ?? {});
+        const entitlementCount = projection.commercial?.entitlement_assets?.length ?? 0;
+        const membershipCount = projection.commercial?.membership_assets?.length ?? 0;
+        const serviceCount = projection.service?.booking_records?.length ?? 0;
+        assetsTitle.textContent = `家庭资产 · ${membershipCount + entitlementCount} 项权益`;
+        assetsDetail.textContent = serviceCount > 0
+          ? `还有 ${serviceCount} 条服务记录可回看；权益和服务均只在当前家庭范围显示。`
+          : '当前没有待回看的服务记录；家庭权益会在确认后同步到这里。';
       })
       .catch(() => {
         planTitle.textContent = '暂时无法读取计划';
@@ -110,6 +129,10 @@ function mountFamilyPortal() {
         operationDetail.textContent = '运营回执仍以当前家庭范围为准。';
         interventionTitle.textContent = '暂时无法读取练习内容';
         interventionDetail.textContent = '仅在家庭会话和审核状态有效时展示。';
+        todayTitle.textContent = '暂时无法读取今天的行动';
+        todayDetail.textContent = '请检查当前家庭会话后重试。';
+        assetsTitle.textContent = '暂时无法读取家庭资产';
+        assetsDetail.textContent = '权益与服务记录始终以当前家庭范围为准。';
       });
   }
   appRoot.dataset.clientSurface = 'web-family-portal';
