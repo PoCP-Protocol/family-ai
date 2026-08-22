@@ -36,7 +36,7 @@ describe('UI-19 teacher supply client', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [url, request] = fetchImpl.mock.calls[0];
     expect(String(url)).toBe('http://family-api.test/families/family-test/orchestration/test-loop/services/offerings?page_id=UI-19&service_type=%E4%BA%B2%E5%AD%90%E6%B2%9F%E9%80%9A&age_band=%E5%B0%8F%E5%AD%A6%E9%98%B6%E6%AE%B5&available_only=true');
-    expect(request).toMatchObject({ method: 'GET', credentials: 'include', headers: { authorization: 'Bearer synthetic-dev-token' } });
+    expect(request).toMatchObject({ method: 'GET', credentials: 'omit', headers: { authorization: 'Bearer synthetic-dev-token' } });
     expect(request.body).toBeUndefined();
     expect(request.headers).not.toHaveProperty('idempotency-key');
   });

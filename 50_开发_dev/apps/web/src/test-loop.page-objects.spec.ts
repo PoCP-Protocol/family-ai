@@ -122,12 +122,12 @@ describe('UI-01/UI-09 first real slice synthetic-api contract', () => {
   it('loads the same family-scoped projection on UI-01 and submits UI-09 CompleteGrowthAction with no local fake success', async () => {
     const fetchMock = vi.fn().mockImplementation(async (url: string, request: RequestInit) => {
       if (String(url).endsWith(`/families/${familyId}/today`)) {
-        expect(request).toMatchObject({ method: 'GET', credentials: 'include' });
+        expect(request).toMatchObject({ method: 'GET', credentials: 'omit' });
         expect(request.headers).toMatchObject({ authorization: 'Bearer synthetic-dev-token' });
         return { ok: true, json: async () => projection };
       }
       expect(String(url)).toBe(`http://family-api.test/families/${familyId}/tasks/${taskId}/check-in`);
-      expect(request).toMatchObject({ method: 'POST', credentials: 'include' });
+      expect(request).toMatchObject({ method: 'POST', credentials: 'omit' });
       expect(request.headers).toMatchObject({
         authorization: 'Bearer synthetic-dev-token',
         'idempotency-key': expect.any(String),
@@ -1032,4 +1032,3 @@ describe('UI-24/UI-34 real family service record readback', () => {
     expect(root.textContent).toContain('这些记录只说明家庭曾经记下过一个过程');
   });
 });
-
