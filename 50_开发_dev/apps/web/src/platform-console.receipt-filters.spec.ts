@@ -80,15 +80,19 @@ describe('运营控制台家庭回执筛选', () => {
 
   it('supports quick dates, saved filters, time pagination and a server-backed follow-up note without client-side authorization', async () => {
     const root = document.createElement('div'); document.body.append(root);
-    const updateFollowUp = vi.fn(async () => ({ follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请顾问在本周内回看。', follow_up_updated_at: '2026-08-22T10:00:00.000Z' }));
+    const updateFollowUp = vi.fn(async () => ({ follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请顾问在本周内回看。', follow_up_updated_at: '2026-08-22T10:00:00.000Z', assigned_to_account_id: 'operator-1', assigned_to_display_name: '顾问小林', follow_up_due_date: '2026-08-29' }));
+    const batchProcess = vi.fn(async (operationIds: string[]) => ({ operation_ids: operationIds, updated_count: operationIds.length, follow_up_status: 'PROCESSED' }));
     const operations: Array<{ operation_id: string, page_id: string, operation_kind: string, fixture_ref: string, status: 'CONFIRMED', source: 'DOMAIN_COMMAND_ADAPTER', authorization_status: 'FAMILY_SCOPE_AUTHORIZED', external_effect: false, created_at: string }> = Array.from({ length: 11 }, (_, index) => ({
       operation_id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
       page_id: index % 2 ? 'UI-23' : 'UI-21', operation_kind: 'DOMAIN_COMMAND', fixture_ref: `fixture-${index + 1}`,
       status: 'CONFIRMED', source: 'DOMAIN_COMMAND_ADAPTER', authorization_status: 'FAMILY_SCOPE_AUTHORIZED', external_effect: false, created_at: `2026-08-${String(22 - index % 7).padStart(2, '0')}T12:00:00.000Z`,
     }));
-    createPlatformConsole(root, { initialProjection: { tenant: { tenant_id: 'tenant-test', tenant_ref: 'TEST', display_name: '测试租户' } }, initialOperations: { operations }, updateFamilyOperationFollowUp: updateFollowUp });
+    createPlatformConsole(root, { initialProjection: { tenant: { tenant_id: 'tenant-test', tenant_ref: 'TEST', display_name: '测试租户' } }, initialOperations: { operations }, initialFollowUpAssignees: [{ account_id: 'operator-1', display_name: '顾问小林' }], updateFamilyOperationFollowUp: updateFollowUp, batchProcessFamilyOperationFollowUps: batchProcess });
     root.querySelector<HTMLButtonElement>('[data-page="operations"]')?.click();
     expect(root.textContent).toContain('共 11 条 · 第 1/2 页');
+    expect(root.textContent).toContain('今日新增');
+    expect(root.textContent).toContain('待跟进');
+    expect(root.textContent).toContain('已处理');
     root.querySelector<HTMLButtonElement>('#receiptNextPage')?.click();
     expect(root.textContent).toContain('第 2/2 页');
     root.querySelector<HTMLButtonElement>('#receiptRecent7')?.click();
@@ -104,12 +108,20 @@ describe('运营控制台家庭回执筛选', () => {
     const operationId = operations[0].operation_id;
     const status = root.querySelector<HTMLSelectElement>(`[data-followup-status="${operationId}"]`);
     const note = root.querySelector<HTMLTextAreaElement>(`[data-followup-note="${operationId}"]`);
-    if (!status || !note) throw new Error('follow-up controls missing');
+    const assignee = root.querySelector<HTMLSelectElement>(`[data-followup-assignee="${operationId}"]`);
+    const dueDate = root.querySelector<HTMLInputElement>(`[data-followup-due-date="${operationId}"]`);
+    if (!status || !note || !assignee || !dueDate) throw new Error('follow-up controls missing');
     status.value = 'PENDING_FOLLOW_UP'; note.value = '请顾问在本周内回看。';
+    assignee.value = 'operator-1'; dueDate.value = '2026-08-29';
     root.querySelector<HTMLButtonElement>(`[data-save-followup="${operationId}"]`)?.click();
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(updateFollowUp).toHaveBeenCalledWith(operationId, { follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请顾问在本周内回看。' });
+    expect(updateFollowUp).toHaveBeenCalledWith(operationId, { follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请顾问在本周内回看。', assigned_to_account_id: 'operator-1', follow_up_due_date: '2026-08-29' });
     expect(root.textContent).toContain('已记录人工跟进状态与备注。');
     expect(root.querySelector<HTMLTextAreaElement>(`[data-followup-note="${operationId}"]`)?.value).toBe('请顾问在本周内回看。');
+    root.querySelector<HTMLInputElement>(`[data-operation-select="${operationId}"]`)?.click();
+    root.querySelector<HTMLButtonElement>('#receiptBatchProcess')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(batchProcess).toHaveBeenCalledWith([operationId]);
+    expect(root.textContent).toContain('已将 1 条家庭回执标记为已处理。');
   });
 });

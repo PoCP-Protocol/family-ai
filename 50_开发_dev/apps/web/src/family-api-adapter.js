@@ -39,8 +39,11 @@ export function createFamilyApiAdapter({ baseUrl, bearerToken, familyId }) {
     getToday: () => read('/today'),
     getJourneyPlan: () => read('/growth/journey-plan'),
     getExperienceCustomerProjection: () => read('/orchestration/test-loop/experience/customer-projection'),
-    /** @param {string} operationId @param {{ follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null }} input */
+    /** @param {string} operationId @param {{ follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null, assigned_to_account_id?: string|null, follow_up_due_date?: string|null }} input */
     updateOperationFollowUp: (operationId, input) => write(`/orchestration/test-loop/experience/operations/${operationId}/follow-up`, input),
+    getOperationFollowUpAssignees: () => read('/orchestration/test-loop/experience/operations/follow-up/assignees'),
+    /** @param {string[]} operationIds */
+    batchProcessOperationFollowUps: (operationIds) => write('/orchestration/test-loop/experience/operations/follow-up/batch-process', { operation_ids: operationIds }),
     /** @param {string} onboardingId */
     getServiceJourney: (onboardingId) => read(`/growth/onboardings/${onboardingId}/service-journey`),
     getCoreGrowthPreview: () => read('/dev/core-growth'),

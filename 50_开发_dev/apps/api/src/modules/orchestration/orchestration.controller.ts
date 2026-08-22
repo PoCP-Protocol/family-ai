@@ -13,7 +13,7 @@ import { FamilyPageObjectsService } from './family-page-objects.service';
 import { FamilyCommerceIntentService } from './family-commerce-intent.service';
 import { FamilyServiceBookingService } from './family-service-booking.service';
 import { FamilyMembershipEntitlementService } from './family-membership-entitlement.service';
-import type { ExecuteTestExperienceDto, UpdateOperationFollowUpDto } from './test-experience.contract';
+import type { BatchProcessOperationFollowUpsDto, ExecuteTestExperienceDto, UpdateOperationFollowUpDto } from './test-experience.contract';
 import type { FamilyPageObjectActionDto } from './family-page-objects.contract';
 import type { CancelOrderIntentDto, SubmitOrderIntentDto } from './family-commerce-intent.contract';
 import type { CancelBookingDto, RequestBookingDto, ServiceSupplyListQueryDto } from './family-service-booking.contract';
@@ -237,6 +237,23 @@ export class OrchestrationController {
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     return this.testExperience.updateOperationFollowUp(familyId, actor.personId, operationId, body ?? {}, idempotencyKey?.trim() || undefined);
+  }
+
+  @Get('orchestration/test-loop/experience/operations/follow-up/assignees')
+  @RequireOrchestrationAction('ManageOperationReceipt')
+  async operationFollowUpAssignees(@Param('familyId') familyId: string) {
+    return { assignees: await this.testExperience.operationFollowUpAssignees(familyId) };
+  }
+
+  @Post('orchestration/test-loop/experience/operations/follow-up/batch-process')
+  @RequireOrchestrationAction('ManageOperationReceipt')
+  async batchProcessOperationFollowUps(
+    @Param('familyId') familyId: string,
+    @Body() body: BatchProcessOperationFollowUpsDto,
+    @OrchestrationActor() actor: Actor,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.testExperience.batchProcessOperationFollowUps(familyId, actor.personId, body ?? {}, idempotencyKey?.trim() || undefined);
   }
 
   @Get('orchestration/test-loop/page-objects')

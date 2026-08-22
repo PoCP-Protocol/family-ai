@@ -37,7 +37,7 @@ afterAll(async () => {
 
 beforeEach(async () => { await cleanFamilyCoreTables(pool!); });
 
-interface Seed { tenantId: string; familyId: string; guardianId: string; token: string; }
+interface Seed { tenantId: string; familyId: string; guardianId: string; accountId: string; token: string; }
 async function seedGuardian(opts: { service?: boolean } = {}): Promise<Seed> {
   const p = pool!;
   const familyId = (await p.query(`insert into families(display_name) values ('TEST_ONLY Experience Family') returning family_id`)).rows[0].family_id;
@@ -58,7 +58,7 @@ async function seedGuardian(opts: { service?: boolean } = {}): Promise<Seed> {
   await p.query(`insert into family_memberships(family_id, person_id, role, status, joined_at) values ($1,$2,'OWNER_GUARDIAN','ACTIVE',now())`, [familyId, guardianId]);
   const token = `test_experience_${randomUUID()}`;
   await p.query(`insert into identity_sessions(token_hash, account_ref, expires_at) values ($1,$2,now()+interval '1 day')`, [sha256(token), accountId]);
-  return { tenantId, familyId, guardianId, token };
+  return { tenantId, familyId, guardianId, accountId, token };
 }
 
 async function request(path: string, method: 'GET' | 'POST', token?: string, body?: unknown, extra: Record<string, string> = {}) {
@@ -150,19 +150,41 @@ describe('DEV/TEST formal experience workflows', () => {
     const operation = await create.json();
     const key = `followup-${randomUUID()}`;
     const followUp = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations/${operation.operation_id}/follow-up`, 'POST', seed.token, {
-      follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。',
+      follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, follow_up_due_date: '2026-09-01',
     }, { 'idempotency-key': key });
     expect(followUp.status).toBe(201);
-    expect(await followUp.json()).toMatchObject({ operation_id: operation.operation_id, follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', external_effect: false });
-    const row = (await pool!.query(`select follow_up_status, operator_note from family_operation_followups where family_id=$1 and operation_id=$2`, [seed.familyId, operation.operation_id])).rows[0];
-    expect(row).toEqual({ follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。' });
+    expect(await followUp.json()).toMatchObject({ operation_id: operation.operation_id, follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, follow_up_due_date: '2026-09-01', external_effect: false });
+    const row = (await pool!.query(`select follow_up_status, operator_note, assigned_to_account_id::text, due_date::text from family_operation_followups where family_id=$1 and operation_id=$2`, [seed.familyId, operation.operation_id])).rows[0];
+    expect(row).toEqual({ follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, due_date: '2026-09-01' });
     expect((await pool!.query(`select status, external_effect from test_experience_operations where operation_id=$1`, [operation.operation_id])).rows[0]).toEqual({ status: 'CONFIRMED', external_effect: false });
     const projection = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/customer-projection`, 'GET', seed.token);
     expect((await projection.json()).operations).toEqual(expect.arrayContaining([
-      expect.objectContaining({ operation_id: operation.operation_id, follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。' }),
+      expect.objectContaining({ operation_id: operation.operation_id, follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', assigned_to_account_id: seed.accountId, follow_up_due_date: '2026-09-01' }),
     ]));
     const other = await seedGuardian();
     const crossFamily = await request(`/families/${other.familyId}/orchestration/test-loop/experience/operations/${operation.operation_id}/follow-up`, 'POST', other.token, { follow_up_status: 'PROCESSED' });
+    expect(crossFamily.status).toBe(404);
+  });
+
+  it('lists tenant operators and batch-processes only receipts belonging to the trusted family', async () => {
+    const seed = await seedGuardian();
+    const first = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations`, 'POST', seed.token, {
+      page_id: 'UI-21', action: 'CREATE_BOOKING', fixture_ref: 'TEACHER_LI_SLOT_2025_05_21_1000', channel: 'VIDEO', fixture_version: TEST_EXPERIENCE_FIXTURE_VERSION,
+    }, { 'idempotency-key': `batch-first-${randomUUID()}` });
+    const second = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations`, 'POST', seed.token, {
+      page_id: 'UI-23', action: 'CREATE_EVENT', fixture_ref: 'EVENT_PARENT_CHILD_SALON_2025_05_25', fixture_version: TEST_EXPERIENCE_FIXTURE_VERSION,
+    }, { 'idempotency-key': `batch-second-${randomUUID()}` });
+    const firstOperation = await first.json(); const secondOperation = await second.json();
+    const assignees = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations/follow-up/assignees`, 'GET', seed.token);
+    expect(assignees.status).toBe(200);
+    expect((await assignees.json()).assignees).toEqual(expect.arrayContaining([expect.objectContaining({ account_id: seed.accountId })]));
+    const ids = [firstOperation.operation_id, secondOperation.operation_id];
+    const batch = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations/follow-up/batch-process`, 'POST', seed.token, { operation_ids: ids }, { 'idempotency-key': `batch-process-${randomUUID()}` });
+    expect(batch.status).toBe(201);
+    expect(await batch.json()).toMatchObject({ operation_ids: ids, updated_count: 2, follow_up_status: 'PROCESSED', external_effect: false });
+    expect((await pool!.query(`select count(*)::int as count from family_operation_followups where family_id=$1 and follow_up_status='PROCESSED'`, [seed.familyId])).rows[0].count).toBe(2);
+    const other = await seedGuardian();
+    const crossFamily = await request(`/families/${other.familyId}/orchestration/test-loop/experience/operations/follow-up/batch-process`, 'POST', other.token, { operation_ids: ids });
     expect(crossFamily.status).toBe(404);
   });
 

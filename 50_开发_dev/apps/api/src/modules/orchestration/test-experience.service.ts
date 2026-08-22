@@ -2,7 +2,10 @@ import { BadRequestException, ConflictException, ForbiddenException, Inject, Inj
 import { createHash } from 'node:crypto';
 import { OrchestrationRepository } from './orchestration.repository';
 import {
+  type BatchProcessOperationFollowUpsDto,
+  type BatchProcessOperationFollowUpsResult,
   type ExecuteTestExperienceDto,
+  type OperationFollowUpAssignee,
   type OperationFollowUpResult,
   type TestExperienceAction,
   type TestExperienceCustomerProjection,
@@ -44,6 +47,9 @@ interface OperationFollowUpRow {
   operation_id: string;
   follow_up_status: 'PENDING_FOLLOW_UP' | 'PROCESSED';
   operator_note: string | null;
+  assigned_to_account_id: string | null;
+  assigned_to_display_name: string | null;
+  due_date: string | Date | null;
   updated_at: string | Date;
 }
 
@@ -111,6 +117,44 @@ export class TestExperienceService {
     return status === 'TEST_VALIDATED' ? 'TEST' : 'DEV';
   }
 
+  private normalizeDueDate(value: unknown): string | null {
+    if (value === undefined || value === null || value === '') return null;
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00.000Z`))) {
+      throw new BadRequestException('follow_up_due_date_invalid');
+    }
+    return value;
+  }
+
+  private async assertTenantAssignee(tenantId: string, accountId: string | null): Promise<void> {
+    if (!accountId) return;
+    const eligible = await this.repo.query<{ found: boolean }>(
+      `select exists(
+         select 1 from tenant_account_memberships
+          where tenant_id=$1 and account_id=$2 and status='ACTIVE'
+            and role in ('TENANT_OWNER','TENANT_ADMIN','TENANT_OPERATOR')
+            and valid_from <= now() and (valid_to is null or valid_to > now())
+       ) as found`,
+      [tenantId, accountId],
+    );
+    if (!eligible.rows[0]?.found) throw new ForbiddenException('tenant_operator_assignee_required');
+  }
+
+  async operationFollowUpAssignees(familyId: string): Promise<OperationFollowUpAssignee[]> {
+    requireDevSyntheticTestLoop();
+    const tenantId = await this.tenantForFamily(familyId);
+    const result = await this.repo.query<OperationFollowUpAssignee>(
+      `select a.account_id::text, coalesce(a.external_ref, a.account_id::text) as display_name
+         from tenant_account_memberships m
+         join accounts a on a.account_id=m.account_id and a.status='ACTIVE'
+        where m.tenant_id=$1 and m.status='ACTIVE'
+          and m.role in ('TENANT_OWNER','TENANT_ADMIN','TENANT_OPERATOR')
+          and m.valid_from <= now() and (m.valid_to is null or m.valid_to > now())
+        order by display_name asc`,
+      [tenantId],
+    );
+    return result.rows;
+  }
+
   async updateOperationFollowUp(
     familyId: string,
     actorPersonId: string,
@@ -125,11 +169,14 @@ export class TestExperienceService {
     const note = dto.operator_note?.trim() || null;
     if (note && note.length > 1000) throw new BadRequestException('operator_note_too_long');
     const tenantId = await this.tenantForFamily(familyId);
+    const assigneeAccountId = dto.assigned_to_account_id?.trim() || null;
+    const dueDate = this.normalizeDueDate(dto.follow_up_due_date);
+    await this.assertTenantAssignee(tenantId, assigneeAccountId);
     return this.withIdempotency(
       familyId,
       'ManageOperationReceipt',
       idempotencyKey,
-      { familyId, actorPersonId, operationId, followUpStatus, note },
+      { familyId, actorPersonId, operationId, followUpStatus, note, assigneeAccountId, dueDate },
       async () => {
         const target = await this.repo.query<{ found: boolean }>(
           `select exists(
@@ -142,24 +189,75 @@ export class TestExperienceService {
         if (!target.rows[0]?.found) throw new NotFoundException('family_operation_receipt_not_found');
         const result = await this.repo.query<OperationFollowUpRow>(
           `insert into family_operation_followups(
-             tenant_id, family_id, operation_id, follow_up_status, operator_note, updated_by_person_id
-           ) values ($1,$2,$3,$4,$5,$6)
+             tenant_id, family_id, operation_id, follow_up_status, operator_note, assigned_to_account_id, due_date, updated_by_person_id
+           ) values ($1,$2,$3,$4,$5,$6,$7,$8)
            on conflict (tenant_id, family_id, operation_id) do update set
              follow_up_status=excluded.follow_up_status,
              operator_note=excluded.operator_note,
+             assigned_to_account_id=coalesce(excluded.assigned_to_account_id, family_operation_followups.assigned_to_account_id),
+             due_date=coalesce(excluded.due_date, family_operation_followups.due_date),
              updated_by_person_id=excluded.updated_by_person_id,
              updated_at=now()
-           returning operation_id, follow_up_status, operator_note, updated_at`,
-          [tenantId, familyId, operationId, followUpStatus, note, actorPersonId],
+           returning operation_id, follow_up_status, operator_note, assigned_to_account_id, due_date::text as due_date, updated_at`,
+          [tenantId, familyId, operationId, followUpStatus, note, assigneeAccountId, dueDate, actorPersonId],
         );
         const row = result.rows[0];
+        const assigneeName = row.assigned_to_account_id
+          ? (await this.repo.query<{ display_name: string }>(`select coalesce(external_ref, account_id::text) as display_name from accounts where account_id=$1`, [row.assigned_to_account_id])).rows[0]?.display_name ?? row.assigned_to_account_id
+          : null;
         return {
           operation_id: row.operation_id,
           follow_up_status: row.follow_up_status,
           operator_note: row.operator_note,
           follow_up_updated_at: operationTimestamp(row.updated_at),
+          assigned_to_account_id: row.assigned_to_account_id,
+          assigned_to_display_name: assigneeName,
+          follow_up_due_date: row.due_date ? operationTimestamp(row.due_date).slice(0, 10) : null,
           external_effect: false,
-          text_equivalent: '已记录当前家庭范围内的人工跟进状态和备注；不会变更订单、服务、权益、儿童事实或触发外部通知。',
+          text_equivalent: '已记录当前家庭范围内的人工跟进、负责人和截止日期；不会变更订单、服务、权益、儿童事实或触发外部通知。',
+        };
+      },
+    );
+  }
+
+  async batchProcessOperationFollowUps(
+    familyId: string,
+    actorPersonId: string,
+    dto: BatchProcessOperationFollowUpsDto,
+    idempotencyKey?: string,
+  ): Promise<BatchProcessOperationFollowUpsResult> {
+    requireDevSyntheticTestLoop();
+    const operationIds = [...new Set(dto?.operation_ids ?? [])];
+    if (!operationIds.length || operationIds.length > 100 || operationIds.some((value) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value))) {
+      throw new BadRequestException('operation_ids_invalid');
+    }
+    const tenantId = await this.tenantForFamily(familyId);
+    return this.withIdempotency(
+      familyId,
+      'BatchProcessOperationReceipt',
+      idempotencyKey,
+      { familyId, actorPersonId, operationIds },
+      async () => {
+        const targets = await this.repo.query<{ operation_id: string }>(
+          `select operation_id::text from test_experience_operations where family_id=$1 and operation_id = any($2::uuid[])
+           union
+           select event_id::text as operation_id from family_product_events where family_id=$1 and event_id = any($2::uuid[])`,
+          [familyId, operationIds],
+        );
+        if (targets.rows.length !== operationIds.length) throw new NotFoundException('family_operation_receipt_not_found');
+        await this.repo.query(
+          `insert into family_operation_followups(tenant_id, family_id, operation_id, follow_up_status, operator_note, updated_by_person_id)
+           select $1, $2, operation_id::uuid, 'PROCESSED', null, $3 from unnest($4::uuid[]) as operation_id
+           on conflict (tenant_id, family_id, operation_id) do update set
+             follow_up_status='PROCESSED', updated_by_person_id=excluded.updated_by_person_id, updated_at=now()`,
+          [tenantId, familyId, actorPersonId, operationIds],
+        );
+        return {
+          operation_ids: operationIds,
+          updated_count: operationIds.length,
+          follow_up_status: 'PROCESSED',
+          external_effect: false,
+          text_equivalent: '已在当前家庭范围内批量标记回执为已处理；不会变更订单、服务、权益或触发外部效果。',
         };
       },
     );
@@ -317,9 +415,12 @@ export class TestExperienceService {
         [familyId, ['UI-13', 'UI-14', 'UI-15', 'UI-16', 'UI-17', 'UI-18', 'UI-19', 'UI-20', 'UI-21', 'UI-22', 'UI-23', 'UI-24']],
       ),
       this.repo.query<OperationFollowUpRow>(
-        `select operation_id::text, follow_up_status, operator_note, updated_at
-           from family_operation_followups
-          where tenant_id=$1 and family_id=$2`,
+        `select f.operation_id::text, f.follow_up_status, f.operator_note, f.assigned_to_account_id,
+                coalesce(a.external_ref, a.account_id::text) as assigned_to_display_name,
+                f.due_date::text as due_date, f.updated_at
+           from family_operation_followups f
+           left join accounts a on a.account_id=f.assigned_to_account_id
+          where f.tenant_id=$1 and f.family_id=$2`,
         [tenantId, familyId],
       ),
     ]);
@@ -338,6 +439,9 @@ export class TestExperienceService {
         follow_up_status: followUp?.follow_up_status ?? 'NOT_MARKED' as const,
         operator_note: followUp?.operator_note ?? null,
         follow_up_updated_at: followUp ? operationTimestamp(followUp.updated_at) : null,
+        assigned_to_account_id: followUp?.assigned_to_account_id ?? null,
+        assigned_to_display_name: followUp?.assigned_to_display_name ?? null,
+        follow_up_due_date: followUp?.due_date ? operationTimestamp(followUp.due_date).slice(0, 10) : null,
         external_effect: false as const,
         created_at: operationTimestamp(row.created_at),
         };
@@ -355,6 +459,9 @@ export class TestExperienceService {
         follow_up_status: followUp?.follow_up_status ?? 'NOT_MARKED' as const,
         operator_note: followUp?.operator_note ?? null,
         follow_up_updated_at: followUp ? operationTimestamp(followUp.updated_at) : null,
+        assigned_to_account_id: followUp?.assigned_to_account_id ?? null,
+        assigned_to_display_name: followUp?.assigned_to_display_name ?? null,
+        follow_up_due_date: followUp?.due_date ? operationTimestamp(followUp.due_date).slice(0, 10) : null,
         external_effect: false as const,
         created_at: operationTimestamp(row.created_at),
         };

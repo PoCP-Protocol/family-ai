@@ -47,6 +47,9 @@ export interface TestExperienceCustomerProjection {
     follow_up_status: 'NOT_MARKED' | 'PENDING_FOLLOW_UP' | 'PROCESSED';
     operator_note: string | null;
     follow_up_updated_at: string | null;
+    assigned_to_account_id: string | null;
+    assigned_to_display_name: string | null;
+    follow_up_due_date: string | null;
     external_effect: false;
     created_at: string;
   }>;
@@ -56,6 +59,8 @@ export interface TestExperienceCustomerProjection {
 export interface UpdateOperationFollowUpDto {
   follow_up_status?: 'PENDING_FOLLOW_UP' | 'PROCESSED';
   operator_note?: string | null;
+  assigned_to_account_id?: string | null;
+  follow_up_due_date?: string | null;
 }
 
 export interface OperationFollowUpResult {
@@ -63,8 +68,28 @@ export interface OperationFollowUpResult {
   follow_up_status: 'PENDING_FOLLOW_UP' | 'PROCESSED';
   operator_note: string | null;
   follow_up_updated_at: string;
+  assigned_to_account_id: string | null;
+  assigned_to_display_name: string | null;
+  follow_up_due_date: string | null;
   external_effect: false;
   text_equivalent: string;
+}
+
+export interface BatchProcessOperationFollowUpsDto {
+  operation_ids?: string[];
+}
+
+export interface BatchProcessOperationFollowUpsResult {
+  operation_ids: string[];
+  updated_count: number;
+  follow_up_status: 'PROCESSED';
+  external_effect: false;
+  text_equivalent: string;
+}
+
+export interface OperationFollowUpAssignee {
+  account_id: string;
+  display_name: string;
 }
 
 const FIXTURE_RULES: Record<TestExperienceAction, readonly string[]> = {
