@@ -28,6 +28,14 @@ beforeEach(async () => {
   await pool.query(`insert into accounts(external_ref) values ($1) on conflict do nothing`, [`phone:${PHONE}`]);
   await pool.query(`insert into account_person_bindings(account_id, person_id) select a.account_id, $1 from accounts a where a.external_ref=$2`, [pid, `phone:${PHONE}`]);
   await pool.query(`insert into family_memberships(family_id, person_id, role, status, joined_at) values ($1,$2,'OWNER_GUARDIAN','ACTIVE',now())`, [familyId, pid]);
+  const tenantId = (await pool.query(`
+    insert into tenants(tenant_ref, display_name, tenant_type, status)
+    values ('FAMILY_DIRECT', 'Family Direct Customer Tenant', 'DIRECT_CUSTOMER', 'ACTIVE')
+    on conflict (tenant_ref) do update set status='ACTIVE', updated_at=now()
+    returning tenant_id`)).rows[0].tenant_id;
+  const accountId = (await pool.query(`select account_id from accounts where external_ref=$1`, [`phone:${PHONE}`])).rows[0].account_id;
+  await pool.query(`insert into tenant_account_memberships(tenant_id, account_id, role, status, valid_from) values ($1,$2,'TENANT_VIEWER','ACTIVE',now())`, [tenantId, accountId]);
+  await pool.query(`insert into tenant_family_bindings(tenant_id, family_id, status, effective_from, migration_ref) values ($1,$2,'ACTIVE',now(),'TEST_OTP')`, [tenantId, familyId]);
 });
 afterAll(async () => { await app.close(); await pool.end(); });
 
@@ -54,9 +62,10 @@ describe('IAM-102 OTP login flow', () => {
 
     const ctx = await fetch(`${baseUrl}/auth/contexts`, { headers: { authorization: `Bearer ${token}` } });
     expect(ctx.status).toBe(200);
-    const { contexts } = await ctx.json() as { contexts: Array<{ family_id: string; role: string }> };
+    const { contexts } = await ctx.json() as { contexts: Array<{ tenant_id: string; family_id: string; role: string }> };
     expect(contexts.map((c) => c.family_id)).toContain(familyId);
     expect(contexts.find((c) => c.family_id === familyId)?.role).toBe('OWNER_GUARDIAN');
+    expect(contexts.find((c) => c.family_id === familyId)?.tenant_id).toBeTruthy();
   });
 
   it('PLATFORM-SESSION-001: verify 下发 HttpOnly cookie;带 cookie(无 Bearer)可认证 /auth/contexts', async () => {
@@ -102,14 +111,22 @@ describe('IAM-102 OTP login flow', () => {
     const { token } = await (await post('/auth/otp/verify', { phone, code: dev_code })).json() as { token: string };
     const r = await fetch(`${baseUrl}/auth/families`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ display_name: '新家庭', guardian_name: '妈妈' }) });
     expect(r.status).toBe(201);
-    const fam = await r.json() as { family_id: string; role: string };
+    const fam = await r.json() as { tenant_id: string; family_id: string; role: string };
     expect(fam.role).toBe('OWNER_GUARDIAN');
+    expect(fam.tenant_id).toBeTruthy();
     const ctx = await fetch(`${baseUrl}/auth/contexts`, { headers: { authorization: `Bearer ${token}` } });
-    const { contexts } = await ctx.json() as { contexts: Array<{ family_id: string; role: string }> };
+    const { contexts } = await ctx.json() as { contexts: Array<{ tenant_id: string; family_id: string; role: string }> };
     expect(contexts.map((c) => c.family_id)).toContain(fam.family_id);
-    // 二次 CreateFirstFamily 应被拒(已有家庭)
+    expect(contexts.find((c) => c.family_id === fam.family_id)?.tenant_id).toBe(fam.tenant_id);
+    // 相同请求是网络重试:幂等重放同一家庭；不同载荷必须冲突。
+    const replay = await fetch(`${baseUrl}/auth/families`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ display_name: '新家庭', guardian_name: '妈妈' }) });
+    expect(replay.status).toBe(201);
+    expect((await replay.json() as { family_id: string }).family_id).toBe(fam.family_id);
     const r2 = await fetch(`${baseUrl}/auth/families`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ display_name: '再来一个', guardian_name: '爸爸' }) });
-    expect(r2.status).toBe(400);
+    expect(r2.status).toBe(409);
+    expect(Number((await pool.query(`select count(*)::int n from families where display_name in ('新家庭','再来一个')`)).rows[0].n)).toBe(1);
+    expect(Number((await pool.query(`select count(*)::int n from audit_logs where family_id=$1 and action_name='CreateFirstFamily'`, [fam.family_id])).rows[0].n)).toBe(1);
+    expect(Number((await pool.query(`select count(*)::int n from outbox_events where aggregate_id=$1 and event_name='FamilyBootstrapCompleted'`, [fam.family_id])).rows[0].n)).toBe(1);
   });
 
   it('rate limit: 4th request within window -> 409', async () => {

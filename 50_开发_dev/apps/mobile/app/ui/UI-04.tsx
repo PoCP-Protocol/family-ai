@@ -1,7 +1,7 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
@@ -34,6 +34,13 @@ type BaselineWeek = {
   tone: "mint" | "blue" | "orange" | "gray";
   illustration: string;
 };
+
+const PLAN_SUMMARY_STATS = [
+  { value: "3", label: "当前阶段" },
+  { value: "12", label: "今日任务" },
+  { value: "36h", label: "累计时长" },
+  { value: "90天", label: "计划周期" },
+] as const;
 
 const BASELINE_WEEKS: readonly BaselineWeek[] = [
   { id: "SEE", week: "第1周", title: "关系破冰", intent: "建立信任，打开沟通通道", tasks: ["亲子时光15分钟", "倾听孩子的感受"], tone: "mint", illustration: "♥" },
@@ -155,7 +162,7 @@ export default function JourneyPlanScreen() {
                 <Text style={styles.topTitle}>90天成长方案</Text>
                 <View style={styles.topActions}><Text style={styles.moreText}>•••</Text><Text style={styles.circleText}>⊙</Text></View>
               </View>
-              <Image source={require("@/assets/images/ui04-plan-summary-baseline.png")} resizeMode="contain" style={styles.summaryReference} accessibilityLabel="当前阶段、目标、累计时长、难度与计划统计" />
+              <PlanSummaryCard />
             </>
           }
           renderItem={({ item, index }) => {
@@ -205,6 +212,35 @@ export default function JourneyPlanScreen() {
   );
 }
 
+function PlanSummaryCard() {
+  return (
+    <View accessibilityLabel="当前阶段、目标、累计时长、难度与计划统计" style={styles.summaryReference}>
+      <View style={styles.summaryGlow} />
+      <View style={styles.summaryHeader}>
+        <View>
+          <Text style={styles.summaryEyebrow}>当前成长阶段</Text>
+          <Text style={styles.summaryTitle}>90天成长方案</Text>
+        </View>
+        <View style={styles.summaryBadge}><Text style={styles.summaryBadgeText}>进行中</Text></View>
+      </View>
+      <Text style={styles.summaryGoal}>目标：建立稳定沟通节奏，完成亲子关系、习惯与情绪三类训练</Text>
+      <View style={styles.summaryStatsRow}>
+        {PLAN_SUMMARY_STATS.map((stat) => (
+          <View key={stat.label} style={styles.summaryStat}>
+            <Text style={styles.summaryStatValue}>{stat.value}</Text>
+            <Text style={styles.summaryStatLabel}>{stat.label}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={styles.summaryProgressTrack}><View style={styles.summaryProgressFill} /></View>
+      <View style={styles.summaryFooterRow}>
+        <Text style={styles.summaryFooterText}>难度：温和进阶</Text>
+        <Text style={styles.summaryFooterText}>每周 3-4 次</Text>
+      </View>
+    </View>
+  );
+}
+
 const toneStyles = {
   mint: { surface: "#F1FCF7", border: "#CDEFE1", badge: "#19B785", dot: "#18AE76", line: "#90DFC2", art: "#DDF8EB" },
   blue: { surface: "#F0F6FF", border: "#D3E2FF", badge: "#317EED", dot: "#2F81F7", line: "#AFCBF9", art: "#DCEBFF" },
@@ -221,7 +257,22 @@ const styles = StyleSheet.create({
   topActions: { width: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   moreText: { color: "#20242A", fontSize: 17, lineHeight: 19, fontWeight: "900", letterSpacing: 1 },
   circleText: { color: "#20242A", fontSize: 25, lineHeight: 25 },
-  summaryReference: { alignSelf: "center", width: "100%", height: 222, marginTop: 2, marginBottom: 5 },
+  summaryReference: { alignSelf: "center", width: "100%", minHeight: 222, marginTop: 2, marginBottom: 5, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 17, borderRadius: 0, backgroundColor: "#FFF4E8", overflow: "hidden" },
+  summaryGlow: { position: "absolute", right: -28, top: -35, width: 148, height: 148, borderRadius: 74, backgroundColor: "#FFD7A8", opacity: 0.56 },
+  summaryHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  summaryEyebrow: { color: "#B2621D", fontSize: 12, lineHeight: 17, fontWeight: "800" },
+  summaryTitle: { color: "#231F20", fontSize: 25, lineHeight: 34, fontWeight: "900", marginTop: 2 },
+  summaryBadge: { minHeight: 28, borderRadius: 14, paddingHorizontal: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#FF8A1F" },
+  summaryBadgeText: { color: "#FFFFFF", fontSize: 12, lineHeight: 17, fontWeight: "900" },
+  summaryGoal: { color: "#6A4A2C", fontSize: 13, lineHeight: 20, fontWeight: "700", marginTop: 11 },
+  summaryStatsRow: { flexDirection: "row", gap: 8, marginTop: 17 },
+  summaryStat: { flex: 1, minHeight: 58, borderRadius: 14, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#D88916", shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
+  summaryStatValue: { color: "#FF8A1F", fontSize: 20, lineHeight: 26, fontWeight: "900" },
+  summaryStatLabel: { color: "#7A614A", fontSize: 10, lineHeight: 14, fontWeight: "700", marginTop: 2 },
+  summaryProgressTrack: { height: 7, borderRadius: 7, backgroundColor: "#F8DEC0", marginTop: 16, overflow: "hidden" },
+  summaryProgressFill: { width: "42%", height: 7, borderRadius: 7, backgroundColor: "#FF8A1F" },
+  summaryFooterRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 9 },
+  summaryFooterText: { color: "#7A614A", fontSize: 11, lineHeight: 16, fontWeight: "700" },
   timelineRow: { flexDirection: "row", paddingHorizontal: 18, minHeight: 164 },
   timelineRail: { width: 28, alignItems: "center" },
   timelineDot: { width: 11, height: 11, borderRadius: 6, marginTop: 17, zIndex: 1 },

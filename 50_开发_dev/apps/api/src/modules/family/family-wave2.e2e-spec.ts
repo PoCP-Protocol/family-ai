@@ -376,6 +376,23 @@ describe('M2 Wave2 PostgreSQL + HTTP E2E', () => {
     expect(today.family_total_score).toBeUndefined();
     expect(today.family_ranking).toBeUndefined();
 
+    const statePath = `/families/${setup.familyId}/tasks/${started.actions[0].action_id}/state`;
+    const startedAt = new Date().toISOString();
+    const startState = await postJson(statePath, { action: 'START', occurred_at: startedAt }, 'corr-ui09-start', 'idem-ui09-start');
+    expect(startState.status).toBe(201);
+    expect(await startState.json()).toMatchObject({ result_state: 'SUCCESS', action: { task_state: 'IN_PROGRESS', execution_status: 'IN_PROGRESS', task_version: 2 } });
+
+    const pauseState = await postJson(statePath, { action: 'PAUSE', occurred_at: new Date().toISOString() }, 'corr-ui09-pause', 'idem-ui09-pause');
+    expect(pauseState.status).toBe(201);
+    expect(await pauseState.json()).toMatchObject({ action: { task_state: 'PAUSED', execution_status: 'PAUSED', task_version: 3 } });
+
+    const pausedReadback = await fetch(`${baseUrl}/families/${setup.familyId}/today`, { headers: baseHeaders('corr-ui09-paused-readback') });
+    expect(await pausedReadback.json()).toMatchObject({ today_task: { task_state: 'PAUSED', allowed_actions: ['RESUME', 'CANCEL'] } });
+
+    const resumeState = await postJson(statePath, { action: 'RESUME', occurred_at: new Date().toISOString() }, 'corr-ui09-resume', 'idem-ui09-resume');
+    expect(resumeState.status).toBe(201);
+    expect(await resumeState.json()).toMatchObject({ action: { task_state: 'IN_PROGRESS', task_version: 4 } });
+
     const checkinPath = `/families/${setup.familyId}/tasks/${started.actions[0].action_id}/check-in`;
     const checkinBody = { completion_status: 'COMPLETED', reflection: '', occurred_at: new Date().toISOString() };
     const checkedIn = await postJson(checkinPath, checkinBody, 'corr-ui01-ui09-checkin', 'idem-ui01-ui09-checkin');
@@ -392,6 +409,29 @@ describe('M2 Wave2 PostgreSQL + HTTP E2E', () => {
     const replay = await postJson(checkinPath, checkinBody, 'corr-ui01-ui09-checkin-replay', 'idem-ui01-ui09-checkin');
     expect(replay.status).toBe(201);
     expect((await replay.json() as Record<string, any>).result_state).toBe('REPLAYED');
+
+    // A fresh read reconstructs completion from PostgreSQL; no client memory is required.
+    const restartReadback = await fetch(`${baseUrl}/families/${setup.familyId}/today`, { headers: baseHeaders('corr-ui09-restart-readback') });
+    expect(restartReadback.status).toBe(200);
+    expect(await restartReadback.json()).toMatchObject({
+      entry_state: 'READY',
+      today_task: { task_id: started.actions[0].action_id, task_state: 'CHECKED_IN', execution_status: 'COMPLETED', checkin_allowed: false, task_version: 5 },
+    });
+
+    // Cancellation is a distinct terminal state and remains visible in the same persisted projection.
+    await pool!.query(`update growth_actions set due_date=current_date where action_id=$1`, [started.actions[1].action_id]);
+    const cancelPath = `/families/${setup.familyId}/tasks/${started.actions[1].action_id}/state`;
+    const cancelOccurredAt = new Date().toISOString();
+    const cancelled = await postJson(cancelPath, { action: 'CANCEL', occurred_at: cancelOccurredAt }, 'corr-ui09-cancel', 'idem-ui09-cancel');
+    expect(cancelled.status).toBe(201);
+    expect(await cancelled.json()).toMatchObject({ action: { task_state: 'CANCELLED', execution_status: 'CANCELLED', checkin_allowed: false, task_version: 2 } });
+    const cancelledReplay = await postJson(cancelPath, { action: 'CANCEL', occurred_at: cancelOccurredAt }, 'corr-ui09-cancel-replay', 'idem-ui09-cancel');
+    expect(cancelledReplay.status).toBe(201);
+    expect(await cancelledReplay.json()).toMatchObject({ result_state: 'REPLAYED', action: { task_state: 'CANCELLED' } });
+
+    const allStatesReadback = await fetch(`${baseUrl}/families/${setup.familyId}/today`, { headers: baseHeaders('corr-ui09-all-states-readback') });
+    const allStates = await allStatesReadback.json() as Record<string, any>;
+    expect(allStates.today_tasks).toContainEqual(expect.objectContaining({ task_id: started.actions[1].action_id, task_state: 'CANCELLED' }));
     await expectCompletedActionCount(1);
     await expectAuditActionCount('CompleteGrowthAction', 1);
     await expectOutboxEventCount('GrowthActionCompleted', 1);

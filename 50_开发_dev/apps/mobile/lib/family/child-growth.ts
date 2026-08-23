@@ -140,7 +140,7 @@ export function buildFamilyRhythmEvents(state: RhythmSourceState): FamilyRhythmE
       id: `camp-day-${day}`,
       title: `完成成长营 Day ${day} 的家庭行动`,
       detail: "这是一条参与记录，不代表成长结果。",
-      sourceUi: "UI-35",
+      sourceUi: "UI-09",
       occurredAt: "",
       kind: "camp_action",
       evidenceBoundary: "process_event_not_outcome",

@@ -121,6 +121,14 @@ capabilities:
     verdict: KEEP
     notes: 写 canonical growth truth;AI 不得直写(见 STATE_ACTION_MATRIX)。
 
+  - id: family_assessment_ai_capability
+    what: UI-02 Family Assessment capability memory + FAMILY_SUPPORT_NEEDS v2 structured assessment flow
+    true_class: REAL_DOMAIN_CAPABILITY
+    user_visible: true
+    current_default: true
+    verdict: KEEP + ITERATE
+    notes: 家庭测评是真实业务能力组件:版本化题库/维度记忆/结构化 Perspective 收集/后续解释入口。当前不是诊断、不是总分、不是模型智能本身;模型解释必须后续经 Model Gateway、Schema Validation、Policy/Safety、Human Gate 与 Named Action。
+
   # ---------- IAM ----------
   - id: iam_identity_session
     what: apps/api auth AuthService(不透明 Bearer 会话令牌 + 解析)

@@ -218,10 +218,10 @@ export interface Ui01HomeFeature {
  * home screen.
  */
 export const UI01_HOME_FEATURES: readonly Ui01HomeFeature[] = [
-  { feature_id: 'home_identity', visual_label: '家庭成长平台', mode: 'READ_PROJECTION', target_route: 'home', source_objects: ['FamilyTodayProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
+  { feature_id: 'home_identity', visual_label: '家庭成长平台', mode: 'READ_PROJECTION', target_route: 'home', source_objects: ['FamilyHomeProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'header_more', visual_label: '更多', mode: 'NAVIGATION', target_route: 'core-mine', source_objects: ['Family'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'header_context', visual_label: '家庭上下文', mode: 'READ_PROJECTION', target_route: 'home', source_objects: ['Family', 'Person', 'ConsentGrant'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
-  { feature_id: 'greeting', visual_label: '今天也一起陪孩子成长', mode: 'READ_PROJECTION', target_route: 'home', source_objects: ['FamilyTodayProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
+  { feature_id: 'greeting', visual_label: '今天也一起陪孩子成长', mode: 'READ_PROJECTION', target_route: 'home', source_objects: ['FamilyHomeProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'notification', visual_label: '提醒', mode: 'DEV_NOOP_ROUTE', target_route: 'core-mine', source_objects: ['AuditEvent'], state_boundary: 'NOOP_ADAPTER', evidence_boundary: 'FACT' },
   { feature_id: 'assessment_campaign', visual_label: '免费家庭测评', mode: 'CONTROLLED_DRAFT_ROUTE', target_route: 'growth-assessment', source_objects: ['AssessmentDraft', 'Perspective'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'PERSPECTIVE' },
   { feature_id: 'assessment_cta', visual_label: '立即测评', mode: 'CONTROLLED_DRAFT_ROUTE', target_route: 'growth-assessment', source_objects: ['AssessmentDraft'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'PERSPECTIVE' },
@@ -239,7 +239,7 @@ export const UI01_HOME_FEATURES: readonly Ui01HomeFeature[] = [
   { feature_id: 'recommended_card_1', visual_label: '推荐内容卡片一', mode: 'NAVIGATION', target_route: 'commerce-product', source_objects: ['CatalogOffer'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'recommended_card_2', visual_label: '推荐内容卡片二', mode: 'NAVIGATION', target_route: 'commerce-product', source_objects: ['CatalogOffer'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'recommended_card_3', visual_label: '推荐内容卡片三', mode: 'NAVIGATION', target_route: 'commerce-product', source_objects: ['CatalogOffer'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
-  { feature_id: 'nav_home', visual_label: '首页', mode: 'NAVIGATION', target_route: 'home', source_objects: ['FamilyTodayProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
+  { feature_id: 'nav_home', visual_label: '首页', mode: 'NAVIGATION', target_route: 'home', source_objects: ['FamilyHomeProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'nav_plan', visual_label: '计划', mode: 'NAVIGATION', target_route: 'core-plan', source_objects: ['GrowthPlanDraft'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'RECOMMENDATION' },
   { feature_id: 'nav_community', visual_label: '社群', mode: 'NAVIGATION', target_route: 'core-community', source_objects: ['CommunityThread'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'nav_mine', visual_label: '我的', mode: 'NAVIGATION', target_route: 'core-mine', source_objects: ['GrowthProfile'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },

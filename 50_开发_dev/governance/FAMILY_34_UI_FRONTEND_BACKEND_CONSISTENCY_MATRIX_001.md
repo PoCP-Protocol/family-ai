@@ -15,15 +15,15 @@
 
 | UI | Route | 页面/闭环 | 当前前端能力 | 后端契约与数据状态 | Named Action / LLM | 测试现状 | 状态 | 下一步 |
 |---|---|---|---|---|---|---|---|---|
-| UI-01 | `home` | 家庭首页 | 原图首页、导航与入口 | `GET /families/:familyId/home`；需补齐家庭摘要 DTO 与只读 fixture | 只读；页面解释可走 Gateway | 路由/视觉已测 | `READ_ONLY_READY` | 接入真实家庭首页 DTO 与卡片状态 |
-| UI-02 | `growth-assessment` | 体检入口 | 原图入口与 LLM 解释热点 | LLM draft `page_id=UI-02`；L0 入口只读 | Gateway；不写结论 | Gateway 阻断已测 | `E2E_READY` | 继续接入 L0 Need/Intent 真实表单状态 |
-| UI-03 | `assessment` | L0 当前需要确认 | 原图选项与下一步 | 既有 `/test-loop/need`、`/intent` DTO；需逐字段接 UI | Named Action；不写评分/标签 | 原 L0 集成已测 | `UI_READY_BACKEND_GAP` | 绑定选项到 Need/Intent API 与撤回/跳过 |
+| UI-01 | `home` | 家庭首页 | 原图首页、导航与入口 | `GET /families/:familyId/ui/01/home`；可信 Tenant/Family、今日行动、旅程、准入供给 | 首页读不调用模型；求助必须显式走 `RequestGrowthHelp` | API 单元/E2E、App/Web 与视觉热点已测 | `COMMERCIAL_READ_SLICE_READY` | 补生产提醒、跨端求助输入和运营 SLO 后再进入生产 Gate |
+| UI-02 | `growth-assessment` | 家庭支持需要确认 | 原图第2/5步与版本/边界/孩子选择 | `UI02_FAMILY_ASSESSMENT_V1`；版本化Tool/Session/Response/Evidence | `START_ASSESSMENT` / `SAVE_ASSESSMENT_RESPONSE` / `SUBMIT_ASSESSMENT`；不评分不诊断 | ASSESSMENT同意、幂等、修订历史、提交不可变、跨端契约与PostgreSQL E2E | `COMMERCIAL_SLICE_IMPLEMENTED_TESTED_DEV` | UI-03接入提交Evidence并形成Hypothesis/家庭确认 |
+| UI-03 | `core-report` | 成长解读假设与家庭确认 | 原图报告结构、来源、局限、确认/暂不形成方向 | `UI03_GROWTH_HYPOTHESIS_V1`；Assessment/Evidence/NeedType来源链 | `CONFIRM_GROWTH_HYPOTHESIS` / `DISMISS_GROWTH_HYPOTHESIS` | Hypothesis非事实非诊断、AI未调用、同意复验、确认后才成GrowthIntent、NO_ACTION、幂等/Audit/Outbox/E2E | `COMMERCIAL_SLICE_IMPLEMENTED_TESTED_DEV` | UI-04以已确认Intent生成私有报告/方案，不把Hypothesis写成结果 |
 | UI-04 | `core-report` | 家庭成长说明 | 原图清晰报告母版 | 当前仅 LLM draft/说明；无报告事实 DTO | Gateway 输出验证；不得生成诊断 | LLM 阻断已测 | `UI_READY_BACKEND_GAP` | 建立只读报告投影与来源字段 |
 | UI-05 | `core-plan` | 90 日成长方案 | 原图计划与开始入口 | 尚无正式计划投影/任务状态 DTO | Named Action 需独立登记；模型不能自动建计划 | 路由已测 | `UI_READY_BACKEND_GAP` | 接入家庭明确 Decision 后的计划投影 |
 | UI-06 | `core-community` | 陪跑服务/社群 | 原图服务卡与打卡入口 | 可关联服务记录/活动投影；尚无专属读 DTO | 仅受控说明；不得真实外发 | 路由已测 | `UI_READY_BACKEND_GAP` | 建立服务旅程只读 DTO |
 | UI-07 | `core-mine` | 我的会员中心 | 原图会员与权益视觉 | 当前无正式会员/权益读模型接入 | 不得接真实支付/权益 | 路由已测 | `GATE_BOUNDARY` | 先建立沙箱资产投影；生产权益另行 Gate |
 | UI-08 | `growth-report` | 成长报告 | 原图报告视觉 | 无独立报告 DTO；不能把静态分值视为事实 | 禁止成长评分/诊断/永久标签 | 路由已测 | `GATE_BOUNDARY` | 改为支持记录/家庭表达投影并移除事实性分数 |
-| UI-09 | `growth-daily-task` | 今日任务 | 原图任务与确定性本地勾选 | 尚无正式任务完成 API | Named Action 待登记；LLM 只能解释 | 路由/LLM 阻断已测 | `UI_READY_BACKEND_GAP` | 建立测试任务状态与幂等完成动作 |
+| UI-09 | `growth-daily-task` | 今日任务 | 原图蓝色提醒、三项编号视觉、真实任务状态与反思/暂停/取消操作 | `UI01_UI09_FAMILY_TODAY_V1`；GrowthAction持久化生命周期；`/tasks/:taskId/state`与`/check-in` | 家庭动作授权；开始/暂停/继续/取消/完成均幂等并写Audit/Outbox；AI不调用 | API单元、真实PostgreSQL状态机与重启回读、App/Web契约与Web交互已测 | `COMMERCIAL_SLICE_IMPLEMENTED_TESTED_DEV` | 接生产任务模板运营、提醒SLO与可观测性后进入生产 Gate |
 | UI-10 | `growth-child` | 孩子侧成长助手 | 原图孩子页 | 无儿童直接作答/成长结果写入契约 | 儿童直接作答继续 HOLD | 路由已测 | `GATE_BOUNDARY` | 仅保留家庭监护人只读投影与文本等价 |
 | UI-11 | `growth-ranking` | 成长榜单 | 原图榜单视觉 | 不得接跨家庭排名、比较或家庭画像 | 永久禁止跨家庭统计/排序 | 路由已测 | `GATE_BOUNDARY` | 只保留个人旅程/家庭自有记录，不实现榜单事实 |
 | UI-12 | `growth-poster` | 成长成果海报 | 原图海报与分享热点 | 无成果事实 DTO；不得生成效果证明 | 不得公开分享或成长结果断言 | 路由已测 | `GATE_BOUNDARY` | 先接家庭私有记录投影；分享保持关闭 |
@@ -52,7 +52,7 @@
 
 ## 当前工程结论
 
-当前 34 页并非全部同一完成度。UI-15、UI-16、UI-21、UI-23、UI-26 已具备真实 DEV/TEST 工作流、正式 PostgreSQL 持久化、受控 Named Action、固定 fixture、幂等、family scope/consent 校验和 Web 入口；UI-02 的真实 LLM Gateway 入口与安全阻断已具备。其余页面需要按本矩阵逐批补齐正式只读 DTO、状态投影或受控写动作，不能通过继续增加静态热点来宣称前后端一致。
+当前 34 页并非全部同一完成度。UI-02 已具备真实版本化测评会话、正式 PostgreSQL 持久化、跨端 Named Action、幂等、family scope/consent、不可变提交证据与 E2E；UI-15、UI-16、UI-21、UI-23、UI-26 已具备真实 DEV/TEST 工作流。其余页面需要按本矩阵逐批补齐正式只读 DTO、状态投影或受控写动作，不能通过继续增加静态热点来宣称前后端一致。
 
 “成长榜单、效果成果、会员权益、真实支付、真人咨询、真实社区外发、儿童直接作答和跨家庭比较”属于产品边界或独立 Gate 范围，不能为了完成页面数量而伪造为普通业务接口。
 

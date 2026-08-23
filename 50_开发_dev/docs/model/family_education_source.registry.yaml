@@ -1,0 +1,113 @@
+version: 0.1.0
+asset_ref: FAMILY_EDUCATION_SOURCE_REGISTRY
+status: draft
+owner: Family Education Industry Model
+source_doc: ../FAMILY_ASSESSMENT_AI_SKILL_RESEARCH.md
+purpose: >
+  Tracks external research, public guidance, mature practice patterns, and internal
+  practice sources that can inform Family's constructs, item banks, actions,
+  evaluation labels, and small-model datasets.
+
+registry_rules:
+  - source_ref must be stable and uppercase snake case.
+  - source_type must be research, public_guidance, instrument_pattern, practice_signal, tool_pattern, or internal_artifact.
+  - external sources are method inputs, not automatic product claims.
+  - protected wording, proprietary scoring, and unsupported diagnostic claims must not be copied.
+  - every source should declare extraction_status before product use.
+
+sources:
+  - source_ref: SDQ_PATTERN
+    name: Strengths and Difficulties Questionnaire pattern
+    source_type: instrument_pattern
+    domain_refs: [DEVELOPMENTAL_FOUNDATIONS, PSYCHOSOMATIC_WELLBEING]
+    contributes: [brief_multi_scale_structure, impact_supplement, respondent_versions, follow_up_design]
+    family_use: Learn short-screening architecture and impact follow-up pattern.
+    extraction_status: pending_deep_review
+
+  - source_ref: FAMILY_CHECKUP_PATTERN
+    name: Family Check-Up pattern
+    source_type: practice_signal
+    domain_refs: [PARENTING, FAMILY_SYSTEM, HUMAN_SERVICE]
+    contributes: [assessment_feedback_intervention_loop, tailored_parenting_support, motivational_feedback]
+    family_use: Model assess -> feedback -> choose small action -> review outcome.
+    extraction_status: pending_deep_review
+
+  - source_ref: TRIPLE_P_STEPPED_CARE_PATTERN
+    name: Triple P stepped-care pattern
+    source_type: practice_signal
+    domain_refs: [PARENTING, HUMAN_SERVICE]
+    contributes: [support_intensity_levels, parenting_skills, self_regulation_orientation]
+    family_use: Inform stepped support menu and human-service routing.
+    extraction_status: pending_deep_review
+
+  - source_ref: HARVARD_SERVE_RETURN_PATTERN
+    name: Harvard Serve and Return pattern
+    source_type: public_guidance
+    domain_refs: [RELATIONSHIP, DEVELOPMENTAL_FOUNDATIONS]
+    contributes: [responsive_interaction, caregiver_stress_context, early_relational_health]
+    family_use: Anchor parent-child communication and emotional repair.
+    extraction_status: pending_deep_review
+
+  - source_ref: AAP_FIVE_CS_MEDIA_PATTERN
+    name: AAP 5 Cs of Media Use pattern
+    source_type: public_guidance
+    domain_refs: [DIGITAL_LIFE]
+    contributes: [child_content_calm_crowding_out_communication]
+    family_use: Inform device-use context and family media-plan actions.
+    extraction_status: pending_deep_review
+
+  - source_ref: COMMON_SENSE_FAMILY_TECH_PLANNER_PATTERN
+    name: Common Sense family technology planner pattern
+    source_type: tool_pattern
+    domain_refs: [DIGITAL_LIFE, FAMILY_SYSTEM]
+    contributes: [family_agreements, conversation_prompts, routines, age_stage_device_rules]
+    family_use: Convert device-use assessment into collaborative family agreements.
+    extraction_status: pending_deep_review
+
+  - source_ref: K12_LEARNING_SCIENCE_PATTERN
+    name: K12 learning science pattern
+    source_type: research
+    domain_refs: [ACADEMIC_K12, DEVELOPMENTAL_FOUNDATIONS]
+    contributes: [homework_process, motivation, self_efficacy, metacognition, feedback_use]
+    family_use: Extend learning habits into academic support without ranking or score worship.
+    extraction_status: pending_deep_review
+
+  - source_ref: AI_LITERACY_FRAMEWORK_PATTERN
+    name: AI literacy framework pattern
+    source_type: research
+    domain_refs: [AI_LITERACY]
+    contributes: [ai_concepts, tool_fluency, prompt_task_design, verification, privacy, ethics]
+    family_use: Define AI-era family education skill paths and safety boundaries.
+    extraction_status: pending_deep_review
+
+  - source_ref: MULTIMODAL_LITERACY_FRAMEWORK_PATTERN
+    name: Multimodal literacy framework pattern
+    source_type: research
+    domain_refs: [MULTIMODAL_LITERACY]
+    contributes: [cross_modal_comprehension, creation, evaluation, communication]
+    family_use: Shift families from passive media use to multimodal creation and explanation.
+    extraction_status: pending_deep_review
+
+  - source_ref: MULTIPLE_INTELLIGENCES_THEORY_PATTERN
+    name: Multiple intelligences theory pattern
+    source_type: research
+    domain_refs: [MULTIPLE_INTELLIGENCES]
+    contributes: [eight_intelligence_lenses, strength_observation, portfolio_paths]
+    family_use: Inform strength discovery and non-score-based growth record.
+    extraction_status: pending_deep_review
+
+  - source_ref: DERMATOGLYPHICS_PRACTICE_PATTERN
+    name: Dermatoglyphics practice pattern
+    source_type: practice_signal
+    domain_refs: [DERMATOGLYPHICS_PRACTICE]
+    contributes: [report_terms, consultation_claims, parent_expectation, service_workflow]
+    family_use: Capture as practice context and evidence-review object, not as validated fact by default.
+    extraction_status: pending_deep_review
+
+  - source_ref: FAMILY_INTERNAL_UI02_V2
+    name: Family UI-02 v2 assessment memory
+    source_type: internal_artifact
+    domain_refs: [CHILD_NEEDS, PARENT_NEEDS, FAMILY_SHARED_NEEDS, RELATIONSHIP, DIGITAL_LIFE, ACADEMIC_K12]
+    contributes: [low_friction_intake, five_priority_dimensions, deep_follow_up_questions]
+    family_use: Current product entry for Family Assessment AI Capability.
+    extraction_status: implemented

@@ -4,7 +4,7 @@ import { UI01_UI09_SYNTHETIC_FIXTURE } from './test-fixtures/ui01-ui09-synthetic
 
 /** TODAY-001 / UI-01+UI-09 · Today 只读聚合单测(stub GrowthActionService)。 */
 function svc(action: unknown) {
-  const fake = { getTodayAction: async () => action } as any;
+  const fake = { getTodayAction: async () => action, listTodayActions: async () => action ? [action] : [] } as any;
   return new TodayService(fake);
 }
 
@@ -56,6 +56,14 @@ describe('TodayService.getFamilyTodayProjection', () => {
     const projection = await svc(null).getFamilyTodayProjection('22222222-2222-4222-8222-222222222222', 'actor');
     expect(projection.entry_state).toBe('EMPTY');
     expect(projection.today_task).toBeNull();
+    expect(projection.today_tasks).toEqual([]);
     expect(projection.ai_ready.model_gateway_status).toBe('NOOP_NOT_INVOKED');
+  });
+
+  it('keeps a completed action in the restart-safe Today readback', async () => {
+    const completed = { ...pendingAction, status: 'COMPLETED', completion_status: 'COMPLETED', completed_at: '2026-08-23T08:00:00.000Z', execution_status: 'COMPLETED', row_version: 3 };
+    const projection = await svc(completed).getFamilyTodayProjection(completed.family_id, 'actor');
+    expect(projection.today_task).toMatchObject({ task_state: 'CHECKED_IN', execution_status: 'COMPLETED', checkin_allowed: false, task_version: 3 });
+    expect(projection.today_tasks).toHaveLength(1);
   });
 });

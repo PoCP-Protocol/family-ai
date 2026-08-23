@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../app.module';
-import { cleanFamilyCoreTables, createTestPool, getTestDatabaseUrl } from '../../test/test-database';
+import { bindTestAccountToFamilyTenant, cleanFamilyCoreTables, createTestPool, getTestDatabaseUrl } from '../../test/test-database';
 
 // P0 Runtime Trust consumer contract: consumer routes use account→ACTIVE binding→ACTIVE membership→family.
 // Default internal profile remains deterministic/zero-external-call; legacy Principal response contract is preserved.
@@ -28,6 +28,7 @@ beforeEach(async () => {
   const accountId = (await pool.query(`insert into accounts(status) values ('ACTIVE') returning account_id`)).rows[0].account_id;
   await pool.query(`insert into account_person_bindings(account_id, person_id, status) values ($1,$2,'ACTIVE')`, [accountId, guardianId]);
   await pool.query(`insert into family_memberships(family_id, person_id, role, status, joined_at) values ($1,$2,'OWNER_GUARDIAN','ACTIVE',now())`, [familyId, guardianId]);
+  await bindTestAccountToFamilyTenant(pool, accountId, familyId);
   token = `fam_${randomUUID()}`;
   await pool.query(`insert into identity_sessions(token_hash, account_ref, expires_at) values ($1,$2,now() + interval '1 day')`, [sha256(token), accountId]);
 });

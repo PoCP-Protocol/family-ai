@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveEntry, screenFor, type FamilyContextSummary, type OnboardingStatusView } from './onboarding-flow';
 import { buildTodayView } from '../today/today-view';
 
-const ctx = (fid: string): FamilyContextSummary => ({ type: 'FAMILY', family_id: fid, person_id: 'p', membership_id: 'm', role: 'OWNER_GUARDIAN' });
+const ctx = (fid: string): FamilyContextSummary => ({ type: 'FAMILY', tenant_id: 'tenant-1', family_id: fid, person_id: 'p', membership_id: 'm', role: 'OWNER_GUARDIAN' });
 const status = (step: OnboardingStatusView['current_step'], complete = false): OnboardingStatusView =>
   ({ family_id: 'fam-1', complete, current_step: step, steps: [], child_id: null });
 

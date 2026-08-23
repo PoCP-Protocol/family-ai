@@ -13,7 +13,7 @@ import { FamilyPageObjectsService } from './family-page-objects.service';
 import { FamilyCommerceIntentService } from './family-commerce-intent.service';
 import { FamilyServiceBookingService } from './family-service-booking.service';
 import { FamilyMembershipEntitlementService } from './family-membership-entitlement.service';
-import type { ExecuteTestExperienceDto } from './test-experience.contract';
+import type { ExecuteTestExperienceDto, UpdateOperationFollowUpDto } from './test-experience.contract';
 import type { FamilyPageObjectActionDto } from './family-page-objects.contract';
 import type { CancelOrderIntentDto, SubmitOrderIntentDto } from './family-commerce-intent.contract';
 import type { CancelBookingDto, RequestBookingDto, ServiceSupplyListQueryDto } from './family-service-booking.contract';
@@ -225,6 +225,18 @@ export class OrchestrationController {
   @RequireOrchestrationAction('ReadFamily')
   async testExperienceCustomerProjection(@Param('familyId') familyId: string) {
     return this.testExperience.customerProjection(familyId);
+  }
+
+  @Post('orchestration/test-loop/experience/operations/:operationId/follow-up')
+  @RequireOrchestrationAction('ManageOperationReceipt')
+  async updateOperationFollowUp(
+    @Param('familyId') familyId: string,
+    @Param('operationId') operationId: string,
+    @Body() body: UpdateOperationFollowUpDto,
+    @OrchestrationActor() actor: Actor,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.testExperience.updateOperationFollowUp(familyId, actor.personId, operationId, body ?? {}, idempotencyKey?.trim() || undefined);
   }
 
   @Get('orchestration/test-loop/page-objects')

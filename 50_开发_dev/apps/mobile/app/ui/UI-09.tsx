@@ -1,5 +1,5 @@
-import { Stack, router } from "expo-router";
-import { useEffect, useState } from "react";
+import { Stack, router, useLocalSearchParams } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
@@ -11,49 +11,113 @@ import { useFamilyMobile } from "@/lib/family/family-state";
 import { haptic } from "@/lib/haptics";
 
 interface RemoteTodayAction {
-  action_id?: string;
+  task_id: string;
   journey_plan_id?: string | null;
   journey_phase?: string | null;
   day_index?: number;
+  assignment_text: string;
+  task_state: "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "CHECKED_IN" | "PARTIAL" | "NOT_COMPLETED" | "CANCELLED";
+  execution_status: "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "PARTIAL" | "NOT_COMPLETED" | "CANCELLED";
+  checkin_allowed: boolean;
+  allowed_actions: ("START" | "PAUSE" | "RESUME" | "CANCEL")[];
+  task_version: number;
 }
+
+interface RemoteTodayProjection { entry_state: "READY" | "EMPTY"; today_task: RemoteTodayAction | null; today_tasks: RemoteTodayAction[] }
+interface RemoteTaskReceipt { action: RemoteTodayAction; result_state: "SUCCESS" | "REPLAYED" }
+interface RemoteCampProjection { enrollment: { enrollment_id: string; current_day: number; status: string } | null; program: { days: { day: number; title: string; action: string; observation_prompt: string; estimated_minutes: number }[] }; checkins: { day_no: number }[] }
+interface RemoteCampReceipt { replayed: boolean; enrollment: { current_day: number; status: string }; checkin: { day_no: number; completion_status: string } }
 
 export default function DailyTaskScreen() {
   const colors = useColors();
   const session = useFamilyApiSession();
+  const params = useLocalSearchParams<{ campEnrollmentId?: string; campDay?: string }>();
+  const campEnrollmentId = typeof params.campEnrollmentId === "string" ? params.campEnrollmentId : null;
+  const requestedCampDay = Number(typeof params.campDay === "string" ? params.campDay : 0);
+  const campMode = !!campEnrollmentId && Number.isInteger(requestedCampDay) && requestedCampDay >= 1 && requestedCampDay <= 21;
   const { todayAction, lastReceipt, activeCampDay, campCompletedDays, startAction, completeAction, skipAction } = useFamilyMobile();
   const [reflection, setReflection] = useState(lastReceipt?.actionId === todayAction.id ? lastReceipt.reflection : "");
   const [remoteAction, setRemoteAction] = useState<RemoteTodayAction | null>(null);
+  const [remoteCamp, setRemoteCamp] = useState<RemoteCampProjection | null>(null);
+  const [campActionState, setCampActionState] = useState<"NOT_STARTED" | "IN_PROGRESS" | "CHECKED_IN">("NOT_STARTED");
   const [syncState, setSyncState] = useState<"idle" | "submitting">("idle");
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const isComplete = todayAction.status === "checked_in";
-  const isStarted = todayAction.status === "in_progress";
+  const retryOperations = useRef<Record<string, { key: string; occurred_at: string }>>({});
+  const connected = session.status === "connected" && !!session.token && !!session.selectedFamily;
+  const effectiveState = campMode ? campActionState : remoteAction?.task_state ?? (todayAction.status === "checked_in" ? "CHECKED_IN" : todayAction.status === "in_progress" ? "IN_PROGRESS" : "NOT_STARTED");
+  const isComplete = ["CHECKED_IN", "PARTIAL", "NOT_COMPLETED"].includes(effectiveState);
+  const isStarted = effectiveState === "IN_PROGRESS";
+  const isPaused = effectiveState === "PAUSED";
+  const isCancelled = effectiveState === "CANCELLED";
   const progress = isComplete ? 78 : Math.max(28, Math.min(66, 28 + campCompletedDays.length * 4));
+
+  const operationFor = (fingerprint: string) => {
+    retryOperations.current[fingerprint] ??= { key: `ui09-${fingerprint}-${Date.now().toString(36)}`, occurred_at: new Date().toISOString() };
+    return retryOperations.current[fingerprint];
+  };
 
   useEffect(() => {
     if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
     let active = true;
-    familyApi.getTodayGrowthAction<RemoteTodayAction | null>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setRemoteAction(result); }).catch(() => { if (active) setSyncMessage("今天的计划任务暂时无法同步。") });
+    if (campMode) {
+      familyApi.getGrowthCamp<RemoteCampProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (!active) return; setRemoteCamp(result); setCampActionState(result.checkins.some((checkin) => checkin.day_no === requestedCampDay) ? "CHECKED_IN" : "NOT_STARTED"); }).catch(() => { if (active) setSyncMessage("成长营任务暂时无法同步。") });
+    } else {
+      familyApi.getFamilyToday<RemoteTodayProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setRemoteAction(result.today_task); }).catch(() => { if (active) setSyncMessage("今天的计划任务暂时无法同步。") });
+    }
     return () => { active = false; };
-  }, [session.selectedFamily, session.status, session.token]);
+  }, [campMode, requestedCampDay, session.selectedFamily, session.status, session.token]);
 
   const handlePrimary = async () => {
-    if (!isStarted) { startAction(); haptic.light(); return; }
     if (syncState === "submitting") return;
-    if (session.status === "connected" && session.token && session.selectedFamily) {
-      if (!remoteAction?.action_id || !remoteAction.journey_plan_id) { setSyncMessage("当前还没有可完成的计划任务，请回到成长方案后再试。"); return; }
+    if (campMode && connected && session.token && session.selectedFamily && campEnrollmentId) {
+      if (!isStarted) { setCampActionState("IN_PROGRESS"); haptic.light(); return; }
+      const operation = operationFor(`camp-${campEnrollmentId}-day-${requestedCampDay}`);
       setSyncState("submitting"); setSyncMessage(null);
       try {
-        await familyApi.checkInTodayTask(session.token, session.selectedFamily.family_id, remoteAction.action_id, { completion_status: "COMPLETED", reflection, occurred_at: new Date().toISOString() }, `ui09-checkin-${remoteAction.action_id}`);
+        await familyApi.checkInGrowthCampDay<RemoteCampReceipt>(session.token, session.selectedFamily.family_id, campEnrollmentId, requestedCampDay, { completion_status: "COMPLETED", reflection, occurred_at: operation.occurred_at }, operation.key);
+        setCampActionState("CHECKED_IN"); completeAction(reflection); haptic.success();
+      } catch { setSyncMessage("暂时无法记录这次成长营行动；重复点击不会产生重复记录。"); }
+      setSyncState("idle"); return;
+    }
+    if (connected && session.token && session.selectedFamily) {
+      if (!remoteAction?.task_id) { setSyncMessage("当前还没有可执行的计划任务，请回到成长方案后再试。"); return; }
+      setSyncState("submitting"); setSyncMessage(null);
+      try {
+        if (!isStarted) {
+          const transition = isPaused ? "RESUME" : "START";
+          const operation = operationFor(`${transition.toLowerCase()}-${remoteAction.task_id}-v${remoteAction.task_version}`);
+          const receipt = await familyApi.changeTodayTaskState<RemoteTaskReceipt>(session.token, session.selectedFamily.family_id, remoteAction.task_id, { action: transition, occurred_at: operation.occurred_at }, operation.key);
+          setRemoteAction(receipt.action); setSyncState("idle"); haptic.light(); return;
+        }
+        const operation = operationFor(`checkin-${remoteAction.task_id}-v${remoteAction.task_version}`);
+        const receipt = await familyApi.checkInTodayTask<RemoteTaskReceipt>(session.token, session.selectedFamily.family_id, remoteAction.task_id, { completion_status: "COMPLETED", reflection, occurred_at: operation.occurred_at }, operation.key);
+        setRemoteAction(receipt.action);
       } catch { setSyncState("idle"); setSyncMessage("暂时无法同步这次行动，请稍后重试。"); return; }
       setSyncState("idle");
+    } else if (!isStarted) {
+      startAction(); haptic.light(); return;
     }
     completeAction(reflection); haptic.success();
   };
 
+  const transitionTask = async (action: "PAUSE" | "CANCEL") => {
+    if (!connected || !session.token || !session.selectedFamily || !remoteAction) {
+      if (action === "CANCEL") skipAction();
+      return;
+    }
+    const operation = operationFor(`${action.toLowerCase()}-${remoteAction.task_id}-v${remoteAction.task_version}`);
+    setSyncState("submitting"); setSyncMessage(null);
+    try {
+      const receipt = await familyApi.changeTodayTaskState<RemoteTaskReceipt>(session.token, session.selectedFamily.family_id, remoteAction.task_id, { action, occurred_at: operation.occurred_at }, operation.key);
+      setRemoteAction(receipt.action); setSyncState("idle"); haptic.selection();
+    } catch { setSyncState("idle"); setSyncMessage("状态暂时没有保存，可安全重试。"); }
+  };
+
+  const campDayDefinition = remoteCamp?.program.days.find((day) => day.day === requestedCampDay);
   const tasks = [
-    { id: "1", title: todayAction.title, detail: todayAction.reason, time: `${todayAction.estimatedMinutes}分钟`, checked: isComplete },
-    { id: "2", title: "记录一次家庭互动", detail: "选择一个值得留意的家庭瞬间", time: "5分钟", checked: false },
-    { id: "3", title: "完成专注力小游戏", detail: "轻松陪伴，一起完成一个小挑战", time: "10分钟", checked: false },
+    { id: "1", title: campDayDefinition?.title ?? remoteAction?.assignment_text ?? todayAction.title, detail: campDayDefinition?.action ?? todayAction.reason, time: `${campDayDefinition?.estimated_minutes ?? todayAction.estimatedMinutes}分钟`, checked: isComplete },
+    { id: "2", title: "记录一次家庭互动", detail: "可选参考活动，不自动形成任务记录", time: "5分钟", checked: false },
+    { id: "3", title: "完成专注力小游戏", detail: "可选参考活动，不自动形成任务记录", time: "10分钟", checked: false },
   ];
 
   return (
@@ -61,7 +125,7 @@ export default function DailyTaskScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.topBar}><Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><IconSymbol name="chevron.left" size={27} color="#24282D" /></Pressable><Text style={styles.topTitle}>今日成长任务</Text><View style={styles.moreCircle}><Text style={styles.moreText}>•••</Text></View></View>
-        <View style={styles.reminder}><View style={styles.robot}><Text style={styles.robotFace}>◉‿◉</Text></View><View style={styles.reminderCopy}><Text style={styles.reminderTitle}>AI家庭管家提醒：</Text><Text style={styles.reminderMain}>今天建议完成 <Text style={styles.reminderNumber}>3</Text> 个成长动作</Text><Text style={styles.reminderHint}>{activeCampDay ? `21 天成长营 · Day ${activeCampDay}` : "坚持每日完成，孩子会更有收获！"}</Text></View></View>
+        <View style={styles.reminder}><View style={styles.robot}><Text style={styles.robotFace}>◉‿◉</Text></View><View style={styles.reminderCopy}><Text style={styles.reminderTitle}>AI家庭管家提醒：</Text>{campMode ? <Text style={styles.reminderMain}>今天只练一件小事</Text> : <Text style={styles.reminderMain}>今天准备了 <Text style={styles.reminderNumber}>3</Text> 个成长动作</Text>}<Text style={styles.reminderHint}>{campMode ? `21 天成长营 · Day ${requestedCampDay}` : activeCampDay ? `21 天成长营 · Day ${activeCampDay}` : "按家庭节奏完成即可，不作成长效果判断。"}</Text></View></View>
         {remoteAction?.journey_plan_id ? <Text style={styles.planLink}>已关联当前成长计划 · {remoteAction.journey_phase ?? "当前阶段"} · Day {remoteAction.day_index ?? 1}</Text> : null}
         {syncMessage ? <Text style={styles.syncMessage}>{syncMessage}</Text> : null}
 
@@ -71,8 +135,11 @@ export default function DailyTaskScreen() {
         {!isComplete && isStarted ? <View style={styles.reflectionPanel}><Text style={[styles.reflectionLabel, { color: colors.text }]}>完成后，记下一句话（可选）</Text><TextInput accessibilityLabel="家长反思" multiline returnKeyType="done" value={reflection} onChangeText={setReflection} placeholder="例如：我先停下来听完了。" placeholderTextColor={colors.muted} style={[styles.input, { color: colors.text, borderColor: colors.border }]} /><Text style={[styles.perspective, { color: colors.muted }]}>这段记录是你的视角，不会被当作孩子的事实或教育结果。</Text></View> : null}
 
         {isComplete ? <View style={styles.receipt}><IconSymbol name="checkmark.circle.fill" size={25} color="#1A8A67" /><Text style={styles.receiptText}>今天的行动已记录；它不代表已经产生教育效果。</Text></View> : null}
-        <Pressable disabled={syncState === "submitting"} onPress={handlePrimary} style={({ pressed }) => [styles.completeButton, (pressed || syncState === "submitting") && styles.pressed]}><Text style={styles.completeText}>{syncState === "submitting" ? "正在同步行动" : isStarted ? "完成今日任务" : "开始今日任务"}</Text></Pressable>
-        {!isComplete ? <Pressable onPress={() => { skipAction(); haptic.selection(); }} style={({ pressed }) => [styles.skipButton, pressed && styles.pressed]}><Text style={[styles.skipText, { color: colors.muted }]}>今天不适合，先跳过</Text></Pressable> : null}
+        {isCancelled ? <View style={styles.receipt}><Text style={styles.receiptText}>这项行动已取消，没有形成完成记录或成长结果。</Text></View> : null}
+        {!isComplete && !isCancelled ? <Pressable disabled={syncState === "submitting"} onPress={handlePrimary} style={({ pressed }) => [styles.completeButton, (pressed || syncState === "submitting") && styles.pressed]}><Text style={styles.completeText}>{syncState === "submitting" ? "正在同步行动" : isStarted ? "完成今日任务" : isPaused ? "继续今日任务" : "开始今日任务"}</Text></Pressable> : null}
+        {isStarted && connected ? <Pressable disabled={syncState === "submitting"} onPress={() => void transitionTask("PAUSE")} style={({ pressed }) => [styles.skipButton, pressed && styles.pressed]}><Text style={[styles.skipText, { color: colors.muted }]}>暂停，稍后继续</Text></Pressable> : null}
+        {!campMode && !isComplete && !isCancelled ? <Pressable disabled={syncState === "submitting"} onPress={() => { if (connected) void transitionTask("CANCEL"); else { skipAction(); haptic.selection(); } }} style={({ pressed }) => [styles.skipButton, pressed && styles.pressed]}><Text style={[styles.skipText, { color: colors.muted }]}>今天不适合，取消这项行动</Text></Pressable> : null}
+        {campMode && !isComplete ? <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.skipButton, pressed && styles.pressed]}><Text style={[styles.skipText, { color: colors.muted }]}>今天先不练，返回成长营</Text></Pressable> : null}
       </ScrollView>
     </ScreenContainer>
   );

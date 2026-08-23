@@ -1,14 +1,16 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const source = readFileSync(resolve(process.cwd(), "app/ui/UI-05.tsx"), "utf8");
 
 describe("UI-05 original companion service baseline contract", () => {
-  it("uses the recovered original four-service-card image", () => {
-    expect(existsSync(resolve(process.cwd(), "assets/images/ui05-service-cards-baseline.png"))).toBe(true);
-    expect(source).toContain('require("@/assets/images/ui05-service-cards-baseline.png")');
+  it("rebuilds the original four-service-card area as native components", () => {
+    expect(source).toContain("SERVICE_CARDS");
+    expect(source).toContain("SERVICE_CARD_ACCESSIBILITY_LABEL");
+    expect(source).not.toContain('require("@/assets/images/ui05-service-cards-baseline.png")');
     expect(source).toContain("家庭顾问、班主任陪跑、AI提醒和专家答疑");
+    for (const copy of ["家庭顾问", "班主任陪跑", "AI提醒", "专家答疑"]) expect(source).toContain(copy);
   });
 
   it("keeps the original weekly completion card and the three content segments", () => {
@@ -40,11 +42,12 @@ describe("UI-05 original companion service baseline contract", () => {
     expect(source).not.toContain("分享");
   });
 
-  it("uses a lightweight load transition for the original service-card asset", () => {
+  it("uses a lightweight component transition for the service-card area", () => {
     expect(source).toContain("const serviceCardsOpacity");
     expect(source).toContain("const serviceCardsOffset");
     expect(source).toContain("revealServiceCards");
-    expect(source).toContain("onLoad={revealServiceCards}");
+    expect(source).toContain("setTimeout(revealServiceCards");
+    expect(source).not.toContain("onLoad={revealServiceCards}");
     expect(source).toContain("serviceCardsTransition");
   });
 });

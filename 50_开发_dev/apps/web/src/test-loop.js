@@ -199,8 +199,15 @@ export function createTestLoopApp(root, config = defaultTestLoopConfig) {
     const liveState = task.task_state === 'CHECKED_IN' ? 'CHECKED_IN' : task.task_state === 'IN_PROGRESS' ? 'IN_PROGRESS' : 'NOT_STARTED';
     const status = firstSliceResultState === 'SUCCESS' || firstSliceResultState === 'REPLAYED'
       ? `今天的行动已记录，明天继续。${firstSliceNextHint ? ` ${firstSliceNextHint}` : ''}`
-      : task.task_state === 'CHECKED_IN' ? '今天的任务已经完成，做得很好。' : `当前任务：${task.assignment_text}`;
-    return `<output class="by-first-slice-panel" data-first-slice-surface="${surface}" data-first-slice-task="${task.task_id}" data-first-slice-state="${task.task_state}"${surface === 'UI-01' ? ` data-ui01-live-state="${liveState}"` : ''}>${status}</output>`;
+      : task.task_state === 'CHECKED_IN' ? '今天的行动已记录；这不是教育效果结论。'
+        : task.task_state === 'PAUSED' ? '这项行动已暂停，可以稍后继续。'
+          : task.task_state === 'CANCELLED' ? '这项行动已取消，没有形成完成记录。'
+            : `当前任务：${task.assignment_text}`;
+    const controls = surface !== 'UI-09' ? ''
+      : task.task_state === 'NOT_STARTED' ? '<button class="by-btn full-primary" data-by="ui09-start-task">开始今日任务</button><button class="by-btn by-btn-ghost" data-by="ui09-cancel-task">取消这项行动</button>'
+        : task.task_state === 'IN_PROGRESS' ? '<button class="by-btn full-primary" data-by="page-objects-complete-daily-task">完成今日任务</button><button class="by-btn by-btn-ghost" data-by="ui09-pause-task">暂停，稍后继续</button><button class="by-btn by-btn-ghost" data-by="ui09-cancel-task">取消这项行动</button>'
+          : task.task_state === 'PAUSED' ? '<button class="by-btn full-primary" data-by="ui09-resume-task">继续今日任务</button><button class="by-btn by-btn-ghost" data-by="ui09-cancel-task">取消这项行动</button>' : '';
+    return `<section class="by-first-slice-panel" data-first-slice-surface="${surface}" data-first-slice-task="${task.task_id}" data-first-slice-state="${task.task_state}"${surface === 'UI-01' ? ` data-ui01-live-state="${liveState}"` : ''}><output>${status}</output>${controls}</section>`;
   };
   const familyActionReviewLink = () => {
     if (!coreGrowthApiEnabled() || coreGrowthLoadState !== 'READY') return '';
@@ -684,6 +691,45 @@ export function createTestLoopApp(root, config = defaultTestLoopConfig) {
       llmTextEquivalent = '当前任务暂不可完成。你可以返回、暂停或现在先不继续。';
       return null;
     }
+  }
+  async function requestUi09TaskState(action) {
+    const projection = familyTodayProjection || await requestFamilyToday();
+    const task = projection?.today_task;
+    if (!firstSliceApiEnabled() || !task) return null;
+    const correlationId = `family-ui09-${String(action).toLowerCase()}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    root.dataset.familyPageObjectsAction = `${action}GrowthAction`;
+    root.dataset.familyPageObjectsObject = task.task_id;
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/families/${config.familyId}/tasks/${task.task_id}/state`, {
+        method: 'POST', credentials: config.authToken ? 'omit' : 'include', headers: firstSliceHeaders(correlationId, true),
+        body: JSON.stringify({ action, occurred_at: new Date().toISOString() }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.action || !['SUCCESS', 'REPLAYED'].includes(payload.result_state)) throw new Error('task_state_failed');
+      familyTodayProjection = { ...projection, today_task: payload.action, today_tasks: [payload.action, ...(projection.today_tasks || []).filter((item) => item.task_id !== payload.action.task_id)] };
+      root.dataset.familyPageObjectsStatus = payload.result_state;
+      llmTextEquivalent = payload.action.task_state === 'PAUSED' ? '这项家庭行动已暂停。' : payload.action.task_state === 'CANCELLED' ? '这项家庭行动已取消。' : '这项家庭行动已开始。';
+      return payload;
+    } catch (_error) {
+      root.dataset.familyPageObjectsStatus = 'CLIENT_FAILURE';
+      llmTextEquivalent = '任务状态暂时没有保存，请稍后重试。';
+      return null;
+    }
+  }
+  if (root.dataset.ui09LifecycleBound !== 'true') {
+    root.dataset.ui09LifecycleBound = 'true';
+    root.addEventListener('click', async (event) => {
+      const target = event.target instanceof Element ? event.target.closest('[data-by]') : null;
+      const transitions = { 'ui09-start-task': 'START', 'ui09-pause-task': 'PAUSE', 'ui09-resume-task': 'RESUME', 'ui09-cancel-task': 'CANCEL' };
+      const action = target?.getAttribute('data-by');
+      if (!action || !transitions[action]) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      root.setAttribute('aria-busy', 'true');
+      await requestUi09TaskState(transitions[action]);
+      root.removeAttribute('aria-busy');
+      render();
+    }, true);
   }
   async function requestPageExplanation(pageId) {
     const correlationId = `family-web-${Date.now()}-${Math.random().toString(16).slice(2)}`;

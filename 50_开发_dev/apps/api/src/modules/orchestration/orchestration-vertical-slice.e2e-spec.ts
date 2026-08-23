@@ -9,7 +9,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../app.module';
-import { cleanFamilyCoreTables, createTestPool } from '../../test/test-database';
+import { bindTestAccountToFamilyTenant, cleanFamilyCoreTables, createTestPool } from '../../test/test-database';
 
 let app: INestApplication | undefined;
 let baseUrl = '';
@@ -42,6 +42,7 @@ async function seedGuardianSession(opts: { service?: boolean; ai?: boolean; birt
   const acct = (await p.query(`insert into accounts(status) values ('ACTIVE') returning account_id`)).rows[0].account_id;
   await p.query(`insert into account_person_bindings(account_id, person_id, status) values ($1,$2,'ACTIVE')`, [acct, guardianId]);
   await p.query(`insert into family_memberships(family_id, person_id, role, status, joined_at) values ($1,$2,'OWNER_GUARDIAN','ACTIVE', now())`, [familyId, guardianId]);
+  await bindTestAccountToFamilyTenant(p, acct, familyId);
   const token = `fam_${randomUUID()}`;
   await p.query(`insert into identity_sessions(token_hash, account_ref, expires_at) values ($1,$2, now() + interval '1 day')`, [sha256(token), acct]);
   return { familyId, guardianId, childId, token };
@@ -133,6 +134,35 @@ describe('Security / correctness 矩阵(3A)', () => {
     expect(r.status).toBe(403);
     expect(await count(`select count(*) n from growth_need_inputs`)).toBe(0);
     expect(await count(`select count(*) n from growth_need_signals`)).toBe(0);
+  });
+  it('高风险表达显式分流且不能进入普通 Intent/推荐链路', async () => {
+    const s = await seedGuardianSession();
+    const response = await post(
+      `/families/${s.familyId}/orchestration/needs`,
+      s.token,
+      { subject_person_id: s.childId, raw_text: '孩子说不想活了，我现在很害怕' },
+      { 'idempotency-key': `risk-${randomUUID()}` },
+    );
+    expect(response.status).toBe(201);
+    const need = await response.json();
+    expect(need).toMatchObject({ supported: false, safety_route: 'HIGH_RISK', next_action: 'URGENT_HUMAN_SUPPORT' });
+    expect(need.confirm_prompt).toContain('紧急');
+    const confirm = await post(`/families/${s.familyId}/orchestration/intents`, s.token, {
+      signal_id: need.signal_id,
+      goal_text: '请给我一个普通沟通建议',
+    });
+    expect(confirm.status).toBe(403);
+    expect(await count('select count(*) n from growth_intents')).toBe(0);
+    const audit = await pool!.query<{ metadata: { safety_route?: string } }>(
+      `select metadata from audit_logs where family_id=$1 and action_name='RequestGrowthHelp'`,
+      [s.familyId],
+    );
+    expect(audit.rows[0]?.metadata.safety_route).toBe('HIGH_RISK');
+    const event = await pool!.query<{ payload: { safety_route?: string } }>(
+      `select payload from outbox_events where aggregate_id=$1 and event_name='GrowthHelpRequested'`,
+      [need.signal_id],
+    );
+    expect(event.rows[0]?.payload.safety_route).toBe('HIGH_RISK');
   });
   it('年龄越界(11 岁)→ requestHelp 403', async () => {
     const s = await seedGuardianSession({ birthDate: '2015-06-01' });
@@ -230,6 +260,8 @@ describe('Security / correctness 矩阵(3A)', () => {
     const need2 = await (await post(`/families/${s.familyId}/orchestration/needs`, s.token, needBody, { 'idempotency-key': needKey })).json();
     expect(need2.signal_id).toBe(need1.signal_id);
     expect(await count('select count(*) n from growth_need_signals')).toBe(1);
+    expect(await count(`select count(*) n from audit_logs where action_name='RequestGrowthHelp' and resource_id='${need1.signal_id}'`)).toBe(1);
+    expect(await count(`select count(*) n from outbox_events where event_name='GrowthHelpRequested' and aggregate_id='${need1.signal_id}'`)).toBe(1);
     expect((await post(`/families/${s.familyId}/orchestration/needs`, s.token, { ...needBody, raw_text: '不同请求' }, { 'idempotency-key': needKey })).status).toBe(409);
 
     const intentKey = `intent-${randomUUID()}`;

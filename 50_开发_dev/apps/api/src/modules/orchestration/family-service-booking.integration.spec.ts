@@ -167,6 +167,12 @@ describe('Family service offering -> booking request -> service record DEV/TEST 
     expect((await pool!.query(`select status, reserved_count from family_service_availability_slots where availability_slot_ref=$1`, [supply.slotRef])).rows[0]).toMatchObject({ status: 'AVAILABLE', reserved_count: 0 });
     expect(Number((await pool!.query(`select count(*) n from family_product_events where event_type='booking_request_cancelled'`)).rows[0].n)).toBe(1);
 
+    const queue = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/customer-projection`, 'GET', seed.token);
+    expect(queue.status).toBe(200);
+    expect((await queue.json()).operations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ page_id: 'UI-24', operation_kind: 'DOMAIN_COMMAND', fixture_ref: body.booking.booking_request_id, status: 'CANCELLED', source: 'DOMAIN_COMMAND_ADAPTER', external_effect: false }),
+    ]));
+
     const stale = await request(`/families/${seed.familyId}/orchestration/test-loop/services/booking-requests/cancel`, 'POST', seed.token, {
       page_id: 'UI-24', booking_request_id: body.booking.booking_request_id, expected_row_version: body.booking.row_version,
     });

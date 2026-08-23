@@ -5,7 +5,7 @@ import pg from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../app.module';
 import { AuthService } from '../auth/auth.service';
-import { createTestPool, getTestDatabaseUrl } from '../../test/test-database';
+import { bindTestAccountToFamilyTenant, createTestPool, getTestDatabaseUrl } from '../../test/test-database';
 
 /**
  * IAM-103 FULL(M3-MOS-CLOSEOUT-WAVE-2 Lane A):真实 Bearer 认证 + family scope + reviewer 授权强制。
@@ -60,6 +60,7 @@ describe('IAM-103 FULL — Bearer enforcement (real PostgreSQL)', () => {
        values ($1, $2, 'OWNER_GUARDIAN', 'ACTIVE', now())`,
       [familyId, personId],
     );
+    await bindTestAccountToFamilyTenant(pool, issued.account_id, familyId);
     process.env.FPAI_REQUIRE_REVIEWER_AUTH = 'off';
     process.env.FPAI_REVIEWER_IDS = '';
   });
@@ -122,6 +123,7 @@ describe('IAM-103 FULL — Bearer enforcement (real PostgreSQL)', () => {
        values ($1, $2, 'OWNER_GUARDIAN', 'ACTIVE', now())`,
       [otherFamilyId, otherPerson.rows[0].person_id],
     );
+    await bindTestAccountToFamilyTenant(pool, issued.account_id, otherFamilyId);
     const res = await createSession(bearer(issued.token)); // 用别家 account token 访问本 family 路径
     expect(res.status).toBe(403);
   });

@@ -13,6 +13,12 @@ export interface CommercePresentationProduct {
   listPriceLabel: string;
   familyPriceLabel: string;
   memberPriceLabel: string;
+  heroTag?: string;
+  priceMain?: string;
+  priceOriginal?: string;
+  priceGroup?: string;
+  priceMember?: string;
+  assurances?: readonly string[];
   accent: string;
   source: "FAMILY_API" | "EXISTING_WEB_BASELINE_PRESENTATION";
   fixtureOnly: true;
@@ -30,10 +36,16 @@ export const EXISTING_COMMERCE_PRESENTATION: readonly CommercePresentationProduc
     subtitle: "改善亲子关系，从有效沟通开始",
     category: "COURSE",
     audience: "希望改善日常亲子沟通节奏的家庭",
-    delivery: ["训练营", "行动卡", "社群交流", "家庭回顾"],
+    delivery: ["视频课程", "每日打卡", "社群交流", "专家答疑"],
     listPriceLabel: "原方案 ¥699",
     familyPriceLabel: "同行意向 ¥399",
     memberPriceLabel: "会员意向 ¥179",
+    heroTag: "家庭成长好物",
+    priceMain: "¥399",
+    priceOriginal: "原价¥699",
+    priceGroup: "拼团价 ¥199 (3人成团)",
+    priceMember: "会员价 ¥179 (会员再享95折)",
+    assurances: ["21天系统训练", "打卡社群陪伴", "专家顾问答疑"],
     accent: "#2563EB",
     source: "EXISTING_WEB_BASELINE_PRESENTATION",
     fixtureOnly: true,

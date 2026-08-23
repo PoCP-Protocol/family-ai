@@ -26,20 +26,19 @@ import { growthActivitiesForDisplay, serviceOfferingsForDisplay } from "../lib/f
 import { UI_ACTION_POLICIES } from "../lib/family/ui-action-policies";
 import { FAMILY_SCREENS, getFamilyScreen, getScreensForTab } from "../lib/family/ui-registry";
 
-describe("Family AI 35 UI registry", () => {
-  it("contains UI-01 through UI-35 exactly once", () => {
+describe("Family AI UI registry", () => {
+  it("contains UI-01 through UI-34 (plus UI-02-result) exactly once", () => {
     const ids = FAMILY_SCREENS.map((screen) => screen.id);
 
     expect(ids).toHaveLength(35);
     expect(new Set(ids).size).toBe(35);
     expect(ids[0]).toBe("UI-01");
-    expect(ids[34]).toBe("UI-35");
+    expect(ids[ids.length - 1]).toBe("UI-34");
+    expect(getFamilyScreen("UI-35")).toBeUndefined();
   });
 
-  it("keeps UI-35 distinct from home, daily task, and 90-day plan", () => {
+  it("keeps home, daily task, and 90-day plan distinct", () => {
     expect(getFamilyScreen("UI-01")?.primaryTarget).toBe("UI-09");
-    expect(getFamilyScreen("UI-35")?.primaryTarget).toBe("UI-09");
-    expect(getFamilyScreen("UI-35")?.title).toContain("21 天");
     expect(getFamilyScreen("UI-04")?.title).toContain("90 天");
     expect(getFamilyScreen("UI-09")?.title).toBe("今日成长任务");
   });
@@ -55,7 +54,7 @@ describe("Family AI 35 UI registry", () => {
   it("keeps a named visual baseline and feature set for every one of the 35 screens", () => {
     expect(FAMILY_SCREENS.every((screen) => screen.baseline.trim().length > 0)).toBe(true);
     expect(FAMILY_SCREENS.every((screen) => screen.featurePoints.length >= 4)).toBe(true);
-    expect(FAMILY_SCREENS.slice(12, 18).map((screen) => screen.baseline)).toEqual([
+    expect(FAMILY_SCREENS.slice(13, 19).map((screen) => screen.baseline)).toEqual([
       "commerce-01-mall-home",
       "commerce-02-product-detail",
       "commerce-03-invite",
@@ -63,7 +62,7 @@ describe("Family AI 35 UI registry", () => {
       "commerce-05-points-task",
       "commerce-06-mine-member",
     ]);
-    expect(FAMILY_SCREENS.slice(18, 24).map((screen) => screen.baseline)).toEqual([
+    expect(FAMILY_SCREENS.slice(19, 25).map((screen) => screen.baseline)).toEqual([
       "teacher-zone",
       "teacher-detail",
       "consultation-booking",
@@ -71,7 +70,7 @@ describe("Family AI 35 UI registry", () => {
       "activity-detail",
       "service-mine",
     ]);
-    expect(FAMILY_SCREENS.slice(24, 28).map((screen) => screen.baseline)).toEqual([
+    expect(FAMILY_SCREENS.slice(25, 29).map((screen) => screen.baseline)).toEqual([
       "parent-community",
       "publish-dynamic",
       "dynamic-detail",
@@ -80,7 +79,7 @@ describe("Family AI 35 UI registry", () => {
   });
 });
 
-describe("UI-01 to UI-35 global navigation and state readback", () => {
+describe("UI-01 to UI-34 global navigation and state readback", () => {
   it("resolves every registered primary target through an existing native route", () => {
     const mobileRoot = resolve(__dirname, "..");
     const screenFile = (id: string) => id === "UI-01"

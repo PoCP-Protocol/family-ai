@@ -1,0 +1,322 @@
+version: 0.1.0
+asset_ref: FAMILY_MODEL_COMPONENT_REGISTRY
+status: draft
+owner: Family Education Industry Model
+source_docs:
+  - ../FAMILY_EDUCATION_INTELLIGENCE_MODEL_V0_1.md
+  - ../FAMILY_EDUCATION_AI_ERA_MODEL_GAP_ANALYSIS.md
+purpose: >
+  Defines the component model for Family Education Intelligence. Every domain,
+  capability, product surface, evaluation suite, and service integration should be
+  registered as a versioned component with stable interfaces, dependencies, ownership,
+  and validation rules.
+
+component_principles:
+  - The model must be componentized by default, not after the system grows large.
+  - A component can be added, upgraded, disabled, or replaced without rewriting the domain kernel.
+  - Components depend on stable refs: need_ref, construct_ref, source_ref, action_ref, outcome_ref, memory_ref, artifact_ref, and policy_ref.
+  - Components cannot directly mutate core ontology or core family state.
+  - Components that produce recommendations must output structured candidates, not final decisions.
+  - Components must declare evaluation gates before production use.
+  - Components must declare consent, evidence, safety, and human-review boundaries.
+
+component_contract:
+  required_fields:
+    - component_ref
+    - component_kind
+    - version
+    - owner
+    - lifecycle_status
+    - input_contract_refs
+    - output_contract_refs
+    - dependency_refs
+    - evaluation_refs
+    - policy_refs
+  optional_fields:
+    - domain_refs
+    - need_refs
+    - construct_refs
+    - source_refs
+    - action_refs
+    - outcome_refs
+    - memory_refs
+    - artifact_refs
+    - model_gateway_profile
+    - localization_profile_refs
+    - human_service_role_refs
+    - rollback_strategy
+
+component_kinds:
+  - kind_ref: DOMAIN_COMPONENT
+    description: Adds a family education domain such as Academic K12, Physical Health, AI Literacy, or Human Service.
+    required_interfaces:
+      - domain.registry
+      - need.registry
+      - construct.registry
+      - source.registry
+      - evaluation.schema
+
+  - kind_ref: ASSESSMENT_COMPONENT
+    description: Adds a versioned assessment tool, question bank, branching rule set, or interpretation schema.
+    required_interfaces:
+      - item_bank.registry
+      - response.schema
+      - interpretation.schema
+      - safety_gate.policy
+      - outcome_signal.schema
+
+  - kind_ref: ACTION_COMPONENT
+    description: Adds support actions, parent learning plans, child practice paths, or family routines.
+    required_interfaces:
+      - action.catalog
+      - action_precondition.schema
+      - action_review.schema
+      - outcome_signal.schema
+
+  - kind_ref: MEMORY_COMPONENT
+    description: Adds memory scopes, retention rules, recall rules, and memory update candidate schemas.
+    required_interfaces:
+      - memory.schema
+      - retention.policy
+      - consent.policy
+      - event.schema
+
+  - kind_ref: DIALOGUE_COMPONENT
+    description: Adds realtime parent, child, teacher, or service conversations with role-aware extraction and clarification.
+    required_interfaces:
+      - conversation.schema
+      - intent.registry
+      - structured_response.schema
+      - memory_update.schema
+      - safety_gate.policy
+
+  - kind_ref: MULTIMODAL_COMPONENT
+    description: Adds understanding of photo, image, audio, video, document, chart, code, or mixed artifacts.
+    required_interfaces:
+      - artifact.schema
+      - artifact_provenance.schema
+      - artifact_observation.schema
+      - consent.policy
+      - human_review.policy
+
+  - kind_ref: SMALL_MODEL_COMPONENT
+    description: Adds classifiers, routers, rerankers, action matchers, or evaluators trained on approved Family datasets.
+    required_interfaces:
+      - training_dataset.manifest
+      - model_card
+      - eval_report
+      - inference_contract
+      - rollback_strategy
+
+  - kind_ref: KNOWLEDGE_COMPONENT
+    description: Adds approved source collections, retrieval indexes, citation templates, and evidence extraction flows.
+    required_interfaces:
+      - source.registry
+      - evidence.schema
+      - retrieval_contract
+      - citation_policy
+
+  - kind_ref: HUMAN_SERVICE_COMPONENT
+    description: Adds educator, counselor, teacher, health, social support, or community service handoff capability.
+    required_interfaces:
+      - service_role.registry
+      - handoff_context.schema
+      - review_label.schema
+      - service_outcome.schema
+
+  - kind_ref: LOCALIZATION_COMPONENT
+    description: Adds region, curriculum, language, culture, school-system, or service-resource context.
+    required_interfaces:
+      - localization_profile.schema
+      - curriculum_context.schema
+      - source.registry
+      - evaluation_slice
+
+registered_components:
+  - component_ref: FAMILY_DOMAIN_KERNEL
+    component_kind: DOMAIN_COMPONENT
+    version: 0.1.0
+    owner: Family Education Industry Model
+    lifecycle_status: draft
+    domain_refs:
+      - CHILD_NEEDS
+      - PARENT_NEEDS
+      - FAMILY_SHARED_NEEDS
+    input_contract_refs:
+      - family_education_domain.registry.yaml
+      - family_education_need.registry.yaml
+    output_contract_refs:
+      - family_education_construct.registry.yaml
+    dependency_refs: []
+    evaluation_refs: []
+    policy_refs:
+      - Perspective != Fact
+      - Hypothesis != Fact
+      - Recommendation != Decision != Action
+
+  - component_ref: FAMILY_ASSESSMENT_V0_COMPONENT
+    component_kind: ASSESSMENT_COMPONENT
+    version: 0.1.0
+    owner: Family Assessment Skill
+    lifecycle_status: draft
+    domain_refs:
+      - CHILD_NEEDS
+      - PARENT_NEEDS
+      - FAMILY_SHARED_NEEDS
+      - ACADEMIC_K12
+      - DIGITAL_LIFE
+    input_contract_refs:
+      - family_education_construct.registry.yaml
+      - family_assessment_item_bank.registry.yaml
+    output_contract_refs:
+      - family_outcome_signal.schema.yaml
+      - family_interpretation.schema.yaml
+    dependency_refs:
+      - FAMILY_DOMAIN_KERNEL
+    evaluation_refs:
+      - family_model_evaluation_scenarios.yaml
+    policy_refs:
+      - no_family_total_score
+      - no_family_ranking
+      - human_gate_for_high_risk
+
+  - component_ref: FAMILY_MEMORY_DIALOGUE_COMPONENT
+    component_kind: MEMORY_COMPONENT
+    version: 0.1.0
+    owner: Family Education Industry Model
+    lifecycle_status: draft
+    input_contract_refs:
+      - family_memory_conversation.schema.yaml
+    output_contract_refs:
+      - memory_update_candidate
+      - dialogue_summary
+    dependency_refs:
+      - FAMILY_DOMAIN_KERNEL
+    evaluation_refs: []
+    policy_refs:
+      - structured_memory_update_only
+      - consent_aware_recall
+      - named_action_for_core_state
+
+  - component_ref: FAMILY_REALTIME_DIALOGUE_COMPONENT
+    component_kind: DIALOGUE_COMPONENT
+    version: 0.1.0
+    owner: Family Education Industry Model
+    lifecycle_status: draft
+    input_contract_refs:
+      - family_memory_conversation.schema.yaml
+    output_contract_refs:
+      - support_hypothesis
+      - clarifying_question
+      - action_candidate
+      - memory_update_candidate
+    dependency_refs:
+      - FAMILY_DOMAIN_KERNEL
+      - FAMILY_MEMORY_DIALOGUE_COMPONENT
+    evaluation_refs: []
+    policy_refs:
+      - role_aware_response
+      - no_direct_core_state_write
+      - human_gate_for_high_risk
+
+  - component_ref: FAMILY_MULTIMODAL_ARTIFACT_COMPONENT
+    component_kind: MULTIMODAL_COMPONENT
+    version: 0.1.0
+    owner: Family Education Industry Model
+    lifecycle_status: draft
+    input_contract_refs:
+      - family_multimodal_artifact.schema.yaml
+    output_contract_refs:
+      - artifact_observation
+      - artifact_progress_signal
+      - construct_mapping_candidate
+    dependency_refs:
+      - FAMILY_DOMAIN_KERNEL
+      - FAMILY_MEMORY_DIALOGUE_COMPONENT
+    evaluation_refs: []
+    policy_refs:
+      - artifact_is_signal_not_fact
+      - no_child_ranking
+      - provenance_required
+      - consent_required
+
+  - component_ref: FAMILY_ACTION_OUTCOME_COMPONENT
+    component_kind: ACTION_COMPONENT
+    version: 0.1.0
+    owner: Family Education Industry Model
+    lifecycle_status: draft
+    input_contract_refs:
+      - family_support_action.catalog.yaml
+      - family_outcome_signal.schema.yaml
+    output_contract_refs:
+      - action_candidate
+      - action_review_candidate
+      - outcome_signal
+    dependency_refs:
+      - FAMILY_DOMAIN_KERNEL
+    evaluation_refs: []
+    policy_refs:
+      - Recommendation != Decision != Action
+      - action_not_outcome
+      - human_gate_for_high_risk
+
+  - component_ref: FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT
+    component_kind: KNOWLEDGE_COMPONENT
+    version: 0.1.0
+    owner: Family Education Industry Model
+    lifecycle_status: draft
+    input_contract_refs:
+      - family_education_source.registry.yaml
+    output_contract_refs:
+      - source_grounded_context
+      - evidence_boundary_label
+    dependency_refs:
+      - FAMILY_DOMAIN_KERNEL
+    evaluation_refs: []
+    policy_refs:
+      - evidence_grade_required
+      - no_self_evidence_as_proof
+      - citation_required_for_research_claims
+
+  - component_ref: FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT
+    component_kind: HUMAN_SERVICE_COMPONENT
+    version: 0.1.0
+    owner: Family Education Industry Model
+    lifecycle_status: draft
+    input_contract_refs:
+      - family_memory_conversation.schema.yaml
+      - family_support_action.catalog.yaml
+    output_contract_refs:
+      - handoff_context_candidate
+      - service_review_candidate
+      - service_outcome_signal
+    dependency_refs:
+      - FAMILY_DOMAIN_KERNEL
+      - FAMILY_MEMORY_DIALOGUE_COMPONENT
+      - FAMILY_ACTION_OUTCOME_COMPONENT
+    evaluation_refs: []
+    policy_refs:
+      - human_service_boundary
+      - consent_required
+      - service_completion_not_growth_outcome
+
+extension_lifecycle:
+  - stage: proposed
+    requirement: Component has a clear purpose and owner.
+  - stage: drafted
+    requirement: Component has input/output contracts and declared dependencies.
+  - stage: reviewed
+    requirement: Domain, safety, evidence, and engineering review are complete.
+  - stage: pilot
+    requirement: Component is enabled for limited families or internal test cohorts.
+  - stage: production
+    requirement: Evaluation gates, observability, rollback, and support procedures are active.
+  - stage: deprecated
+    requirement: Replacement path and data migration policy are documented.
+
+compatibility_rules:
+  - Breaking changes require a new major component version.
+  - New optional fields require schema defaults or backward-compatible readers.
+  - Components may depend on stable kernel refs but should not depend on product UI route names.
+  - Product surfaces should compose components through contracts, not copy internal model logic.
+  - Evaluation suites must run per component and across component combinations.

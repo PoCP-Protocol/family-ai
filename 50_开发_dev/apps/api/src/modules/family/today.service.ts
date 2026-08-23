@@ -35,7 +35,7 @@ export class TodayService {
   }
 
   async getFamilyTodayProjection(familyId: string, actorId: string): Promise<FamilyTodayProjection> {
-    const action = await this.growthActionService.getTodayAction(familyId, actorId);
-    return projectFamilyToday(familyId, action, new Date().toISOString());
+    const actions = await this.growthActionService.listTodayActions(familyId, actorId);
+    return projectFamilyToday(familyId, actions, new Date().toISOString());
   }
 }

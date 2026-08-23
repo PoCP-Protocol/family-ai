@@ -1,0 +1,127 @@
+version: 0.1.0
+asset_ref: FAMILY_MULTIMODAL_ARTIFACT_SCHEMA
+status: draft
+owner: Family Education Industry Model
+source_doc: ../FAMILY_EDUCATION_AI_ERA_MODEL_GAP_ANALYSIS.md
+purpose: >
+  Defines model-level multimodal input and artifact understanding for Family Education
+  Intelligence. The model must understand text, image, photo, audio, video, document,
+  chart, code, and mixed artifacts as evidence-bearing context with provenance.
+
+artifact_rules:
+  - artifacts are signals, not direct facts.
+  - artifact interpretation must preserve source, timestamp, respondent role, and consent.
+  - child-created artifacts should be used for support planning, not ranking.
+  - clinical, diagnostic, or high-risk interpretations require human review.
+  - generated artifacts must be marked separately from observed family artifacts.
+
+artifact_types:
+  - text
+  - image
+  - photo
+  - audio
+  - video
+  - document
+  - chart
+  - code
+  - mixed
+
+artifact_objects:
+  - object_ref: MULTIMODAL_ARTIFACT
+    name: Multimodal artifact
+    description: A submitted or generated artifact used as contextual signal for family education support.
+    fields:
+      - artifact_ref
+      - family_ref
+      - child_ref
+      - uploaded_by_role
+      - artifact_type
+      - source_context
+      - consent_ref
+      - storage_ref
+      - created_at
+      - captured_at
+      - generated_by_ai
+
+  - object_ref: ARTIFACT_PROVENANCE
+    name: Artifact provenance
+    description: Records where an artifact came from and whether it is self-reported, observed, school-provided, service-provided, or AI-generated.
+    fields:
+      - artifact_ref
+      - source_type
+      - source_role
+      - original_context
+      - collection_method
+      - evidence_level
+      - retention_policy
+
+  - object_ref: ARTIFACT_OBSERVATION
+    name: Artifact observation
+    description: Structured observations extracted from an artifact without overclaiming cause or diagnosis.
+    fields:
+      - observation_ref
+      - artifact_ref
+      - observed_features
+      - linked_need_refs
+      - linked_construct_refs
+      - confidence
+      - interpretation_boundary
+      - requires_human_review
+
+  - object_ref: HOMEWORK_PHOTO_SIGNAL
+    name: Homework photo signal
+    description: Visual signal from homework photo or screenshot, focused on learning process and support needs.
+    fields:
+      - artifact_ref
+      - subject_context
+      - task_type
+      - visible_strategy_use
+      - error_pattern_candidate
+      - effort_signal
+      - parent_support_context
+
+  - object_ref: SCHOOL_REPORT_SIGNAL
+    name: School report signal
+    description: Extracted signal from school report, message, or feedback document.
+    fields:
+      - artifact_ref
+      - school_context
+      - feedback_topic
+      - teacher_concern
+      - family_question_candidates
+      - linked_learning_need_refs
+
+  - object_ref: CHILD_CREATIVE_ARTIFACT_SIGNAL
+    name: Child creative artifact signal
+    description: Signal from drawing, project, mind map, presentation, story, audio, video, or code artifact.
+    fields:
+      - artifact_ref
+      - expression_modality
+      - strengths_candidate
+      - multimodal_skill_signal
+      - reflection_signal
+      - support_opportunity
+
+  - object_ref: ARTIFACT_PROGRESS_SIGNAL
+    name: Artifact progress signal
+    description: Comparison signal across repeated artifacts over time.
+    fields:
+      - baseline_artifact_ref
+      - comparison_artifact_ref
+      - time_window
+      - changed_features
+      - stable_features
+      - parent_or_child_reflection
+      - linked_outcome_refs
+
+multimodal_capabilities:
+  - capability_ref: VISUAL_CONTEXT_UNDERSTANDING
+    description: Understand image/photo context for learning, communication, routines, and artifacts.
+  - capability_ref: DOCUMENT_EXTRACTION_AND_TRANSLATION
+    description: Extract and translate school or service documents into family-understandable structured context.
+  - capability_ref: AUDIO_VIDEO_REFLECTION_SUMMARY
+    description: Summarize audio or video reflections while preserving speaker role and uncertainty.
+  - capability_ref: ARTIFACT_TO_CONSTRUCT_MAPPING
+    description: Map artifacts to need and construct candidates without ranking the child.
+  - capability_ref: MULTIMODAL_PROGRESS_REVIEW
+    description: Compare artifacts over time to support growth review and action adjustment.

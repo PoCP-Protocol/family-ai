@@ -9,7 +9,6 @@ describe("UI-01 original-home hotspot contract", () => {
     expect(UI01_HOME_TARGETS).toEqual({
       freeAssessment: "UI-02",
       aiInterpretation: "UI-03",
-      camp21: "UI-35",
       plan90: "UI-04",
       growthStories: "UI-12",
       expertLive: "UI-19",

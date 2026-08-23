@@ -8,10 +8,12 @@ import { REFLECTION_BOUNDARY, assertCompletableGrowthActionStatus } from './grow
 import { assertNormalSafetyRoute } from './normal-safety-route.policy';
 import { GrowthSubjectResolver } from './growth-subject.resolver';
 import { assertReflectionSafetyRoute } from './reflection-safety.policy';
+import type { ValidatedTaskStateActionRequest } from './task-state-action.dto';
 
 const CREATE_FAMILY_ACTION = 'CreateFamily';
 const COMPLETE_GROWTH_ACTION_ACTION = 'CompleteGrowthAction';
 const GROWTH_ACTION_COMPLETED_EVENT = 'GrowthActionCompleted';
+const GROWTH_ACTION_STATE_CHANGED_EVENT = 'GrowthActionStateChanged';
 
 type IdempotencyResult<TResponse> = { replay: false } | { replay: true; response: TResponse };
 
@@ -32,6 +34,8 @@ export type JourneyCompletedActionReadback = {
   boundary: 'JOURNEY_ACTION_IS_PROCESS_NOT_OUTCOME';
 };
 
+export type TaskExecutionTransitionResponse = { action: GrowthActionDto; replayed: boolean };
+
 @Injectable()
 export class GrowthActionService {
   constructor(
@@ -46,7 +50,8 @@ export class GrowthActionService {
       const result = await client.query<GrowthActionRow>(
         `select ga.action_id, ga.family_id, ga.onboarding_id, ga.priority_id, ga.intervention_episode_id,
                 ga.journey_plan_id, ga.journey_phase, ga.day_index, ga.status, ga.assignment_text, ga.due_date, ga.completed_at,
-                ga.completion_status, ga.reflection, ga.reflection_boundary, ga.boundary, ga.created_at
+                ga.completion_status, ga.reflection, ga.reflection_boundary, ga.boundary, ga.created_at,
+                ga.execution_status, ga.started_at, ga.paused_at, ga.cancelled_at, ga.row_version
          from growth_actions ga
          left join intervention_episodes ie on ie.episode_id = ga.intervention_episode_id
          left join family_journey_plans jp on jp.plan_id = ga.journey_plan_id
@@ -58,6 +63,32 @@ export class GrowthActionService {
         [familyId],
       );
       return result.rows[0] ? mapGrowthAction(result.rows[0]) : null;
+    });
+  }
+
+  /** UI-01 readback includes both pending and already checked-in actions due today. */
+  async listTodayActions(familyId: string, actorId: string): Promise<readonly GrowthActionDto[]> {
+    return this.repository.withTransaction(async (client) => {
+      await ensureFamilyExists(client, familyId);
+      await assertFamilyManagePermission(client, familyId, actorId);
+      const result = await client.query<GrowthActionRow>(
+        `select ga.action_id, ga.family_id, ga.onboarding_id, ga.priority_id, ga.intervention_episode_id,
+                ga.journey_plan_id, ga.journey_phase, ga.day_index, ga.status, ga.assignment_text, ga.due_date, ga.completed_at,
+                ga.completion_status, ga.reflection, ga.reflection_boundary, ga.boundary, ga.created_at,
+                ga.execution_status, ga.started_at, ga.paused_at, ga.cancelled_at, ga.row_version
+           from growth_actions ga
+           left join intervention_episodes ie on ie.episode_id = ga.intervention_episode_id
+           left join family_journey_plans jp on jp.plan_id = ga.journey_plan_id
+          where ga.family_id = $1 and ga.due_date = current_date
+            and ga.status in ('PENDING','COMPLETED','PARTIAL','NOT_COMPLETED')
+            and (ie.status = 'ACTIVE' or jp.status in ('ACTIVE','PAUSED'))
+          order by case when ga.status = 'PENDING' then 0 else 1 end,
+                   case when jp.status = 'ACTIVE' then 0 else 1 end,
+                   ga.day_index, ga.created_at
+          limit 3`,
+        [familyId],
+      );
+      return result.rows.map(mapGrowthAction);
     });
   }
 
@@ -125,6 +156,41 @@ export class GrowthActionService {
       return response;
     });
   }
+
+  async transitionTaskExecution(request: ValidatedTaskStateActionRequest, meta: AuditMeta): Promise<TaskExecutionTransitionResponse> {
+    const actionName = `${request.action[0]}${request.action.slice(1).toLowerCase()}GrowthAction`;
+    const requestHash = createHash('sha256').update(JSON.stringify({ ...request, actor_id: meta.actor })).digest('hex');
+    return this.repository.withTransaction(async (client) => {
+      await ensureFamilyExists(client, request.family_id);
+      await assertFamilyManagePermission(client, request.family_id, meta.actor);
+      const idempotency = await lockIdempotencyKey<TaskExecutionTransitionResponse>(client, actionName, request.idempotency_key, requestHash);
+      if (idempotency.replay) return { ...idempotency.response, replayed: true };
+
+      const existing = await getTaskExecutionAction(client, request.family_id, request.action_id);
+      const subject = await this.growthSubjectResolver.resolve(client, {
+        familyId: request.family_id,
+        onboardingId: existing.onboarding_id,
+        priorityId: existing.priority_id,
+      });
+      await assertRequiredGrowthConsents(client, request.family_id, subject.childPersonId);
+      await assertNormalSafetyRoute(client, request.family_id, existing.onboarding_id);
+      assertExecutionTransition(existing.execution_status, request.action);
+      const action = await updateTaskExecutionState(client, request);
+      const response: TaskExecutionTransitionResponse = { action, replayed: false };
+      await insertAudit(client, actionName, 'GrowthAction', request.family_id, request.action_id, request.idempotency_key, meta, response);
+      await insertGrowthActionStateChangedEvent(client, request.action, response, meta);
+      await storeIdempotencyResponse(client, request.idempotency_key, response, 200);
+      return response;
+    });
+  }
+}
+
+function assertExecutionTransition(current: NonNullable<GrowthActionDto['execution_status']>, requested: ValidatedTaskStateActionRequest['action']): void {
+  const allowed: Record<NonNullable<GrowthActionDto['execution_status']>, readonly ValidatedTaskStateActionRequest['action'][]> = {
+    NOT_STARTED: ['START', 'CANCEL'], IN_PROGRESS: ['PAUSE', 'CANCEL'], PAUSED: ['RESUME', 'CANCEL'],
+    COMPLETED: [], PARTIAL: [], NOT_COMPLETED: [], CANCELLED: [],
+  };
+  if (!allowed[current].includes(requested)) throw new ConflictException(`task_transition_not_allowed:${current}:${requested}`);
 }
 
 function hashCompleteGrowthActionRequest(request: CompleteGrowthActionRequest, actorId: string): string {
@@ -230,6 +296,49 @@ async function getCompletableGrowthAction(client: pg.PoolClient, familyId: strin
   return row;
 }
 
+async function getTaskExecutionAction(
+  client: pg.PoolClient,
+  familyId: string,
+  actionId: string,
+): Promise<{ action_id: string; onboarding_id: string; priority_id: string; status: string; execution_status: NonNullable<GrowthActionDto['execution_status']> }> {
+  const result = await client.query<{ action_id: string; onboarding_id: string; priority_id: string; status: string; execution_status: NonNullable<GrowthActionDto['execution_status']> }>(
+    `select ga.action_id, ga.onboarding_id, ga.priority_id, ga.status, ga.execution_status
+       from growth_actions ga
+       left join intervention_episodes ie on ie.episode_id = ga.intervention_episode_id
+       left join family_journey_plans jp on jp.plan_id = ga.journey_plan_id
+      where ga.family_id = $1 and ga.action_id = $2
+        and ga.due_date = current_date
+        and (ie.status = 'ACTIVE' or jp.status in ('ACTIVE','PAUSED'))
+      for update of ga`,
+    [familyId, actionId],
+  );
+  const row = result.rows[0];
+  if (!row) throw new NotFoundException('growth_action_not_found');
+  if (row.status !== 'PENDING') throw new ConflictException('growth_action_already_final');
+  return row;
+}
+
+async function updateTaskExecutionState(client: pg.PoolClient, request: ValidatedTaskStateActionRequest): Promise<GrowthActionDto> {
+  const next = request.action === 'START' || request.action === 'RESUME' ? 'IN_PROGRESS' : request.action === 'PAUSE' ? 'PAUSED' : 'CANCELLED';
+  const result = await client.query<GrowthActionRow>(
+    `update growth_actions
+        set execution_status = $3,
+            started_at = case when $4 = 'START' then $5::timestamptz else started_at end,
+            paused_at = case when $4 = 'PAUSE' then $5::timestamptz when $4 = 'RESUME' then null else paused_at end,
+            cancelled_at = case when $4 = 'CANCEL' then $5::timestamptz else cancelled_at end,
+            status = case when $4 = 'CANCEL' then 'NOT_COMPLETED' else status end,
+            row_version = row_version + 1
+      where family_id = $1 and action_id = $2
+      returning action_id, family_id, onboarding_id, priority_id, intervention_episode_id,
+                journey_plan_id, journey_phase, day_index, status, assignment_text, due_date, completed_at,
+                completion_status, reflection, reflection_boundary, boundary, created_at,
+                execution_status, started_at, paused_at, cancelled_at, row_version`,
+    [request.family_id, request.action_id, next, request.action, request.occurred_at],
+  );
+  if (!result.rows[0]) throw new NotFoundException('growth_action_not_found');
+  return mapGrowthAction(result.rows[0]);
+}
+
 async function updateGrowthActionCompletion(client: pg.PoolClient, request: CompleteGrowthActionRequest): Promise<GrowthActionDto> {
   const result = await client.query<GrowthActionRow>(
     `update growth_actions
@@ -237,11 +346,14 @@ async function updateGrowthActionCompletion(client: pg.PoolClient, request: Comp
          completion_status = $3,
          completed_at = $4,
          reflection = $5,
-         reflection_boundary = $6
+         reflection_boundary = $6,
+         execution_status = $3,
+         row_version = row_version + 1
      where family_id = $1 and action_id = $2
      returning action_id, family_id, onboarding_id, priority_id, intervention_episode_id,
                journey_plan_id, journey_phase, day_index, status, assignment_text, due_date, completed_at,
-               completion_status, reflection, reflection_boundary, boundary, created_at`,
+               completion_status, reflection, reflection_boundary, boundary, created_at,
+               execution_status, started_at, paused_at, cancelled_at, row_version`,
     [request.family_id, request.action_id, request.completion_status, request.occurred_at, request.reflection, REFLECTION_BOUNDARY],
   );
   const row = result.rows[0];
@@ -318,6 +430,23 @@ async function insertGrowthActionCompletedEvent(client: pg.PoolClient, response:
   );
 }
 
+async function insertGrowthActionStateChangedEvent(
+  client: pg.PoolClient,
+  transition: ValidatedTaskStateActionRequest['action'],
+  response: TaskExecutionTransitionResponse,
+  meta: AuditMeta,
+): Promise<void> {
+  const eventId = randomUUID();
+  await client.query(
+    `insert into outbox_events(
+       aggregate_type, aggregate_id, event_name, event_version, event_id,
+       correlation_id, payload, occurred_at
+     ) values ($1,$2,$3,$4,$5,$6,$7::jsonb,$8)`,
+    ['GrowthAction', response.action.action_id, GROWTH_ACTION_STATE_CHANGED_EVENT, 1, eventId, meta.correlationId,
+      JSON.stringify({ event_id: eventId, actor_id: meta.actor, transition, action: response.action }), meta.occurredAt],
+  );
+}
+
 interface GrowthActionRow {
   action_id: string;
   family_id: string;
@@ -336,6 +465,11 @@ interface GrowthActionRow {
   reflection_boundary: GrowthActionDto['reflection_boundary'];
   boundary: GrowthActionDto['boundary'];
   created_at: Date | string;
+  execution_status?: NonNullable<GrowthActionDto['execution_status']>;
+  started_at?: Date | string | null;
+  paused_at?: Date | string | null;
+  cancelled_at?: Date | string | null;
+  row_version?: number;
 }
 
 function mapGrowthAction(row: GrowthActionRow): GrowthActionDto {
@@ -357,6 +491,11 @@ function mapGrowthAction(row: GrowthActionRow): GrowthActionDto {
     reflection_boundary: row.reflection_boundary,
     boundary: row.boundary,
     created_at: toIsoString(row.created_at),
+    execution_status: row.execution_status ?? (row.status === 'PENDING' ? 'NOT_STARTED' : row.status),
+    started_at: row.started_at ? toIsoString(row.started_at) : null,
+    paused_at: row.paused_at ? toIsoString(row.paused_at) : null,
+    cancelled_at: row.cancelled_at ? toIsoString(row.cancelled_at) : null,
+    row_version: row.row_version ?? 1,
   };
 }
 

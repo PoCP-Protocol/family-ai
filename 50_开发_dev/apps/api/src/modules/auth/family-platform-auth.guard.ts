@@ -85,7 +85,7 @@ export const ActorId = createParamDecorator((_data: unknown, context: ExecutionC
 });
 
 /** 返回守卫解析出的可信 Account/Family 上下文；tenant-scoped 端点不得使用 legacy x-actor-id 回退。 */
-export const FamilyContext = createParamDecorator((_data: unknown, context: ExecutionContext): { accountId: string; familyId: string; personId: string; familyRole: string } | undefined => {
+export const FamilyContext = createParamDecorator((_data: unknown, context: ExecutionContext): { accountId: string; tenantId: string; familyId: string; personId: string; familyRole: string } | undefined => {
   const req = context.switchToHttp().getRequest();
   return req.familyContext;
 });

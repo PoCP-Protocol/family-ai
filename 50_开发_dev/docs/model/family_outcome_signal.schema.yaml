@@ -1,0 +1,70 @@
+version: 0.1.0
+asset_ref: FAMILY_OUTCOME_SIGNAL_SCHEMA
+status: draft
+owner: Family Education Industry Model
+source_doc: ../FAMILY_EDUCATION_INTELLIGENCE_MODEL_V0_1.md
+purpose: >
+  Defines outcome signal categories used to review whether a need was better met,
+  whether a support action was useful, and whether the model should learn from the
+  case. This is a draft schema artifact, not a database migration.
+
+schema_rules:
+  - outcome signals are not causal proof by default.
+  - outcome signals must link to action_ref, need_ref, and respondent role when available.
+  - multimodal outcome artifacts require consent, provenance, source type, and review boundary.
+  - aggregate outcome learning must preserve Perspective != Fact and Hypothesis != Fact.
+
+outcome_signal_fields:
+  outcome_ref: stable uppercase snake case outcome type
+  action_ref: support action being reviewed
+  need_ref: need being reviewed
+  respondent_role: parent, child, teacher, human_reviewer, system
+  time_window: same_day, 7_days, 14_days, 30_days, custom
+  observed_change: structured change summary
+  usefulness_rating: helpful, partly_helpful, not_helpful, not_tried, not_sure
+  evidence_source_type: parent_report, child_report, teacher_feedback, product_event, human_review, multimodal_artifact
+  artifact_type: none, text, image, photo, audio, video, document, chart, code, mixed
+  confidence: low, medium, high
+  follow_up_needed: true_or_false
+
+outcome_types:
+  - outcome_ref: ACTION_TRIED_SIGNAL
+    name: Action tried signal
+    description: Records whether the family tried the action within the review window.
+    applies_to_actions: [SEVEN_DAY_HOMEWORK_START_RITUAL, COMMUNICATION_REPAIR_CONVERSATION, FAMILY_DEVICE_AGREEMENT_DRAFT, SLEEP_AND_ENERGY_RHYTHM_CHECK, AI_USE_FAMILY_RULES_MINI_PLAN, MULTIMODAL_LEARNING_ARTIFACT_REVIEW]
+
+  - outcome_ref: FAMILY_CONFLICT_CHANGE_SIGNAL
+    name: Family conflict change signal
+    description: Records parent or child perspective on whether conflict intensity, frequency, or repair changed.
+    applies_to_needs: [FAMILY_COMMUNICATION_NEED, CHILD_RELATIONSHIP_NEED, FAMILY_RHYTHM_NEED]
+
+  - outcome_ref: LEARNING_PROCESS_CHANGE_SIGNAL
+    name: Learning process change signal
+    description: Records whether homework start, persistence, review, self-checking, or subject confidence changed.
+    applies_to_needs: [CHILD_LEARNING_SUPPORT_NEED, FAMILY_LEARNING_ENVIRONMENT_NEED]
+
+  - outcome_ref: HEALTH_RHYTHM_CHANGE_SIGNAL
+    name: Health rhythm change signal
+    description: Records whether sleep, energy, exercise, meals, posture, or recovery changed.
+    applies_to_needs: [CHILD_PHYSICAL_HEALTH_NEED, FAMILY_RHYTHM_NEED]
+
+  - outcome_ref: DIGITAL_AI_USE_CHANGE_SIGNAL
+    name: Digital and AI use change signal
+    description: Records whether device use, AI tool use, verification, privacy awareness, or family rules changed.
+    applies_to_needs: [CHILD_DIGITAL_AI_NEED, FAMILY_RHYTHM_NEED]
+
+  - outcome_ref: MULTIMODAL_ARTIFACT_PROGRESS_SIGNAL
+    name: Multimodal artifact progress signal
+    description: Records progress shown in a child-created or family-reviewed artifact, such as a photo explanation, visual mind map, audio reflection, video demo, chart, code snippet, or mixed-media project.
+    applies_to_needs: [CHILD_DIGITAL_AI_NEED, CHILD_LEARNING_SUPPORT_NEED, CHILD_IDENTITY_STRENGTH_NEED]
+    allowed_artifact_types: [image, photo, audio, video, document, chart, code, mixed]
+
+  - outcome_ref: SCHOOL_FEEDBACK_ALIGNMENT_SIGNAL
+    name: School feedback alignment signal
+    description: Records whether teacher feedback became clearer and whether family action aligned with school support.
+    applies_to_needs: [FAMILY_SCHOOL_ALIGNMENT_NEED, PARENT_COLLABORATION_NEED]
+
+  - outcome_ref: HUMAN_REVIEW_NEXT_STEP_SIGNAL
+    name: Human review next step signal
+    description: Records human-service review result, next-step recommendation, and whether follow-up is needed.
+    applies_to_needs: [FAMILY_SUPPORT_NETWORK_NEED, PARENT_DECISION_NEED, PARENT_EMOTIONAL_SUPPORT_NEED]

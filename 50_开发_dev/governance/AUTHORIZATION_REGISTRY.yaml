@@ -4,7 +4,7 @@
 # 授权只能由总架构师(或其上级)通过 authorized_by + authorization_ref 落记;AI Agent 不得自增授权。
 schema_version: AUTH_REGISTRY_V1
 maintained_by: family-chief-architect
-updated_at: "2026-08-11"
+updated_at: "2026-08-23"
 
 # M3-W1 收口(架构师 M3_W1_RUNTIME_INTEGRATION_FINAL_REVIEW = PASS,授权合并 PR #1)
 program_gates:
@@ -27,6 +27,36 @@ program_gates:
 #   pilot_authorized            允许对真实(试点)用户开启
 #   production_authorized       允许生产环境默认开启
 capabilities:
+  - capability_id: G1A_FAMILY_EDUCATION_ASSESSMENT_MODEL_INTERNAL
+    stage: G1-A
+    status: INTERNAL_LOCAL_ALLOWED
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true
+    live_external_call_authorized: true
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: "Conversation authorization 2026-08-23: 确认以总架构师身份授权进入这个方向"
+    authorized_at: "2026-08-23"
+    supersedes: []
+    scope:
+      surfaces:
+        - UI-02
+        - UI-03
+      flow_refs:
+        - UI02_ASSESSMENT_TO_STRUCTURED_DRAFT
+      runtime_package: '@family/family-model'
+      gateway_package: '@family/ai-gateway'
+      approved_provider_path: Model Gateway only;cc-switch/codex compatible provider in local/internal env
+    constraints:
+      db_schema_change_authorized: false
+      direct_provider_call_authorized: false
+      client_direct_model_call_authorized: false
+      canonical_state_mutation_by_model_authorized: false
+      real_keys_in_repo_authorized: false
+    notes: 家庭测评后端能力可在本地/内部显式授权环境中调用真实外部模型;默认配置继续 mock/零外呼;不得扩展为试点、生产、直接 provider 调用、DB schema 变更或 AI 直接写 canonical Family/Growth 状态。
+
   - capability_id: M3_000_CONTRACT
     stage: M3-000
     status: PASS_CLOSED

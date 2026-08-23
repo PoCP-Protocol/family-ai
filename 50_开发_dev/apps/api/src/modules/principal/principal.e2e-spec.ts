@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../app.module';
-import { createTestPool, getTestDatabaseUrl } from '../../test/test-database';
+import { bindTestAccountToFamilyTenant, createTestPool, getTestDatabaseUrl } from '../../test/test-database';
 
 const ACTOR = { 'x-correlation-id': 'c-e2e', 'content-type': 'application/json' };
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -55,6 +55,7 @@ describe('Principal Runtime E2E (M3-101A-B, Fake provider, real PostgreSQL)', ()
        values ($1, $2, 'OWNER_GUARDIAN', 'ACTIVE', now())`,
       [familyId, guardianId],
     );
+    await bindTestAccountToFamilyTenant(pool, accountId, familyId);
     token = `fam_${randomUUID()}`;
     await pool.query(
       `insert into identity_sessions(token_hash, account_ref, expires_at)

@@ -1,0 +1,330 @@
+version: 0.1.0
+asset_ref: FAMILY_ASSESSMENT_ITEM_BANK_REGISTRY
+status: draft
+owner: Family Assessment Skill
+purpose: >
+  Defines the first model-backed assessment item bank for Family Education Large
+  Model. Items collect parent perspective, observable context, and support needs.
+  Items do not produce diagnosis, ranking, family total score, or canonical child facts.
+
+item_bank_rules:
+  - item_ref must be stable and uppercase snake case.
+  - every item must link to construct_refs and need_refs.
+  - every item must declare respondent_role and answer_mode.
+  - answer options capture perspective and context, not truth by themselves.
+  - high-risk signals require Human Gate or conservative clarification.
+
+answer_scales:
+  - scale_ref: FIVE_POINT_FREQUENCY
+    labels: [rarely, sometimes, often, very_often, not_sure]
+    interpretation_boundary: perspective
+
+  - scale_ref: FIVE_POINT_AGREEMENT
+    labels: [strongly_disagree, disagree, mixed, agree, strongly_agree]
+    interpretation_boundary: perspective
+
+  - scale_ref: CONTEXT_MULTI_SELECT
+    labels: [school, home, peers, digital_device, sleep_health, parent_stress, not_sure]
+    interpretation_boundary: context_signal
+
+  - scale_ref: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    labels: [often, sometimes, rarely, not_sure]
+    interpretation_boundary: parent_perspective
+
+items:
+  - item_ref: LEARNING_HABITS_Q01
+    prompt: 过去两周，孩子开始写作业前常需要反复提醒。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [ACADEMIC_K12]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, FAMILY_LEARNING_ENVIRONMENT_NEED]
+    construct_refs: [HOMEWORK_PROCESS, FAMILY_ROUTINE]
+    observable_signal_refs: [start_delay, repeated_prompting]
+    followup_when: often
+    safety_boundary: normal_learning_support
+
+  - item_ref: LEARNING_HABITS_Q02
+    prompt: 孩子遇到稍难的题目时，容易拖延、分心或直接放弃。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [ACADEMIC_K12, DEVELOPMENTAL_FOUNDATIONS]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED]
+    construct_refs: [LEARNING_STRATEGY_METACOGNITION, SELF_REGULATION_SUPPORT]
+    observable_signal_refs: [difficulty_persistence_gap, distraction, avoidance]
+    followup_when: often
+    safety_boundary: normal_learning_support
+
+  - item_ref: LEARNING_HABITS_Q03
+    prompt: 家里目前缺少稳定的学习开始、休息和收尾节奏。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [ACADEMIC_K12, FAMILY_SYSTEM]
+    need_refs: [FAMILY_LEARNING_ENVIRONMENT_NEED, FAMILY_RHYTHM_NEED]
+    construct_refs: [FAMILY_ROUTINE, HOMEWORK_PROCESS]
+    observable_signal_refs: [routine_instability, missing_review]
+    followup_when: often
+    safety_boundary: normal_learning_support
+
+  - item_ref: EMOTION_REGULATION_Q01
+    prompt: 过去两周，孩子情绪上来后需要较长时间才能恢复。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [PSYCHOSOMATIC_WELLBEING, RELATIONSHIP]
+    need_refs: [CHILD_EMOTIONAL_SUPPORT_NEED, PARENT_METHOD_NEED]
+    construct_refs: [EMOTION_REGULATION_SUPPORT]
+    observable_signal_refs: [slow_conflict_recovery, emotional_recovery_gap]
+    followup_when: often
+    safety_boundary: human_gate_if_crisis_signal
+
+  - item_ref: EMOTION_REGULATION_Q02
+    prompt: 亲子冲突中，大人和孩子都很难先暂停再说。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [RELATIONSHIP, PARENTING]
+    need_refs: [FAMILY_COMMUNICATION_NEED, PARENT_METHOD_NEED]
+    construct_refs: [EMOTION_REGULATION_SUPPORT, PARENT_CHILD_COMMUNICATION]
+    observable_signal_refs: [cannot_pause_conflict, conflict_cycle]
+    followup_when: often
+    safety_boundary: normal_parenting_support
+
+  - item_ref: EMOTION_REGULATION_Q03
+    prompt: 孩子表达焦虑、生气或委屈时，家长不太确定如何回应。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [PARENTING, RELATIONSHIP]
+    need_refs: [PARENT_METHOD_NEED, CHILD_EMOTIONAL_SUPPORT_NEED]
+    construct_refs: [EMOTION_REGULATION_SUPPORT, PARENT_CAPACITY]
+    observable_signal_refs: [parent_response_uncertainty, high_anxiety]
+    followup_when: often_or_not_sure
+    safety_boundary: normal_parenting_support
+
+  - item_ref: PARENT_CHILD_COMMUNICATION_Q01
+    prompt: 孩子遇到不顺心的事，通常不太愿意主动和家长说。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [RELATIONSHIP]
+    need_refs: [CHILD_RELATIONSHIP_NEED, FAMILY_COMMUNICATION_NEED]
+    construct_refs: [PARENT_CHILD_COMMUNICATION]
+    observable_signal_refs: [low_trust, unwilling_to_talk]
+    followup_when: often
+    safety_boundary: normal_parenting_support
+
+  - item_ref: PARENT_CHILD_COMMUNICATION_Q02
+    prompt: 家长想帮助孩子时，对话容易变成讲道理、纠正或争执。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [RELATIONSHIP, PARENTING]
+    need_refs: [FAMILY_COMMUNICATION_NEED, PARENT_METHOD_NEED]
+    construct_refs: [PARENT_CHILD_COMMUNICATION]
+    observable_signal_refs: [interrupted_talk, conflict_cycle]
+    followup_when: often
+    safety_boundary: normal_parenting_support
+
+  - item_ref: PARENT_CHILD_COMMUNICATION_Q03
+    prompt: 冲突后，家里较少有重新和好、复盘或修复的过程。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [RELATIONSHIP, FAMILY_SYSTEM]
+    need_refs: [FAMILY_COMMUNICATION_NEED, CHILD_RELATIONSHIP_NEED]
+    construct_refs: [PARENT_CHILD_COMMUNICATION, FAMILY_ROUTINE]
+    observable_signal_refs: [repair_gap, missing_review]
+    followup_when: often
+    safety_boundary: normal_parenting_support
+
+  - item_ref: DEVICE_USE_CONTEXT_Q01
+    prompt: 手机或平板使用经常影响作业、睡眠或家庭安排。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [DIGITAL_LIFE]
+    need_refs: [CHILD_DIGITAL_AI_NEED, FAMILY_RHYTHM_NEED]
+    construct_refs: [DEVICE_USE_CONTEXT, FAMILY_ROUTINE]
+    observable_signal_refs: [device_rule_conflict, sleep_crowded_out, homework_crowded_out]
+    followup_when: often
+    safety_boundary: digital_wellbeing_support
+
+  - item_ref: DEVICE_USE_CONTEXT_Q02
+    prompt: 围绕手机使用，家里经常发生讨价还价或冲突。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [DIGITAL_LIFE, RELATIONSHIP]
+    need_refs: [CHILD_DIGITAL_AI_NEED, FAMILY_COMMUNICATION_NEED]
+    construct_refs: [DEVICE_USE_CONTEXT, PARENT_CHILD_COMMUNICATION]
+    observable_signal_refs: [device_rule_conflict, conflict_cycle]
+    followup_when: often
+    safety_boundary: digital_wellbeing_support
+
+  - item_ref: DEVICE_USE_CONTEXT_Q03
+    prompt: 家里的手机规则不够清楚，或大人和孩子执行标准不一致。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [DIGITAL_LIFE, FAMILY_SYSTEM]
+    need_refs: [FAMILY_RHYTHM_NEED, FAMILY_COMMUNICATION_NEED]
+    construct_refs: [DEVICE_USE_CONTEXT, FAMILY_ROUTINE]
+    observable_signal_refs: [unclear_agreement, inconsistent_response]
+    followup_when: often_or_not_sure
+    safety_boundary: digital_wellbeing_support
+
+  - item_ref: SELF_REGULATION_Q01
+    prompt: 孩子完成日常任务时，比较依赖家长全程监督。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [DEVELOPMENTAL_FOUNDATIONS, FAMILY_SYSTEM]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, PARENT_METHOD_NEED]
+    construct_refs: [SELF_REGULATION_SUPPORT, FAMILY_ROUTINE]
+    observable_signal_refs: [high_supervision_dependency, repeated_prompting]
+    followup_when: often
+    safety_boundary: normal_learning_support
+
+  - item_ref: SELF_REGULATION_Q02
+    prompt: 孩子较少参与制定自己的计划、目标或检查方式。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [DEVELOPMENTAL_FOUNDATIONS, ACADEMIC_K12]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, PARENT_METHOD_NEED]
+    construct_refs: [SELF_REGULATION_SUPPORT, LEARNING_STRATEGY_METACOGNITION]
+    observable_signal_refs: [low_plan_participation, no_plan]
+    followup_when: often
+    safety_boundary: normal_learning_support
+
+  - item_ref: SELF_REGULATION_Q03
+    prompt: 事情没做好时，家里通常忙着催促补救，较少一起复盘方法。
+    respondent_role: parent
+    answer_mode: UI02_FOUR_POINT_FAMILY_FREQUENCY
+    domain_refs: [DEVELOPMENTAL_FOUNDATIONS, ACADEMIC_K12, FAMILY_SYSTEM]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, FAMILY_LEARNING_ENVIRONMENT_NEED]
+    construct_refs: [SELF_REGULATION_SUPPORT, LEARNING_STRATEGY_METACOGNITION, FAMILY_ROUTINE]
+    observable_signal_refs: [missing_method_review, weak_review_cycle]
+    followup_when: often
+    safety_boundary: normal_learning_support
+
+  - item_ref: PARENT_CHILD_TALK_INTERRUPTION
+    prompt: When the child tries to explain a difficulty, how often does the conversation become interrupted, corrected, or rushed?
+    respondent_role: parent
+    answer_mode: FIVE_POINT_FREQUENCY
+    domain_refs: [RELATIONSHIP]
+    need_refs: [CHILD_RELATIONSHIP_NEED, FAMILY_COMMUNICATION_NEED, PARENT_METHOD_NEED]
+    construct_refs: [PARENT_CHILD_COMMUNICATION]
+    observable_signal_refs: [interrupted_talk, repair_gap]
+    followup_when: often_or_very_often
+    safety_boundary: normal_parenting_support
+
+  - item_ref: CHILD_WILLINGNESS_TO_TALK
+    prompt: In the last two weeks, how willing was the child to talk with the parent about worries, mistakes, or pressure?
+    respondent_role: parent
+    answer_mode: FIVE_POINT_AGREEMENT
+    domain_refs: [RELATIONSHIP]
+    need_refs: [CHILD_RELATIONSHIP_NEED, FAMILY_COMMUNICATION_NEED]
+    construct_refs: [PARENT_CHILD_COMMUNICATION]
+    observable_signal_refs: [low_trust]
+    followup_when: disagree_or_strongly_disagree
+    safety_boundary: normal_parenting_support
+
+  - item_ref: HOMEWORK_START_DELAY
+    prompt: How often does homework start with delay, negotiation, avoidance, or conflict?
+    respondent_role: parent
+    answer_mode: FIVE_POINT_FREQUENCY
+    domain_refs: [ACADEMIC_K12]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, FAMILY_LEARNING_ENVIRONMENT_NEED]
+    construct_refs: [HOMEWORK_PROCESS, FAMILY_ROUTINE]
+    observable_signal_refs: [start_delay, parent_help_conflict]
+    followup_when: often_or_very_often
+    safety_boundary: normal_learning_support
+
+  - item_ref: CHILD_ERROR_REVIEW_PATTERN
+    prompt: After mistakes in homework or tests, how often does the child review the reason and try a new method?
+    respondent_role: parent
+    answer_mode: FIVE_POINT_FREQUENCY
+    domain_refs: [ACADEMIC_K12, DEVELOPMENTAL_FOUNDATIONS]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED]
+    construct_refs: [LEARNING_STRATEGY_METACOGNITION, ACADEMIC_DEVELOPMENT]
+    observable_signal_refs: [weak_error_correction, low_self_check]
+    followup_when: rarely_or_sometimes
+    safety_boundary: normal_learning_support
+
+  - item_ref: SLEEP_ENERGY_LEARNING_IMPACT
+    prompt: How often do sleep, tiredness, appetite, movement, eyesight, or posture appear to affect learning or mood?
+    respondent_role: parent
+    answer_mode: FIVE_POINT_FREQUENCY
+    domain_refs: [PHYSICAL_HEALTH, PSYCHOSOMATIC_WELLBEING]
+    need_refs: [CHILD_PHYSICAL_HEALTH_NEED, FAMILY_RHYTHM_NEED, CHILD_EMOTIONAL_SUPPORT_NEED]
+    construct_refs: [PHYSICAL_HEALTH_RHYTHM, PSYCHOSOMATIC_STRESS_SIGNAL]
+    observable_signal_refs: [sleep_instability, fatigue, eyestrain, appetite_change]
+    followup_when: often_or_very_often
+    safety_boundary: human_gate_if_health_risk
+
+  - item_ref: DEVICE_RULE_CONFLICT
+    prompt: How often does device or AI tool use lead to conflict, sleep delay, homework interruption, or unclear rules?
+    respondent_role: parent
+    answer_mode: FIVE_POINT_FREQUENCY
+    domain_refs: [DIGITAL_LIFE, AI_LITERACY]
+    need_refs: [CHILD_DIGITAL_AI_NEED, FAMILY_RHYTHM_NEED, FAMILY_COMMUNICATION_NEED]
+    construct_refs: [DEVICE_USE_CONTEXT, AI_LITERACY_FLUENCY]
+    observable_signal_refs: [device_rule_conflict, sleep_crowded_out, weak_verification]
+    followup_when: often_or_very_often
+    safety_boundary: digital_wellbeing_support
+
+  - item_ref: AI_LEARNING_USE_CLARITY
+    prompt: When the child uses AI tools for learning, how clear are the rules for asking, verifying, citing, and not replacing thinking?
+    respondent_role: parent
+    answer_mode: FIVE_POINT_AGREEMENT
+    domain_refs: [AI_LITERACY]
+    need_refs: [CHILD_DIGITAL_AI_NEED, PARENT_LEARNING_NEED]
+    construct_refs: [AI_LITERACY_FLUENCY]
+    observable_signal_refs: [ai_tool_confusion, weak_prompt_design, weak_verification, plagiarism_risk]
+    followup_when: disagree_or_mixed
+    safety_boundary: ai_literacy_support
+
+  - item_ref: MULTIMODAL_CREATION_OPPORTUNITY
+    prompt: How often does the child create or explain learning through images, audio, video, charts, code, presentations, or mixed media?
+    respondent_role: parent
+    answer_mode: FIVE_POINT_FREQUENCY
+    domain_refs: [MULTIMODAL_LITERACY]
+    need_refs: [CHILD_DIGITAL_AI_NEED, CHILD_LEARNING_SUPPORT_NEED, CHILD_IDENTITY_STRENGTH_NEED]
+    construct_refs: [MULTIMODAL_CREATION, SUBJECT_LEARNING_PROFILE, MULTIPLE_INTELLIGENCE_PROFILE]
+    observable_signal_refs: [low_creation_output, single_mode_expression, project_block]
+    followup_when: rarely_or_sometimes
+    safety_boundary: learning_creation_support
+
+  - item_ref: PARENT_CAPACITY_PRESSURE
+    prompt: In the last two weeks, how often did the parent feel too tired, anxious, or rushed to respond consistently?
+    respondent_role: parent
+    answer_mode: FIVE_POINT_FREQUENCY
+    domain_refs: [PARENTING]
+    need_refs: [PARENT_EMOTIONAL_SUPPORT_NEED, PARENT_METHOD_NEED]
+    construct_refs: [PARENT_CAPACITY]
+    observable_signal_refs: [parent_burnout, time_pressure, inconsistent_response, high_anxiety]
+    followup_when: often_or_very_often
+    safety_boundary: human_gate_if_parent_crisis
+
+  - item_ref: SCHOOL_FAMILY_FEEDBACK_LOOP
+    prompt: How clear is the loop among teacher feedback, parent understanding, child action, and later review?
+    respondent_role: parent
+    answer_mode: FIVE_POINT_AGREEMENT
+    domain_refs: [HUMAN_SERVICE, ACADEMIC_K12]
+    need_refs: [FAMILY_SCHOOL_ALIGNMENT_NEED, PARENT_COLLABORATION_NEED]
+    construct_refs: [SCHOOL_FAMILY_COLLABORATION, ACADEMIC_DEVELOPMENT]
+    observable_signal_refs: [teacher_parent_disconnect, unclear_feedback_loop]
+    followup_when: disagree_or_mixed
+    safety_boundary: school_family_support
+
+recommended_action_map:
+  - construct_ref: PARENT_CHILD_COMMUNICATION
+    candidate_action_refs: [COMMUNICATION_REPAIR_CONVERSATION]
+  - construct_ref: HOMEWORK_PROCESS
+    candidate_action_refs: [SEVEN_DAY_HOMEWORK_START_RITUAL]
+  - construct_ref: LEARNING_STRATEGY_METACOGNITION
+    candidate_action_refs: [SEVEN_DAY_HOMEWORK_START_RITUAL, SCHOOL_FAMILY_FEEDBACK_HANDOFF]
+  - construct_ref: PHYSICAL_HEALTH_RHYTHM
+    candidate_action_refs: [SLEEP_AND_ENERGY_RHYTHM_CHECK]
+  - construct_ref: PSYCHOSOMATIC_STRESS_SIGNAL
+    candidate_action_refs: [SLEEP_AND_ENERGY_RHYTHM_CHECK, HUMAN_SERVICE_CONTEXT_PACKAGE]
+  - construct_ref: DEVICE_USE_CONTEXT
+    candidate_action_refs: [FAMILY_DEVICE_AGREEMENT_DRAFT, AI_USE_FAMILY_RULES_MINI_PLAN]
+  - construct_ref: AI_LITERACY_FLUENCY
+    candidate_action_refs: [AI_USE_FAMILY_RULES_MINI_PLAN]
+  - construct_ref: MULTIMODAL_CREATION
+    candidate_action_refs: [MULTIMODAL_LEARNING_ARTIFACT_REVIEW]
+  - construct_ref: PARENT_CAPACITY
+    candidate_action_refs: [HUMAN_SERVICE_CONTEXT_PACKAGE]
+  - construct_ref: SCHOOL_FAMILY_COLLABORATION
+    candidate_action_refs: [SCHOOL_FAMILY_FEEDBACK_HANDOFF, HUMAN_SERVICE_CONTEXT_PACKAGE]

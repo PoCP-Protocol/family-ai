@@ -18,6 +18,7 @@ const MAPPING = {
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.left": "chevron-left",
   "chevron.right": "chevron-right",
+  "chevron.down": "expand-more",
   "chart.bar.fill": "insights",
   "safari.fill": "explore",
   "person.2.fill": "groups",

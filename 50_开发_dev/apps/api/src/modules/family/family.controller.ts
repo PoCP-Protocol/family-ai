@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Body, Controller, Get, Headers, Inject, Param, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ActorId, FamilyContext, FamilyPlatformAuthGuard, RequireFamilyAction } from '../auth/family-platform-auth.guard';
-import { projectTaskCheckinResult } from '@family/contracts';
+import { projectTaskCheckinResult, projectTaskStateResult } from '@family/contracts';
 import type { AddChildResponse, AddParentResponse, AssignLifeStageResponse, AuditMeta, BuildGrowthProfileDraftsResponse, CompleteGrowthActionResponse, CompleteGrowthReviewResponse, ConfirmGrowthPriorityResponse, ConfirmGrowthProfileResponse, ConfirmJourneyPlanResponse, CreateFamilyRelationshipResponse, CreateFamilyResponse, CreateJourneyPlanResponse, FamilyAggregateResponse, FamilyTimelineResponse, GrantConsentResponse, GrowthActionDto, GrowthInsightResponse, GrowthPriorityInsightResponse, InterventionCardDto, JourneyPlanProjection, PauseJourneyPlanResponse, PerspectiveSummaryResponse, RecordNextStepDecisionResponse, RecordOutcomeObservationResponse, RecordPerspectiveResponse, ReviewJourneyPhaseResponse, StartGrowthOnboardingResponse, StartInterventionResponse } from '@family/contracts';
 import { validateAddChildRequest } from './add-child.dto';
 import { validateAddParentRequest } from './add-parent.dto';
 import { validateAssignLifeStageRequest } from './assign-life-stage.dto';
 import { validateBuildGrowthProfileDraftsRequest } from './build-growth-profile-drafts.dto';
 import { validateCompleteGrowthActionRequest } from './complete-growth-action.dto';
+import { validateTaskStateActionRequest } from './task-state-action.dto';
 import { validateCompleteGrowthReviewRequest } from './complete-growth-review.dto';
 import { validateConfirmGrowthPriorityRequest } from './confirm-growth-priority.dto';
 import { validateConfirmGrowthProfileRequest } from './confirm-growth-profile.dto';
@@ -32,6 +33,10 @@ import { DevCoreGrowthService } from './dev-core-growth.service';
 import { DevPlatformSurfacesService } from './dev-platform-surfaces.service';
 import { DevFlowReceiptService } from './dev-flow-receipt.service';
 import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.service';
+import { FamilyHomeService } from './family-home.service';
+import { AssessmentService } from './assessment.service';
+import { GrowthHypothesisService } from './growth-hypothesis.service';
+import { GrowthCampService } from './growth-camp.service';
 
 @Controller('families')
 @UseGuards(FamilyPlatformAuthGuard)   // PLATFORM-IAM-104:统一解析可信 actor;required 模式拒 x-actor-id-only
@@ -49,14 +54,193 @@ export class FamilyController {
     @Inject(DevPlatformSurfacesService) private readonly devPlatformSurfacesService: DevPlatformSurfacesService,
     @Inject(DevFlowReceiptService) private readonly devFlowReceiptService: DevFlowReceiptService,
     @Inject(TenantScopedUiProjectionService) private readonly tenantScopedUiProjectionService: TenantScopedUiProjectionService,
+    @Inject(FamilyHomeService) private readonly familyHomeService: FamilyHomeService,
+    @Inject(AssessmentService) private readonly assessmentService: AssessmentService,
+    @Inject(GrowthHypothesisService) private readonly growthHypothesisService: GrowthHypothesisService,
+    @Inject(GrowthCampService) private readonly growthCampService: GrowthCampService,
   ) {}
+
+  /** UI-01 commercial home: one trusted Tenant/Family projection shared by App and Web. */
+  @RequireFamilyAction('ReadFamily')
+  @Get(':familyId/ui/01/home')
+  async familyHome(
+    @Param('familyId') familyId: string,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { accountId: string; tenantId: string; familyId: string; personId: string; familyRole: string } | undefined,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    return this.familyHomeService.getHome(familyId, familyContext.tenantId, actorId);
+  }
+
+  /** UI-02 commercial projection: versioned tool, explicit subject and recoverable sessions. */
+  @RequireFamilyAction('ReadFamily')
+  @Get(':familyId/ui/02/assessment')
+  async familyAssessment(
+    @Param('familyId') familyId: string,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    return this.assessmentService.getProjection(familyId, familyContext.tenantId, familyContext.personId);
+  }
+
+  @RequireFamilyAction('ReadFamily')
+  @Post(':familyId/assessments/sessions')
+  async startAssessment(
+    @Param('familyId') familyId: string,
+    @Body() body: unknown,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-source') source?: string,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    const candidate = body as { subject_person_id?: unknown; tool_ref?: unknown };
+    if (typeof candidate?.subject_person_id !== 'string') throw new BadRequestException('subject_person_id_required');
+    return this.assessmentService.start(familyId, familyContext.tenantId, familyContext.personId, {
+      subject_person_id: candidate.subject_person_id,
+      ...(typeof candidate.tool_ref === 'string' ? { tool_ref: candidate.tool_ref } : {}),
+    }, mutationMeta(correlationId, idempotencyKey, source));
+  }
+
+  @RequireFamilyAction('ReadFamily')
+  @Post(':familyId/assessments/sessions/:sessionId/responses')
+  async saveAssessmentResponse(
+    @Param('familyId') familyId: string,
+    @Param('sessionId') sessionId: string,
+    @Body() body: unknown,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-source') source?: string,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    const candidate = body as { item_ref?: unknown; response_type?: unknown; response_value?: unknown };
+    if (typeof candidate?.item_ref !== 'string' || typeof candidate.response_type !== 'string' || !['string', 'boolean'].includes(typeof candidate.response_value)) throw new BadRequestException('assessment_response_required');
+    return this.assessmentService.saveResponse(familyId, familyContext.tenantId, familyContext.personId, sessionId, {
+      item_ref: candidate.item_ref,
+      response_type: candidate.response_type as 'SINGLE_CHOICE' | 'TEXT' | 'BOOLEAN',
+      response_value: candidate.response_value as string | boolean,
+    }, mutationMeta(correlationId, idempotencyKey, source));
+  }
+
+  @RequireFamilyAction('ReadFamily')
+  @Post(':familyId/assessments/sessions/:sessionId/submit')
+  async submitAssessment(
+    @Param('familyId') familyId: string,
+    @Param('sessionId') sessionId: string,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-source') source?: string,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    return this.assessmentService.submit(familyId, familyContext.tenantId, familyContext.personId, sessionId, mutationMeta(correlationId, idempotencyKey, source));
+  }
+
+  @RequireFamilyAction('ReadFamily')
+  @Get(':familyId/ui/03/growth-hypothesis')
+  async growthHypothesis(
+    @Param('familyId') familyId: string,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    return this.growthHypothesisService.getProjection(familyId, familyContext.tenantId, familyContext.personId);
+  }
+
+  @RequireFamilyAction('ReadFamily')
+  @Post(':familyId/growth-hypotheses/decisions')
+  async decideGrowthHypothesis(
+    @Param('familyId') familyId: string,
+    @Body() body: unknown,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-source') source?: string,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    const candidate = body as { assessment_session_id?: unknown; hypothesis_ref?: unknown; decision_type?: unknown };
+    if (typeof candidate?.assessment_session_id !== 'string' || typeof candidate.hypothesis_ref !== 'string' || !['CONFIRM','DISMISS'].includes(String(candidate.decision_type))) throw new BadRequestException('growth_hypothesis_decision_required');
+    return this.growthHypothesisService.decide(familyId, familyContext.tenantId, familyContext.personId, {
+      assessment_session_id: candidate.assessment_session_id,
+      hypothesis_ref: candidate.hypothesis_ref,
+      decision_type: candidate.decision_type as 'CONFIRM' | 'DISMISS',
+    }, mutationMeta(correlationId, idempotencyKey, source));
+  }
+
+  /** UI-35 commercial projection: admitted versioned curriculum plus family-private progress. */
+  @RequireFamilyAction('ReadFamily')
+  @Get(':familyId/ui/35/growth-camp')
+  async growthCamp(
+    @Param('familyId') familyId: string,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    return this.growthCampService.getProjection(familyId, familyContext.tenantId, familyContext.personId);
+  }
+
+  @RequireFamilyAction('ReadFamily')
+  @Post(':familyId/growth-camps/enrollments')
+  async enrollGrowthCamp(
+    @Param('familyId') familyId: string,
+    @Body() body: unknown,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-source') source?: string,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    const candidate = body as { subject_person_id?: unknown };
+    if (typeof candidate?.subject_person_id !== 'string') throw new BadRequestException('subject_person_id_required');
+    return this.growthCampService.enroll(familyId, familyContext.tenantId, familyContext.personId, candidate.subject_person_id, mutationMeta(correlationId, idempotencyKey, source));
+  }
+
+  @RequireFamilyAction('ReadFamily')
+  @Post(':familyId/growth-camps/:enrollmentId/days/:dayNo/check-ins')
+  async checkInGrowthCampDay(
+    @Param('familyId') familyId: string,
+    @Param('enrollmentId') enrollmentId: string,
+    @Param('dayNo') dayNoRaw: string,
+    @Body() body: unknown,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-source') source?: string,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    const candidate = body as { completion_status?: unknown; reflection?: unknown; occurred_at?: unknown };
+    if (!['COMPLETED','PARTIAL','NOT_COMPLETED'].includes(String(candidate?.completion_status)) || (candidate.reflection !== undefined && typeof candidate.reflection !== 'string') || typeof candidate.occurred_at !== 'string') throw new BadRequestException('growth_camp_checkin_required');
+    return this.growthCampService.checkInDay(familyId, familyContext.tenantId, familyContext.personId, enrollmentId, Number(dayNoRaw), {
+      completion_status: candidate.completion_status as 'COMPLETED' | 'PARTIAL' | 'NOT_COMPLETED',
+      ...(typeof candidate.reflection === 'string' ? { reflection: candidate.reflection } : {}),
+      occurred_at: candidate.occurred_at,
+    }, mutationMeta(correlationId, idempotencyKey, source));
+  }
 
   /** 统一 tenant-scoped UI 读取适配：实际会话 + tenant/family 双重范围，外部效果一律不执行。 */
   @RequireFamilyAction('ReadFamily')
   @Get(':familyId/tenant-scoped/ui-projection')
   async tenantScopedUiProjection(
     @Param('familyId') familyId: string,
-    @FamilyContext() familyContext: { accountId: string; familyId: string; personId: string; familyRole: string } | undefined,
+    @FamilyContext() familyContext: { accountId: string; tenantId: string; familyId: string; personId: string; familyRole: string } | undefined,
   ) {
     if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
     if (!familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
@@ -817,6 +1001,25 @@ export class FamilyController {
     return projectTaskCheckinResult(response.action, meta.correlationId, request.idempotency_key, response.replayed === true);
   }
 
+  /** UI-09 persisted interaction lifecycle: start, pause, resume, or cancel. */
+  @RequireFamilyAction('CompleteAction')
+  @Post(':familyId/tasks/:taskId/state')
+  async changeTodayTaskState(
+    @Param('familyId') familyId: string,
+    @Param('taskId') taskId: string,
+    @Body() body: unknown,
+    @ActorId() actorId: string,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('x-source') source?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    if (!actorId || actorId.trim().length === 0) throw new UnauthorizedException('actor_is_authenticated');
+    const request = validateTaskStateActionRequest(familyId, taskId, idempotencyKey, body);
+    const meta = buildAuditMeta(actorId, correlationId, source);
+    const response = await this.growthActionService.transitionTaskExecution(request, meta);
+    return projectTaskStateResult(response.action, meta.correlationId, request.idempotency_key, response.replayed);
+  }
+
   @Post(':familyId/growth/outcome-observations')
   async recordOutcomeObservation(
     @Param('familyId') familyId: string,
@@ -919,6 +1122,14 @@ function buildAuditMeta(actorId: string, correlationId?: string, source?: string
     correlationId: correlationId && correlationId.trim().length > 0 ? correlationId : crypto.randomUUID(),
     source: source && source.trim().length > 0 ? source : 'api',
     occurredAt: new Date().toISOString(),
+  };
+}
+
+function mutationMeta(correlationId?: string, idempotencyKey?: string, source?: string) {
+  return {
+    correlationId: correlationId?.trim() || randomUUID(),
+    idempotencyKey: idempotencyKey?.trim() || '',
+    source: source?.trim() || 'api',
   };
 }
 

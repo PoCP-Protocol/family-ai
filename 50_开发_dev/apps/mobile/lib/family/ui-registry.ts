@@ -15,8 +15,9 @@ export interface FamilyScreenDefinition {
 
 export const FAMILY_SCREENS: FamilyScreenDefinition[] = [
   { id: "UI-01", title: "家庭成长首页", subtitle: "看见我们家今天最值得做的一件事", tab: "today", loop: "成长", featurePoints: ["今晚一件事", "当前成长旅程", "最近家庭里程碑", "21 天成长营入口"], primaryAction: "查看今日任务", primaryTarget: "UI-09", baseline: "core-01-home" },
-  { id: "UI-02", title: "家庭测评", subtitle: "从真实家庭场景找到当前关注点", tab: "growth", loop: "评估", featurePoints: ["沟通与冲突", "学习与习惯", "手机与边界", "家长视角说明"], primaryAction: "开始选择场景", primaryTarget: "UI-03", baseline: "core-02-assessment" },
-  { id: "UI-03", title: "家庭成长解读", subtitle: "把事实、视角和建议分开说明", tab: "growth", loop: "评估", featurePoints: ["已确认事实", "家长视角", "可能视角", "下一步建议"], primaryAction: "查看成长方案", primaryTarget: "UI-04", baseline: "core-03-ai-report" },
+  { id: "UI-02", title: "家庭测评", subtitle: "从真实家庭场景找到当前关注点", tab: "growth", loop: "评估", featurePoints: ["沟通与冲突", "学习与习惯", "手机与边界", "家长视角说明"], primaryAction: "开始选择场景", primaryTarget: "UI-02-result", baseline: "core-02-assessment" },
+  { id: "UI-02-result", title: "测评完成", subtitle: "确认免费家庭测评已提交，并进入 AI诊断", tab: "growth", loop: "评估", featurePoints: ["测评回执", "模型来源", "边界说明", "AI诊断入口"], primaryAction: "查看 AI诊断", primaryTarget: "UI-03", baseline: "core-02-assessment-result" },
+  { id: "UI-03", title: "AI诊断", subtitle: "把事实、视角和建议分开说明", tab: "growth", loop: "评估", featurePoints: ["已确认事实", "家长视角", "可能视角", "下一步建议"], primaryAction: "查看成长方案", primaryTarget: "UI-04", baseline: "core-03-ai-report" },
   { id: "UI-04", title: "90 天成长方案", subtitle: "四个阶段，一步一步形成家庭新节奏", tab: "growth", loop: "计划", featurePoints: ["看见与理解", "家长先行动", "亲子共同练习", "稳定与复盘"], primaryAction: "查看陪跑安排", primaryTarget: "UI-05", baseline: "core-04-growth-plan" },
   { id: "UI-05", title: "90 天陪跑", subtitle: "任务、家庭小会与阶段回顾在这里汇合", tab: "growth", loop: "计划", featurePoints: ["本周任务", "阶段复盘", "陪伴记录", "家长社群"], primaryAction: "查看今日任务", primaryTarget: "UI-09", baseline: "core-05-delivery-community" },
   { id: "UI-06", title: "我的会员", subtitle: "清楚查看成长权益与服务有效期", tab: "mine", loop: "商业", featurePoints: ["当前方案", "成长权益", "服务额度", "有效期"], primaryAction: "查看年度方案", primaryTarget: "UI-30", baseline: "core-06-mine-member" },
@@ -48,7 +49,6 @@ export const FAMILY_SCREENS: FamilyScreenDefinition[] = [
   { id: "UI-32", title: "订单与资产", subtitle: "回看意向、权益、报告和家庭资产", tab: "mine", loop: "商业", featurePoints: ["方案意向", "已激活权益", "成长报告", "课程资产"], primaryAction: "查看会员中心", primaryTarget: "UI-18", baseline: "orders-assets" },
   { id: "UI-33", title: "家庭档案", subtitle: "管理家庭成员、角色、同意和成长重点", tab: "mine", loop: "成长", featurePoints: ["家庭成员", "角色与同意", "可见性", "成长重点"], primaryAction: "查看成长成果", primaryTarget: "UI-29", baseline: "family-profile" },
   { id: "UI-34", title: "服务记录", subtitle: "区分服务发生、顾问记录与家长反馈", tab: "services", loop: "服务", featurePoints: ["服务发生记录", "顾问记录", "家长反馈", "来源与时间"], primaryAction: "返回我的服务", primaryTarget: "UI-31", baseline: "service-records" },
-  { id: "UI-35", title: "21 天智慧父母成长营", subtitle: "每天一件小事，陪家长形成新的家庭节奏", tab: "today", loop: "计划", featurePoints: ["观察与连接", "沟通与习惯", "反思与延续", "Day 7/14/21 小结"], primaryAction: "查看今天的行动", primaryTarget: "UI-09", baseline: "bobo-principal-21-day-camp" },
 ];
 
 export function getScreensForTab(tab: FamilyTab) {

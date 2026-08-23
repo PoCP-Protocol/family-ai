@@ -3363,4 +3363,38 @@ h3 {
   .family-portal-context p { margin: 0; color: #607896; font-size: .82rem; line-height: 1.7; }
   .family-portal-context [data-family-portal-card] { border-color: rgba(37, 99, 235, .16); background: linear-gradient(145deg, #f8fbff, #ffffff); }
   .family-portal-context [data-family-portal-card='operations'] { border-color: rgba(22, 134, 109, .16); background: linear-gradient(145deg, #f6fcfa, #ffffff); }
+.family-portal-context [data-family-portal-card='growth-help'] { border-color: rgba(37, 99, 235, .2); background: linear-gradient(145deg, #f4f8ff, #ffffff); }
+.family-portal-context [data-family-portal-card='assessment'] { border-color: rgba(22, 134, 109, .2); background: linear-gradient(145deg, #f4fbf8, #ffffff); }
+.family-portal-context [data-family-portal-card='hypothesis'] { border-color: rgba(242, 140, 69, .2); background: linear-gradient(145deg, #fff9f3, #ffffff); }
+.family-portal-context [data-family-hypothesis-actions] { display: grid; gap: 8px; margin-top: 10px; }
+.family-portal-context [data-family-hypothesis-actions]:empty { display: none; }
+.family-portal-context [data-family-hypothesis-actions] button { min-height: 38px; border: 0; border-radius: 9px; background: #2563eb; color: #fff; font-weight: 800; cursor: pointer; }
+.family-portal-context [data-family-hypothesis-actions] button[data-tone='secondary'] { border: 1px solid #d8e3f2; background: #fff; color: #38577d; }
+.family-portal-context [data-family-hypothesis-result]:not(:empty) { margin-top: 10px; padding: 9px; border-radius: 9px; background: #fff4e8; color: #92400e; }
+.family-portal-context [data-family-assessment-form] { display: grid; gap: 10px; margin-top: 12px; }
+.family-portal-context [data-family-assessment-form][hidden] { display: none; }
+.family-portal-context [data-family-assessment-form] label { display: grid; gap: 5px; color: #38577d; font-size: .74rem; font-weight: 750; }
+.family-portal-context [data-family-assessment-form] select { width: 100%; min-height: 36px; box-sizing: border-box; padding: 0 9px; border: 1px solid #d8e3f2; border-radius: 9px; background: #fff; color: #153657; font: inherit; }
+.family-portal-context [data-family-assessment-form] button { min-height: 38px; border: 0; border-radius: 9px; background: #16866d; color: #fff; font-weight: 800; cursor: pointer; }
+.family-portal-context [data-family-assessment-form] button:disabled { opacity: .55; cursor: wait; }
+.family-portal-context [data-family-assessment-result]:not(:empty) { margin-top: 10px; padding: 9px; border-radius: 9px; background: #e9f8f2; color: #166149; }
+  .family-portal-context [data-family-growth-help-form] { display: grid; gap: 10px; margin-top: 12px; }
+  .family-portal-context [data-family-growth-help-form][hidden] { display: none; }
+  .family-portal-context [data-family-growth-help-form] label { display: grid; gap: 5px; color: #38577d; font-size: .74rem; font-weight: 750; }
+  .family-portal-context [data-family-growth-help-form] select,
+  .family-portal-context [data-family-growth-help-form] textarea { width: 100%; box-sizing: border-box; border: 1px solid #d8e3f2; border-radius: 9px; background: #fff; color: #153657; font: inherit; }
+  .family-portal-context [data-family-growth-help-form] select { min-height: 36px; padding: 0 9px; }
+  .family-portal-context [data-family-growth-help-form] textarea { min-height: 86px; padding: 9px; resize: vertical; line-height: 1.5; }
+  .family-portal-context [data-family-growth-help-form] button { min-height: 38px; border: 0; border-radius: 9px; background: #2563eb; color: #fff; font-weight: 800; cursor: pointer; }
+  .family-portal-context [data-family-growth-help-form] button:disabled { opacity: .55; cursor: wait; }
+  .family-portal-context [data-family-growth-help-result]:not(:empty) { margin-top: 10px; padding: 9px; border-radius: 9px; background: #edf5ff; color: #244a70; }
+  .family-portal-context [data-family-growth-help-result][data-safety-route='HIGH_RISK'],
+  .family-portal-context [data-family-growth-help-result][data-safety-route='REVIEW'] { background: #fff4e8; color: #92400e; }
+  .family-portal-context [data-family-growth-help-actions] { display: grid; gap: 8px; margin-top: 10px; }
+  .family-portal-context [data-family-growth-help-actions]:empty { display: none; }
+  .family-portal-context [data-family-growth-help-actions] article { display: grid; gap: 3px; padding: 9px; border: 1px solid #dbe6f4; border-radius: 9px; background: #fff; }
+  .family-portal-context [data-family-growth-help-actions] article b { color: #173a5e; font-size: .8rem; }
+  .family-portal-context [data-family-growth-help-actions] article small { color: #6b7f98; font-size: .68rem; line-height: 1.45; }
+  .family-portal-context [data-family-growth-help-actions] button { min-height: 38px; border: 0; border-radius: 9px; background: #2563eb; color: #fff; font-weight: 800; cursor: pointer; }
+  .family-portal-context [data-family-growth-help-actions] button[data-tone='secondary'] { border: 1px solid #d8e3f2; background: #fff; color: #38577d; }
 }

@@ -17,6 +17,14 @@ coverage/
 *.log
 .env
 .env.local
+.env.family-ai.dev
+.api-log.txt
+.demo-*.txt
+.cursor/
+
+# 可再生模型蒸馏数据与运行产物(体积大,不提交 GitHub)
+50_开发_dev/docs/model/distilled/
+50_开发_dev/reports/multi-api-distillation/
 
 # 系统文件
 Thumbs.db

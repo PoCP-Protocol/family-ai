@@ -1,14 +1,16 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const source = readFileSync(resolve(process.cwd(), "app/ui/UI-04.tsx"), "utf8");
 
 describe("UI-04 original 90-day plan baseline contract", () => {
-  it("uses the recovered warm plan summary asset and keeps the original 3/12/36/90 overview", () => {
-    expect(existsSync(resolve(process.cwd(), "assets/images/ui04-plan-summary-baseline.png"))).toBe(true);
-    expect(source).toContain('require("@/assets/images/ui04-plan-summary-baseline.png")');
+  it("rebuilds the warm plan summary as native components and keeps the original 3/12/36/90 overview", () => {
+    expect(source).toContain("function PlanSummaryCard");
+    expect(source).toContain("PLAN_SUMMARY_STATS");
+    expect(source).not.toContain('require("@/assets/images/ui04-plan-summary-baseline.png")');
     expect(source).toContain("当前阶段、目标、累计时长、难度与计划统计");
+    for (const copy of ["当前阶段", "今日任务", "累计时长", "计划周期", "温和进阶"]) expect(source).toContain(copy);
   });
 
   it("keeps the original four-week coloured timeline in its visual order", () => {

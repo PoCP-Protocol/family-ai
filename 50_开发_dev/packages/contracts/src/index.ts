@@ -7,6 +7,10 @@
 // Growth Orchestration V3 运行时契约(FAMILY-GROWTH-VERTICAL-SLICE-001;禁语义别名)。
 export * from './orchestration';
 export * from './ui01-ui09-first-slice';
+export * from './ui01-home';
+export * from './ui02-assessment';
+export * from './ui03-growth-hypothesis';
+export * from './ui35-growth-camp';
 export * from './family-35ui';
 export * from './platform-v4-1';
 
@@ -563,6 +567,12 @@ export interface GrowthActionDto {
   reflection_boundary: ReflectionBoundary | null;
   boundary: GrowthActionBoundary;
   created_at: string;
+  /** UI-09 interaction lifecycle. Optional for backwards-compatible consumers. */
+  execution_status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED' | 'PARTIAL' | 'NOT_COMPLETED' | 'CANCELLED';
+  started_at?: string | null;
+  paused_at?: string | null;
+  cancelled_at?: string | null;
+  row_version?: number;
 }
 
 export interface StartInterventionRequest {

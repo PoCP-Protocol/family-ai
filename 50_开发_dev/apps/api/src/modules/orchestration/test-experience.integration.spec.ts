@@ -142,6 +142,30 @@ describe('DEV/TEST formal experience workflows', () => {
     expect(row).toEqual({ status: 'CANCELLED', external_effect: false });
   });
 
+  it('records a tenant and family scoped operator follow-up without changing the underlying operation or creating an external effect', async () => {
+    const seed = await seedGuardian();
+    const create = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations`, 'POST', seed.token, {
+      page_id: 'UI-21', action: 'CREATE_BOOKING', fixture_ref: 'TEACHER_LI_SLOT_2025_05_21_1000', channel: 'VIDEO', fixture_version: TEST_EXPERIENCE_FIXTURE_VERSION,
+    }, { 'idempotency-key': `booking-followup-${randomUUID()}` });
+    const operation = await create.json();
+    const key = `followup-${randomUUID()}`;
+    const followUp = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations/${operation.operation_id}/follow-up`, 'POST', seed.token, {
+      follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。',
+    }, { 'idempotency-key': key });
+    expect(followUp.status).toBe(201);
+    expect(await followUp.json()).toMatchObject({ operation_id: operation.operation_id, follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。', external_effect: false });
+    const row = (await pool!.query(`select follow_up_status, operator_note from family_operation_followups where family_id=$1 and operation_id=$2`, [seed.familyId, operation.operation_id])).rows[0];
+    expect(row).toEqual({ follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。' });
+    expect((await pool!.query(`select status, external_effect from test_experience_operations where operation_id=$1`, [operation.operation_id])).rows[0]).toEqual({ status: 'CONFIRMED', external_effect: false });
+    const projection = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/customer-projection`, 'GET', seed.token);
+    expect((await projection.json()).operations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ operation_id: operation.operation_id, follow_up_status: 'PENDING_FOLLOW_UP', operator_note: '请在家庭方便时回看服务需求。' }),
+    ]));
+    const other = await seedGuardian();
+    const crossFamily = await request(`/families/${other.familyId}/orchestration/test-loop/experience/operations/${operation.operation_id}/follow-up`, 'POST', other.token, { follow_up_status: 'PROCESSED' });
+    expect(crossFamily.status).toBe(404);
+  });
+
   it('fails closed for an invalid fixture/page pair or missing SERVICE consent with zero operation writes', async () => {
     const seed = await seedGuardian();
     const invalidFixture = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations`, 'POST', seed.token, {
@@ -152,6 +176,10 @@ describe('DEV/TEST formal experience workflows', () => {
       page_id: 'UI-16', action: 'CREATE_INVITE', fixture_ref: 'CAMPAIGN_FAMILY_MOMENTS', fixture_version: TEST_EXPERIENCE_FIXTURE_VERSION,
     });
     expect(mismatch.status).toBe(400);
+    const salonCatalogWrite = await request(`/families/${seed.familyId}/orchestration/test-loop/experience/operations`, 'POST', seed.token, {
+      page_id: 'UI-22', action: 'CREATE_EVENT', fixture_ref: 'EVENT_PARENT_CHILD_SALON_2025_05_25', fixture_version: TEST_EXPERIENCE_FIXTURE_VERSION,
+    });
+    expect(salonCatalogWrite.status).toBe(400);
     expect(Number((await pool!.query('select count(*) n from test_experience_operations')).rows[0].n)).toBe(0);
 
     await cleanFamilyCoreTables(pool!);

@@ -26,6 +26,7 @@ const action = {
 function controller(overrides: Record<string, unknown> = {}) {
   const growthActionService = {
     completeGrowthAction: async () => ({ action, reflection_boundary: action.reflection_boundary, replayed: false }),
+    transitionTaskExecution: async () => ({ action: { ...action, status: 'PENDING', completion_status: null, completed_at: null, execution_status: 'IN_PROGRESS', row_version: 2 }, replayed: false }),
     ...overrides,
   };
   const todayService = {
@@ -130,5 +131,19 @@ describe('UI-01/UI-09 first slice controller contract', () => {
     });
     expect(result).not.toHaveProperty('outcome');
     expect(result).not.toHaveProperty('external_effect');
+  });
+
+  it('wraps a persisted UI-09 state transition with audit-safe readback metadata', async () => {
+    const result = await controller().changeTodayTaskState(
+      familyId, taskId, { action: 'START', occurred_at: '2026-08-18T09:00:00.000Z' }, actorId,
+      'corr-ui09-start', 'family-ai-mobile', 'idem-ui09-start',
+    );
+    expect(result).toMatchObject({
+      result_state: 'SUCCESS',
+      action: { task_id: taskId, task_state: 'IN_PROGRESS', execution_status: 'IN_PROGRESS', task_version: 2 },
+      audit_status: 'RECORDED',
+      correlation_id: 'corr-ui09-start',
+      idempotency_key_ref: 'idem-ui09-start',
+    });
   });
 });

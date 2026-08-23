@@ -1,0 +1,268 @@
+version: 0.1.0
+asset_ref: FAMILY_UI_MODEL_BINDING_REGISTRY
+status: draft
+owner: Family Education Industry Model
+purpose: >
+  Binds UI-01..UI-35 product display baseline to Family Education Large Model
+  components. This registry does not authorize UI visual change, runtime expansion,
+  database schema change, or live external AI. It defines the first model support
+  baseline behind the existing UI surfaces.
+
+source_of_truth:
+  ui_baseline: ../governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json
+  surface_contract: ../packages/contracts/src/family-growth-os.ts
+  model_component_registry: family_model_component.registry.yaml
+
+binding_rules:
+  - UI remains product display and projection composition.
+  - UI must not own canonical family truth or domain logic.
+  - All writes remain Named Actions owned by domains.
+  - Model outputs are hypotheses, recommendations, action candidates, or projections until confirmed through authorized flows.
+  - No Family Total Score, family ranking, medical diagnosis, or psychiatric diagnosis is introduced.
+  - Existing 35 UI visual baseline remains unchanged during G1-A.
+
+registered_ui_bindings:
+  - ui_id: UI-01
+    product_surface: 家庭成长首页
+    primary_model_components: [FAMILY_DOMAIN_KERNEL, FAMILY_MEMORY_DIALOGUE_COMPONENT, FAMILY_ASSESSMENT_V0_COMPONENT]
+    support_mode: home_summary_and_next_help_candidate
+    model_output_boundary: projection_or_recommendation_candidate
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-02
+    product_surface: 家庭测评
+    primary_model_components: [FAMILY_ASSESSMENT_V0_COMPONENT, FAMILY_DOMAIN_KERNEL]
+    support_mode: assessment_interview_and_need_signal_capture
+    model_output_boundary: perspective_and_assessment_response
+    authorization_boundary: GATE_BOUNDARY
+
+  - ui_id: UI-03
+    product_surface: 家庭成长解读 / AI诊断
+    primary_model_components: [FAMILY_ASSESSMENT_V0_COMPONENT, FAMILY_REALTIME_DIALOGUE_COMPONENT, FAMILY_DOMAIN_KERNEL]
+    support_mode: growth_diagnostic_hypothesis_and_explanation
+    model_output_boundary: hypothesis_not_fact
+    authorization_boundary: GATE_BOUNDARY
+
+  - ui_id: UI-04
+    product_surface: 90 天成长方案
+    primary_model_components: [FAMILY_ACTION_OUTCOME_COMPONENT, FAMILY_ASSESSMENT_V0_COMPONENT]
+    support_mode: growth_plan_candidate
+    model_output_boundary: recommendation_not_decision
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-05
+    product_surface: 90 天陪跑
+    primary_model_components: [FAMILY_ACTION_OUTCOME_COMPONENT, FAMILY_MEMORY_DIALOGUE_COMPONENT]
+    support_mode: coaching_support_and_checkin_context
+    model_output_boundary: action_candidate_or_reflection
+    authorization_boundary: LOCAL_DRAFT
+
+  - ui_id: UI-06
+    product_surface: 我的会员
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: entitlement_and_service_context_explanation
+    model_output_boundary: projection_explanation
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-07
+    product_surface: 成长测评入口
+    primary_model_components: [FAMILY_ASSESSMENT_V0_COMPONENT, FAMILY_DOMAIN_KERNEL]
+    support_mode: assessment_routing
+    model_output_boundary: routing_candidate
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-08
+    product_surface: 成长报告
+    primary_model_components: [FAMILY_ASSESSMENT_V0_COMPONENT, FAMILY_ACTION_OUTCOME_COMPONENT]
+    support_mode: report_explanation_and_growth_signal_summary
+    model_output_boundary: recommendation_not_outcome
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-09
+    product_surface: 每日成长任务
+    primary_model_components: [FAMILY_ACTION_OUTCOME_COMPONENT, FAMILY_MEMORY_DIALOGUE_COMPONENT]
+    support_mode: daily_action_and_reflection_capture
+    model_output_boundary: named_action_or_perspective
+    authorization_boundary: NAMED_ACTION
+
+  - ui_id: UI-10
+    product_surface: 孩子成长助手
+    primary_model_components: [FAMILY_DOMAIN_KERNEL, FAMILY_REALTIME_DIALOGUE_COMPONENT]
+    support_mode: child_growth_support_candidate
+    model_output_boundary: recommendation_candidate
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-11
+    product_surface: 成长进度展示
+    primary_model_components: [FAMILY_ACTION_OUTCOME_COMPONENT]
+    support_mode: personal_progress_projection_without_ranking
+    model_output_boundary: fact_projection_only
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-12
+    product_surface: 成长海报
+    primary_model_components: [FAMILY_ACTION_OUTCOME_COMPONENT, FAMILY_MULTIMODAL_ARTIFACT_COMPONENT]
+    support_mode: milestone_artifact_projection
+    model_output_boundary: fact_or_artifact_signal
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-13
+    product_surface: 资源商城
+    primary_model_components: [FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT, FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: resource_catalog_context
+    model_output_boundary: factual_catalog_projection
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-14
+    product_surface: 产品详情
+    primary_model_components: [FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT, FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: resource_fit_explanation_candidate
+    model_output_boundary: recommendation_not_purchase_decision
+    authorization_boundary: CONTROLLED_DRAFT
+
+  - ui_id: UI-15
+    product_surface: 邀请
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: invitation_context_and_boundary
+    model_output_boundary: draft_only
+    authorization_boundary: NOOP_ADAPTER
+
+  - ui_id: UI-16
+    product_surface: 拼团
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: group_intent_boundary
+    model_output_boundary: draft_only
+    authorization_boundary: NOOP_ADAPTER
+
+  - ui_id: UI-17
+    product_surface: 积分
+    primary_model_components: [FAMILY_ACTION_OUTCOME_COMPONENT]
+    support_mode: points_and_growth_action_context
+    model_output_boundary: ledger_projection_only
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-18
+    product_surface: 会员中心
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: membership_entitlement_context
+    model_output_boundary: projection_only
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-19
+    product_surface: 老师专区
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT, FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT]
+    support_mode: human_service_supply_context
+    model_output_boundary: service_context_projection
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-20
+    product_surface: 老师详情
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: educator_fit_context
+    model_output_boundary: recommendation_candidate
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-21
+    product_surface: 咨询预约
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT, FAMILY_MEMORY_DIALOGUE_COMPONENT]
+    support_mode: consultation_context_package
+    model_output_boundary: draft_handoff_context
+    authorization_boundary: NOOP_ADAPTER
+
+  - ui_id: UI-22
+    product_surface: 沙龙列表
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT, FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT]
+    support_mode: activity_context_projection
+    model_output_boundary: projection_only
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-23
+    product_surface: 活动详情
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: activity_registration_context
+    model_output_boundary: draft_only
+    authorization_boundary: NOOP_ADAPTER
+
+  - ui_id: UI-24
+    product_surface: 我的服务
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT, FAMILY_ACTION_OUTCOME_COMPONENT]
+    support_mode: service_case_projection_and_review_context
+    model_output_boundary: fact_or_review_candidate
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-25
+    product_surface: 家长社区
+    primary_model_components: [FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT, FAMILY_REALTIME_DIALOGUE_COMPONENT]
+    support_mode: moderated_community_context
+    model_output_boundary: projection_or_moderation_candidate
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-26
+    product_surface: 发布动态
+    primary_model_components: [FAMILY_REALTIME_DIALOGUE_COMPONENT, FAMILY_MULTIMODAL_ARTIFACT_COMPONENT]
+    support_mode: post_draft_and_moderation_preview
+    model_output_boundary: draft_and_safety_candidate
+    authorization_boundary: NOOP_ADAPTER
+
+  - ui_id: UI-27
+    product_surface: 动态详情
+    primary_model_components: [FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT]
+    support_mode: community_post_projection
+    model_output_boundary: fact_projection_only
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-28
+    product_surface: 我的社区
+    primary_model_components: [FAMILY_MEMORY_DIALOGUE_COMPONENT, FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT]
+    support_mode: private_community_record_projection
+    model_output_boundary: fact_or_perspective_boundary
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-29
+    product_surface: 成长成果
+    primary_model_components: [FAMILY_ACTION_OUTCOME_COMPONENT, FAMILY_MULTIMODAL_ARTIFACT_COMPONENT]
+    support_mode: outcome_evidence_projection
+    model_output_boundary: outcome_signal_not_causal_claim
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-30
+    product_surface: 年卡会员
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: annual_entitlement_projection
+    model_output_boundary: projection_only
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-31
+    product_surface: 我的服务列表
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: service_case_projection
+    model_output_boundary: fact_projection_only
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-32
+    product_surface: 订单资产
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT]
+    support_mode: order_asset_entitlement_projection
+    model_output_boundary: fact_projection_only
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-33
+    product_surface: 家庭档案
+    primary_model_components: [FAMILY_DOMAIN_KERNEL, FAMILY_MEMORY_DIALOGUE_COMPONENT]
+    support_mode: family_profile_and_consent_context
+    model_output_boundary: fact_projection_only
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-34
+    product_surface: 服务记录
+    primary_model_components: [FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT, FAMILY_ACTION_OUTCOME_COMPONENT]
+    support_mode: service_and_growth_record_projection
+    model_output_boundary: fact_or_review_candidate
+    authorization_boundary: READ_ONLY_PROJECTION
+
+  - ui_id: UI-35
+    product_surface: 21 天成长营
+    primary_model_components: [FAMILY_ACTION_OUTCOME_COMPONENT, FAMILY_MEMORY_DIALOGUE_COMPONENT]
+    support_mode: growth_camp_daily_practice
+    model_output_boundary: recommendation_and_reflection_boundary
+    authorization_boundary: CONTROLLED_DRAFT

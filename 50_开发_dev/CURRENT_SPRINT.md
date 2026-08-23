@@ -4,7 +4,7 @@ task_id: FAMILY-AI-ARCHITECTURE-V4-1-CONVERGENCE-001
 gate: G1-A (ARCHITECTURE_AND_CONTRACT_CONVERGENCE)
 status: IN_PROGRESS
 
-## Current Executable Truth (2026-08-22, Chief Architect)
+## Current Executable Truth (2026-08-23, Chief Architect)
 
 ```text
 TASK               = FAMILY-AI-ARCHITECTURE-V4-1-CONVERGENCE-001
@@ -16,14 +16,21 @@ TECH_ARCHITECTURE  = FAMILY_AI_PLATFORM_V4_1 TARGET_FROZEN
 AI_DIAGNOSIS       = KEEP
 G1_A_AUTHORIZED    = YES
 G1_B_PLUS          = NOT_AUTHORIZED
-BUSINESS_RUNTIME   = NOT_AUTHORIZED
+BUSINESS_RUNTIME   = INTERNAL_LOCAL_AUTHORIZED_FOR_FAMILY_ASSESSMENT_MODEL
 DB_SCHEMA_CHANGE   = NOT_AUTHORIZED
-LIVE_EXTERNAL_AI   = NOT_AUTHORIZED
+LIVE_EXTERNAL_AI   = INTERNAL_LOCAL_AUTHORIZED_FOR_UI02_FAMILY_MODEL_GATEWAY
 DIRECT_PUSH_MAIN   = NO
 AUTO_MERGE         = NO
 AGENT_SELF_AUTH    = NO
 EXACT_HEAD_REVIEW  = REQUIRED
 ```
+
+Authorization scope:
+
+- Authorization source: `governance/AUTHORIZATION_REGISTRY.yaml` capability `G1A_FAMILY_EDUCATION_ASSESSMENT_MODEL_INTERNAL`.
+- Allowed now: package/API-local wiring for UI-02/UI-03 Family Education Assessment Model runtime, through `@family/family-model` and `@family/ai-gateway` only.
+- Live external model call: allowed only in local/internal explicitly configured environments; default `.env.example` remains mock and fail-closed.
+- Still forbidden: DB schema change, direct provider calls, client-side model calls, pilot exposure, production default enablement, and AI direct canonical Family/Growth state mutation.
 
 Program: `governance/FAMILY_35UI_PROGRAM_V1.yaml`
 Architecture: `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md`

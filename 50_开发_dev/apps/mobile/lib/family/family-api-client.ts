@@ -41,6 +41,7 @@ export function isProjectionPayloadEmpty(payload: unknown): boolean {
 
 export interface FamilyContextSummary {
   type: "FAMILY";
+  tenant_id: string;
   family_id: string;
   person_id: string;
   membership_id: string;
@@ -356,6 +357,121 @@ export class FamilyApiClient {
 
   getTodayGrowthAction<T>(token: string, familyId: string) {
     return this.request<T>(`/families/${familyId}/growth/actions/today`, { token });
+  }
+
+  getFamilyToday<T>(token: string, familyId: string) {
+    return this.request<T>(`/families/${familyId}/today`, { token });
+  }
+
+  changeTodayTaskState<T>(token: string, familyId: string, taskId: string, body: { action: "START" | "PAUSE" | "RESUME" | "CANCEL"; occurred_at: string }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/tasks/${taskId}/state`, {
+      method: "POST", token, body,
+      headers: { "idempotency-key": idempotencyKey, "x-correlation-id": createMobileRequestId("family-mobile-task-state"), "x-source": "family-ai-mobile" },
+    });
+  }
+
+  getFamilyHome<T>(token: string, familyId: string) {
+    return this.request<T>(`/families/${familyId}/ui/01/home`, { token });
+  }
+
+  getGrowthCamp<T>(token: string, familyId: string) {
+    return this.request<T>(`/families/${familyId}/ui/35/growth-camp`, { token });
+  }
+
+  enrollGrowthCamp<T>(token: string, familyId: string, subjectPersonId: string, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/growth-camps/enrollments`, {
+      method: "POST", token, body: { subject_person_id: subjectPersonId },
+      headers: { "idempotency-key": idempotencyKey, "x-correlation-id": createMobileRequestId("ui35-enroll-growth-camp"), "x-source": "family-ai-mobile" },
+    });
+  }
+
+  checkInGrowthCampDay<T>(token: string, familyId: string, enrollmentId: string, dayNo: number, body: { completion_status: "COMPLETED" | "PARTIAL" | "NOT_COMPLETED"; reflection: string; occurred_at: string }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/growth-camps/${enrollmentId}/days/${dayNo}/check-ins`, {
+      method: "POST", token, body,
+      headers: { "idempotency-key": idempotencyKey, "x-correlation-id": createMobileRequestId("ui35-growth-camp-checkin"), "x-source": "family-ai-mobile" },
+    });
+  }
+
+  getFamilyAssessment<T>(token: string, familyId: string) {
+    return this.request<T>(`/families/${familyId}/ui/02/assessment`, { token });
+  }
+
+  startFamilyAssessment<T>(token: string, familyId: string, body: { subject_person_id: string; tool_ref?: string }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/assessments/sessions`, {
+      method: "POST", token, body,
+      headers: { "idempotency-key": idempotencyKey, "x-correlation-id": createMobileRequestId("ui02-start-assessment"), "x-source": "family-ai-mobile" },
+    });
+  }
+
+  saveFamilyAssessmentResponse<T>(token: string, familyId: string, sessionId: string, body: { item_ref: string; response_type: "SINGLE_CHOICE" | "TEXT" | "BOOLEAN"; response_value: string | boolean }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/assessments/sessions/${sessionId}/responses`, {
+      method: "POST", token, body,
+      headers: { "idempotency-key": idempotencyKey, "x-correlation-id": createMobileRequestId("ui02-save-response"), "x-source": "family-ai-mobile" },
+    });
+  }
+
+  submitFamilyAssessment<T>(token: string, familyId: string, sessionId: string, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/assessments/sessions/${sessionId}/submit`, {
+      method: "POST", token, body: {},
+      headers: { "idempotency-key": idempotencyKey, "x-correlation-id": createMobileRequestId("ui02-submit-assessment"), "x-source": "family-ai-mobile" },
+    });
+  }
+
+  getGrowthHypothesis<T>(token: string, familyId: string) {
+    return this.request<T>(`/families/${familyId}/ui/03/growth-hypothesis`, { token });
+  }
+
+  decideGrowthHypothesis<T>(token: string, familyId: string, body: { assessment_session_id: string; hypothesis_ref: string; decision_type: "CONFIRM" | "DISMISS" }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/growth-hypotheses/decisions`, {
+      method: "POST", token, body,
+      headers: { "idempotency-key": idempotencyKey, "x-correlation-id": createMobileRequestId("ui03-hypothesis-decision"), "x-source": "family-ai-mobile" },
+    });
+  }
+
+  requestGrowthHelp<T>(token: string, familyId: string, body: { subject_person_id: string; raw_text: string }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/orchestration/needs`, {
+      method: "POST",
+      token,
+      body,
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-growth-help"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
+  confirmGrowthIntent<T>(token: string, familyId: string, body: { signal_id: string; goal_text: string }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/orchestration/intents`, {
+      method: "POST", token, body,
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-growth-intent"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
+  requestGrowthRecommendation<T>(token: string, familyId: string, intentId: string, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/orchestration/intents/${intentId}/recommendations`, {
+      method: "POST", token, body: {},
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-growth-recommendation"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
+  decideGrowthService<T>(token: string, familyId: string, body: { intent_id: string; recommendation_id: string; recommendation_version: number; decision_type: "ACCEPT_RECOMMENDATION" | "SELECT_ALTERNATIVE" | "DISMISS"; selected_offer_refs: string[] }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/orchestration/decisions`, {
+      method: "POST", token, body,
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-growth-decision"),
+        "x-source": "family-ai-mobile",
+      },
+    });
   }
 
   checkInTodayTask<T>(token: string, familyId: string, taskId: string, body: { completion_status: "COMPLETED" | "PARTIAL" | "NOT_COMPLETED"; reflection: string; occurred_at: string }, idempotencyKey: string) {

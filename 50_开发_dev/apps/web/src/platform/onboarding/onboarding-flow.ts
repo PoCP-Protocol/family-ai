@@ -3,7 +3,7 @@
  * 依据 /auth/contexts 决定入口;依据 /onboarding/status.current_step 决定当前屏幕与下一步 API。
  * 不暴露内部 UUID 给用户输入;用户只见"我是家长→建家庭→加孩子→…→进 Today"。
  */
-export interface FamilyContextSummary { type: 'FAMILY'; family_id: string; person_id: string; membership_id: string; role: string; }
+export interface FamilyContextSummary { type: 'FAMILY'; tenant_id: string; family_id: string; person_id: string; membership_id: string; role: string; }
 
 export type EntryDecision =
   | { kind: 'FIRST_FAMILY_ONBOARDING' }                 // 零家庭:引导创建首个家庭
