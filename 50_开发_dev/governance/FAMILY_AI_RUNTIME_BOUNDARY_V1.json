@@ -1,0 +1,64 @@
+{
+  "schema_version": "FAMILY_AI_RUNTIME_BOUNDARY_V1",
+  "architecture_id": "FAMILY_AI_PLATFORM_V4_1",
+  "boundary_id": "FAMILY-AI-RUNTIME-MAIN-FLOW-GATE-001",
+  "status": "ACTIVE",
+  "principle": "Development and test may use real external AI only through Family API Model Gateway; mobile template provider helpers remain quarantined and cannot become a Family main-flow runtime.",
+  "allowed_live_external_ai": {
+    "status": "FAMILY_API_MODEL_GATEWAY_ONLY",
+    "provider_path": "apps/api/src/modules/family/family-model-gateway.provider.ts",
+    "required_live_flag": "FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI",
+    "required_markers": [
+      "createFamilyModelGatewayFromEnv",
+      "FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI",
+      "liveExternalAiAuthorized"
+    ]
+  },
+  "forbidden_client_secret_roots": [
+    "apps/mobile/app",
+    "apps/mobile/lib",
+    "apps/mobile/components",
+    "apps/web/src"
+  ],
+  "forbidden_provider_secret_patterns": [
+    "OPENAI_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "FAMILY_LLM_API_KEY",
+    "ZHIPUAI_API_KEY",
+    "BUILT_IN_FORGE_API_KEY"
+  ],
+  "forbidden_main_flow_import_roots": [
+    "apps/mobile/app",
+    "apps/mobile/lib",
+    "apps/mobile/components",
+    "apps/web/src",
+    "apps/api/src"
+  ],
+  "forbidden_main_flow_imports": [
+    "./_core/llm",
+    "../server/_core/llm",
+    "apps/mobile/server/_core/llm"
+  ],
+  "quarantined_template_runtime": {
+    "status": "QUARANTINED_TEMPLATE_COMPATIBILITY_RUNTIME",
+    "allowed_roots": [
+      "apps/mobile/server"
+    ],
+    "direct_provider_files": [
+      "apps/mobile/server/_core/dataApi.ts",
+      "apps/mobile/server/_core/env.ts",
+      "apps/mobile/server/_core/heartbeat.ts",
+      "apps/mobile/server/_core/imageGeneration.ts",
+      "apps/mobile/server/_core/llm.ts",
+      "apps/mobile/server/_core/notification.ts",
+      "apps/mobile/server/_core/storageProxy.ts",
+      "apps/mobile/server/_core/voiceTranscription.ts",
+      "apps/mobile/server/storage.ts"
+    ],
+    "known_internal_template_consumer_files": [
+      "apps/mobile/server/private-note-tags.ts"
+    ],
+    "freeze_reason": "Legacy Expo template compatibility server still contains Forge/OpenAI-compatible helpers. It is not a Family business backend, not canonical identity/database, and not an allowed direct model path for product scenarios. Physical deletion requires a separate compatibility review."
+  },
+  "required_root_script": "validate:ai-runtime-boundary"
+}
