@@ -40,7 +40,7 @@ export interface FamilyHomeProjection {
   quick_entries: readonly {
     feature_id: 'ai_diagnostic' | 'challenge_21' | 'plan_90' | 'growth_cases' | 'expert_live' | 'family_advisor';
     title: string;
-    target_ui: 'UI-03' | 'UI-35' | 'UI-04' | 'UI-12' | 'UI-19';
+    target_ui: 'UI-03' | 'UI-14' | 'UI-04' | 'UI-12' | 'UI-19';
     availability: Ui01FeatureAvailability;
   }[];
   growth_help: {

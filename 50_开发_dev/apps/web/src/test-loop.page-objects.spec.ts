@@ -244,24 +244,6 @@ describe('UI-02~UI-10 DEV Core Growth projection', () => {
         summary: '规则化任务入口。', next_hint: '后续受控切片实现孩子自主。',
         command: { name: 'READ_SYNTHETIC_CHILD_ASSISTANT', mode: 'READ_ONLY' },
       },
-      {
-        surface: 'UI-35', title: '21天智慧父母成长营（DEV课程草稿）', state: 'DRAFT', data_source: 'SYNTHETIC_DEV_ONLY',
-        summary: 'AI 辅助课程体系草稿；不等同官方课表，须经课程专家审核。', next_hint: '记录参与行动并形成 recommendation-only 的后续计划草稿。',
-        command: { name: 'CHECKIN_SYNTHETIC_21_DAY_CAMP_TASK', mode: 'CONTROLLED_DRAFT' },
-        curriculum_draft: {
-          draft_id: 'CURR-UI35-DEV-21D-V1', status: 'SYNTHETIC_RULE_BASED_DRAFT',
-          source_boundary: 'E1_PRODUCT_STRUCTURE_PLUS_PUBLIC_DESIGN_RESEARCH', model_gateway_status: 'NOOP_NOT_INVOKED',
-          human_review: 'REQUIRED_BEFORE_PUBLISH_OR_ASSIGN', course_boundary: 'NOT_OFFICIAL_SYLLABUS_NOT_OUTCOME_NOT_DIAGNOSIS',
-          day_count: 21,
-          stages: [
-            { stage_id: 'FOUNDATION', label: '阶段一：观察与连接', day_range: 'Day 1-7', intent: '建立家长行动观察。' },
-            { stage_id: 'PRACTICE', label: '阶段二：沟通与习惯实践', day_range: 'Day 8-14', intent: '练习可记录的小行动。' },
-            { stage_id: 'REVIEW', label: '阶段三：复盘与延续设计', day_range: 'Day 15-21', intent: '形成后续推荐草稿。' },
-          ],
-          current_day: { day_number: 1, theme: '观察一次完整的亲子互动', parent_action: '先记录听到和看到的内容，再决定是否回应。', reflection_prompt: '记录自己的感受和观察，不对孩子下结论。', evidence_boundary: 'PERSPECTIVE_NOT_FACT' },
-          next_transition: 'GROWTH_PLAN_DRAFT_RECOMMENDATION_ONLY',
-        },
-      },
     ],
   };
 
@@ -295,15 +277,15 @@ describe('UI-02~UI-10 DEV Core Growth projection', () => {
       else expect(root.querySelector(`[data-core-growth-surface="${surface}"]`)?.textContent).not.toContain('SYNTHETIC_DEV_ONLY');
     }
     app.navigate('growth-camp-21');
-    expect(root.querySelector('[data-core-growth-surface="UI-35"]')?.textContent).toContain('21 天智慧父母成长营');
-    expect(root.querySelector('[data-core-growth-surface="UI-35"]')?.textContent).not.toContain('SYNTHETIC_DEV_ONLY');
+    expect(root.querySelector('[data-core-growth-surface="UI-35"]')).toBeNull();
+    expect(root.querySelector('[data-ui01-feature="challenge_21"]')?.getAttribute('data-by')).toBe('commerce-product');
+    expect(root.textContent).not.toContain('21天智慧父母成长营');
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('routes UI-01 21-day camp entry to UI-35 and persists a bounded check-in', async () => {
+  it('routes UI-01 21-day challenge entry to UI-14 commerce product without posting a UI-35 flow event', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => projection })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ event_state: 'DEV_CONFIRMED', data_source: 'SYNTHETIC_DEV_ONLY', external_effect: false }) })
       .mockResolvedValueOnce({ ok: true, json: async () => projection });
     vi.stubGlobal('fetch', fetchMock);
     const root = document.createElement('div');
@@ -312,13 +294,9 @@ describe('UI-02~UI-10 DEV Core Growth projection', () => {
     await tick(); await tick();
     root.querySelector<HTMLButtonElement>('[data-ui01-feature~="challenge_21"]')?.click();
     await tick(); await tick();
-    expect(root.querySelector('h1')?.textContent).toContain('观察一次完整的亲子互动');
-    expect(root.querySelector('[data-ui35-curriculum-state="SYNTHETIC_RULE_BASED_DRAFT"]')?.textContent).toContain('21 天陪伴课程');
-    expect(root.querySelector('[data-ui35-curriculum-state="SYNTHETIC_RULE_BASED_DRAFT"]')?.textContent).not.toContain('REQUIRED_BEFORE_PUBLISH_OR_ASSIGN');
-    root.querySelector<HTMLButtonElement>('[data-by="camp21-checkin"]')?.click();
-    await tick(); await tick(); await tick();
-    expect(JSON.parse(String(fetchMock.mock.calls[1][1].body))).toMatchObject({ ui_id: 'UI-35', command: 'CHECKIN_SYNTHETIC_21_DAY_CAMP_TASK', selection: 'DAY_1_PARENT_ACTION' });
-    expect(root.querySelector('[data-core-growth-surface="UI-35"]')?.textContent).toContain('本次成长行动已记录');
+    expect(root.querySelector('[data-core-growth-surface="UI-35"]')).toBeNull();
+    expect(root.querySelector('[data-ui35-curriculum-state]')).toBeNull();
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).endsWith('/dev/flow-events') && String(call[1]?.body).includes('UI-35'))).toBe(false);
   });
 
   it('persists a DEV synthetic flow receipt without external effect', async () => {

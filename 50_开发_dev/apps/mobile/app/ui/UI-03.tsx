@@ -112,13 +112,13 @@ export default function GrowthExplanationScreen() {
   if (remoteState === "loading" || !hypothesis || !scorecard) {
     return (
       <ScreenContainer edges={["left", "right", "bottom"]}>
-        <Stack.Screen options={{ headerShown: true, title: "家庭成长解读", headerBackTitle: "返回" }} />
+        <Stack.Screen options={{ headerShown: true, title: "AI成长诊断", headerBackTitle: "返回" }} />
         <View style={styles.emptyPage}>
           {remoteState === "loading" ? <ActivityIndicator color={colors.tint} /> : null}
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>{remoteState === "loading" ? "正在整理家庭测评结果" : "先完成一次家庭测评"}</Text>
-          <Text style={[styles.emptyText, { color: colors.muted }]}>完成测评后，系统会基于你提交的家庭视角整理支持方向；这不是儿童诊断、评分或排名。</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{remoteState === "loading" ? "AI 正在生成成长诊断报告" : "先完成免费家庭测评"}</Text>
+          <Text style={[styles.emptyText, { color: colors.muted }]}>AI 会基于你提交的免费测评生成成长诊断报告；这不是儿童诊断结论、能力测验或排名。</Text>
           <Pressable onPress={() => router.replace("/ui/UI-02" as Href)} style={[styles.primaryButton, { backgroundColor: colors.tint }]}>
-            <Text style={styles.primaryButtonText}>进入家庭测评</Text>
+            <Text style={styles.primaryButtonText}>进入免费测评</Text>
           </Pressable>
         </View>
       </ScreenContainer>
@@ -137,7 +137,7 @@ export default function GrowthExplanationScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: "家庭成长解读",
+          title: "AI成长诊断",
           headerBackTitle: "返回",
           headerRight: () => <IconSymbol name="ellipsis" size={24} color="#111827" />,
         }}
@@ -146,16 +146,21 @@ export default function GrowthExplanationScreen() {
         <View style={styles.assessmentSummary}>
           <View style={styles.summaryAvatar}><IconSymbol name="person.crop.circle.fill" size={58} color="#FFFFFF" /></View>
           <View style={styles.summaryCopy}>
-            <Text style={styles.summaryTitle}>{hypothesis.subject_display_name ? `${hypothesis.subject_display_name}的支持方向` : "家庭支持方向"}</Text>
+            <Text style={styles.summaryBadge}>AI成长诊断报告</Text>
+            <Text style={styles.summaryTitle}>{hypothesis.subject_display_name ? `${hypothesis.subject_display_name}的成长诊断` : "家庭成长诊断"}</Text>
             {summaryRows.map((row) => <Text key={row} style={styles.summaryMeta}>{row}</Text>)}
+          </View>
+          <View style={styles.summaryScorePill}>
+            <Text style={styles.summaryScore}>{scorecard.overall_score}</Text>
+            <Text style={styles.summaryScoreLabel}>参考分</Text>
           </View>
           <IconSymbol name="chevron.right" size={19} color="#FFFFFF" />
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>家庭支持方向概览</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>综合成长评估</Text>
         <GrowthRadarOverview scorecard={scorecard} />
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>当前关注点</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>核心问题</Text>
         <View style={styles.tags}>
           {scorecard.core_issue_tags.slice(0, 3).map((tag, index) => (
             <View key={tag} style={[styles.tag, { backgroundColor: tagColors[index].background }]}>
@@ -164,7 +169,7 @@ export default function GrowthExplanationScreen() {
           ))}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>下一步可试</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>成长建议</Text>
         <View style={styles.suggestions}>
           {scorecard.recommendations.slice(0, 3).map((item, index) => (
             <View key={`${index}-${item}`} style={styles.suggestionRow}>
@@ -176,8 +181,10 @@ export default function GrowthExplanationScreen() {
 
         {decisionState === "error" ? <Text style={[styles.errorText, { color: "#D96464" }]}>支持方案暂时未形成，请稍后重试。</Text> : null}
         <Pressable disabled={decisionState === "saving"} onPress={() => void generatePlan()} style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
-          <Text style={styles.primaryButtonText}>{decisionState === "saving" ? "正在确认" : "查看可选支持方案"}</Text>
+          <IconSymbol name="sparkles" size={18} color="#FFFFFF" />
+          <Text style={styles.primaryButtonText}>{decisionState === "saving" ? "正在生成" : "生成个性化方案"}</Text>
         </Pressable>
+        <Text style={[styles.boundaryText, { color: colors.muted }]}>以上内容用于家庭支持参考，不是儿童诊断结论、能力测验或排名。</Text>
       </ScrollView>
     </ScreenContainer>
   );
@@ -196,7 +203,7 @@ function GrowthRadarOverview({ scorecard }: { scorecard: Ui03Scorecard }) {
         <Polygon points={childPoints} fill="rgba(47, 143, 251, 0.22)" stroke="#2F8FFB" strokeWidth={2} />
         <Circle cx={RADAR_CENTER.x} cy={RADAR_CENTER.y} r={35} fill="#FFFFFF" stroke="#D5E6FA" strokeWidth={1} />
         <SvgText x={RADAR_CENTER.x} y={RADAR_CENTER.y - 2} textAnchor="middle" fill="#2563EB" fontSize={24} fontWeight="800">{scorecard.overall_score}</SvgText>
-        <SvgText x={RADAR_CENTER.x} y={RADAR_CENTER.y + 17} textAnchor="middle" fill="#6B7280" fontSize={10}>支持参考</SvgText>
+        <SvgText x={RADAR_CENTER.x} y={RADAR_CENTER.y + 17} textAnchor="middle" fill="#6B7280" fontSize={10}>参考分</SvgText>
         {scorecard.dimensions.slice(0, 5).map((dimension, index) => {
           const point = RADAR_POINTS[index];
           return <SvgText key={dimension.dimension_ref} x={point.labelX} y={point.labelY} textAnchor={point.anchor} fill="#5B6B7F" fontSize={11} fontWeight="700">{dimension.label}{dimension.score}</SvgText>;
@@ -237,11 +244,15 @@ const styles = StyleSheet.create({
   emptyPage: { flex: 1, padding: 24, justifyContent: "center", gap: 16 },
   emptyTitle: { fontSize: 29, lineHeight: 37, fontWeight: "800" },
   emptyText: { fontSize: 15, lineHeight: 23 },
-  assessmentSummary: { minHeight: 128, borderRadius: 14, backgroundColor: "#2F8FFB", padding: 16, flexDirection: "row", alignItems: "center", gap: 12 },
+  assessmentSummary: { minHeight: 138, borderRadius: 16, backgroundColor: "#2F8FFB", padding: 16, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#2F8FFB", shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 4 },
   summaryAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#77B8FF", alignItems: "center", justifyContent: "center" },
   summaryCopy: { flex: 1, gap: 4 },
+  summaryBadge: { alignSelf: "flex-start", overflow: "hidden", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: "rgba(255,255,255,0.2)", color: "#FFFFFF", fontSize: 11, lineHeight: 15, fontWeight: "800" },
   summaryTitle: { color: "#FFFFFF", fontSize: 18, lineHeight: 24, fontWeight: "800" },
   summaryMeta: { color: "#E8F3FF", fontSize: 12, lineHeight: 17, fontWeight: "700" },
+  summaryScorePill: { width: 54, height: 54, borderRadius: 27, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  summaryScore: { color: "#2563EB", fontSize: 20, lineHeight: 24, fontWeight: "900" },
+  summaryScoreLabel: { color: "#6B7280", fontSize: 9, lineHeight: 12, fontWeight: "800" },
   sectionTitle: { fontSize: 18, lineHeight: 25, fontWeight: "800" },
   radarCard: { alignItems: "center", borderRadius: 14, paddingTop: 10, paddingBottom: 12, backgroundColor: "#FFFFFF" },
   legendRow: { flexDirection: "row", justifyContent: "center", gap: 20, marginTop: -4 },
@@ -259,5 +270,6 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 12, lineHeight: 18, textAlign: "center" },
   primaryButton: { minHeight: 52, borderRadius: 26, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 2 },
   primaryButtonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "800" },
+  boundaryText: { marginTop: -6, fontSize: 11, lineHeight: 17, textAlign: "center" },
   pressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
 });

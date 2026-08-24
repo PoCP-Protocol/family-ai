@@ -374,24 +374,6 @@ export class FamilyApiClient {
     return this.request<T>(`/families/${familyId}/ui/01/home`, { token });
   }
 
-  getGrowthCamp<T>(token: string, familyId: string) {
-    return this.request<T>(`/families/${familyId}/ui/35/growth-camp`, { token });
-  }
-
-  enrollGrowthCamp<T>(token: string, familyId: string, subjectPersonId: string, idempotencyKey: string) {
-    return this.request<T>(`/families/${familyId}/growth-camps/enrollments`, {
-      method: "POST", token, body: { subject_person_id: subjectPersonId },
-      headers: { "idempotency-key": idempotencyKey, "x-correlation-id": createMobileRequestId("ui35-enroll-growth-camp"), "x-source": "family-ai-mobile" },
-    });
-  }
-
-  checkInGrowthCampDay<T>(token: string, familyId: string, enrollmentId: string, dayNo: number, body: { completion_status: "COMPLETED" | "PARTIAL" | "NOT_COMPLETED"; reflection: string; occurred_at: string }, idempotencyKey: string) {
-    return this.request<T>(`/families/${familyId}/growth-camps/${enrollmentId}/days/${dayNo}/check-ins`, {
-      method: "POST", token, body,
-      headers: { "idempotency-key": idempotencyKey, "x-correlation-id": createMobileRequestId("ui35-growth-camp-checkin"), "x-source": "family-ai-mobile" },
-    });
-  }
-
   getFamilyAssessment<T>(token: string, familyId: string) {
     return this.request<T>(`/families/${familyId}/ui/02/assessment`, { token });
   }

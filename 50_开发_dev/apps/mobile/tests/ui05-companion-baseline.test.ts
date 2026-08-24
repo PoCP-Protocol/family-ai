@@ -42,6 +42,20 @@ describe("UI-05 original companion service baseline contract", () => {
     expect(source).not.toContain("分享");
   });
 
+  it("keeps companion progress as family-private process evidence, not peer comparison or outcome proof", () => {
+    expect(source).toContain("本周家庭过程记录");
+    expect(source).toContain("remote?.process_summary?.completed_actions ?? 0");
+    expect(source).toContain("index < progress.completed");
+    expect(source).toContain("我记录下这次互动中的一个积极信号");
+    expect(source).toContain("自己的观察和感受记录下来");
+    expect(source).toContain("家庭私有记录");
+    expect(source).toContain("用于复盘");
+    expect(source).not.toContain("超过 78% 的伙伴");
+    expect(source).not.toContain("看到孩子的变化");
+    expect(source).not.toContain("♧ 23");
+    expect(source).not.toContain("◯ 8");
+  });
+
   it("uses a lightweight component transition for the service-card area", () => {
     expect(source).toContain("const serviceCardsOpacity");
     expect(source).toContain("const serviceCardsOffset");

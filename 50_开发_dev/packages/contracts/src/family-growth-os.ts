@@ -1,4 +1,4 @@
-import type { FamilyUiId } from './family-35ui';
+import type { FamilyUiId } from './family-34ui';
 
 /**
  * Legacy Family Growth OS surface architecture map.
@@ -71,30 +71,15 @@ export const LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS: readonly FamilyUiArchitectu
   { ui_id: 'UI-34', route: 'service-records', loop: 'TEACHER_SALON_LOOP', business_capability: 'Service and growth record projection', primary_objects: ['ServiceRecord', 'Reflection', 'EvidenceRef'], state_boundary: 'READ_ONLY', ai_boundary: 'NO_MODEL_CALL', evidence_boundary: 'FACT' },
 ] as const;
 
-/**
- * Product support surfaces supplement a supplied baseline when research identifies
- * a distinct capability that cannot truthfully be collapsed into an existing UI.
- * They do not change the exact 34-screen baseline coverage invariant.
- */
-export const LEGACY_FAMILY_SUPPORT_SURFACE_BINDINGS: readonly FamilyUiArchitectureBinding[] = [
-  {
-    ui_id: 'UI-35', route: 'growth-camp-21', loop: 'GROWTH_LOOP',
-    business_capability: '21-day growth camp experience and daily practice',
-    primary_objects: ['GrowthCamp21EnrollmentDraft', 'GrowthCamp21DayTask', 'GrowthActionCompletion', 'Reflection'],
-    state_boundary: 'CONTROLLED_DRAFT', ai_boundary: 'MODEL_GATEWAY_NOOP', evidence_boundary: 'RECOMMENDATION',
-  },
-] as const;
-
 export function getLegacyFamilyUiArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
   const binding = LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId);
   if (!binding) throw new Error(`unknown_family_ui_binding:${uiId}`);
   return binding;
 }
 
-/** Resolves supplied UI bindings and explicitly registered support surfaces. */
+/** Resolves supplied 34-UI baseline bindings. */
 export function getLegacyFamilyGrowthSurfaceArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
-  const binding = LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId)
-    ?? LEGACY_FAMILY_SUPPORT_SURFACE_BINDINGS.find((item) => item.ui_id === uiId);
+  const binding = LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId);
   if (!binding) throw new Error(`unknown_family_growth_surface_binding:${uiId}`);
   return binding;
 }
@@ -226,7 +211,7 @@ export const UI01_HOME_FEATURES: readonly Ui01HomeFeature[] = [
   { feature_id: 'assessment_campaign', visual_label: '免费家庭测评', mode: 'CONTROLLED_DRAFT_ROUTE', target_route: 'growth-assessment', source_objects: ['AssessmentDraft', 'Perspective'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'PERSPECTIVE' },
   { feature_id: 'assessment_cta', visual_label: '立即测评', mode: 'CONTROLLED_DRAFT_ROUTE', target_route: 'growth-assessment', source_objects: ['AssessmentDraft'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'PERSPECTIVE' },
   { feature_id: 'ai_diagnostic', visual_label: 'AI诊断', mode: 'NAVIGATION', target_route: 'assessment', source_objects: ['AssessmentDraft', 'EvidenceRef'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'PERSPECTIVE' },
-  { feature_id: 'challenge_21', visual_label: '21天挑战营', mode: 'NAVIGATION', target_route: 'growth-camp-21', source_objects: ['GrowthCamp21EnrollmentDraft', 'GrowthCamp21DayTask'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'RECOMMENDATION' },
+  { feature_id: 'challenge_21', visual_label: '21天挑战营', mode: 'NAVIGATION', target_route: 'commerce-product', source_objects: ['CatalogOffer'], state_boundary: 'READ_ONLY', evidence_boundary: 'RECOMMENDATION' },
   { feature_id: 'plan_90', visual_label: '90天成长计划', mode: 'NAVIGATION', target_route: 'core-plan', source_objects: ['GrowthPlanDraft', 'GrowthTask'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'RECOMMENDATION' },
   { feature_id: 'growth_cases', visual_label: '成长案例', mode: 'NAVIGATION', target_route: 'growth-poster', source_objects: ['GrowthMilestone', 'PosterProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'expert_live', visual_label: '专家直播', mode: 'NAVIGATION', target_route: 'teacher-zone', source_objects: ['TeacherSupply', 'ServiceOffering'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
@@ -301,7 +286,7 @@ export const UI01_ENTRY_EXECUTION_QUEUE: readonly UiEntryExecutionStep[] = [
   { source_ui_id: 'UI-01', source_feature_id: 'assessment_campaign', target_ui_id: 'UI-02', target_route: 'growth-assessment', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
   { source_ui_id: 'UI-01', source_feature_id: 'assessment_cta', target_ui_id: 'UI-02', target_route: 'growth-assessment', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
   { source_ui_id: 'UI-01', source_feature_id: 'ai_diagnostic', target_ui_id: 'UI-03', target_route: 'assessment', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
-  { source_ui_id: 'UI-01', source_feature_id: 'challenge_21', target_ui_id: 'UI-35', target_route: 'growth-camp-21', target_is_support_surface: true, required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
+  { source_ui_id: 'UI-01', source_feature_id: 'challenge_21', target_ui_id: 'UI-14', target_route: 'commerce-product', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
   { source_ui_id: 'UI-01', source_feature_id: 'plan_90', target_ui_id: 'UI-05', target_route: 'core-plan', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
   { source_ui_id: 'UI-01', source_feature_id: 'growth_cases', target_ui_id: 'UI-12', target_route: 'growth-poster', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
   { source_ui_id: 'UI-01', source_feature_id: 'expert_live', target_ui_id: 'UI-19', target_route: 'teacher-zone', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
@@ -317,8 +302,7 @@ export function assertUi01EntryExecutionQueue(): void {
     if (!UI01_HOME_FEATURES.some((feature) => feature.feature_id === step.source_feature_id)) {
       throw new Error(`ui01_entry_queue_unknown_feature:${step.source_feature_id}`);
     }
-    const targetBindings = step.target_is_support_surface ? LEGACY_FAMILY_SUPPORT_SURFACE_BINDINGS : LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS;
-    if (!targetBindings.some((binding) => binding.ui_id === step.target_ui_id && binding.route === step.target_route)) {
+    if (!LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.some((binding) => binding.ui_id === step.target_ui_id && binding.route === step.target_route)) {
       throw new Error(`ui01_entry_queue_unknown_target:${step.target_ui_id}`);
     }
   }

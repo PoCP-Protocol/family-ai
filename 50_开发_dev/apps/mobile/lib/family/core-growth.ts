@@ -5,7 +5,7 @@ export type GrowthFocusId =
   | "SELF_REGULATION"
   | "DEVICE_USE_CONTEXT";
 
-export type AssessmentAnswer = "often" | "sometimes" | "rarely" | "not_sure";
+export type AssessmentAnswer = "often" | "sometimes" | "rarely" | "not_sure" | "OFTEN" | "SOMETIMES" | "RARELY" | "NOT_SURE";
 
 export interface GrowthFocusDefinition {
   id: GrowthFocusId;

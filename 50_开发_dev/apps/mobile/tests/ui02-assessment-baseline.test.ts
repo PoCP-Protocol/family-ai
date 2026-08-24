@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { GROWTH_FOCUSES } from "../lib/family/core-growth";
 import { FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY } from "../lib/family/family-assessment-capability-memory";
+import { buildUi02AssessmentResultSummary } from "../lib/family/ui02-assessment-design";
 import { UI02_ASSESSMENT_METHOD_SOURCE, UI02_ORIGINAL_FOCUS_LAYOUT } from "../lib/family/ui02-assessment-layout";
 
 describe("UI-02 original step-two assessment contract", () => {
@@ -41,6 +42,17 @@ describe("UI-02 original step-two assessment contract", () => {
     expect(source).toContain('"下一步"');
   });
 
+  it("keeps the age/stage field as an explicit selectable dropdown", () => {
+    expect(source).toContain("const CHILD_STAGE_OPTIONS");
+    expect(source).toContain("setChildStageOpen((value) => !value)");
+    expect(source).toContain('accessibilityState={{ expanded: childStageOpen }}');
+    expect(source).toContain("CHILD_STAGE_OPTIONS.map");
+    expect(source).toContain("setChildStage(option)");
+    expect(source).toContain("setChildStageOpen(false)");
+    expect(source).toContain("3岁（学龄前）");
+    expect(source).toContain("16岁及以上（高中及以上）");
+  });
+
   it("extends the original step with sourced model deep-dive questions", () => {
     expect(FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY.blueprint.methodName).toBe("Family Support Assessment");
     expect(FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY.blueprint.layer).toBe("L0_FAMILY_NEED_AND_SERVICE_PREFERENCE");
@@ -55,6 +67,59 @@ describe("UI-02 original step-two assessment contract", () => {
     expect(source).toContain("getUi02DeepAssessmentQuestions");
     expect(source).toContain("UI02_ASSESSMENT_ANSWER_OPTIONS");
     expect(source).toContain("question.itemRef");
+    expect(source).toContain("answerAssessment(question.itemRef, option.id)");
+  });
+
+  it("builds a structured result summary from the assessment model and saved answers", () => {
+    const summary = buildUi02AssessmentResultSummary("LEARNING_HABITS", {
+      LEARNING_HABITS_Q01: "OFTEN",
+      LEARNING_HABITS_Q02: "SOMETIMES",
+      LEARNING_HABITS_Q03: "RARELY",
+    });
+
+    expect(summary).toMatchObject({ title: "学习习惯", answeredCount: 3, totalCount: 3 });
+    expect(summary?.observationSignals).toContain("过去两周，孩子开始写作业前常需要反复提醒。");
+    expect(summary?.supportDirections).toContain("把作业拆小步");
+    expect(summary?.theorySupport.join("\n")).toContain("Harvard Executive Function");
+    expect(summary?.familyTheorySupport.join("\n")).toContain("比起反复催促");
+    expect(summary?.dataSupport.join("\n")).toContain("不给孩子打分");
+    expect(summary?.platformIntegration.businessScenario).toBe("S2_FAMILY_SELF_CHECK_AND_SUPPORT_NEED");
+    expect(summary?.platformIntegration.applicationSurfaces).toContain("生成90天陪伴计划");
+    expect(summary?.boundary).toContain("不推断智力");
+  });
+
+  it("requires each of the five themes to carry theory, data, practice support, and boundaries", () => {
+    for (const dimension of FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY.dimensions) {
+      expect(dimension.operationalDefinition.length).toBeGreaterThan(10);
+      expect(dimension.theorySupport.length).toBeGreaterThanOrEqual(2);
+      expect(dimension.familyTheorySupport.length).toBeGreaterThanOrEqual(2);
+      expect(dimension.dataSupport.length).toBeGreaterThanOrEqual(3);
+      expect(dimension.practiceSupport.length).toBeGreaterThanOrEqual(3);
+      expect(dimension.observableSignals.length).toBe(3);
+      expect(dimension.nextSupportDirections.length).toBeGreaterThanOrEqual(3);
+      expect(dimension.boundary).toMatch(/不|不能/);
+      expect(dimension.questions.every((question) => question.intent.length > 8 && question.evidenceAnchor.length > 8)).toBe(true);
+    }
+
+    const allTheorySupport = FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY.dimensions.flatMap((dimension) => dimension.theorySupport).join("\n");
+    expect(allTheorySupport).toContain("Harvard Executive Function");
+    expect(allTheorySupport).toContain("CASEL SEL");
+    expect(allTheorySupport).toContain("CDC Parenting");
+    expect(allTheorySupport).toContain("AAP HealthyChildren Media");
+    expect(allTheorySupport).toContain("Family 知识库");
+  });
+
+  it("registers the free assessment as part of the family education intelligence platform", () => {
+    expect(FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY.platformIntegration.dataObjects).toEqual([
+      "AssessmentTool",
+      "AssessmentSession",
+      "AssessmentResponse",
+      "FamilyNeed",
+      "SupportDirection",
+      "ConsentReceipt",
+    ]);
+    expect(FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY.platformIntegration.aiBoundary).toContain("不得生成诊断、总分、排名");
+    expect(FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY.platformIntegration.improvementLoop).toContain("完成率");
   });
 
   it("sources the assessment method from the family education model memory", () => {
@@ -82,6 +147,14 @@ describe("UI-02 original step-two assessment contract", () => {
     expect(source).not.toContain("SELECT_SYNTHETIC_ASSESSMENT_DIMENSION");
   });
 
+  it("does not allow next step until the family boundary and all selected deep questions are complete", () => {
+    expect(source).toContain("answeredQuestionCount === selectedQuestions.length");
+    expect(source).toContain("boundaryAccepted && !!selectedGrowthFocus && answeredQuestionCount === selectedQuestions.length");
+    expect(source).toContain("请先确认。");
+    expect(source).toContain("请完成补充问题。");
+    expect(source).toContain('disabled={!canSubmitAssessment || assessmentSyncState === "syncing"');
+  });
+
   it("keeps the commercial consent, evidence, and non-diagnosis boundary explicit", () => {
     expect(source).toContain('projection.availability !== "AVAILABLE"');
     expect(source).toContain('subject.availability === "AVAILABLE"');
@@ -92,18 +165,22 @@ describe("UI-02 original step-two assessment contract", () => {
 
     const resultSource = readFileSync(resolve(process.cwd(), "app/ui/UI-02-result.tsx"), "utf8");
     expect(resultSource).toContain("免费家庭测评已完成");
-    expect(resultSource).toContain("返回调整测评");
-    expect(resultSource).toContain("如需进一步理解，可查看家庭支持方向（需家庭确认）");
+    expect(resultSource).toContain("这次看见了什么");
+    expect(resultSource).toContain("为什么这样建议");
+    expect(resultSource).toContain("这次看到的情况");
+    expect(resultSource).toContain("接下来可以继续");
+    expect(resultSource).toContain("buildUi02AssessmentResultSummary");
+    expect(resultSource).toContain("返回调整免费测评");
+    expect(resultSource).toContain("升级到 AI 成长诊断，看更完整的分析");
     expect(resultSource).toContain("不是对孩子的评分、排名或诊断");
-    expect(resultSource).not.toContain("AI诊断");
     expect(resultSource).not.toContain("FAMILY_ASSESSMENT_AI_CAPABILITY");
     expect(resultSource).not.toContain("模型来源");
     expect(resultSource).not.toContain("UI02_ASSESSMENT_METHOD_SOURCE");
 
     const explanationSource = readFileSync(resolve(process.cwd(), "app/ui/UI-03.tsx"), "utf8");
-    expect(explanationSource).toContain("家庭成长解读");
-    expect(explanationSource).toContain("家庭支持方向概览");
-    expect(explanationSource).toContain("查看可选支持方案");
-    expect(explanationSource).not.toMatch(/AI成长诊断|同龄平均|生成个性化方案/);
+    expect(explanationSource).toContain("AI成长诊断");
+    expect(explanationSource).toContain("综合成长评估");
+    expect(explanationSource).toContain("生成个性化方案");
+    expect(explanationSource).toContain("不是儿童诊断结论、能力测验或排名");
   });
 });

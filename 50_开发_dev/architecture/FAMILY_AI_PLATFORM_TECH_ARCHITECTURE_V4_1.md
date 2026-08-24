@@ -35,7 +35,7 @@ Changing model vendor, cloud, vector engine, deployment platform or Agent framew
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │ 1 EXPERIENCE PLANE                                      │
-│ Mobile / Consumer Web / Ops+Advisor Web / UI-01..UI-35 │
+│ Mobile / Consumer Web / Ops+Advisor Web / UI-01..UI-34 │
 └────────────────────────────┬────────────────────────────┘
                              ▼
 ┌─────────────────────────────────────────────────────────┐
@@ -442,7 +442,7 @@ G4   Assessment + AI诊断       ← first real AI business vertical slice
 G5   Growth Journey
 G6   Resource Network + Service OS + Commerce/Entitlement
 G7   Content + Community
-G8   35UI cross-loop full E2E
+G8   34UI cross-loop full E2E
 ```
 
 No G2+ business/runtime capability is authorized by this document alone.

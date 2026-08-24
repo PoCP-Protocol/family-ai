@@ -53,7 +53,7 @@ export default function CompanionJourneyScreen() {
   }, [activeOnboardingId, session.selectedFamily, session.status, session.token]);
 
   const progress = useMemo(() => {
-    const completed = Math.max(0, Math.min(9, remote?.process_summary?.completed_actions ?? 7));
+    const completed = Math.max(0, Math.min(9, remote?.process_summary?.completed_actions ?? 0));
     return { completed, total: 9, percentage: Math.round((completed / 9) * 100) };
   }, [remote]);
   const thirdTaskDone = Boolean(lastReceipt) || campCompletedDays.length > 0;
@@ -134,11 +134,11 @@ export default function CompanionJourneyScreen() {
             </View>
             <View style={styles.progressValueRow}>
               <Text style={styles.progressValue}>{progress.percentage}</Text><Text style={styles.progressPercent}>%</Text>
-              <View style={styles.progressCopy}><Text style={styles.progressCaption}>{remote?.process_summary?.label ?? "超过 78% 的伙伴"}</Text><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress.percentage}%` }]} /></View></View>
+              <View style={styles.progressCopy}><Text style={styles.progressCaption}>{remote?.process_summary?.label ?? "本周家庭过程记录"}</Text><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress.percentage}%` }]} /></View></View>
             </View>
             <View style={styles.weeklyList}>
               {WEEKLY_TASKS.map((task, index) => {
-                const done = index < 2 || thirdTaskDone;
+                const done = index < progress.completed || (index === 2 && thirdTaskDone);
                 return <WeeklyTaskLine key={task} text={task} done={done} />;
               })}
             </View>
@@ -153,14 +153,14 @@ export default function CompanionJourneyScreen() {
 
           <View style={styles.feedCard}>
             <View style={styles.feedHeader}><View style={[styles.avatar, { backgroundColor: "#F7D9CF" }]}><Text style={styles.avatarText}>慧</Text></View><View style={styles.feedAuthor}><Text style={styles.feedName}>慧慧妈妈</Text><Text style={styles.feedTime}>刚刚</Text></View><View style={styles.checkedPill}><Text style={styles.checkedPillText}>已打卡</Text></View></View>
-            <Text style={styles.feedText}>今天和孩子一起制定了学习计划，孩子很主动，棒棒哒！</Text>
-            <View style={styles.feedMeta}><Text style={styles.feedMetaText}>♧ 23</Text><Text style={styles.feedMetaText}>◯ 8</Text></View>
+            <Text style={styles.feedText}>今天和孩子一起制定了学习计划，我记录下这次互动中的一个积极信号。</Text>
+            <View style={styles.feedMeta}><Text style={styles.feedMetaText}>家庭私有记录</Text><Text style={styles.feedMetaText}>用于复盘</Text></View>
           </View>
 
           <View style={[styles.feedCard, styles.secondFeed]}>
             <View style={styles.feedHeader}><View style={[styles.avatar, { backgroundColor: "#DFE9F7" }]}><Text style={styles.avatarText}>乐</Text></View><View style={styles.feedAuthor}><Text style={styles.feedName}>乐乐爸爸</Text><Text style={styles.feedTime}>10分钟前</Text></View></View>
-            <Text style={styles.feedText}>坚持打卡第7天，看到孩子的变化！感谢平台的陪伴！</Text>
-            <View style={styles.feedMeta}><Text style={styles.feedMetaText}>♧ 18</Text><Text style={styles.feedMetaText}>◯ 5</Text></View>
+            <Text style={styles.feedText}>坚持打卡第7天，先把自己的观察和感受记录下来，方便下次复盘。</Text>
+            <View style={styles.feedMeta}><Text style={styles.feedMetaText}>家庭私有记录</Text><Text style={styles.feedMetaText}>用于复盘</Text></View>
           </View>
         </ScrollView>
 

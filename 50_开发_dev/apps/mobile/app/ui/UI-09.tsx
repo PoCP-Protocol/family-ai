@@ -25,20 +25,16 @@ interface RemoteTodayAction {
 
 interface RemoteTodayProjection { entry_state: "READY" | "EMPTY"; today_task: RemoteTodayAction | null; today_tasks: RemoteTodayAction[] }
 interface RemoteTaskReceipt { action: RemoteTodayAction; result_state: "SUCCESS" | "REPLAYED" }
-interface RemoteCampProjection { enrollment: { enrollment_id: string; current_day: number; status: string } | null; program: { days: { day: number; title: string; action: string; observation_prompt: string; estimated_minutes: number }[] }; checkins: { day_no: number }[] }
-interface RemoteCampReceipt { replayed: boolean; enrollment: { current_day: number; status: string }; checkin: { day_no: number; completion_status: string } }
 
 export default function DailyTaskScreen() {
   const colors = useColors();
   const session = useFamilyApiSession();
-  const params = useLocalSearchParams<{ campEnrollmentId?: string; campDay?: string }>();
-  const campEnrollmentId = typeof params.campEnrollmentId === "string" ? params.campEnrollmentId : null;
+  const params = useLocalSearchParams<{ campDay?: string }>();
   const requestedCampDay = Number(typeof params.campDay === "string" ? params.campDay : 0);
-  const campMode = !!campEnrollmentId && Number.isInteger(requestedCampDay) && requestedCampDay >= 1 && requestedCampDay <= 21;
+  const campMode = Number.isInteger(requestedCampDay) && requestedCampDay >= 1 && requestedCampDay <= 21;
   const { todayAction, lastReceipt, activeCampDay, startAction, completeAction, skipAction } = useFamilyMobile();
   const [reflection, setReflection] = useState(lastReceipt?.actionId === todayAction.id ? lastReceipt.reflection : "");
   const [remoteAction, setRemoteAction] = useState<RemoteTodayAction | null>(null);
-  const [remoteCamp, setRemoteCamp] = useState<RemoteCampProjection | null>(null);
   const [campActionState, setCampActionState] = useState<"NOT_STARTED" | "IN_PROGRESS" | "CHECKED_IN">("NOT_STARTED");
   const [syncState, setSyncState] = useState<"idle" | "submitting">("idle");
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
@@ -60,25 +56,15 @@ export default function DailyTaskScreen() {
   useEffect(() => {
     if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
     let active = true;
-    if (campMode) {
-      familyApi.getGrowthCamp<RemoteCampProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (!active) return; setRemoteCamp(result); setCampActionState(result.checkins.some((checkin) => checkin.day_no === requestedCampDay) ? "CHECKED_IN" : "NOT_STARTED"); }).catch(() => { if (active) setSyncMessage("成长营任务暂时无法同步。") });
-    } else {
-      familyApi.getFamilyToday<RemoteTodayProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setRemoteAction(result.today_task); }).catch(() => { if (active) setSyncMessage("今天的计划任务暂时无法同步。") });
-    }
+    familyApi.getFamilyToday<RemoteTodayProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setRemoteAction(result.today_task); }).catch(() => { if (active) setSyncMessage("今天的计划任务暂时无法同步。") });
     return () => { active = false; };
-  }, [campMode, requestedCampDay, session.selectedFamily, session.status, session.token]);
+  }, [session.selectedFamily, session.status, session.token]);
 
   const handlePrimary = async () => {
     if (syncState === "submitting") return;
-    if (campMode && connected && session.token && session.selectedFamily && campEnrollmentId) {
+    if (campMode) {
       if (!isStarted) { setCampActionState("IN_PROGRESS"); haptic.light(); return; }
-      const operation = operationFor(`camp-${campEnrollmentId}-day-${requestedCampDay}`);
-      setSyncState("submitting"); setSyncMessage(null);
-      try {
-        await familyApi.checkInGrowthCampDay<RemoteCampReceipt>(session.token, session.selectedFamily.family_id, campEnrollmentId, requestedCampDay, { completion_status: "COMPLETED", reflection, occurred_at: operation.occurred_at }, operation.key);
-        setCampActionState("CHECKED_IN"); completeAction(reflection); haptic.success();
-      } catch { setSyncMessage("暂时无法记录这次成长营行动；重复点击不会产生重复记录。"); }
-      setSyncState("idle"); return;
+      setCampActionState("CHECKED_IN"); completeAction(reflection); haptic.success(); return;
     }
     if (connected && session.token && session.selectedFamily) {
       if (!remoteAction?.task_id) { setSyncMessage("当前还没有可执行的计划任务，请回到成长方案后再试。"); return; }
@@ -114,9 +100,8 @@ export default function DailyTaskScreen() {
     } catch { setSyncState("idle"); setSyncMessage("状态暂时没有保存，可安全重试。"); }
   };
 
-  const campDayDefinition = remoteCamp?.program.days.find((day) => day.day === requestedCampDay);
   const tasks = [
-    { id: "1", title: campDayDefinition?.title ?? remoteAction?.assignment_text ?? todayAction.title, detail: campDayDefinition?.action ?? todayAction.reason, time: `${campDayDefinition?.estimated_minutes ?? todayAction.estimatedMinutes}分钟`, checked: isComplete, source: "REAL_TASK" as const },
+    { id: "1", title: remoteAction?.assignment_text ?? todayAction.title, detail: todayAction.reason, time: `${todayAction.estimatedMinutes}分钟`, checked: isComplete, source: "REAL_TASK" as const },
     { id: "2", title: "记录一次家庭互动", detail: "可选参考，不自动形成任务记录", time: "5分钟", checked: false, source: "REFERENCE" as const },
     { id: "3", title: "做一个专注小游戏", detail: "可选参考，不自动形成任务记录", time: "10分钟", checked: false, source: "REFERENCE" as const },
   ];

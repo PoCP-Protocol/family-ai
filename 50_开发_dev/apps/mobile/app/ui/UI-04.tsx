@@ -36,9 +36,9 @@ type BaselineWeek = {
 };
 
 const PLAN_SUMMARY_STATS = [
-  { value: "3", label: "当前阶段" },
-  { value: "12", label: "今日任务" },
-  { value: "36h", label: "累计时长" },
+  { value: "待确认", label: "当前阶段" },
+  { value: "0", label: "今日任务" },
+  { value: "0h", label: "累计时长" },
   { value: "90天", label: "计划周期" },
 ] as const;
 
@@ -49,7 +49,8 @@ const BASELINE_WEEKS: readonly BaselineWeek[] = [
   { id: "STABILIZE", week: "第4周", title: "情绪管理", intent: "识别情绪，科学表达", tasks: ["识别此刻的感受", "用一句话表达需要"], tone: "gray", illustration: "○" },
 ] as const;
 
-function getPhaseStatus(plan: RemoteJourneyPlan["plan"], phaseId: string, currentPhase: string) {
+function getPhaseStatus(plan: RemoteJourneyPlan["plan"], phaseId: string, currentPhase: string | null) {
+  if (!plan?.plan_id || plan.status === "DRAFT") return "pending" as const;
   const remote = plan?.phases?.find((phase) => phase.phase === phaseId)?.status;
   if (remote === "COMPLETED") return "completed" as const;
   if (phaseId === currentPhase) return "active" as const;
@@ -83,7 +84,8 @@ export default function JourneyPlanScreen() {
   }, [activeOnboardingId, session.selectedFamily, session.status, session.token]);
 
   const plan = remoteJourney?.plan;
-  const currentPhase = plan?.current_phase ?? "SEE";
+  const currentPhase = plan?.current_phase ?? null;
+  const planIsActive = !!plan?.plan_id && plan.status !== "DRAFT";
   const phases = useMemo(() => {
     const remoteStages = remotePreview?.structure?.stages ?? [];
     return BASELINE_WEEKS.map((week, index) => {
@@ -162,7 +164,7 @@ export default function JourneyPlanScreen() {
                 <Text style={styles.topTitle}>90天成长方案</Text>
                 <View style={styles.topActions}><Text style={styles.moreText}>•••</Text><Text style={styles.circleText}>⊙</Text></View>
               </View>
-              <PlanSummaryCard />
+              <PlanSummaryCard planIsActive={planIsActive} />
             </>
           }
           renderItem={({ item, index }) => {
@@ -212,7 +214,13 @@ export default function JourneyPlanScreen() {
   );
 }
 
-function PlanSummaryCard() {
+function PlanSummaryCard({ planIsActive }: { planIsActive: boolean }) {
+  const stats = planIsActive ? [
+    { value: "3", label: "当前阶段" },
+    { value: "12", label: "今日任务" },
+    { value: "36h", label: "累计时长" },
+    { value: "90天", label: "计划周期" },
+  ] : PLAN_SUMMARY_STATS;
   return (
     <View accessibilityLabel="当前阶段、目标、累计时长、难度与计划统计" style={styles.summaryReference}>
       <View style={styles.summaryGlow} />
@@ -221,11 +229,11 @@ function PlanSummaryCard() {
           <Text style={styles.summaryEyebrow}>当前成长阶段</Text>
           <Text style={styles.summaryTitle}>90天成长方案</Text>
         </View>
-        <View style={styles.summaryBadge}><Text style={styles.summaryBadgeText}>进行中</Text></View>
+        <View style={styles.summaryBadge}><Text style={styles.summaryBadgeText}>{planIsActive ? "进行中" : "待确认"}</Text></View>
       </View>
       <Text style={styles.summaryGoal}>目标：建立稳定沟通节奏，完成亲子关系、习惯与情绪三类训练</Text>
       <View style={styles.summaryStatsRow}>
-        {PLAN_SUMMARY_STATS.map((stat) => (
+        {stats.map((stat) => (
           <View key={stat.label} style={styles.summaryStat}>
             <Text style={styles.summaryStatValue}>{stat.value}</Text>
             <Text style={styles.summaryStatLabel}>{stat.label}</Text>

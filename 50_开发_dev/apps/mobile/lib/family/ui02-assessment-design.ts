@@ -23,3 +23,29 @@ export const UI02_DEEP_ASSESSMENT_ITEM_REFS = Object.values(UI02_DEEP_ASSESSMENT
 export function getUi02DeepAssessmentQuestions(focusId: GrowthFocusId | null) {
   return getFamilyAssessmentMemoryQuestions(focusId);
 }
+
+export function buildUi02AssessmentResultSummary(focusId: GrowthFocusId | null, answers: Record<string, string | undefined>) {
+  const dimension = FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY.dimensions.find((item) => item.focusId === focusId) ?? null;
+  if (!dimension) return null;
+  const answeredItems = dimension.questions
+    .map((question) => ({ question, answer: answers[question.itemRef] }))
+    .filter((item) => item.answer);
+  const prioritySignals = answeredItems
+    .filter((item) => item.answer === "OFTEN" || item.answer === "SOMETIMES")
+    .map((item) => item.question.text);
+  const observationSignals = prioritySignals.length > 0 ? prioritySignals : dimension.observableSignals;
+  return {
+    title: dimension.title,
+    operationalDefinition: dimension.operationalDefinition,
+    answeredCount: answeredItems.length,
+    totalCount: dimension.questions.length,
+    observationSignals,
+    supportDirections: dimension.nextSupportDirections,
+    theorySupport: dimension.theorySupport,
+    familyTheorySupport: dimension.familyTheorySupport,
+    dataSupport: dimension.dataSupport,
+    practiceSupport: dimension.practiceSupport,
+    boundary: dimension.boundary,
+    platformIntegration: FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY.platformIntegration,
+  };
+}

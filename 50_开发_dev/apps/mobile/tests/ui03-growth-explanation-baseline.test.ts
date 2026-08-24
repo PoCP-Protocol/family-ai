@@ -7,10 +7,10 @@ const source = readFileSync(resolve(process.cwd(), "app/ui/UI-03.tsx"), "utf8");
 describe("UI-03 family growth explanation baseline contract", () => {
   it("keeps the baseline summary, direction overview, focus, suggestion, and action sequence", () => {
     const summary = source.indexOf("<View style={styles.assessmentSummary}>");
-    const overview = source.indexOf("家庭支持方向概览");
-    const issues = source.indexOf(">当前关注点<");
-    const suggestions = source.indexOf(">下一步可试<");
-    const action = source.indexOf("查看可选支持方案");
+    const overview = source.indexOf("综合成长评估");
+    const issues = source.indexOf(">核心问题<");
+    const suggestions = source.indexOf(">成长建议<");
+    const action = source.indexOf("生成个性化方案");
 
     expect(summary).toBeGreaterThan(-1);
     expect(overview).toBeGreaterThan(summary);
@@ -19,16 +19,19 @@ describe("UI-03 family growth explanation baseline contract", () => {
     expect(action).toBeGreaterThan(suggestions);
   });
 
-  it("renders the baseline direction overview from model output without visible diagnosis or comparison copy", () => {
+  it("renders the AI diagnosis upgrade screen from scorecard output with the required boundary", () => {
     expect(source).toContain("GrowthRadarOverview");
     expect(source).toContain("scorecard.dimensions");
     expect(source).toContain("scorecard.overall_score");
-    expect(source).toContain("支持参考");
+    expect(source).toContain("AI成长诊断");
+    expect(source).toContain("AI成长诊断报告");
+    expect(source).toContain("参考分");
     expect(source).toContain("家庭自查线索");
     expect(source).toContain("参考方向");
-    expect(source).toContain('title: "家庭成长解读"');
+    expect(source).toContain('title: "AI成长诊断"');
     expect(source).toContain("SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING");
-    expect(source).not.toMatch(/AI成长诊断|成长诊断|同龄平均|孩子得分|生成个性化方案/);
+    expect(source).toContain("不是儿童诊断结论、能力测验或排名");
+    expect(source).not.toMatch(/同龄平均|孩子得分|总分排名|能力排名|智力测验/);
   });
 
   it("uses scorecard-backed issue tags and numbered recommendations", () => {
@@ -44,8 +47,8 @@ describe("UI-03 family growth explanation baseline contract", () => {
     expect(source).toContain('decision_type: "CONFIRM"');
     expect(source).not.toContain('decision_type: "DISMISS"');
     expect(source).not.toContain("暂不形成成长方向");
-    expect(source).toContain("先完成一次家庭测评");
-    expect(source).toContain("完成测评后，系统会基于你提交的家庭视角整理支持方向；这不是儿童诊断、评分或排名。");
+    expect(source).toContain("先完成免费家庭测评");
+    expect(source).toContain("AI 会基于你提交的免费测评生成成长诊断报告；这不是儿童诊断结论、能力测验或排名。");
   });
 
   it("shows only real collected context and hides missing personal fields", () => {

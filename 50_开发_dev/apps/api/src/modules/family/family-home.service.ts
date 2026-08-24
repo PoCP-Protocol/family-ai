@@ -13,7 +13,7 @@ type HomeFacts = {
 };
 
 const FEATURE_TARGET_UI: Readonly<Record<string, string>> = {
-  assessment_campaign: 'UI-02', assessment_cta: 'UI-02', ai_diagnostic: 'UI-03', challenge_21: 'UI-35',
+  assessment_campaign: 'UI-02', assessment_cta: 'UI-02', ai_diagnostic: 'UI-03', challenge_21: 'UI-14',
   plan_90: 'UI-04', growth_cases: 'UI-12', expert_live: 'UI-19', family_advisor: 'UI-19',
   today_tasks: 'UI-09', task_communication: 'UI-09', task_reading: 'UI-09', task_emotion: 'UI-09',
   recommended_content: 'UI-13', recommended_card_1: 'UI-13', recommended_card_2: 'UI-13', recommended_card_3: 'UI-13',
@@ -47,7 +47,7 @@ export class FamilyHomeService {
     };
     const quickEntries: FamilyHomeProjection['quick_entries'] = [
       { feature_id: 'ai_diagnostic', title: 'AI成长说明', target_ui: 'UI-03', availability: availabilityFor('ai_diagnostic') },
-      { feature_id: 'challenge_21', title: '21天挑战营', target_ui: 'UI-35', availability: availabilityFor('challenge_21') },
+      { feature_id: 'challenge_21', title: '21天挑战营', target_ui: 'UI-14', availability: availabilityFor('challenge_21') },
       { feature_id: 'plan_90', title: '90天成长计划', target_ui: 'UI-04', availability: availabilityFor('plan_90') },
       { feature_id: 'growth_cases', title: '成长案例', target_ui: 'UI-12', availability: availabilityFor('growth_cases') },
       { feature_id: 'expert_live', title: '专家直播', target_ui: 'UI-19', availability: availabilityFor('expert_live') },

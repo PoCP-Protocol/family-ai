@@ -1,10 +1,10 @@
 {
-  "schema_version": "FAMILY_35UI_RUNTIME_MATRIX_V1",
+  "schema_version": "FAMILY_34UI_RUNTIME_MATRIX_V1",
   "baseline_repo": "PoCP-Protocol/family-ai",
   "baseline_branch": "main",
   "baseline_sha": "708cf542ab130642f2248bbebecc997930d10a49",
   "principles": {
-    "ui_baseline": "UI-01..UI-35 are the product display baseline; backend must implement the capabilities and loops they expose.",
+    "ui_baseline": "UI-01..UI-34 are the immutable Family Product Baseline V1; UI-35 is deleted as a duplicate and must not be treated as canonical UI.",
     "query_model": "UI may own a projection; UI must not own canonical business truth.",
     "command_model": "All writes are Named Actions owned by a domain.",
     "ai_control_plane": "Target model-backed capabilities route through FAMILY_AI_CONTROL_PLANE; current FAMILY_LLM_GATEWAY is transitional runtime truth until G2 migration.",
@@ -31,7 +31,7 @@
       "GATE_BOUNDARY": "触及真实支付/真人/儿童作答/跨家庭排名/公开外发/真实AI诊断, 受 Gate, 未授权不可宣称完成",
       "NOT_IMPLEMENTED": "目标已定义, 运行时未实现(如详情 DTO 待接入)"
     },
-    "runtime_status_note": "本矩阵 runtime_status 反映 G0 时点(base 708cf542)的现场实况, 非目标态。35_UI_FRONTEND_BASELINE=KEEP; 35_UI_BACKEND_COMPLETE=NO; G0=ALIGNMENT_FOUNDATION。逐页证据见 reports/rebaseline-35ui/FAMILY_35UI_G0_ALIGNMENT_EVIDENCE_001.md。",
+    "runtime_status_note": "本矩阵 runtime_status 反映 FAMILY-34UI-INTELLIGENCE-BACKBONE-001 G0 裁决后的现场实况, 非目标态。34_UI_BASELINE=FROZEN; UI35_DELETED=YES。逐页证据见 reports/m2/frontend/FAMILY_34_UI_FEATURE_REVIEW_001.md。",
     "family_context": "FAMILY_CONTEXT_PLATFORM is cross-domain read/compose/index/retrieve infrastructure, not a canonical business-domain owner.",
     "resource_commerce_split": "RESOURCE_NETWORK owns eligibility/fiduciary recommendation; COMMERCE_ENTITLEMENT owns commercial intent/membership/entitlement."
   },
@@ -929,39 +929,6 @@
       ],
       "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
       "runtime_status": "READ_ONLY_PROJECTION",
-      "platform_dependencies": [
-        "FAMILY_CONTEXT_PLATFORM"
-      ],
-      "runtime_ai_adapter": "FAMILY_LLM_GATEWAY",
-      "target_ai_control_plane": "FAMILY_AI_CONTROL_PLANE"
-    },
-    {
-      "ui_id": "UI-35",
-      "title": "21 天智慧父母成长营",
-      "loop": "PLAN",
-      "primary_domain": "GROWTH_JOURNEY",
-      "supporting_domains": [
-        "GROWTH_INTELLIGENCE"
-      ],
-      "frontend_route": "50_开发_dev/apps/mobile/app/ui/UI-35.tsx",
-      "projection": "Program21Projection",
-      "named_actions": [
-        "START_PROGRAM",
-        "COMPLETE_GROWTH_ACTION",
-        "RECORD_STAGE_REVIEW",
-        "PAUSE_PROGRAM",
-        "RESUME_PROGRAM"
-      ],
-      "ai_use_cases": [
-        "PROGRAM_COACH",
-        "PROGRESS_INTERPRETATION"
-      ],
-      "skills": [
-        "PROGRAM_COACHING_SKILL",
-        "MICRO_ACTION_SKILL"
-      ],
-      "canonical_write_rule": "DOMAIN_NAMED_ACTION_ONLY",
-      "runtime_status": "TEST_LOOP_FIXTURE",
       "platform_dependencies": [
         "FAMILY_CONTEXT_PLATFORM"
       ],

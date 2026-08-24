@@ -36,6 +36,28 @@ describe("UI-04 original 90-day plan baseline contract", () => {
     expect(source).toContain("开始执行计划");
   });
 
+  it("does not present an unconfirmed or missing plan as already in progress", () => {
+    expect(source).toContain('if (!plan?.plan_id || plan.status === "DRAFT") return "pending" as const;');
+    expect(source).toContain("const planIsActive = !!plan?.plan_id && plan.status !== \"DRAFT\";");
+    expect(source).toContain("{ value: \"待确认\", label: \"当前阶段\" }");
+    expect(source).toContain("{planIsActive ? \"进行中\" : \"待确认\"}");
+  });
+
+  it("requires confirmed growth priority and server-side plan confirmation before moving to UI-05", () => {
+    expect(source).toContain("if (!activeOnboardingId)");
+    expect(source).toContain("请先完成家庭测评和成长解读，再开始计划。");
+    expect(source).toContain('router.push("/ui/UI-02" as Href)');
+    expect(source).toContain("familyApi.getGrowthPriority");
+    expect(source).toContain("remotePriority?.active_priority?.priority_id");
+    expect(source).toContain("GROWTH_PRIORITY_REQUIRED");
+    expect(source).toContain("familyApi.createJourneyPlan");
+    expect(source).toContain("familyApi.confirmJourneyPlan");
+    expect(source).toContain("`ui04-create-${activeOnboardingId}`");
+    expect(source).toContain("`ui04-confirm-${currentPlan.plan_id}`");
+    expect(source).toContain('getUiActionPolicy("UI-04")');
+    expect(source).toContain("recordUiAction(policy, \"家庭已确认并开始执行当前成长计划\")");
+  });
+
   it("keeps the single plan exit to accompanying service and preserves safety boundaries", () => {
     expect(source).toContain('router.push("/ui/UI-05" as Href)');
     expect(source).not.toContain("总分");

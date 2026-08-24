@@ -36,7 +36,6 @@ import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.s
 import { FamilyHomeService } from './family-home.service';
 import { AssessmentService } from './assessment.service';
 import { GrowthHypothesisService } from './growth-hypothesis.service';
-import { GrowthCampService } from './growth-camp.service';
 
 @Controller('families')
 @UseGuards(FamilyPlatformAuthGuard)   // PLATFORM-IAM-104:统一解析可信 actor;required 模式拒 x-actor-id-only
@@ -57,7 +56,6 @@ export class FamilyController {
     @Inject(FamilyHomeService) private readonly familyHomeService: FamilyHomeService,
     @Inject(AssessmentService) private readonly assessmentService: AssessmentService,
     @Inject(GrowthHypothesisService) private readonly growthHypothesisService: GrowthHypothesisService,
-    @Inject(GrowthCampService) private readonly growthCampService: GrowthCampService,
   ) {}
 
   /** UI-01 commercial home: one trusted Tenant/Family projection shared by App and Web. */
@@ -177,61 +175,6 @@ export class FamilyController {
       assessment_session_id: candidate.assessment_session_id,
       hypothesis_ref: candidate.hypothesis_ref,
       decision_type: candidate.decision_type as 'CONFIRM' | 'DISMISS',
-    }, mutationMeta(correlationId, idempotencyKey, source));
-  }
-
-  /** UI-35 commercial projection: admitted versioned curriculum plus family-private progress. */
-  @RequireFamilyAction('ReadFamily')
-  @Get(':familyId/ui/35/growth-camp')
-  async growthCamp(
-    @Param('familyId') familyId: string,
-    @ActorId() actorId: string,
-    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
-  ) {
-    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
-    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
-    return this.growthCampService.getProjection(familyId, familyContext.tenantId, familyContext.personId);
-  }
-
-  @RequireFamilyAction('ReadFamily')
-  @Post(':familyId/growth-camps/enrollments')
-  async enrollGrowthCamp(
-    @Param('familyId') familyId: string,
-    @Body() body: unknown,
-    @ActorId() actorId: string,
-    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
-    @Headers('x-correlation-id') correlationId?: string,
-    @Headers('idempotency-key') idempotencyKey?: string,
-    @Headers('x-source') source?: string,
-  ) {
-    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
-    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
-    const candidate = body as { subject_person_id?: unknown };
-    if (typeof candidate?.subject_person_id !== 'string') throw new BadRequestException('subject_person_id_required');
-    return this.growthCampService.enroll(familyId, familyContext.tenantId, familyContext.personId, candidate.subject_person_id, mutationMeta(correlationId, idempotencyKey, source));
-  }
-
-  @RequireFamilyAction('ReadFamily')
-  @Post(':familyId/growth-camps/:enrollmentId/days/:dayNo/check-ins')
-  async checkInGrowthCampDay(
-    @Param('familyId') familyId: string,
-    @Param('enrollmentId') enrollmentId: string,
-    @Param('dayNo') dayNoRaw: string,
-    @Body() body: unknown,
-    @ActorId() actorId: string,
-    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
-    @Headers('x-correlation-id') correlationId?: string,
-    @Headers('idempotency-key') idempotencyKey?: string,
-    @Headers('x-source') source?: string,
-  ) {
-    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
-    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
-    const candidate = body as { completion_status?: unknown; reflection?: unknown; occurred_at?: unknown };
-    if (!['COMPLETED','PARTIAL','NOT_COMPLETED'].includes(String(candidate?.completion_status)) || (candidate.reflection !== undefined && typeof candidate.reflection !== 'string') || typeof candidate.occurred_at !== 'string') throw new BadRequestException('growth_camp_checkin_required');
-    return this.growthCampService.checkInDay(familyId, familyContext.tenantId, familyContext.personId, enrollmentId, Number(dayNoRaw), {
-      completion_status: candidate.completion_status as 'COMPLETED' | 'PARTIAL' | 'NOT_COMPLETED',
-      ...(typeof candidate.reflection === 'string' ? { reflection: candidate.reflection } : {}),
-      occurred_at: candidate.occurred_at,
     }, mutationMeta(correlationId, idempotencyKey, source));
   }
 

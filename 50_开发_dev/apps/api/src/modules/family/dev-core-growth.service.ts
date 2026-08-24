@@ -17,8 +17,7 @@ import {
 } from '@family/contracts';
 
 /**
- * DEV Core Growth adapter for UI-02..UI-10 and the researched UI-35 support
- * surface. It emits bounded test projections only: no model call, no diagnosis,
+ * DEV Core Growth adapter for UI-02..UI-10. It emits bounded test projections only: no model call, no diagnosis,
  * no outcome conclusion and no external adapter invocation.
  */
 @Injectable()
@@ -234,15 +233,13 @@ export class DevCoreGrowthService {
     const review = projection.cards.find((item) => item.surface === 'UI-08')?.action_review;
     const plan = this.getPlanPreview(familyId, onboardingId, insight, flowEvents);
     const receiptActions = flowEvents
-      .filter((event) => event.ui_id === 'UI-06' || event.ui_id === 'UI-09' || event.ui_id === 'UI-35')
+      .filter((event) => event.ui_id === 'UI-06' || event.ui_id === 'UI-09')
       .map((event) => ({
         receipt_id: event.event_id,
         source_ui: event.ui_id,
         kind: event.ui_id === 'UI-06'
           ? 'PRIVATE_CHECKIN_DRAFT' as const
-          : event.ui_id === 'UI-35'
-            ? 'CAMP_DAILY_ACTION' as const
-            : 'ACTION_RECEIPT' as const,
+          : 'ACTION_RECEIPT' as const,
         occurred_at: event.created_at,
       }));
     const journeyRecordedActions = journeyActions.map((action) => ({
@@ -311,7 +308,6 @@ export class DevCoreGrowthService {
     const companionProgress = actionReviewReady ? buildFamilyCompanionProgress(focus) : undefined;
     const childActionPrompt = actionReviewReady ? buildChildActionPrompt(focus) : undefined;
     const growthProfileProgress = focusSelected ? buildGrowthProfileProgress(focus) : undefined;
-
     return [
       {
         surface: 'UI-02', kind: 'ASSESSMENT_ENTRY', title: '家庭成长测评入口', state: 'READY',
@@ -374,35 +370,6 @@ export class DevCoreGrowthService {
         next_hint: '可以和孩子一起选择是否尝试，或今天先到这里。',
         command: { name: 'READ_SYNTHETIC_CHILD_ASSISTANT', mode: 'READ_ONLY' },
         ...(childActionPrompt ? { child_action_prompt: childActionPrompt } : {}),
-      },
-      {
-        surface: 'UI-35', kind: 'GROWTH_CAMP_21', title: '21天智慧父母成长营（DEV课程草稿）', state: 'DRAFT',
-        fact_boundary: 'ACTION_IS_NOT_OUTCOME', data_source: 'SYNTHETIC_DEV_ONLY',
-        summary: 'AI 辅助课程体系草稿：课程结构依据体验层“21 天行动/每日任务”与公开训练营交付线索生成；不等同官方课表，须经课程专家审核后方可发布或分配。',
-        next_hint: '当前日单元可记录家长行动和 Perspective；阶段回顾只形成课程草稿建议，后续可推荐衔接 90 天计划但不会自动创建计划。',
-        command: { name: 'CHECKIN_SYNTHETIC_21_DAY_CAMP_TASK', mode: 'CONTROLLED_DRAFT' },
-        curriculum_draft: {
-          draft_id: 'CURR-UI35-DEV-21D-V1',
-          status: 'SYNTHETIC_RULE_BASED_DRAFT',
-          source_boundary: 'E1_PRODUCT_STRUCTURE_PLUS_PUBLIC_DESIGN_RESEARCH',
-          model_gateway_status: 'NOOP_NOT_INVOKED',
-          human_review: 'REQUIRED_BEFORE_PUBLISH_OR_ASSIGN',
-          course_boundary: 'NOT_OFFICIAL_SYLLABUS_NOT_OUTCOME_NOT_DIAGNOSIS',
-          day_count: 21,
-          stages: [
-            { stage_id: 'FOUNDATION', label: '阶段一：观察与连接', day_range: 'Day 1-7', intent: '以家长自我觉察和稳定回应作为练习起点。' },
-            { stage_id: 'PRACTICE', label: '阶段二：沟通与习惯实践', day_range: 'Day 8-14', intent: '将已选择的家庭互动工具转化为可记录的小行动。' },
-            { stage_id: 'REVIEW', label: '阶段三：复盘与延续设计', day_range: 'Day 15-21', intent: '回顾行动记录和家长 Perspective，形成后续计划草稿建议。' },
-          ],
-          current_day: {
-            day_number: 1,
-            theme: '观察一次完整的亲子互动',
-            parent_action: '选择一个日常情境，先记录自己听到和看到的内容，再决定是否回应。',
-            reflection_prompt: '这次互动中，我注意到了什么？这只是我的感受和观察，不是对孩子的结论。',
-            evidence_boundary: 'PERSPECTIVE_NOT_FACT',
-          },
-          next_transition: 'GROWTH_PLAN_DRAFT_RECOMMENDATION_ONLY',
-        },
       },
     ];
   }

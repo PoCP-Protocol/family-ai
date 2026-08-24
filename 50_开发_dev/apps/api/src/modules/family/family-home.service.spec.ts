@@ -6,7 +6,7 @@ describe('FamilyHomeService', () => {
   it('projects all UI-01 features from trusted facts and never claims an AI call', async () => {
     const client = { query: vi.fn(async (sql: string) => {
       if (sql.includes('from families')) return { rows: [{ display_name: '林家' }] };
-      if (sql.includes('tenant_policy_profiles')) return { rows: [{ allowed_pages: ['UI-02', 'UI-03', 'UI-04', 'UI-09', 'UI-12', 'UI-13', 'UI-19', 'UI-34', 'UI-35'] }] };
+      if (sql.includes('tenant_policy_profiles')) return { rows: [{ allowed_pages: ['UI-02', 'UI-03', 'UI-04', 'UI-09', 'UI-12', 'UI-13', 'UI-14', 'UI-19', 'UI-34'] }] };
       if (sql.includes('from persons p')) return { rows: [
         { person_id: 'child-1', display_name: '小林', age_in_scope: true, service_consent_granted: true },
         { person_id: 'child-2', display_name: '小木', age_in_scope: true, service_consent_granted: false },

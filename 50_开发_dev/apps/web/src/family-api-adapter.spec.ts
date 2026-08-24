@@ -33,10 +33,12 @@ describe('Family API tenant-scoped Web adapter', () => {
     expect(mainSource).toContain('GrowthIntent 已创建，但它不代表成长结果');
   });
 
-  it('exposes the same persisted UI-35 camp lifecycle to the Web entry', () => {
-    expect(source).toContain("getGrowthCamp: () => read('/ui/35/growth-camp')");
-    expect(source).toContain("enrollGrowthCamp: (subjectPersonId, idempotencyKey) => write('/growth-camps/enrollments'");
-    expect(source).toContain("checkInGrowthCampDay: (enrollmentId, dayNo, input, idempotencyKey) => write(`/growth-camps/${enrollmentId}/days/${dayNo}/check-ins`");
+  it('does not expose the deleted UI-35 camp lifecycle to the Web entry', () => {
+    expect(source).not.toContain('getGrowthCamp');
+    expect(source).not.toContain('/ui/35/growth-camp');
+    expect(source).not.toContain('enrollGrowthCamp');
+    expect(source).not.toContain('checkInGrowthCampDay');
+    expect(source).not.toContain('growth-camps');
   });
 
   it('submits UI-01 growth help with an explicit subject, text and retry-stable idempotency key', () => {

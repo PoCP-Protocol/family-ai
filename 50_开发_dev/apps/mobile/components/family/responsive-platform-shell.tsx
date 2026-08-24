@@ -22,6 +22,8 @@ const FAMILY_SHORTCUTS = [
 
 export const DESKTOP_SHELL_BREAKPOINT = 760;
 export const WIDE_DESKTOP_BREAKPOINT = 1240;
+const IPHONE_16_PRO_MAX_WIDTH = 440;
+const IPHONE_16_PRO_MAX_HEIGHT = 956;
 
 export function ResponsivePlatformShell({ children }: { children: ReactNode }) {
   const colors = useColors();
@@ -69,7 +71,9 @@ export function ResponsivePlatformShell({ children }: { children: ReactNode }) {
       </aside>
 
       <main style={styles.main as never} aria-label="Family AI 主要内容">
-        <View style={[styles.stage, { borderColor: colors.border, backgroundColor: colors.background }]}>{children}</View>
+        <View style={[styles.stageFrame, { backgroundColor: '#ECF3FB' }]}>
+          <View style={[styles.stage, { borderColor: colors.border, backgroundColor: colors.background }]}>{children}</View>
+        </View>
       </main>
 
       {wideDesktop ? <aside style={styles.rightRail as never} aria-label="家庭成长上下文">
@@ -115,9 +119,9 @@ const styles = StyleSheet.create({
   shortcutText: { fontSize: 13, lineHeight: 18, fontWeight: "700" },
   createButton: { position: "absolute", left: 18, right: 18, bottom: 24, minHeight: 46, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   createButtonText: { color: "#FFFFFF", fontSize: 14, lineHeight: 20, fontWeight: "900" },
-  main: { display: "flex" as never, flexDirection: "column", flex: 1, minWidth: 0, minHeight: "100vh" as never, alignItems: "stretch", paddingHorizontal: 32, paddingVertical: 24 },
-  // 桌面舞台铺满可用宽度（抖音式内容区），不再套 780 手机窄框；上限仅避免超宽屏行过长。
-  stage: { width: "100%", maxWidth: 1080, alignSelf: "center", flex: 1, minHeight: 0, overflow: "hidden" },
+  main: { display: "flex" as never, flexDirection: "column", flex: 1, minWidth: 0, minHeight: "100vh" as never, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, paddingVertical: 24 },
+  stageFrame: { width: IPHONE_16_PRO_MAX_WIDTH + 28, minHeight: IPHONE_16_PRO_MAX_HEIGHT + 28, borderRadius: 38, padding: 14, shadowColor: "#2B5C90", shadowOpacity: 0.16, shadowRadius: 28, shadowOffset: { width: 0, height: 18 }, elevation: 10 },
+  stage: { width: IPHONE_16_PRO_MAX_WIDTH, height: IPHONE_16_PRO_MAX_HEIGHT, alignSelf: "center", overflow: "hidden", borderWidth: StyleSheet.hairlineWidth, borderRadius: 30 },
   rightRail: { display: "flex" as never, flexDirection: "column", width: 310, minWidth: 310 },
   rightRailInner: { paddingTop: 24, paddingRight: 24, paddingBottom: 32, gap: 14 },
   contextCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 17, padding: 16, gap: 10 },

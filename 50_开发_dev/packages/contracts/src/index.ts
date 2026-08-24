@@ -10,8 +10,7 @@ export * from './ui01-ui09-first-slice';
 export * from './ui01-home';
 export * from './ui02-assessment';
 export * from './ui03-growth-hypothesis';
-export * from './ui35-growth-camp';
-export * from './family-35ui';
+export * from './family-34ui';
 export * from './platform-v4-1';
 
 export type FamilyStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';

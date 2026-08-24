@@ -4,7 +4,7 @@
 
 - iOS / Android App；
 - 响应式 Web；
-- UI-01 至 UI-35 的同一套路由、状态和 Family API 能力。
+- UI-01 至 UI-34 的同一套路由、状态和 Family API 能力。
 
 ## 交互模式
 
@@ -24,6 +24,6 @@
 
 - Web 不复制 Mobile 页面。
 - 新增家庭业务能力必须统一走 Family API；现存模板内的 tRPC/MySQL 兼容层仍待后续迁移，不得继续扩展为第二套领域后台。
-- 35 个产品页面必须全部登记在 `lib/family/ui-registry.ts`。
+- 34 个产品页面必须全部登记在 `lib/family/ui-registry.ts`；UI-35 不再是产品页面、路由或验收基线。
 - `tests/cross-platform-parity.test.ts` 负责验证 Web 与 App 共享全部注册能力。
 - 原 `apps/web` 仅保留旧的确定性工作台与兼容入口；面向家庭用户的新 Web 以本客户端为准。

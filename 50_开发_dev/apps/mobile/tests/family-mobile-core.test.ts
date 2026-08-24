@@ -51,7 +51,7 @@ describe("Family AI UI registry", () => {
     expect(total).toBe(35);
   });
 
-  it("keeps a named visual baseline and feature set for every one of the 35 screens", () => {
+  it("keeps a named visual baseline and feature set for every baseline screen and the assessment result route", () => {
     expect(FAMILY_SCREENS.every((screen) => screen.baseline.trim().length > 0)).toBe(true);
     expect(FAMILY_SCREENS.every((screen) => screen.featurePoints.length >= 4)).toBe(true);
     expect(FAMILY_SCREENS.slice(13, 19).map((screen) => screen.baseline)).toEqual([

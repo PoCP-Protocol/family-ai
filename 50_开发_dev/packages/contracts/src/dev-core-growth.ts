@@ -14,8 +14,7 @@ export type DevCoreGrowthSurface =
   | 'UI-06'
   | 'UI-07'
   | 'UI-08'
-  | 'UI-10'
-  | 'UI-35';
+  | 'UI-10';
 
 export type DevCoreGrowthCardKind =
   | 'ASSESSMENT_ENTRY'
@@ -25,8 +24,7 @@ export type DevCoreGrowthCardKind =
   | 'PLAN_DRAFT'
   | 'COMPANION_PROGRESS'
   | 'MEMBERSHIP_READ'
-  | 'CHILD_ASSISTANT_READ'
-  | 'GROWTH_CAMP_21';
+  | 'CHILD_ASSISTANT_READ';
 
 export interface DevAiCurriculumDayDraft {
   day_number: number;
@@ -226,7 +224,7 @@ export interface DevCoreGrowthCard {
     name: string;
     mode: 'READ_ONLY' | 'CONTROLLED_DRAFT' | 'NOOP_NOT_PERSISTED';
   };
-  /** Present only on course-capability cards such as UI-35. */
+  /** Present only on reviewed course-capability drafts. */
   curriculum_draft?: DevAiCurriculumDraft;
   /** Present on UI-04; a family-readable report derived from the selected focus. */
   report_draft?: DevFamilyGrowthReportDraft;
@@ -276,5 +274,5 @@ export interface DevCoreGrowthNoopCommandResult {
 }
 
 export const DEV_CORE_GROWTH_SURFACES: readonly DevCoreGrowthSurface[] = [
-  'UI-02', 'UI-03', 'UI-04', 'UI-05', 'UI-06', 'UI-07', 'UI-08', 'UI-10', 'UI-35',
+  'UI-02', 'UI-03', 'UI-04', 'UI-05', 'UI-06', 'UI-07', 'UI-08', 'UI-10',
 ] as const;

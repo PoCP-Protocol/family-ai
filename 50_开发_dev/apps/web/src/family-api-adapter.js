@@ -48,11 +48,6 @@ export function createFamilyApiAdapter({ baseUrl, bearerToken, familyId }) {
     getGrowthHypothesis: () => read('/ui/03/growth-hypothesis'),
     /** @param {{ assessment_session_id: string, hypothesis_ref: string, decision_type: 'CONFIRM'|'DISMISS' }} input @param {string} idempotencyKey */
     decideGrowthHypothesis: (input, idempotencyKey) => write('/growth-hypotheses/decisions', input, idempotencyKey),
-    getGrowthCamp: () => read('/ui/35/growth-camp'),
-    /** @param {string} subjectPersonId @param {string} idempotencyKey */
-    enrollGrowthCamp: (subjectPersonId, idempotencyKey) => write('/growth-camps/enrollments', { subject_person_id: subjectPersonId }, idempotencyKey),
-    /** @param {string} enrollmentId @param {number} dayNo @param {{ completion_status: 'COMPLETED'|'PARTIAL'|'NOT_COMPLETED', reflection: string, occurred_at: string }} input @param {string} idempotencyKey */
-    checkInGrowthCampDay: (enrollmentId, dayNo, input, idempotencyKey) => write(`/growth-camps/${enrollmentId}/days/${dayNo}/check-ins`, input, idempotencyKey),
     /** @param {string} subjectPersonId @param {string} rawText @param {string} idempotencyKey */
     requestGrowthHelp: (subjectPersonId, rawText, idempotencyKey) => write('/orchestration/needs', { subject_person_id: subjectPersonId, raw_text: rawText }, idempotencyKey),
     /** @param {string} signalId @param {string} goalText @param {string} idempotencyKey */

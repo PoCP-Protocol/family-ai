@@ -23,13 +23,14 @@ if (errors.length) finish();
 
 const matrix = JSON.parse(read(matrixPath));
 const invariants = JSON.parse(read(invariantsPath));
-const expected = Array.from({ length: 35 }, (_, i) => `UI-${String(i + 1).padStart(2, '0')}`);
+const expected = Array.from({ length: 34 }, (_, i) => `UI-${String(i + 1).padStart(2, '0')}`);
 const ids = matrix.screens.map((s) => s.ui_id);
 const unique = [...new Set(ids)];
 
-assert(ids.length === 35, `matrix must contain 35 screens, got ${ids.length}`);
-assert(unique.length === 35, 'matrix contains duplicate UI ids');
-assert(expected.every((id) => unique.includes(id)), 'matrix must contain exactly UI-01..UI-35');
+assert(ids.length === 34, `matrix must contain 34 baseline screens, got ${ids.length}`);
+assert(unique.length === 34, 'matrix contains duplicate UI ids');
+assert(expected.every((id) => unique.includes(id)), 'matrix must contain exactly UI-01..UI-34');
+assert(!unique.includes('UI-35'), 'UI-35 is deleted and must not appear in the baseline matrix');
 
 const validDomains = new Set(invariants.canonical_business_domains);
 const validLoops = new Set(invariants.canonical_business_loops);
@@ -61,8 +62,8 @@ assert(fs.existsSync(mobileRegistryPath), 'mobile ui-registry.ts missing');
 if (fs.existsSync(mobileRegistryPath)) {
   const registry = read(mobileRegistryPath);
   const registryIds = [...new Set([...registry.matchAll(/id:\s*"(UI-\d{2})"/g)].map((m) => m[1]))];
-  assert(registryIds.length === 35, `mobile ui-registry must contain 35 unique IDs, got ${registryIds.length}`);
-  assert(expected.every((id) => registryIds.includes(id)), 'mobile ui-registry is not aligned to UI-01..UI-35');
+  assert(expected.every((id) => registryIds.includes(id)), 'mobile ui-registry is not aligned to UI-01..UI-34');
+  assert(!registryIds.includes('UI-35'), 'mobile ui-registry must not register deleted UI-35');
 }
 
 assert(fs.existsSync(mobileDesignPath), 'mobile design.md missing');
@@ -119,7 +120,7 @@ if (fs.existsSync(mobilePackagePath)) {
 
 const domainCounts = {};
 for (const s of matrix.screens) domainCounts[s.primary_domain] = (domainCounts[s.primary_domain] || 0) + 1;
-console.log('FAMILY_35UI_ALIGNMENT_V4_1');
+console.log('FAMILY_34UI_BASELINE_GATE_V1');
 console.log(`screens=${ids.length}`);
 console.log(`strict_runtime=${strictRuntime ? 'YES' : 'NO'}`);
 console.log(`domains=${JSON.stringify(domainCounts)}`);
@@ -133,5 +134,5 @@ function finish() {
     for (const error of errors) console.error(`- ${error}`);
     process.exit(1);
   }
-  console.log('PASS: structural 35-UI alignment');
+  console.log('PASS: structural 34-UI baseline alignment');
 }

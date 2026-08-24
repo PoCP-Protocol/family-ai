@@ -10,7 +10,7 @@ const read = (p) => fs.readFileSync(p, 'utf8');
 
 const invariantsPath = path.join(root, 'governance', 'FAMILY_ARCHITECTURE_INVARIANTS_V4_1.json');
 const matrixPath = path.join(root, 'governance', 'FAMILY_35UI_RUNTIME_MATRIX_V1.json');
-const canonicalContractPath = path.join(root, 'packages', 'contracts', 'src', 'family-35ui.ts');
+const canonicalContractPath = path.join(root, 'packages', 'contracts', 'src', 'family-34ui.ts');
 const legacyContractPath = path.join(root, 'packages', 'contracts', 'src', 'family-growth-os.ts');
 const programPath = path.join(root, 'governance', 'FAMILY_35UI_PROGRAM_V1.yaml');
 const architecturePath = path.join(root, 'architecture', 'FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md');
