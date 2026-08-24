@@ -1,0 +1,130 @@
+{
+  "schema_version": "FAMILY_UI_FUNCTIONAL_REALIZATION_REBASELINE_V1",
+  "architecture_id": "FAMILY_AI_PLATFORM_V4_1",
+  "task": "FAMILY-UI-FUNCTIONAL-REALIZATION-REBASELINE-001",
+  "status": "ACTIVE",
+  "principle": "A screen is not product-complete until its primary journey has a domain action, state machine, canonical data, downstream projection, audit/idempotency, and evidence-backed E2E at the target depth.",
+  "depth_levels": [
+    { "level": "L0_DESIGN", "meaning": "PPT/design intent exists" },
+    { "level": "L1_UI", "meaning": "screen route and visual interaction exist" },
+    { "level": "L2_PROJECTION", "meaning": "screen reads a projection or deterministic local fallback" },
+    { "level": "L3_COMMAND", "meaning": "primary action invokes a named command/use case" },
+    { "level": "L4_CANONICAL", "meaning": "command mutates canonical PostgreSQL data with state machine and audit/idempotency" },
+    { "level": "L5_CLOSED_LOOP", "meaning": "business result changes the next projection/page and Family Context" },
+    { "level": "L6_EXTERNAL_EFFECT", "meaning": "real external system effect is integrated behind an adapter" },
+    { "level": "L7_PRODUCTION_E2E", "meaning": "production-like E2E proves UI to DB/external system back to UI" }
+  ],
+  "no_done_rule": "todo checkboxes and visual completion are not sufficient evidence for product completion. Screens below target depth must be labeled explicitly as draft, preview, fixture, no-op, or out-of-scope.",
+  "product_loops": [
+    {
+      "loop_id": "GOLDEN_GROWTH_LOOP",
+      "phase": "PHASE_2",
+      "screens": ["UI-01", "UI-02", "UI-03", "UI-04", "UI-05", "UI-07", "UI-08", "UI-09", "UI-29", "UI-33"],
+      "target_depth_for_family_1_0": "L5_CLOSED_LOOP",
+      "must_be_real": ["REAL_PostgreSQL", "REAL_AI_via_Model_Gateway", "REAL_state_machine", "REAL_E2E"]
+    },
+    {
+      "loop_id": "SERVICE_LOOP",
+      "phase": "PHASE_3",
+      "screens": ["UI-19", "UI-20", "UI-21", "UI-22", "UI-23", "UI-24", "UI-31", "UI-34"],
+      "target_depth_for_family_1_0": "L5_CLOSED_LOOP",
+      "must_be_real": ["Provider", "Availability", "Booking", "ServiceCase", "ServiceDelivery", "FollowUp"]
+    },
+    {
+      "loop_id": "COMMERCE_LOOP",
+      "phase": "PHASE_4",
+      "screens": ["UI-06", "UI-13", "UI-14", "UI-15", "UI-16", "UI-17", "UI-18", "UI-30", "UI-32"],
+      "target_depth_for_family_1_0": "L5_CLOSED_LOOP",
+      "must_be_real": ["ProductOffering", "Order", "PaymentIntent", "PaymentProviderAdapter", "Entitlement", "PointsLedger"]
+    },
+    {
+      "loop_id": "COMMUNITY_LOOP",
+      "phase": "PHASE_5",
+      "screens": ["UI-12", "UI-25", "UI-26", "UI-27", "UI-28"],
+      "target_depth_for_family_1_0": "L5_CLOSED_LOOP",
+      "must_be_real": ["PrivateDraft", "DeIdentification", "Moderation", "Publish", "Interaction", "FamilyContextReadback"]
+    },
+    {
+      "loop_id": "FAMILY_OPERATIONS_OS",
+      "phase": "PHASE_6",
+      "screens": [],
+      "target_depth_for_family_1_0": "L4_CANONICAL",
+      "must_be_real": ["ProductOps", "ProgramOps", "AssessmentCMS", "ExpertOps", "ServiceOps", "EventOps", "OrderOps", "PointsOps", "ModerationOps", "SafetyConsole", "AIEvalConsole", "AuditConsole"]
+    }
+  ],
+  "canonical_data_requirements": {
+    "Assessment": ["assessment_definitions", "assessment_questions", "assessment_sessions", "assessment_responses", "assessment_results", "diagnostic_hypotheses", "diagnostic_evidence_refs"],
+    "Growth": ["growth_plans", "growth_plan_stages", "growth_goals", "growth_actions", "growth_checkins", "growth_reflections", "growth_observations", "growth_reviews", "growth_milestones", "growth_outcomes"],
+    "Commerce": ["products", "product_offerings", "prices", "orders", "order_items", "payment_intents", "payments", "memberships", "entitlements", "benefits", "points_accounts", "points_ledger_entries", "invitations", "group_participations"],
+    "Service": ["providers", "service_offerings", "availability_slots", "bookings", "service_cases", "assignments", "service_deliveries", "followups", "feedback", "service_records"],
+    "Community": ["posts", "media", "topics", "comments", "reactions", "bookmarks", "follows", "visibility_policies", "moderation_cases", "moderation_decisions"],
+    "FamilyContext": ["family_timeline_events", "family_context_evidence_refs", "family_context_projection_items"]
+  },
+  "state_machines": {
+    "AssessmentSession": ["DRAFT", "IN_PROGRESS", "SUBMITTED", "ANALYZING", "READY", "ACKNOWLEDGED"],
+    "GrowthPlan": ["DRAFT", "PROPOSED", "ACCEPTED", "ACTIVE", "PAUSED", "COMPLETED", "CANCELLED"],
+    "GrowthAction": ["READY", "STARTED", "RECORDED", "SKIPPED"],
+    "Order": ["DRAFT", "CONFIRMED", "PAYMENT_PENDING", "PAID", "FULFILLED", "CANCELLED", "REFUNDED"],
+    "Booking": ["DRAFT", "SLOT_HELD", "CONFIRMED", "ASSIGNED", "IN_SERVICE", "DELIVERED", "FOLLOW_UP", "CLOSED", "CANCELLED", "NO_SHOW", "RESCHEDULE_REQUIRED"],
+    "EventRegistration": ["DRAFT", "HELD", "CONFIRMED", "ATTENDED", "NO_SHOW", "CANCELLED"],
+    "CommunityPost": ["DRAFT", "REVIEW_PENDING", "APPROVED", "PUBLISHED", "REJECTED", "HIDDEN", "ARCHIVED"]
+  },
+  "current_gap_markers": [
+    "recordDevFlowEvent",
+    "SELECT_SYNTHETIC_ASSESSMENT_DIMENSION",
+    "PREVIEW_SYNTHETIC_REGISTRATION",
+    "ACK_SYNTHETIC_POST_DRAFT",
+    "Dev 环境未支付",
+    "未扣款",
+    "未创建订单",
+    "未自动发放权益",
+    "未占用时段",
+    "未通知专家",
+    "未报名",
+    "未公开发布",
+    "导出预览",
+    "待确认草稿"
+  ],
+  "screen_depths": [
+    { "ui_id": "UI-01", "semantic_key": "FAMILY_HOME", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "projection_only", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-02", "semantic_key": "ASSESSMENT_SESSION", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "dev_flow_event_replaces_assessment_session", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-03", "semantic_key": "GROWTH_DIAGNOSIS", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "diagnosis_hypothesis_not_full_assessment_result", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-04", "semantic_key": "GROWTH_PLAN_90D", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "plan_tree_not_complete", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-05", "semantic_key": "COACHING_PROGRAM", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "program_checkin_not_full_service_record", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-06", "semantic_key": "MEMBERSHIP_HOME", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "entitlement_projection_without_commerce_loop", "implementation_wave": "PHASE_4_COMMERCE_LOOP" },
+    { "ui_id": "UI-07", "semantic_key": "ASSESSMENT_CATALOG", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "catalog_without_canonical_assessment_cms", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-08", "semantic_key": "ASSESSMENT_HISTORY", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "history_without_full_assessment_state_machine", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-09", "semantic_key": "DAILY_GROWTH_ACTION", "current_depth": "L3_COMMAND", "target_depth": "L5_CLOSED_LOOP", "gap_class": "action_happened_not_outcome", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-10", "semantic_key": "CHILD_ASSISTANT_SESSION", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "assistant_draft_not_fact", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-11", "semantic_key": "GROWTH_RHYTHM", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "trend_projection_without_review_loop", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-12", "semantic_key": "GROWTH_STORY_DRAFT", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "private_story_draft_without_asset_or_publish_workflow", "implementation_wave": "PHASE_5_COMMUNITY_LOOP" },
+    { "ui_id": "UI-13", "semantic_key": "PRODUCT_CATALOG", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "catalog_without_order_entitlement_loop", "implementation_wave": "PHASE_4_COMMERCE_LOOP" },
+    { "ui_id": "UI-14", "semantic_key": "PRODUCT_DETAIL", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "commerce_intent_no_payment_no_entitlement", "implementation_wave": "PHASE_4_COMMERCE_LOOP" },
+    { "ui_id": "UI-15", "semantic_key": "INVITATION", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "invitation_draft_no_external_send", "implementation_wave": "PHASE_4_COMMERCE_LOOP" },
+    { "ui_id": "UI-16", "semantic_key": "GROUP_PARTICIPATION", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "participation_intent_no_order", "implementation_wave": "PHASE_4_COMMERCE_LOOP" },
+    { "ui_id": "UI-17", "semantic_key": "POINTS_LEDGER", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "points_view_without_full_ledger_command", "implementation_wave": "PHASE_4_COMMERCE_LOOP" },
+    { "ui_id": "UI-18", "semantic_key": "MEMBERSHIP_CENTER", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "membership_projection_without_entitlement_lifecycle", "implementation_wave": "PHASE_4_COMMERCE_LOOP" },
+    { "ui_id": "UI-19", "semantic_key": "PROVIDER_DIRECTORY", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "provider_projection_without_service_ops", "implementation_wave": "PHASE_3_SERVICE_LOOP" },
+    { "ui_id": "UI-20", "semantic_key": "PROVIDER_DETAIL", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "service_offering_without_availability_state", "implementation_wave": "PHASE_3_SERVICE_LOOP" },
+    { "ui_id": "UI-21", "semantic_key": "BOOKING_REQUEST", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "service_intent_no_slot_hold_no_expert_notification", "implementation_wave": "PHASE_3_SERVICE_LOOP" },
+    { "ui_id": "UI-22", "semantic_key": "EVENT_CATALOG", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "event_projection_without_capacity_registration", "implementation_wave": "PHASE_3_SERVICE_LOOP" },
+    { "ui_id": "UI-23", "semantic_key": "EVENT_REGISTRATION", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "registration_preview_no_capacity_hold", "implementation_wave": "PHASE_3_SERVICE_LOOP" },
+    { "ui_id": "UI-24", "semantic_key": "SERVICE_CASES", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "service_record_projection_without_delivery_lifecycle", "implementation_wave": "PHASE_3_SERVICE_LOOP" },
+    { "ui_id": "UI-25", "semantic_key": "COMMUNITY_FEED", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "feed_projection_without_publication_workflow", "implementation_wave": "PHASE_5_COMMUNITY_LOOP" },
+    { "ui_id": "UI-26", "semantic_key": "PRIVATE_NOTE_DRAFT", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "private_draft_no_moderation_no_publish", "implementation_wave": "PHASE_5_COMMUNITY_LOOP" },
+    { "ui_id": "UI-27", "semantic_key": "COMMUNITY_POST_DETAIL", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "interaction_draft_no_public_comment_reaction", "implementation_wave": "PHASE_5_COMMUNITY_LOOP" },
+    { "ui_id": "UI-28", "semantic_key": "MY_COMMUNITY", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "community_profile_without_moderation_readback", "implementation_wave": "PHASE_5_COMMUNITY_LOOP" },
+    { "ui_id": "UI-29", "semantic_key": "GROWTH_OUTCOMES", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "outcome_preview_without_repeated_evidence_review", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-30", "semantic_key": "ANNUAL_MEMBERSHIP", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "renewal_intent_no_payment_or_entitlement", "implementation_wave": "PHASE_4_COMMERCE_LOOP" },
+    { "ui_id": "UI-31", "semantic_key": "MY_SERVICES", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "service_portfolio_without_unified_lifecycle", "implementation_wave": "PHASE_3_SERVICE_LOOP" },
+    { "ui_id": "UI-32", "semantic_key": "ORDERS_AND_ASSETS", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "asset_preview_without_order_entitlement_source", "implementation_wave": "PHASE_4_COMMERCE_LOOP" },
+    { "ui_id": "UI-33", "semantic_key": "FAMILY_PROFILE", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "profile_update_draft_not_confirmed_named_action", "implementation_wave": "PHASE_2_GOLDEN_GROWTH_LOOP" },
+    { "ui_id": "UI-34", "semantic_key": "SERVICE_RECORDS", "current_depth": "L2_PROJECTION", "target_depth": "L5_CLOSED_LOOP", "gap_class": "service_record_export_preview_without_closed_case", "implementation_wave": "PHASE_3_SERVICE_LOOP" }
+  ],
+  "golden_e2e_targets": [
+    "GOLDEN-01: concern -> assessment -> AI hypothesis -> plan -> action -> observation -> review/outcome",
+    "GOLDEN-02: concern -> provider -> availability -> booking -> service -> follow-up",
+    "GOLDEN-03: product -> order -> payment intent -> entitlement -> membership/service use",
+    "GOLDEN-04: private note -> de-identification -> moderation -> publish -> interaction -> Family Context readback"
+  ]
+}

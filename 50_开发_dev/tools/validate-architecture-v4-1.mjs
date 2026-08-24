@@ -16,12 +16,14 @@ const legacyContractPath = path.join(root, 'packages', 'contracts', 'src', 'fami
 const programPath = path.join(root, 'governance', 'FAMILY_CONSUMER_UI_PROGRAM_V1.yaml');
 const subtractiveFreezePath = path.join(root, 'governance', 'FAMILY_SUBTRACTIVE_FREEZE_V1.json');
 const aiRuntimeBoundaryPath = path.join(root, 'governance', 'FAMILY_AI_RUNTIME_BOUNDARY_V1.json');
+const canonicalUiMapPath = path.join(root, 'governance', 'FAMILY_UI_CANONICAL_MAP_V1.json');
+const functionalUiRebaselinePath = path.join(root, 'governance', 'FAMILY_UI_FUNCTIONAL_REALIZATION_REBASELINE_V1.json');
 const architecturePath = path.join(root, 'architecture', 'FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md');
 const harnessBoundaryPath = path.join(root, 'architecture', 'FAMILY_INTELLIGENCE_OS_HARNESS_BOUNDARY_V0_1.md');
 const harnessPackagePath = path.join(root, 'packages', 'harness', 'src', 'index.ts');
 const rootPackagePath = path.join(root, 'package.json');
 
-for (const p of [invariantsPath, matrixPath, canonicalContractPath, growthEpisodeContractPath, legacyContractPath, programPath, subtractiveFreezePath, aiRuntimeBoundaryPath, architecturePath, harnessBoundaryPath, harnessPackagePath, rootPackagePath]) {
+for (const p of [invariantsPath, matrixPath, canonicalContractPath, growthEpisodeContractPath, legacyContractPath, programPath, subtractiveFreezePath, aiRuntimeBoundaryPath, canonicalUiMapPath, functionalUiRebaselinePath, architecturePath, harnessBoundaryPath, harnessPackagePath, rootPackagePath]) {
   assert(fs.existsSync(p), `missing required V4.1 artifact: ${p}`);
 }
 if (errors.length) finish();
@@ -30,6 +32,8 @@ const invariants = JSON.parse(read(invariantsPath));
 const matrix = JSON.parse(read(matrixPath));
 const subtractiveFreeze = JSON.parse(read(subtractiveFreezePath));
 const aiRuntimeBoundary = JSON.parse(read(aiRuntimeBoundaryPath));
+const canonicalUiMap = JSON.parse(read(canonicalUiMapPath));
+const functionalUiRebaseline = JSON.parse(read(functionalUiRebaselinePath));
 const rootPackage = JSON.parse(read(rootPackagePath));
 const exactSet = (a, b) => a.length === b.length && a.every((value) => b.includes(value)) && b.every((value) => a.includes(value));
 
@@ -40,6 +44,12 @@ assert(subtractiveFreeze.status === 'ACTIVE', 'subtractive freeze must be ACTIVE
 assert(aiRuntimeBoundary.architecture_id === 'FAMILY_AI_PLATFORM_V4_1', 'AI runtime boundary architecture_id must be V4.1');
 assert(aiRuntimeBoundary.status === 'ACTIVE', 'AI runtime boundary must be ACTIVE');
 assert(aiRuntimeBoundary.allowed_live_external_ai?.status === 'FAMILY_API_MODEL_GATEWAY_ONLY', 'AI runtime must only allow live external AI through Family API Model Gateway');
+assert(canonicalUiMap.architecture_id === 'FAMILY_AI_PLATFORM_V4_1', 'UI canonical map architecture_id must be V4.1');
+assert(canonicalUiMap.status === 'ACTIVE', 'UI canonical map must be ACTIVE');
+assert(canonicalUiMap.numbering_decision?.ui35_status === 'DELETED_DUPLICATE_PRODUCT_SURFACE', 'UI canonical map must preserve UI-35 deletion decision');
+assert(functionalUiRebaseline.architecture_id === 'FAMILY_AI_PLATFORM_V4_1', 'UI functional rebaseline architecture_id must be V4.1');
+assert(functionalUiRebaseline.status === 'ACTIVE', 'UI functional rebaseline must be ACTIVE');
+assert((functionalUiRebaseline.screen_depths ?? []).length === 34, 'UI functional rebaseline must track all 34 screens');
 assert(exactSet(matrix.loops, invariants.canonical_business_loops), 'matrix canonical business loops drift');
 assert(exactSet(matrix.domains, invariants.canonical_business_domains), 'matrix canonical business domains drift');
 assert(exactSet(matrix.cross_domain_platforms ?? [], invariants.cross_domain_platforms), 'matrix cross-domain platforms drift');

@@ -63,7 +63,8 @@
     "validate:ppt-ui-trace",
     "validate:mobile-runtime-boundary",
     "validate:subtractive-freeze",
-    "validate:ai-runtime-boundary"
+    "validate:ai-runtime-boundary",
+    "validate:ui-functional-realization"
   ],
   "frozen_root_scripts": [
     { "name": "distill:family-model", "status": "REMOVED_FROM_ROOT_ENTRYPOINTS", "reason": "Distillation data generation is not part of the current verified main flow and must not be reachable from root scripts." },
