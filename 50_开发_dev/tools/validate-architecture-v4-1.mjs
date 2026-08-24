@@ -9,29 +9,48 @@ const assert = (condition, message) => { if (!condition) errors.push(message); }
 const read = (p) => fs.readFileSync(p, 'utf8');
 
 const invariantsPath = path.join(root, 'governance', 'FAMILY_ARCHITECTURE_INVARIANTS_V4_1.json');
-const matrixPath = path.join(root, 'governance', 'FAMILY_35UI_RUNTIME_MATRIX_V1.json');
-const canonicalContractPath = path.join(root, 'packages', 'contracts', 'src', 'family-34ui.ts');
+const matrixPath = path.join(root, 'governance', 'FAMILY_CONSUMER_UI_BASELINE_V1.json');
+const canonicalContractPath = path.join(root, 'packages', 'contracts', 'src', 'consumer-ui-baseline.ts');
 const growthEpisodeContractPath = path.join(root, 'packages', 'contracts', 'src', 'growth-episode.ts');
 const legacyContractPath = path.join(root, 'packages', 'contracts', 'src', 'family-growth-os.ts');
-const programPath = path.join(root, 'governance', 'FAMILY_35UI_PROGRAM_V1.yaml');
+const programPath = path.join(root, 'governance', 'FAMILY_CONSUMER_UI_PROGRAM_V1.yaml');
+const subtractiveFreezePath = path.join(root, 'governance', 'FAMILY_SUBTRACTIVE_FREEZE_V1.json');
 const architecturePath = path.join(root, 'architecture', 'FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md');
 const harnessBoundaryPath = path.join(root, 'architecture', 'FAMILY_INTELLIGENCE_OS_HARNESS_BOUNDARY_V0_1.md');
 const harnessPackagePath = path.join(root, 'packages', 'harness', 'src', 'index.ts');
+const rootPackagePath = path.join(root, 'package.json');
 
-for (const p of [invariantsPath, matrixPath, canonicalContractPath, growthEpisodeContractPath, legacyContractPath, programPath, architecturePath, harnessBoundaryPath, harnessPackagePath]) {
+for (const p of [invariantsPath, matrixPath, canonicalContractPath, growthEpisodeContractPath, legacyContractPath, programPath, subtractiveFreezePath, architecturePath, harnessBoundaryPath, harnessPackagePath, rootPackagePath]) {
   assert(fs.existsSync(p), `missing required V4.1 artifact: ${p}`);
 }
 if (errors.length) finish();
 
 const invariants = JSON.parse(read(invariantsPath));
 const matrix = JSON.parse(read(matrixPath));
+const subtractiveFreeze = JSON.parse(read(subtractiveFreezePath));
+const rootPackage = JSON.parse(read(rootPackagePath));
 const exactSet = (a, b) => a.length === b.length && a.every((value) => b.includes(value)) && b.every((value) => a.includes(value));
 
 assert(invariants.architecture_id === 'FAMILY_AI_PLATFORM_V4_1', 'wrong architecture id');
 assert(matrix.architecture_version === 'FAMILY_AI_PLATFORM_V4_1', 'matrix architecture_version must be V4.1');
+assert(subtractiveFreeze.architecture_id === 'FAMILY_AI_PLATFORM_V4_1', 'subtractive freeze architecture_id must be V4.1');
+assert(subtractiveFreeze.status === 'ACTIVE', 'subtractive freeze must be ACTIVE');
 assert(exactSet(matrix.loops, invariants.canonical_business_loops), 'matrix canonical business loops drift');
 assert(exactSet(matrix.domains, invariants.canonical_business_domains), 'matrix canonical business domains drift');
 assert(exactSet(matrix.cross_domain_platforms ?? [], invariants.cross_domain_platforms), 'matrix cross-domain platforms drift');
+
+const allowedRootScripts = new Set(subtractiveFreeze.allowed_runtime_entrypoints ?? []);
+const frozenRootScripts = new Set((subtractiveFreeze.frozen_root_scripts ?? []).map((entry) => entry.name));
+const forbiddenRootScripts = new Set(subtractiveFreeze.forbidden_root_scripts ?? []);
+const forbiddenRootScriptPrefixes = subtractiveFreeze.forbidden_root_script_prefixes ?? [];
+for (const name of Object.keys(rootPackage.scripts ?? {})) {
+  assert(allowedRootScripts.has(name), `root script is not in the V4.1 subtractive allowlist: ${name}`);
+  assert(!frozenRootScripts.has(name), `frozen root script is still exposed: ${name}`);
+  assert(!forbiddenRootScripts.has(name), `forbidden root script is still exposed: ${name}`);
+  for (const prefix of forbiddenRootScriptPrefixes) {
+    assert(!name.startsWith(prefix), `forbidden root script prefix is still exposed: ${name}`);
+  }
+}
 
 for (const screen of matrix.screens) {
   assert(invariants.canonical_business_loops.includes(screen.loop), `${screen.ui_id}: non-canonical business loop`);
@@ -57,7 +76,7 @@ for (const screen of matrix.screens) {
 const canonical = read(canonicalContractPath);
 assert(/export type FamilyUiId\b/.test(canonical), 'canonical FamilyUiId missing');
 assert(/export type FamilyBusinessLoop\b/.test(canonical), 'canonical FamilyBusinessLoop missing');
-assert(!/Family35UiId|Family35BusinessLoop/.test(canonical), 'temporary Family35* aliases must be removed');
+assert(!/Familylegacy UIId|Family35BusinessLoop/.test(canonical), 'temporary Family35* aliases must be removed');
 for (const loop of invariants.canonical_business_loops) assert(canonical.includes(`'${loop}'`), `canonical loop ${loop} missing`);
 for (const domain of invariants.canonical_business_domains) assert(canonical.includes(`'${domain}'`), `canonical domain ${domain} missing`);
 
