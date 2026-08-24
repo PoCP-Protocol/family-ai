@@ -82,6 +82,13 @@ Industry-model layer for family education domains, child/parent/family needs, co
 
 V4.2 rebaseline defines the Family Education Large Model as the foundation of the Family Growth Platform. Product surfaces, assessment, realtime dialogue, memory, multimodal artifacts, action/outcome loops, human-service collaboration, small models, and localization extensions must compose from the componentized model foundation rather than becoming scattered standalone features.
 
+### 11. Family AI Platform V5 Adoption
+
+`docs/FAMILY_AI_PLATFORM_V5_ADOPTION_PLAN.md`
+`backlog/tasks/FAMILY-AI-V5-RUNTIME-FOUNDATION-001.md`
+
+V5 adoption raises the target from a family education app to Family Growth Intelligence & Ecosystem OS. It adds nine-plane architecture, Family Trusted Context Capsule, Growth Evidence Graph, FamilyHarnessAdapter boundary, durable service workflow direction, ecosystem interop direction, and a 90-day Patch Line. V5 is adopted as engineering direction and task-entry guidance; it does not by itself rewrite the current authorized sprint or mutate the conceptual SSOT under `10_规格_spec`.
+
 ---
 
 ## AI开发前加载顺序
@@ -93,7 +100,8 @@ V4.2 rebaseline defines the Family Education Large Model as the foundation of th
 5. V3.2 architecture rebaseline docs when planning product, AI, community, operations, analytics, frontend, data, or pilot scope
 6. Family Growth Platform V4.2 docs when planning family education, growth platform, assessment, realtime dialogue, memory, multimodal, human-service, or model-foundation work
 7. Family Education Industry Model docs when planning family assessment, small models, intervention matching, or education-domain intelligence
-8. 当前Task Pack
-9. Task引用的数据库/API/Policy/Agent/DTO Spec
+8. Family AI Platform V5 adoption docs when planning Agent Harness, Trusted Context, school/provider ecosystem, durable service workflow, professional model stack, or 90-day runtime foundation work
+9. 当前Task Pack
+10. Task引用的数据库/API/Policy/Agent/DTO Spec
 
 AI不应该一次性加载全部文件。

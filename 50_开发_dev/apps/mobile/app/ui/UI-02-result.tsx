@@ -54,7 +54,7 @@ export default function FamilyAssessmentResultScreen() {
           <Text style={styles.primaryButtonText}>返回调整测评</Text>
         </Pressable>
         <Pressable onPress={() => router.push("/ui/UI-03" as Href)} style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}>
-          <Text style={[styles.linkButtonText, { color: colors.muted }]}>如需进一步的支持方向，可继续查看 AI诊断（需家庭确认）</Text>
+          <Text style={[styles.linkButtonText, { color: colors.muted }]}>如需进一步理解，可查看家庭支持方向（需家庭确认）</Text>
         </Pressable>
       </ScrollView>
     </ScreenContainer>
