@@ -23,7 +23,7 @@ describe("UI-03 family growth explanation baseline contract", () => {
     expect(source).toContain("GrowthRadarOverview");
     expect(source).toContain("scorecard.dimensions");
     expect(source).toContain("scorecard.overall_score");
-    expect(source).toContain("scorecard.overall_band");
+    expect(source).toContain("支持参考");
     expect(source).toContain("家庭自查线索");
     expect(source).toContain("参考方向");
     expect(source).toContain('title: "家庭成长解读"');

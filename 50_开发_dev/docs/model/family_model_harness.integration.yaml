@@ -131,7 +131,7 @@ tool_entrypoints:
       - docs/model/distilled/subsets_v0_1/manifest.json
     current_gate_allowed: true
     notes:
-      - Runs first-party baseline distillation, external-source 220k staging, review-batch distillation, review-only subset distillation, post-distillation validation, deterministic evals, and runtime planning through the harness control plane.
+      - Runs first-party baseline distillation, Family-ingested 220k staging, review-batch distillation, review-only subset distillation, post-distillation validation, deterministic evals, and runtime planning through the harness control plane.
 
   - command: pnpm run validate:model-assets
     lane_refs:
