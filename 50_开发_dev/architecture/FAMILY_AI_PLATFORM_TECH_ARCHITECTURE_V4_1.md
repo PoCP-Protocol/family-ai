@@ -20,7 +20,7 @@ Stable boundaries:
 
 ```text
 Business Truth       = TypeScript / NestJS / PostgreSQL
-AI Intelligence      = Python AI Runtime
+AI Intelligence      = Family Intelligence Runtime + Python AI Services + optional Codex Harness
 Professional Ability = Versioned Skill Platform
 Longitudinal Memory  = Permissioned Family Context Platform
 Long-running Process = Temporal
@@ -51,8 +51,9 @@ Changing model vendor, cloud, vector engine, deployment platform or Agent framew
                 ▼                        ▼
 ┌──────────────────────────┐  ┌───────────────────────────┐
 │ 4 WORKFLOW / EVENT PLANE │  │ 5 AI INTELLIGENCE PLANE  │
-│ Outbox / Temporal /      │  │ Python Runtime / Skill / │
-│ Workers                  │  │ Agent / RAG / Eval       │
+│ Outbox / Temporal /      │  │ Family Intelligence      │
+│ Workers                  │  │ Runtime / Python AI /    │
+│                          │  │ Codex Harness / Eval     │
 └───────────────┬──────────┘  └─────────────┬─────────────┘
                 └──────────────┬─────────────┘
                                ▼
@@ -201,13 +202,14 @@ Mobile/Web
 → Consent / Purpose / Data Classification
 → AI Use Case Registry
 → Permissioned Context Set
-→ Skill Resolver
-→ Python AI Orchestrator
-→ Model Provider Gateway
+→ Family Intelligence Runtime
+→ FamilyHarnessAdapter (optional Executive Brain)
+→ Codex App Server JSON-RPC (Thread / Turn / Tool / Approval / Resume)
+→ Family Model Router / Provider Gateway
 → Structured Output
 → Validator / Safety / Eval hooks
 → AI Run Audit
-→ Draft / Hypothesis / Recommendation
+→ Draft / Hypothesis / Recommendation / Proposal
 → Family/Human confirmation
 → NestJS Named Action
 → PostgreSQL
@@ -215,9 +217,19 @@ Mobile/Web
 
 Client direct provider calls are forbidden.
 
+Client direct Codex App Server calls are forbidden. Codex Harness is an internal executive runtime, never a public Family product API.
+
 ## 10. AI Orchestrator vs Model Provider Gateway
 
-`AI Orchestrator` owns AI use case, Skill, Context, Retrieval, Agent flow, Output schema and Eval hooks.
+`Family Intelligence Runtime` owns AI use case, Skill, Context, Retrieval, Agent flow, Output schema, Eval hooks and the decision to invoke a Harness backend.
+
+`Codex App Server` may provide Thread, Turn, Tool, Skill, MCP, Approval, Resume and Event Stream execution only through `FamilyHarnessAdapter`.
+
+`FamilyHarnessAdapter` exposes Family domain tools, not raw infrastructure tools. Allowed tools are read-only or proposal-only: `get_family_context`, `get_family_now`, `get_growth_episode`, `search_interventions`, `get_intervention`, `get_family_perspectives`, `get_recent_actions`, `propose_growth_action`, `request_human_review`, `create_support_case_draft`, `get_service_options`.
+
+Forbidden tool shapes include `execute_sql`, `update_table`, `write_growth_profile`, `write_family_context`, `mutate_core_ontology` and `generic_patch_core_object`.
+
+The executable boundary contract is `architecture/FAMILY_INTELLIGENCE_OS_HARNESS_BOUNDARY_V0_1.md` and `packages/harness`.
 
 `Model Provider Gateway` owns provider credentials, model selection, request/stream transport, timeout/retry, token/cost accounting and policy-aware fallback.
 
@@ -336,7 +348,11 @@ Target Web: `consumer-web = Next.js`, `ops-web = Next.js`. Current static `apps/
 
 Business: TypeScript + NestJS + Node active LTS (release-pinned).
 
-AI: Python >=3.12 + uv + FastAPI where synchronous API is needed + Pydantic + httpx + pytest + ruff + pyright.
+Family Intelligence Runtime: TypeScript server-side orchestration inside the governed API boundary.
+
+Python AI Services: Python >=3.12 + uv + FastAPI where synchronous API is needed + Pydantic + httpx + pytest + ruff + pyright.
+
+Codex Harness: optional internal executive runtime behind `FamilyHarnessAdapter`; no client exposure, no direct database access and no canonical Family/Growth mutation.
 
 Python AI Runtime MUST NOT own business repositories or directly mutate canonical business tables.
 

@@ -14,8 +14,10 @@ const canonicalContractPath = path.join(root, 'packages', 'contracts', 'src', 'f
 const legacyContractPath = path.join(root, 'packages', 'contracts', 'src', 'family-growth-os.ts');
 const programPath = path.join(root, 'governance', 'FAMILY_35UI_PROGRAM_V1.yaml');
 const architecturePath = path.join(root, 'architecture', 'FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md');
+const harnessBoundaryPath = path.join(root, 'architecture', 'FAMILY_INTELLIGENCE_OS_HARNESS_BOUNDARY_V0_1.md');
+const harnessPackagePath = path.join(root, 'packages', 'harness', 'src', 'index.ts');
 
-for (const p of [invariantsPath, matrixPath, canonicalContractPath, legacyContractPath, programPath, architecturePath]) {
+for (const p of [invariantsPath, matrixPath, canonicalContractPath, legacyContractPath, programPath, architecturePath, harnessBoundaryPath, harnessPackagePath]) {
   assert(fs.existsSync(p), `missing required V4.1 artifact: ${p}`);
 }
 if (errors.length) finish();
@@ -68,6 +70,20 @@ assert(!/export const FAMILY_BUSINESS_LOOPS\b/.test(legacy), 'legacy file must n
 const program = read(programPath);
 assert(program.includes('FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md'), 'program must point to V4.1 SSOT');
 assert(program.includes('FAMILY_AI_PLATFORM_V4_1'), 'program architecture id must be V4.1');
+
+const architecture = read(architecturePath);
+const harnessBoundary = read(harnessBoundaryPath);
+const harnessPackage = read(harnessPackagePath);
+for (const required of ['FamilyHarnessAdapter', 'Codex App Server JSON-RPC', 'NO_AGENT_DIRECT_DATABASE_WRITE']) {
+  assert(architecture.includes(required), `V4.1 architecture missing harness boundary marker: ${required}`);
+  assert(harnessBoundary.includes(required), `harness boundary contract missing marker: ${required}`);
+}
+for (const tool of ['get_family_context', 'get_family_now', 'propose_growth_action', 'request_human_review']) {
+  assert(harnessPackage.includes(tool), `harness package missing allowed tool: ${tool}`);
+}
+for (const forbidden of ['execute_sql', 'write_growth_profile', 'generic_patch_core_object']) {
+  assert(harnessPackage.includes(forbidden), `harness package missing forbidden tool guard: ${forbidden}`);
+}
 
 console.log('FAMILY_AI_PLATFORM_V4_1_ARCHITECTURE_GATE');
 console.log(`screens=${matrix.screens.length}`);

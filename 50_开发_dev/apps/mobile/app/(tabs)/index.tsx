@@ -21,8 +21,8 @@ type HomeIcon = "heart.fill" | "gift.fill" | "calendar.fill" | "photo.fill" | "v
 
 const QUICK_ENTRIES: readonly { featureId: string; label: string; icon: HomeIcon; color: string; target: Href }[] = [
   { featureId: "ai_diagnostic", label: "AI诊断", icon: "heart.fill", color: "#35B9D7", target: `/ui/${UI01_HOME_TARGETS.aiInterpretation}` as Href },
-  { featureId: "plan_90", label: "90天成长计划", icon: "calendar.fill", color: "#36A866", target: `/ui/${UI01_HOME_TARGETS.plan90}` as Href },
   { featureId: "challenge_camp", label: "21天挑战营", icon: "gift.fill", color: "#F06863", target: CHALLENGE_CAMP_TARGET },
+  { featureId: "plan_90", label: "90天成长计划", icon: "calendar.fill", color: "#36A866", target: `/ui/${UI01_HOME_TARGETS.plan90}` as Href },
   { featureId: "growth_cases", label: "成长案例", icon: "photo.fill", color: "#F0A337", target: `/ui/${UI01_HOME_TARGETS.growthStories}` as Href },
   { featureId: "expert_live", label: "专家直播", icon: "video.fill", color: "#55A6E9", target: `/ui/${UI01_HOME_TARGETS.expertLive}` as Href },
   { featureId: "family_advisor", label: "家庭顾问", icon: "headphones.fill", color: "#EC725D", target: `/ui/${UI01_HOME_TARGETS.familyAdvisor}` as Href },

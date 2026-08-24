@@ -14,31 +14,30 @@ const maxInvalidPerSource = Number(process.env.FAMILY_220K_MAX_INVALID_PER_SOURC
 
 const manifests = [
   {
-    package_id: 'bole-family-education',
-    source_system: 'bole-ai',
+    package_id: 'family-import-pack-a',
+    source_system: 'family-distillation-ingestion',
     manifest_path: join(root, 'integrations', 'sources', 'bole-ai', 'distillation', 'MANIFEST.json'),
   },
   {
-    package_id: 'joysoul-aisoul',
-    source_system: 'joysoul-via-aisoul-bole-ai-search',
+    package_id: 'family-import-pack-b',
+    source_system: 'family-distillation-ingestion',
     manifest_path: join(root, 'integrations', 'sources', 'bole-ai', 'joysoul', 'MANIFEST.json'),
   },
 ];
 
 const sourcePlan = [
-  { package_id: 'bole-family-education', file: 'family_edu_train_mix.jsonl', quota: 9999, family_aspect: 'family_education_core_sft' },
-  { package_id: 'bole-family-education', file: 'family_edu_sft.jsonl', quota: 6322, family_aspect: 'family_education_core_sft' },
-  { package_id: 'bole-family-education', file: 'short_video_signals_ingested.jsonl', quota: 0, family_aspect: 'family_pain_signal' },
-  { package_id: 'joysoul-aisoul', file: 'joysoul_train_ready_v2.gold.clean.jsonl', quota: 52000, family_aspect: 'broad_parent_child_dialogue' },
-  { package_id: 'joysoul-aisoul', file: 'joysoul_exemplar_bank.jsonl', quota: 42000, family_aspect: 'exemplar_response_candidate' },
-  { package_id: 'joysoul-aisoul', file: 'joysoul_distill_api.jsonl', quota: 39679, family_aspect: 'distilled_instruction_response' },
-  { package_id: 'joysoul-aisoul', file: 'joysoul_distill_multilang.jsonl', quota: 18000, family_aspect: 'multilingual_family_expression' },
-  { package_id: 'joysoul-aisoul', file: 'joysoul_distill_recX_v4sft.jsonl', quota: 16000, family_aspect: 'recommendation_style_candidate' },
-  { package_id: 'joysoul-aisoul', file: 'joysoul_ft_v4_sft.jsonl', quota: 14000, family_aspect: 'chat_sft_candidate' },
-  { package_id: 'joysoul-aisoul', file: 'joysoul_ft_review.jsonl', quota: 9000, family_aspect: 'reviewed_chat_candidate' },
-  { package_id: 'joysoul-aisoul', file: 'joysoul_ft_legalclean.jsonl', quota: 5000, family_aspect: 'legalclean_chat_candidate' },
-  { package_id: 'joysoul-aisoul', file: 'joysoul_needs_expert_v2.jsonl', quota: 5000, family_aspect: 'expert_review_needed' },
-  { package_id: 'joysoul-aisoul', file: 'joysoul_distill_fleet_scenexp.jsonl', quota: 3000, family_aspect: 'scenario_explanation_candidate' },
+  { package_id: 'family-import-pack-a', file: 'family_edu_train_mix.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-CORE-MIX-001', family_file_ref: 'family_education_core_mix.jsonl', source_bucket_ref: 'family_education_core_import', quota: 9999, family_aspect: 'family_education_core_sft' },
+  { package_id: 'family-import-pack-a', file: 'family_edu_sft.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-CORE-SFT-002', family_file_ref: 'family_education_core_sft.jsonl', source_bucket_ref: 'family_education_core_import', quota: 6322, family_aspect: 'family_education_core_sft' },
+  { package_id: 'family-import-pack-b', file: 'joysoul_train_ready_v2.gold.clean.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-DIALOGUE-GOLD-003', family_file_ref: 'family_education_dialogue_gold_clean.jsonl', source_bucket_ref: 'family_education_dialogue_import', quota: 52000, family_aspect: 'broad_parent_child_dialogue' },
+  { package_id: 'family-import-pack-b', file: 'joysoul_exemplar_bank.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-EXEMPLAR-004', family_file_ref: 'family_education_exemplar_bank.jsonl', source_bucket_ref: 'family_education_exemplar_import', quota: 42000, family_aspect: 'exemplar_response_candidate' },
+  { package_id: 'family-import-pack-b', file: 'joysoul_distill_api.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-INSTRUCTION-005', family_file_ref: 'family_education_instruction_response.jsonl', source_bucket_ref: 'family_education_instruction_import', quota: 39679, family_aspect: 'distilled_instruction_response' },
+  { package_id: 'family-import-pack-b', file: 'joysoul_distill_multilang.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-MULTILINGUAL-006', family_file_ref: 'family_education_multilingual_expression.jsonl', source_bucket_ref: 'family_education_multilingual_import', quota: 18000, family_aspect: 'multilingual_family_expression' },
+  { package_id: 'family-import-pack-b', file: 'joysoul_distill_recX_v4sft.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-RECOMMENDATION-007', family_file_ref: 'family_education_recommendation_style.jsonl', source_bucket_ref: 'family_education_recommendation_import', quota: 16000, family_aspect: 'recommendation_style_candidate' },
+  { package_id: 'family-import-pack-b', file: 'joysoul_ft_v4_sft.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-CHAT-SFT-008', family_file_ref: 'family_education_chat_sft.jsonl', source_bucket_ref: 'family_education_chat_import', quota: 14000, family_aspect: 'chat_sft_candidate' },
+  { package_id: 'family-import-pack-b', file: 'joysoul_ft_review.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-REVIEWED-CHAT-009', family_file_ref: 'family_education_reviewed_chat.jsonl', source_bucket_ref: 'family_education_reviewed_import', quota: 9000, family_aspect: 'reviewed_chat_candidate' },
+  { package_id: 'family-import-pack-b', file: 'joysoul_ft_legalclean.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-CLEAN-CHAT-010', family_file_ref: 'family_education_clean_chat.jsonl', source_bucket_ref: 'family_education_clean_import', quota: 5000, family_aspect: 'legalclean_chat_candidate' },
+  { package_id: 'family-import-pack-b', file: 'joysoul_needs_expert_v2.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-EXPERT-REVIEW-011', family_file_ref: 'family_education_expert_review_needed.jsonl', source_bucket_ref: 'family_education_expert_review_import', quota: 5000, family_aspect: 'expert_review_needed' },
+  { package_id: 'family-import-pack-b', file: 'joysoul_distill_fleet_scenexp.jsonl', family_source_ref: 'FAMILY-EDU-SOURCE-SCENARIO-EXPLANATION-012', family_file_ref: 'family_education_scenario_explanation.jsonl', source_bucket_ref: 'family_education_scenario_import', quota: 3000, family_aspect: 'scenario_explanation_candidate' },
 ];
 
 const totalQuota = sourcePlan.reduce((sum, source) => sum + source.quota, 0);
@@ -69,15 +68,36 @@ function loadSourceIndex() {
 
 function sourcePathFor(source) {
   if (source.sourcePath && existsSync(source.sourcePath)) return source.sourcePath;
-  const stagedPath = join(root, 'integrations', 'sources', 'bole-ai', source.package_id === 'joysoul-aisoul' ? 'joysoul' : 'distillation', source.file);
+  const stagedPath = join(root, 'integrations', 'sources', 'bole-ai', source.package_id === 'family-import-pack-b' ? 'joysoul' : 'distillation', source.file);
   if (existsSync(stagedPath)) return stagedPath;
   return null;
 }
 
+function familySourcePlan(sourcePlanItem) {
+  return {
+    family_source_ref: sourcePlanItem.family_source_ref,
+    source_bucket_ref: sourcePlanItem.source_bucket_ref,
+    file: sourcePlanItem.family_file_ref,
+    quota: sourcePlanItem.quota,
+    family_aspect: sourcePlanItem.family_aspect,
+  };
+}
+
+function sanitizeFamilyBranding(value) {
+  return String(value ?? '')
+    .replace(/JoySoul/gi, 'Family')
+    .replace(/AiSoul/gi, 'Family')
+    .replace(/Bole\.AI/gi, 'Family')
+    .replace(/Bole\.ai/gi, 'Family')
+    .replace(/bole-ai/gi, 'family-source')
+    .replace(/joysoul/gi, 'family')
+    .replace(/aisoul/gi, 'family');
+}
+
 function compactText(value) {
   if (value == null) return '';
-  if (typeof value === 'string') return value.trim();
-  return JSON.stringify(value);
+  const text = typeof value === 'string' ? value : JSON.stringify(value);
+  return sanitizeFamilyBranding(text).trim();
 }
 
 function normalizeMessages(messages) {
@@ -149,13 +169,13 @@ function makeStagingRecord({ raw, normalized, source, sourcePath, sourcePlanItem
     public_model_name_zh: '法咪莉校长',
     migration_status: 'CANDIDATE_STAGED_FOR_REVIEW',
     source: {
-      package_id: source.package_id,
-      source_system: source.source_system,
-      file: source.file,
-      source_path: sourcePath,
+      family_source_ref: sourcePlanItem.family_source_ref,
+      source_system: 'family-distillation-ingestion',
+      source_bucket_ref: sourcePlanItem.source_bucket_ref,
+      file: sourcePlanItem.family_file_ref,
       source_line: sourceLine,
       source_sha256: source.sha256,
-      source_manifest: rel(source.manifest_path),
+      lineage_ref: `FAMILY-SOURCE-AUDIT:${sourcePlanItem.family_source_ref}`,
       source_keys: source.keys ?? [],
       rights_status: 'UNKNOWN',
       evidence_level: 'E1',
@@ -206,9 +226,10 @@ async function* readJsonl(path) {
 async function stageSource({ sourcePlanItem, source, outStream, manifest }) {
   const path = sourcePathFor(source);
   const sourceSummary = {
-    package_id: source.package_id,
-    file: source.file,
-    source_path: path,
+    family_source_ref: sourcePlanItem.family_source_ref,
+    source_system: 'family-distillation-ingestion',
+    source_bucket_ref: sourcePlanItem.source_bucket_ref,
+    file: sourcePlanItem.family_file_ref,
     quota: sourcePlanItem.quota,
     staged: 0,
     skipped_invalid_json: 0,
@@ -267,7 +288,7 @@ const manifest = {
   target_records: targetRecords,
   total_records: 0,
   public_model_name_zh: '法咪莉校长',
-  purpose: 'Stage Bole.ai and JoySoul distilled family-education data for Family review, deduplication, eval construction, and later training-readiness decisions.',
+  purpose: 'Stage Family-owned family-education distillation data for review, deduplication, eval construction, and later training-readiness decisions.',
   governance: {
     status: 'STAGING_ONLY',
     rights_status: 'UNKNOWN_UNTIL_REVIEWED',
@@ -277,7 +298,7 @@ const manifest = {
     database_write_authorized: false,
     core_ontology_write_authorized: false,
   },
-  source_plan: sourcePlan,
+  source_plan: sourcePlan.map(familySourcePlan),
   splits: { train_candidate: 0, validation: 0, test: 0 },
   sources: [],
 };
@@ -304,7 +325,7 @@ console.log(`TARGET ${targetRecords}`);
 console.log(`WROTE ${rel(outputPath)} records=${manifest.total_records}`);
 console.log(`WROTE ${rel(manifestPath)}`);
 for (const source of manifest.sources) {
-  console.log(`${source.status} ${source.package_id}/${source.file} staged=${source.staged ?? 0} quota=${source.quota ?? '-'}`);
+  console.log(`${source.status} ${source.family_source_ref}/${source.file} staged=${source.staged ?? 0} quota=${source.quota ?? '-'}`);
 }
 
 if (!manifest.complete) process.exit(1);

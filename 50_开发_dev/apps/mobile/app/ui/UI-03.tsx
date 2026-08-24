@@ -112,11 +112,11 @@ export default function GrowthExplanationScreen() {
   if (remoteState === "loading" || !hypothesis || !scorecard) {
     return (
       <ScreenContainer edges={["left", "right", "bottom"]}>
-        <Stack.Screen options={{ headerShown: true, title: "AI成长诊断", headerBackTitle: "返回" }} />
+        <Stack.Screen options={{ headerShown: true, title: "家庭成长解读", headerBackTitle: "返回" }} />
         <View style={styles.emptyPage}>
           {remoteState === "loading" ? <ActivityIndicator color={colors.tint} /> : null}
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>{remoteState === "loading" ? "正在生成AI成长诊断" : "先完成一次家庭测评"}</Text>
-          <Text style={[styles.emptyText, { color: colors.muted }]}>完成测评后，法咪莉校长大模型会基于真实家庭上下文生成成长诊断与建议。</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{remoteState === "loading" ? "正在整理家庭测评结果" : "先完成一次家庭测评"}</Text>
+          <Text style={[styles.emptyText, { color: colors.muted }]}>完成测评后，系统会基于你提交的家庭视角整理支持方向；这不是儿童诊断、评分或排名。</Text>
           <Pressable onPress={() => router.replace("/ui/UI-02" as Href)} style={[styles.primaryButton, { backgroundColor: colors.tint }]}>
             <Text style={styles.primaryButtonText}>进入家庭测评</Text>
           </Pressable>
@@ -137,7 +137,7 @@ export default function GrowthExplanationScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: "AI成长诊断",
+          title: "家庭成长解读",
           headerBackTitle: "返回",
           headerRight: () => <IconSymbol name="ellipsis" size={24} color="#111827" />,
         }}
@@ -146,16 +146,16 @@ export default function GrowthExplanationScreen() {
         <View style={styles.assessmentSummary}>
           <View style={styles.summaryAvatar}><IconSymbol name="person.crop.circle.fill" size={58} color="#FFFFFF" /></View>
           <View style={styles.summaryCopy}>
-            <Text style={styles.summaryTitle}>{hypothesis.subject_display_name ? `${hypothesis.subject_display_name}的成长诊断` : "成长诊断"}</Text>
+            <Text style={styles.summaryTitle}>{hypothesis.subject_display_name ? `${hypothesis.subject_display_name}的支持方向` : "家庭支持方向"}</Text>
             {summaryRows.map((row) => <Text key={row} style={styles.summaryMeta}>{row}</Text>)}
           </View>
           <IconSymbol name="chevron.right" size={19} color="#FFFFFF" />
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>综合成长评估</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>家庭支持方向概览</Text>
         <GrowthRadarOverview scorecard={scorecard} />
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>核心问题</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>当前关注点</Text>
         <View style={styles.tags}>
           {scorecard.core_issue_tags.slice(0, 3).map((tag, index) => (
             <View key={tag} style={[styles.tag, { backgroundColor: tagColors[index].background }]}>
@@ -164,7 +164,7 @@ export default function GrowthExplanationScreen() {
           ))}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>成长建议</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>下一步可试</Text>
         <View style={styles.suggestions}>
           {scorecard.recommendations.slice(0, 3).map((item, index) => (
             <View key={`${index}-${item}`} style={styles.suggestionRow}>
@@ -174,9 +174,9 @@ export default function GrowthExplanationScreen() {
           ))}
         </View>
 
-        {decisionState === "error" ? <Text style={[styles.errorText, { color: "#D96464" }]}>方案暂时未生成，请稍后重试。</Text> : null}
+        {decisionState === "error" ? <Text style={[styles.errorText, { color: "#D96464" }]}>支持方案暂时未形成，请稍后重试。</Text> : null}
         <Pressable disabled={decisionState === "saving"} onPress={() => void generatePlan()} style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
-          <Text style={styles.primaryButtonText}>{decisionState === "saving" ? "正在生成" : "生成个性化方案"}</Text>
+          <Text style={styles.primaryButtonText}>{decisionState === "saving" ? "正在确认" : "查看可选支持方案"}</Text>
         </Pressable>
       </ScrollView>
     </ScreenContainer>
@@ -196,15 +196,15 @@ function GrowthRadarOverview({ scorecard }: { scorecard: Ui03Scorecard }) {
         <Polygon points={childPoints} fill="rgba(47, 143, 251, 0.22)" stroke="#2F8FFB" strokeWidth={2} />
         <Circle cx={RADAR_CENTER.x} cy={RADAR_CENTER.y} r={35} fill="#FFFFFF" stroke="#D5E6FA" strokeWidth={1} />
         <SvgText x={RADAR_CENTER.x} y={RADAR_CENTER.y - 2} textAnchor="middle" fill="#2563EB" fontSize={24} fontWeight="800">{scorecard.overall_score}</SvgText>
-        <SvgText x={RADAR_CENTER.x} y={RADAR_CENTER.y + 17} textAnchor="middle" fill="#6B7280" fontSize={10}>{scorecard.overall_band}</SvgText>
+        <SvgText x={RADAR_CENTER.x} y={RADAR_CENTER.y + 17} textAnchor="middle" fill="#6B7280" fontSize={10}>支持参考</SvgText>
         {scorecard.dimensions.slice(0, 5).map((dimension, index) => {
           const point = RADAR_POINTS[index];
           return <SvgText key={dimension.dimension_ref} x={point.labelX} y={point.labelY} textAnchor={point.anchor} fill="#5B6B7F" fontSize={11} fontWeight="700">{dimension.label}{dimension.score}</SvgText>;
         })}
       </Svg>
       <View style={styles.legendRow}>
-        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: "#2F8FFB" }]} /><Text style={styles.legendText}>孩子得分</Text></View>
-        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: "#F2A23A" }]} /><Text style={styles.legendText}>同龄平均</Text></View>
+        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: "#2F8FFB" }]} /><Text style={styles.legendText}>家庭自查线索</Text></View>
+        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: "#F2A23A" }]} /><Text style={styles.legendText}>参考方向</Text></View>
       </View>
     </View>
   );
