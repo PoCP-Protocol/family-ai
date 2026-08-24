@@ -11,6 +11,7 @@ const priorityId = '33333333-3333-4333-8333-333333333333';
 const episodeId = '55555555-5555-4555-8555-555555555555';
 const actionId = '77777777-7777-4777-8777-777777777777';
 const childId = '66666666-6666-4666-8666-666666666666';
+const otherChildId = '99999999-9999-4999-8999-999999999999';
 const actorId = 'actor-parent-1';
 
 const meta: AuditMeta = {
@@ -93,6 +94,24 @@ describe('GrowthActionService', () => {
     expect(client.outboxEvents).toEqual([]);
   });
 
+  it('fails closed when the action belongs to a different subject', async () => {
+    const client = new FakeGrowthActionClient(null, true, 'PENDING', otherChildId);
+    const service = new GrowthActionService(createRepository(client), createSubjectResolver());
+
+    await expect(service.completeGrowthAction({
+      family_id: familyId,
+      action_id: actionId,
+      completion_status: 'COMPLETED',
+      reflection: '已完成。',
+      occurred_at: meta.occurredAt,
+      idempotency_key: 'idem-complete-subject-conflict',
+    }, meta)).rejects.toThrow('subject_scope_conflict');
+
+    expect(client.updatedActionCount).toBe(0);
+    expect(client.auditActions).toEqual([]);
+    expect(client.outboxEvents).toEqual([]);
+  });
+
   it('replays an idempotent completion without rewriting the action', async () => {
     const replayResponse = createReplayResponse();
     const client = new FakeGrowthActionClient(replayResponse);
@@ -142,6 +161,7 @@ function createReplayResponse(): CompleteGrowthActionResponse {
     action: {
       action_id: actionId,
       family_id: familyId,
+      subject_person_id: childId,
       onboarding_id: onboardingId,
       priority_id: priorityId,
       intervention_episode_id: episodeId,
@@ -173,6 +193,7 @@ class FakeGrowthActionClient {
     private readonly replayResponse: CompleteGrowthActionResponse | null = null,
     private readonly normalRouteVerified = true,
     private readonly currentActionStatus = 'PENDING',
+    private readonly storedSubjectPersonId = childId,
   ) {}
 
   async query(sql: string, params: unknown[] = []): Promise<{ rowCount: number; rows: unknown[] }> {
@@ -199,8 +220,8 @@ class FakeGrowthActionClient {
       this.todayActionQuery = normalized;
       return { rowCount: 0, rows: [] };
     }
-    if (normalized.startsWith('select ga.action_id, ga.onboarding_id, ga.priority_id')) {
-      return { rowCount: 1, rows: [{ action_id: actionId, onboarding_id: onboardingId, priority_id: priorityId, status: this.currentActionStatus }] };
+    if (normalized.startsWith('select ga.action_id, ga.subject_person_id, ga.onboarding_id, ga.priority_id')) {
+      return { rowCount: 1, rows: [{ action_id: actionId, subject_person_id: this.storedSubjectPersonId, onboarding_id: onboardingId, priority_id: priorityId, status: this.currentActionStatus, execution_status: 'NOT_STARTED' }] };
     }
     if (normalized.startsWith('select profile.subject_person_id')) {
       return { rowCount: 1, rows: [{ subject_person_id: childId, subject_relationship_id: null }] };
@@ -224,6 +245,7 @@ class FakeGrowthActionClient {
         rows: [{
           action_id: actionId,
           family_id: familyId,
+          subject_person_id: childId,
           onboarding_id: onboardingId,
           priority_id: priorityId,
           intervention_episode_id: episodeId,

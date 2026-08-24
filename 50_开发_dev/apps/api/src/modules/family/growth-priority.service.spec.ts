@@ -117,6 +117,7 @@ describe('GrowthPriorityService', () => {
 
     expect(response.priority).toMatchObject({
       family_id: familyId,
+      subject_person_id: childId,
       onboarding_id: onboardingId,
       profile_id: profile.profile_id,
       dimension_id: 'R03',
@@ -127,6 +128,7 @@ describe('GrowthPriorityService', () => {
       previous_priority_id: '88888888-8888-4888-8888-888888888888',
     });
     expect(client.supersededActivePriority).toBe(true);
+    expect(client.insertedSubjectPersonId).toBe(childId);
     expect(response.priority?.reason_codes).toContain('PRACTICE_READY');
     expect(response.priority?.evidence_refs).toEqual(['ev-R03']);
     expect(client.consentSubjectIds).toEqual([childId]);
@@ -260,6 +262,7 @@ function createProfile(input: {
 }
 class FakePriorityClient {
   insertedPriority = false;
+  insertedSubjectPersonId: string | null = null;
   supersededActivePriority = false;
   auditActions: string[] = [];
   outboxEvents: string[] = [];
@@ -352,15 +355,17 @@ class FakePriorityClient {
     }
     if (normalized.startsWith('insert into growth_priorities')) {
       this.insertedPriority = true;
+      this.insertedSubjectPersonId = params[1] as string;
       return { rowCount: 1, rows: [createPriorityRow({
         priorityId: '99999999-9999-4999-8999-999999999999',
         status: 'ACTIVE',
-        profileId: params[2] as string,
-        dimensionId: params[3] as ConfirmedProfileForPriority['dimension_id'],
-        version: params[5] as number,
-        reasonCodes: JSON.parse(params[7] as string),
-        evidenceRefs: JSON.parse(params[8] as string),
-        previousPriorityId: params[10] as string | null,
+        subjectPersonId: params[1] as string,
+        profileId: params[3] as string,
+        dimensionId: params[4] as ConfirmedProfileForPriority['dimension_id'],
+        version: params[6] as number,
+        reasonCodes: JSON.parse(params[8] as string),
+        evidenceRefs: JSON.parse(params[9] as string),
+        previousPriorityId: params[11] as string | null,
       })] };
     }
     if (normalized.startsWith('insert into audit_logs')) {
@@ -398,6 +403,7 @@ function createPriorityRow(input: {
   priorityId: string;
   status: 'ACTIVE' | 'SUPERSEDED';
   profileId?: string;
+  subjectPersonId?: string;
   dimensionId?: ConfirmedProfileForPriority['dimension_id'];
   version?: number;
   reasonCodes?: string[];
@@ -407,6 +413,7 @@ function createPriorityRow(input: {
   return {
     priority_id: input.priorityId,
     family_id: familyId,
+    subject_person_id: input.subjectPersonId ?? childId,
     onboarding_id: onboardingId,
     profile_id: input.profileId ?? '77777777-7777-4777-8777-777777777777',
     dimension_id: input.dimensionId ?? 'R03',

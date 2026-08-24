@@ -65,21 +65,24 @@ export class PrincipalRepository {
     confirmedGrowthPriority: string[]; activeIntervention: string[];
     recentGrowthActionState: string[]; recentPermittedObservationSummary: string[];
   }> {
+    if (!UUID_RE.test(subjectRef)) {
+      return emptyFamilyContextSlice(familyId, subjectRef);
+    }
     const ls = await this.pool.query<{ life_stage_code: string }>(
       `select life_stage_code from life_stage_assignments where family_id=$1 and child_id=$2 order by effective_from desc limit 1`,
       [familyId, subjectRef],
     );
     const pr = await this.pool.query<{ dimension_id: string }>(
-      `select dimension_id from growth_priorities where family_id=$1 and status='ACTIVE' order by created_at desc limit 5`,
-      [familyId],
+      `select dimension_id from growth_priorities where family_id=$1 and subject_person_id=$2 and status='ACTIVE' order by created_at desc limit 5`,
+      [familyId, subjectRef],
     );
     const iv = await this.pool.query<{ intervention_code: string }>(
-      `select intervention_code from intervention_episodes where family_id=$1 and status='ACTIVE' order by created_at desc limit 5`,
-      [familyId],
+      `select intervention_code from intervention_episodes where family_id=$1 and subject_person_id=$2 and status='ACTIVE' order by created_at desc limit 5`,
+      [familyId, subjectRef],
     );
     const ga = await this.pool.query<{ status: string }>(
-      `select status from growth_actions where family_id=$1 order by created_at desc limit 7`,
-      [familyId],
+      `select status from growth_actions where family_id=$1 and subject_person_id=$2 order by created_at desc limit 7`,
+      [familyId, subjectRef],
     );
     return {
       familyRef: familyId, subjectRef, lifeStage: ls.rows[0]?.life_stage_code ?? 'UNKNOWN',
@@ -296,4 +299,20 @@ export class PrincipalRepository {
     const responses = await this.pool.query(`select response_id, risk_route, schema_valid, output, created_at from principal_responses where session_id=$1 order by created_at`, [sessionId]);
     return { session: s.rows[0], messages: messages.rows, responses: responses.rows };
   }
+}
+
+function emptyFamilyContextSlice(familyId: string, subjectRef: string): {
+  familyRef: string; subjectRef: string; lifeStage: string;
+  confirmedGrowthPriority: string[]; activeIntervention: string[];
+  recentGrowthActionState: string[]; recentPermittedObservationSummary: string[];
+} {
+  return {
+    familyRef: familyId,
+    subjectRef,
+    lifeStage: 'UNKNOWN',
+    confirmedGrowthPriority: [],
+    activeIntervention: [],
+    recentGrowthActionState: [],
+    recentPermittedObservationSummary: [],
+  };
 }

@@ -48,10 +48,11 @@ export class InterventionService {
       await ensureFamilyExists(client, familyId);
       await assertFamilyManagePermission(client, familyId, actorId);
       const episodeResult = await client.query<InterventionEpisodeRow>(
-        `select episode_id, family_id, onboarding_id, priority_id, intervention_id, intervention_code,
+        `select episode_id, family_id, subject_person_id, onboarding_id, priority_id, intervention_id, intervention_code,
                 status, started_by_actor_id, started_at, planned_days, policy_version, created_at
          from intervention_episodes
          where family_id = $1 and onboarding_id = $2 and status = 'ACTIVE'
+           and subject_person_id is not null
          limit 1`,
         [familyId, onboardingId],
       );
@@ -78,13 +79,14 @@ export class InterventionService {
         onboardingId: request.onboarding_id,
         priorityId: request.priority_id,
       });
+      assertSubjectScopeMatches(activePriority.subject_person_id, subject.childPersonId, 'growth_priority_subject_unresolved');
       await assertRequiredGrowthConsents(client, request.family_id, subject.childPersonId);
       await assertNormalSafetyRoute(client, request.family_id, request.onboarding_id);
-      await assertNoActiveInterventionEpisode(client, request.family_id, request.onboarding_id);
+      await assertNoActiveInterventionEpisode(client, request.family_id, request.onboarding_id, subject.childPersonId);
 
-      const episode = await insertInterventionEpisode(client, request, meta);
+      const episode = await insertInterventionEpisode(client, request, subject.childPersonId, meta);
       const assignments = buildGrowthActionAssignments(meta.occurredAt);
-      const actions = await insertGrowthActions(client, request, episode.episode_id, activePriority.dimension_id, assignments);
+      const actions = await insertGrowthActions(client, request, episode.episode_id, activePriority.dimension_id, subject.childPersonId, assignments);
       const response: StartInterventionResponse = {
         intervention: getListenBeforeRespondCard(),
         episode,
@@ -179,7 +181,7 @@ async function getActivePriorityForStart(client: pg.PoolClient, request: StartIn
     throw new ConflictException('intervention_code_not_supported');
   }
   const result = await client.query<ActivePriorityRow>(
-    `select gp.priority_id, gp.family_id, gp.onboarding_id, gp.profile_id, gp.dimension_id
+    `select gp.priority_id, gp.family_id, gp.subject_person_id, gp.onboarding_id, gp.profile_id, gp.dimension_id
      from growth_priorities gp
      join growth_profiles profile on profile.profile_id = gp.profile_id
      where gp.family_id = $1
@@ -199,31 +201,32 @@ async function getActivePriorityForStart(client: pg.PoolClient, request: StartIn
   return row;
 }
 
-async function assertNoActiveInterventionEpisode(client: pg.PoolClient, familyId: string, onboardingId: string): Promise<void> {
+async function assertNoActiveInterventionEpisode(client: pg.PoolClient, familyId: string, onboardingId: string, subjectPersonId: string): Promise<void> {
   const result = await client.query(
     `select episode_id
      from intervention_episodes
      where family_id = $1
        and onboarding_id = $2
+       and subject_person_id = $3
        and status = 'ACTIVE'
      limit 1
      for share`,
-    [familyId, onboardingId],
+    [familyId, onboardingId, subjectPersonId],
   );
   if (result.rowCount && result.rowCount > 0) {
     throw new ConflictException('active_intervention_episode_exists');
   }
 }
 
-async function insertInterventionEpisode(client: pg.PoolClient, request: StartInterventionRequest, meta: AuditMeta): Promise<InterventionEpisodeDto> {
+async function insertInterventionEpisode(client: pg.PoolClient, request: StartInterventionRequest, subjectPersonId: string, meta: AuditMeta): Promise<InterventionEpisodeDto> {
   const result = await client.query<InterventionEpisodeRow>(
     `insert into intervention_episodes(
-       family_id, onboarding_id, priority_id, intervention_id, intervention_code,
+       family_id, subject_person_id, onboarding_id, priority_id, intervention_id, intervention_code,
        status, started_by_actor_id, started_at, planned_days, policy_version
-     ) values ($1, $2, $3, $4, $5, 'ACTIVE', $6, $7, $8, $9)
-     returning episode_id, family_id, onboarding_id, priority_id, intervention_id, intervention_code,
+     ) values ($1, $2, $3, $4, $5, $6, 'ACTIVE', $7, $8, $9, $10)
+     returning episode_id, family_id, subject_person_id, onboarding_id, priority_id, intervention_id, intervention_code,
                status, started_by_actor_id, started_at, planned_days, policy_version, created_at`,
-    [request.family_id, request.onboarding_id, request.priority_id, INTERVENTION_ID, INTERVENTION_CODE, meta.actor, meta.occurredAt, PLANNED_DAYS, INTERVENTION_POLICY_VERSION],
+    [request.family_id, subjectPersonId, request.onboarding_id, request.priority_id, INTERVENTION_ID, INTERVENTION_CODE, meta.actor, meta.occurredAt, PLANNED_DAYS, INTERVENTION_POLICY_VERSION],
   );
   return mapInterventionEpisode(result.rows[0]);
 }
@@ -233,22 +236,24 @@ async function insertGrowthActions(
   request: StartInterventionRequest,
   episodeId: string,
   dimensionId: M2GrowthDimensionId,
+  subjectPersonId: string,
   assignments: Array<{ dayIndex: number; assignmentText: string; dueDate: string }>,
 ): Promise<GrowthActionDto[]> {
   const actions: GrowthActionDto[] = [];
   for (const assignment of assignments) {
     const result = await client.query<GrowthActionRow>(
       `insert into growth_actions(
-         family_id, journey_id, intervention_id, dimension_id, action_type, instruction,
+         family_id, subject_person_id, journey_id, intervention_id, dimension_id, action_type, instruction,
          status, onboarding_id, priority_id, intervention_episode_id, day_index,
          assignment_text, due_date, completion_status, reflection, reflection_boundary, boundary
-       ) values ($1, $2, $3, $4, 'LISTEN_BEFORE_RESPOND_DAILY_ACTION', $5,
-         'PENDING', $2, $6, $7, $8, $5, $9::date, null, null, null, $10)
-       returning action_id, family_id, onboarding_id, priority_id, intervention_episode_id,
+       ) values ($1, $2, $3, $4, $5, 'LISTEN_BEFORE_RESPOND_DAILY_ACTION', $6,
+         'PENDING', $3, $7, $8, $9, $6, $10::date, null, null, null, $11)
+       returning action_id, family_id, subject_person_id, onboarding_id, priority_id, intervention_episode_id,
                  day_index, status, assignment_text, due_date, completed_at,
                  completion_status, reflection, reflection_boundary, boundary, created_at`,
       [
         request.family_id,
+        subjectPersonId,
         request.onboarding_id,
         INTERVENTION_ID,
         dimensionId,
@@ -267,7 +272,7 @@ async function insertGrowthActions(
 
 async function listEpisodeActions(client: pg.PoolClient, episodeId: string): Promise<GrowthActionDto[]> {
   const result = await client.query<GrowthActionRow>(
-    `select action_id, family_id, onboarding_id, priority_id, intervention_episode_id,
+    `select action_id, family_id, subject_person_id, onboarding_id, priority_id, intervention_episode_id,
             day_index, status, assignment_text, due_date, completed_at,
             completion_status, reflection, reflection_boundary, boundary, created_at
      from growth_actions
@@ -320,6 +325,7 @@ async function insertInterventionStartedEvent(client: pg.PoolClient, response: S
 interface ActivePriorityRow {
   priority_id: string;
   family_id: string;
+  subject_person_id: string | null;
   onboarding_id: string;
   profile_id: string;
   dimension_id: M2GrowthDimensionId;
@@ -328,6 +334,7 @@ interface ActivePriorityRow {
 interface InterventionEpisodeRow {
   episode_id: string;
   family_id: string;
+  subject_person_id: string;
   onboarding_id: string;
   priority_id: string;
   intervention_id: InterventionEpisodeDto['intervention_id'];
@@ -343,6 +350,7 @@ interface InterventionEpisodeRow {
 interface GrowthActionRow {
   action_id: string;
   family_id: string;
+  subject_person_id: string;
   onboarding_id: string;
   priority_id: string;
   intervention_episode_id: string;
@@ -362,6 +370,7 @@ function mapInterventionEpisode(row: InterventionEpisodeRow): InterventionEpisod
   return {
     episode_id: row.episode_id,
     family_id: row.family_id,
+    subject_person_id: row.subject_person_id,
     onboarding_id: row.onboarding_id,
     priority_id: row.priority_id,
     intervention_id: row.intervention_id,
@@ -379,6 +388,7 @@ function mapGrowthAction(row: GrowthActionRow): GrowthActionDto {
   return {
     action_id: row.action_id,
     family_id: row.family_id,
+    subject_person_id: row.subject_person_id,
     onboarding_id: row.onboarding_id,
     priority_id: row.priority_id,
     intervention_episode_id: row.intervention_episode_id,
@@ -393,6 +403,11 @@ function mapGrowthAction(row: GrowthActionRow): GrowthActionDto {
     boundary: row.boundary,
     created_at: toIsoString(row.created_at),
   };
+}
+
+function assertSubjectScopeMatches(actual: string | null | undefined, expected: string, errorCode: string): void {
+  if (!actual) throw new ConflictException(errorCode);
+  if (actual !== expected) throw new ConflictException('subject_scope_conflict');
 }
 
 function toIsoString(value: Date | string): string {

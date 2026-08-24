@@ -48,7 +48,7 @@ export class GrowthActionService {
       await ensureFamilyExists(client, familyId);
       await assertFamilyManagePermission(client, familyId, actorId);
       const result = await client.query<GrowthActionRow>(
-        `select ga.action_id, ga.family_id, ga.onboarding_id, ga.priority_id, ga.intervention_episode_id,
+        `select ga.action_id, ga.family_id, ga.subject_person_id, ga.onboarding_id, ga.priority_id, ga.intervention_episode_id,
                 ga.journey_plan_id, ga.journey_phase, ga.day_index, ga.status, ga.assignment_text, ga.due_date, ga.completed_at,
                 ga.completion_status, ga.reflection, ga.reflection_boundary, ga.boundary, ga.created_at,
                 ga.execution_status, ga.started_at, ga.paused_at, ga.cancelled_at, ga.row_version
@@ -56,6 +56,7 @@ export class GrowthActionService {
          left join intervention_episodes ie on ie.episode_id = ga.intervention_episode_id
          left join family_journey_plans jp on jp.plan_id = ga.journey_plan_id
          where ga.family_id = $1 and ga.status = 'PENDING'
+           and ga.subject_person_id is not null
            and ga.due_date = current_date
            and (ie.status = 'ACTIVE' or jp.status = 'ACTIVE')
          order by case when jp.status = 'ACTIVE' then 0 else 1 end, ga.due_date, ga.day_index
@@ -72,7 +73,7 @@ export class GrowthActionService {
       await ensureFamilyExists(client, familyId);
       await assertFamilyManagePermission(client, familyId, actorId);
       const result = await client.query<GrowthActionRow>(
-        `select ga.action_id, ga.family_id, ga.onboarding_id, ga.priority_id, ga.intervention_episode_id,
+        `select ga.action_id, ga.family_id, ga.subject_person_id, ga.onboarding_id, ga.priority_id, ga.intervention_episode_id,
                 ga.journey_plan_id, ga.journey_phase, ga.day_index, ga.status, ga.assignment_text, ga.due_date, ga.completed_at,
                 ga.completion_status, ga.reflection, ga.reflection_boundary, ga.boundary, ga.created_at,
                 ga.execution_status, ga.started_at, ga.paused_at, ga.cancelled_at, ga.row_version
@@ -80,6 +81,7 @@ export class GrowthActionService {
            left join intervention_episodes ie on ie.episode_id = ga.intervention_episode_id
            left join family_journey_plans jp on jp.plan_id = ga.journey_plan_id
           where ga.family_id = $1 and ga.due_date = current_date
+            and ga.subject_person_id is not null
             and ga.status in ('PENDING','COMPLETED','PARTIAL','NOT_COMPLETED')
             and (ie.status = 'ACTIVE' or jp.status in ('ACTIVE','PAUSED'))
           order by case when ga.status = 'PENDING' then 0 else 1 end,
@@ -140,6 +142,7 @@ export class GrowthActionService {
         onboardingId: existing.onboarding_id,
         priorityId: existing.priority_id,
       });
+      assertSubjectScopeMatches(existing.subject_person_id, subject.childPersonId, 'growth_action_subject_unresolved');
       await assertRequiredGrowthConsents(client, request.family_id, subject.childPersonId);
       await assertNormalSafetyRoute(client, request.family_id, existing.onboarding_id);
       assertReflectionSafetyRoute(request.reflection);
@@ -172,6 +175,7 @@ export class GrowthActionService {
         onboardingId: existing.onboarding_id,
         priorityId: existing.priority_id,
       });
+      assertSubjectScopeMatches(existing.subject_person_id, subject.childPersonId, 'growth_action_subject_unresolved');
       await assertRequiredGrowthConsents(client, request.family_id, subject.childPersonId);
       await assertNormalSafetyRoute(client, request.family_id, existing.onboarding_id);
       assertExecutionTransition(existing.execution_status, request.action);
@@ -274,9 +278,9 @@ async function assertRequiredGrowthConsents(client: pg.PoolClient, familyId: str
   }
 }
 
-async function getCompletableGrowthAction(client: pg.PoolClient, familyId: string, actionId: string): Promise<{ action_id: string; onboarding_id: string; priority_id: string; status: string }> {
-  const result = await client.query<{ action_id: string; onboarding_id: string; priority_id: string; status: string }>(
-    `select ga.action_id, ga.onboarding_id, ga.priority_id, ga.status
+async function getCompletableGrowthAction(client: pg.PoolClient, familyId: string, actionId: string): Promise<{ action_id: string; subject_person_id: string | null; onboarding_id: string; priority_id: string; status: string }> {
+  const result = await client.query<{ action_id: string; subject_person_id: string | null; onboarding_id: string; priority_id: string; status: string }>(
+    `select ga.action_id, ga.subject_person_id, ga.onboarding_id, ga.priority_id, ga.status
      from growth_actions ga
      left join intervention_episodes ie on ie.episode_id = ga.intervention_episode_id
      left join family_journey_plans jp on jp.plan_id = ga.journey_plan_id
@@ -300,9 +304,9 @@ async function getTaskExecutionAction(
   client: pg.PoolClient,
   familyId: string,
   actionId: string,
-): Promise<{ action_id: string; onboarding_id: string; priority_id: string; status: string; execution_status: NonNullable<GrowthActionDto['execution_status']> }> {
-  const result = await client.query<{ action_id: string; onboarding_id: string; priority_id: string; status: string; execution_status: NonNullable<GrowthActionDto['execution_status']> }>(
-    `select ga.action_id, ga.onboarding_id, ga.priority_id, ga.status, ga.execution_status
+): Promise<{ action_id: string; subject_person_id: string | null; onboarding_id: string; priority_id: string; status: string; execution_status: NonNullable<GrowthActionDto['execution_status']> }> {
+  const result = await client.query<{ action_id: string; subject_person_id: string | null; onboarding_id: string; priority_id: string; status: string; execution_status: NonNullable<GrowthActionDto['execution_status']> }>(
+    `select ga.action_id, ga.subject_person_id, ga.onboarding_id, ga.priority_id, ga.status, ga.execution_status
        from growth_actions ga
        left join intervention_episodes ie on ie.episode_id = ga.intervention_episode_id
        left join family_journey_plans jp on jp.plan_id = ga.journey_plan_id
@@ -329,7 +333,7 @@ async function updateTaskExecutionState(client: pg.PoolClient, request: Validate
             status = case when $4 = 'CANCEL' then 'NOT_COMPLETED' else status end,
             row_version = row_version + 1
       where family_id = $1 and action_id = $2
-      returning action_id, family_id, onboarding_id, priority_id, intervention_episode_id,
+      returning action_id, family_id, subject_person_id, onboarding_id, priority_id, intervention_episode_id,
                 journey_plan_id, journey_phase, day_index, status, assignment_text, due_date, completed_at,
                 completion_status, reflection, reflection_boundary, boundary, created_at,
                 execution_status, started_at, paused_at, cancelled_at, row_version`,
@@ -350,7 +354,7 @@ async function updateGrowthActionCompletion(client: pg.PoolClient, request: Comp
          execution_status = $3,
          row_version = row_version + 1
      where family_id = $1 and action_id = $2
-     returning action_id, family_id, onboarding_id, priority_id, intervention_episode_id,
+    returning action_id, family_id, subject_person_id, onboarding_id, priority_id, intervention_episode_id,
                journey_plan_id, journey_phase, day_index, status, assignment_text, due_date, completed_at,
                completion_status, reflection, reflection_boundary, boundary, created_at,
                execution_status, started_at, paused_at, cancelled_at, row_version`,
@@ -450,6 +454,7 @@ async function insertGrowthActionStateChangedEvent(
 interface GrowthActionRow {
   action_id: string;
   family_id: string;
+  subject_person_id: string;
   onboarding_id: string;
   priority_id: string;
   intervention_episode_id: string | null;
@@ -476,6 +481,7 @@ function mapGrowthAction(row: GrowthActionRow): GrowthActionDto {
   return {
     action_id: row.action_id,
     family_id: row.family_id,
+    subject_person_id: row.subject_person_id,
     onboarding_id: row.onboarding_id,
     priority_id: row.priority_id,
     intervention_episode_id: row.intervention_episode_id,
@@ -497,6 +503,11 @@ function mapGrowthAction(row: GrowthActionRow): GrowthActionDto {
     cancelled_at: row.cancelled_at ? toIsoString(row.cancelled_at) : null,
     row_version: row.row_version ?? 1,
   };
+}
+
+function assertSubjectScopeMatches(actual: string | null | undefined, expected: string, errorCode: string): void {
+  if (!actual) throw new ConflictException(errorCode);
+  if (actual !== expected) throw new ConflictException('subject_scope_conflict');
 }
 
 function toIsoString(value: Date | string): string {

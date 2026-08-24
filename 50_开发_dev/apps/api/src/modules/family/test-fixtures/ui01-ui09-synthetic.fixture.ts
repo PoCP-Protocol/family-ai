@@ -17,6 +17,7 @@ export const UI01_UI09_SYNTHETIC_FIXTURE = Object.freeze({
   todayAction: {
     action_id: '11111111-1111-4111-8111-111111111111',
     family_id: '22222222-2222-4222-8222-222222222222',
+    subject_person_id: '66666666-6666-4666-8666-666666666666',
     onboarding_id: '33333333-3333-4333-8333-333333333333',
     priority_id: '44444444-4444-4444-8444-444444444444',
     intervention_episode_id: '55555555-5555-4555-8555-555555555555',

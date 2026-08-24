@@ -11,6 +11,7 @@ const priorityId = '33333333-3333-4333-8333-333333333333';
 const profileId = '44444444-4444-4444-8444-444444444444';
 const episodeId = '55555555-5555-4555-8555-555555555555';
 const childId = '66666666-6666-4666-8666-666666666666';
+const otherChildId = '99999999-9999-4999-8999-999999999999';
 const actorId = 'actor-parent-1';
 
 const meta: AuditMeta = {
@@ -55,6 +56,7 @@ describe('InterventionService', () => {
 
     expect(response.episode).toMatchObject({
       episode_id: episodeId,
+      subject_person_id: childId,
       priority_id: priorityId,
       intervention_id: 'INTERVENTION-001',
       intervention_code: 'LISTEN_BEFORE_RESPOND',
@@ -63,6 +65,7 @@ describe('InterventionService', () => {
       policy_version: 'M2_105_DETERMINISTIC_V1',
     });
     expect(response.actions).toHaveLength(7);
+    expect(response.actions.every((action) => action.subject_person_id === childId)).toBe(true);
     expect(response.actions.every((action) => action.status === 'PENDING')).toBe(true);
     expect(response.actions.every((action) => action.boundary === 'ACTION_IS_NOT_OUTCOME')).toBe(true);
     expect(response.actions.map((action) => action.day_index)).toEqual([1, 2, 3, 4, 5, 6, 7]);
@@ -88,6 +91,22 @@ describe('InterventionService', () => {
     expect(client.insertedEpisodeCount).toBe(0);
     expect(client.insertedActions).toEqual([]);
     expect(client.auditActions).toEqual([]);
+  });
+
+  it('fails closed when the active priority belongs to a different subject', async () => {
+    const client = new FakeInterventionClient(null, true, otherChildId);
+    const service = new InterventionService(createRepository(client), createSubjectResolver());
+
+    await expect(service.startIntervention({
+      family_id: familyId,
+      onboarding_id: onboardingId,
+      priority_id: priorityId,
+      intervention_code: 'LISTEN_BEFORE_RESPOND',
+      idempotency_key: 'idem-start-subject-conflict',
+    }, meta)).rejects.toThrow('subject_scope_conflict');
+
+    expect(client.insertedEpisodeCount).toBe(0);
+    expect(client.insertedActions).toEqual([]);
   });
 
   it('replays an idempotent response without creating another episode or actions', async () => {
@@ -146,7 +165,11 @@ class FakeInterventionClient {
   private actionName = '';
   private requestHash = '';
 
-  constructor(private readonly replayResponse: StartInterventionResponse | null = null, private readonly normalRouteVerified = true) {}
+  constructor(
+    private readonly replayResponse: StartInterventionResponse | null = null,
+    private readonly normalRouteVerified = true,
+    private readonly activePrioritySubjectPersonId = childId,
+  ) {}
 
   async query(sql: string, params: unknown[] = []): Promise<{ rowCount: number; rows: unknown[] }> {
     const normalized = sql.replace(/\s+/g, ' ').trim().toLowerCase();
@@ -171,7 +194,7 @@ class FakeInterventionClient {
     if (normalized.startsWith('select gp.priority_id')) {
       return {
         rowCount: 1,
-        rows: [{ priority_id: priorityId, family_id: familyId, onboarding_id: onboardingId, profile_id: profileId, dimension_id: 'R03' }],
+        rows: [{ priority_id: priorityId, family_id: familyId, subject_person_id: this.activePrioritySubjectPersonId, onboarding_id: onboardingId, profile_id: profileId, dimension_id: 'R03' }],
       };
     }
     if (normalized.startsWith('select subject_person_id, subject_relationship_id from growth_profiles')) {
@@ -199,6 +222,7 @@ class FakeInterventionClient {
         rows: [{
           episode_id: episodeId,
           family_id: familyId,
+          subject_person_id: childId,
           onboarding_id: onboardingId,
           priority_id: priorityId,
           intervention_id: 'INTERVENTION-001',
@@ -214,19 +238,20 @@ class FakeInterventionClient {
     }
     if (normalized.startsWith('insert into growth_actions')) {
       this.insertedActions.push(params);
-      const dayIndex = params[7] as 1 | 2 | 3 | 4 | 5 | 6 | 7;
+      const dayIndex = params[8] as 1 | 2 | 3 | 4 | 5 | 6 | 7;
       return {
         rowCount: 1,
         rows: [{
           action_id: `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa${dayIndex}`,
           family_id: familyId,
+          subject_person_id: childId,
           onboarding_id: onboardingId,
           priority_id: priorityId,
           intervention_episode_id: episodeId,
           day_index: dayIndex,
           status: 'PENDING',
-          assignment_text: params[4],
-          due_date: params[8],
+          assignment_text: params[5],
+          due_date: params[9],
           completed_at: null,
           completion_status: null,
           reflection: null,

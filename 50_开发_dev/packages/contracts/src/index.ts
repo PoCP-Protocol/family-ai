@@ -10,7 +10,7 @@ export * from './ui01-ui09-first-slice';
 export * from './ui01-home';
 export * from './ui02-assessment';
 export * from './ui03-growth-hypothesis';
-export * from './family-34ui';
+export * from './consumer-ui-baseline';
 export * from './platform-v4-1';
 export * from './journey-plan';
 export * from './growth-episode';
@@ -470,6 +470,7 @@ export interface GrowthPriorityDraftDto {
 export interface GrowthPriorityDto {
   priority_id: string;
   family_id: string;
+  subject_person_id: string;
   onboarding_id: string;
   profile_id: string;
   dimension_id: M2GrowthDimensionId;
@@ -535,6 +536,7 @@ export interface InterventionCardDto {
 export interface InterventionEpisodeDto {
   episode_id: string;
   family_id: string;
+  subject_person_id: string;
   onboarding_id: string;
   priority_id: string;
   intervention_id: InterventionId;
@@ -550,6 +552,7 @@ export interface InterventionEpisodeDto {
 export interface GrowthActionDto {
   action_id: string;
   family_id: string;
+  subject_person_id: string;
   onboarding_id: string;
   priority_id: string;
   /** Existing 7-day intervention actions retain their episode; 90-day Journey actions do not require one. */

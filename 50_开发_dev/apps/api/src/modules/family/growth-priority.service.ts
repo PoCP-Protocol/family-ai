@@ -75,7 +75,6 @@ export class GrowthPriorityService {
 
       await assertActiveOnboarding(client, request.family_id, request.onboarding_id);
       await assertNormalSafetyRoute(client, request.family_id, request.onboarding_id);
-      await assertNoActiveInterventionEpisode(client, request.family_id, request.onboarding_id);
 
       const profiles = await listConfirmedProfiles(client, request.family_id, request.onboarding_id);
       const draft = buildGrowthPriorityDraft({
@@ -107,12 +106,13 @@ export class GrowthPriorityService {
         ...(candidate ? { profileId: candidate.profile_id } : {}),
       });
       await assertRequiredGrowthConsents(client, request.family_id, subject.childPersonId);
+      await assertNoActiveInterventionEpisode(client, request.family_id, request.onboarding_id, subject.childPersonId);
 
       let priority: GrowthPriorityDto | null = null;
       if (candidate) {
-        const previousPriority = await getActivePriority(client, request.family_id, request.onboarding_id);
-        await supersedeActivePriority(client, request.family_id, request.onboarding_id);
-        priority = await insertPriority(client, request, candidate, draft.evidence_refs, previousPriority, meta);
+        const previousPriority = await getActivePriority(client, request.family_id, request.onboarding_id, subject.childPersonId);
+        await supersedeActivePriority(client, request.family_id, request.onboarding_id, subject.childPersonId);
+        priority = await insertPriority(client, request, candidate, subject.childPersonId, draft.evidence_refs, previousPriority, meta);
       }
 
       const response: ConfirmGrowthPriorityResponse = {
@@ -240,16 +240,17 @@ async function assertRequiredGrowthConsents(client: pg.PoolClient, familyId: str
   }
 }
 
-async function assertNoActiveInterventionEpisode(client: pg.PoolClient, familyId: string, onboardingId: string): Promise<void> {
+async function assertNoActiveInterventionEpisode(client: pg.PoolClient, familyId: string, onboardingId: string, subjectPersonId: string): Promise<void> {
   const result = await client.query(
     `select episode_id
      from intervention_episodes
      where family_id = $1
        and onboarding_id = $2
+       and subject_person_id = $3
        and status = 'ACTIVE'
      limit 1
      for share`,
-    [familyId, onboardingId],
+    [familyId, onboardingId, subjectPersonId],
   );
   if (result.rowCount && result.rowCount > 0) {
     throw new ConflictException('active_intervention_episode_exists');
@@ -300,27 +301,28 @@ async function listConfirmedProfiles(client: pg.PoolClient, familyId: string, on
   }));
 }
 
-async function getActivePriority(client: pg.PoolClient, familyId: string, onboardingId: string): Promise<GrowthPriorityDto | null> {
+async function getActivePriority(client: pg.PoolClient, familyId: string, onboardingId: string, subjectPersonId?: string): Promise<GrowthPriorityDto | null> {
   const result = await client.query<GrowthPriorityRow>(
-    `select priority_id, family_id, onboarding_id, profile_id, dimension_id, status, version,
+    `select priority_id, family_id, subject_person_id, onboarding_id, profile_id, dimension_id, status, version,
             boundary, reason_codes, evidence_refs, policy_version, confirmed_by_actor_id,
             confirmed_at, superseded_at, previous_priority_id, created_at
      from growth_priorities
      where family_id = $1 and onboarding_id = $2 and status = 'ACTIVE'
+       and ($3::uuid is null or subject_person_id = $3)
      limit 1
      for share`,
-    [familyId, onboardingId],
+    [familyId, onboardingId, subjectPersonId ?? null],
   );
   const row = result.rows[0];
   return row ? mapGrowthPriority(row) : null;
 }
 
-async function supersedeActivePriority(client: pg.PoolClient, familyId: string, onboardingId: string): Promise<void> {
+async function supersedeActivePriority(client: pg.PoolClient, familyId: string, onboardingId: string, subjectPersonId: string): Promise<void> {
   await client.query(
     `update growth_priorities
      set status = 'SUPERSEDED', superseded_at = now()
-     where family_id = $1 and onboarding_id = $2 and status = 'ACTIVE'`,
-    [familyId, onboardingId],
+     where family_id = $1 and onboarding_id = $2 and subject_person_id = $3 and status = 'ACTIVE'`,
+    [familyId, onboardingId, subjectPersonId],
   );
 }
 
@@ -328,6 +330,7 @@ async function insertPriority(
   client: pg.PoolClient,
   request: ConfirmGrowthPriorityRequest,
   candidate: GrowthPriorityCandidateDto,
+  subjectPersonId: string,
   evidenceRefs: string[],
   previousPriority: GrowthPriorityDto | null,
   meta: AuditMeta,
@@ -335,14 +338,15 @@ async function insertPriority(
   const nextVersion = previousPriority ? previousPriority.version + 1 : 1;
   const result = await client.query<GrowthPriorityRow>(
     `insert into growth_priorities(
-       family_id, onboarding_id, profile_id, dimension_id, rank, confirmed_by_actor_id,
+       family_id, subject_person_id, onboarding_id, profile_id, dimension_id, rank, confirmed_by_actor_id,
        status, version, boundary, reason_codes, evidence_refs, policy_version, previous_priority_id
-     ) values ($1, $2, $3, $4, 1, $5, 'ACTIVE', $6, $7, $8::jsonb, $9::jsonb, $10, $11)
-     returning priority_id, family_id, onboarding_id, profile_id, dimension_id, status, version,
+     ) values ($1, $2, $3, $4, $5, 1, $6, 'ACTIVE', $7, $8, $9::jsonb, $10::jsonb, $11, $12)
+     returning priority_id, family_id, subject_person_id, onboarding_id, profile_id, dimension_id, status, version,
                boundary, reason_codes, evidence_refs, policy_version, confirmed_by_actor_id,
                confirmed_at, superseded_at, previous_priority_id, created_at`,
     [
       request.family_id,
+      subjectPersonId,
       request.onboarding_id,
       candidate.profile_id,
       request.decision,
@@ -433,6 +437,7 @@ async function insertGrowthPriorityConfirmedEvent(
 interface GrowthPriorityRow {
   priority_id: string;
   family_id: string;
+  subject_person_id: string;
   onboarding_id: string;
   profile_id: string;
   dimension_id: M2GrowthDimensionId;
@@ -453,6 +458,7 @@ function mapGrowthPriority(row: GrowthPriorityRow): GrowthPriorityDto {
   return {
     priority_id: row.priority_id,
     family_id: row.family_id,
+    subject_person_id: row.subject_person_id,
     onboarding_id: row.onboarding_id,
     profile_id: row.profile_id,
     dimension_id: row.dimension_id,
