@@ -160,6 +160,45 @@ export interface FamilyModelUi02AssessmentInterpretationDraft {
   };
 }
 
+export interface FamilyAssessmentAiScoreDimension {
+  dimension_ref: string;
+  label: string;
+  score: number;
+  peer_reference: number;
+}
+
+export interface FamilyAssessmentAiScorecard {
+  generated_by: 'FAMILI_PRINCIPAL_FAMILY_EDUCATION_MODEL';
+  overall_score: number;
+  overall_band: string;
+  dimensions: FamilyAssessmentAiScoreDimension[];
+  core_issue_tags: string[];
+  recommendations: string[];
+  score_boundary: 'SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING';
+}
+
+export interface FamilyAssessmentAiSubsystemOutput {
+  subsystem_ref: 'FAMILY_ASSESSMENT_AI_SUBSYSTEM';
+  subsystem_version: '0.1.0';
+  service_depth: 'BASIC_SELF_CHECK' | 'DEEP_AI_INTERPRETATION';
+  interpretation: FamilyModelUi02AssessmentInterpretationDraft;
+  scorecard: FamilyAssessmentAiScorecard;
+  boundaries: {
+    perspective_boundary: 'PERSPECTIVE_NOT_FACT';
+    score_boundary: 'SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING';
+    action_boundary: 'RECOMMENDATION_NOT_DECISION_REQUIRES_NAMED_ACTION';
+    may_mutate_business_state: false;
+  };
+  provenance: {
+    assessment_session_id: string;
+    tool_ref: string;
+    tool_version: number;
+    generator: FamilyModelUi02AssessmentInterpretationDraft['generator'];
+    source_response_count: number;
+    interpreted_response_count: number;
+  };
+}
+
 export interface FamilyDialogueTurnSignal {
   turn_ref: string;
   speaker_role: 'parent' | 'child' | 'teacher' | 'human_service' | 'ai' | 'system';
@@ -532,6 +571,16 @@ export class FamilyEducationModelRuntime {
     return this.buildUi02InterpretationDraft(input, modelInput, await this.generateGatewayDraft(modelInput), this.options.gateway ? 'FAMILY_EDUCATION_MODEL_RUNTIME_GATEWAY' : 'FAMILY_EDUCATION_MODEL_RUNTIME_DETERMINISTIC');
   }
 
+  assessUi02ResponseSet(input: FamilyModelUi02AssessmentResponseSetInput, serviceDepth: FamilyAssessmentAiSubsystemOutput['service_depth'] = 'DEEP_AI_INTERPRETATION'): FamilyAssessmentAiSubsystemOutput {
+    const interpretation = this.interpretUi02AssessmentResponses(input);
+    return this.buildAssessmentSubsystemOutput(input, interpretation, serviceDepth);
+  }
+
+  async generateUi02AssessmentSubsystemOutput(input: FamilyModelUi02AssessmentResponseSetInput, serviceDepth: FamilyAssessmentAiSubsystemOutput['service_depth'] = 'DEEP_AI_INTERPRETATION'): Promise<FamilyAssessmentAiSubsystemOutput> {
+    const interpretation = await this.generateUi02AssessmentGatewayDraft(input);
+    return this.buildAssessmentSubsystemOutput(input, interpretation, serviceDepth);
+  }
+
   interpretDeterministically(input: FamilyModelInterpretationInput): FamilyModelInterpretationDraft {
     const matchedItems = input.responses.map((response) => this.itemsByRef.get(response.item_ref)).filter((item): item is FamilyAssessmentItem => !!item);
     const needRefs = collectRefs(matchedItems, 'need_refs');
@@ -665,7 +714,97 @@ export class FamilyEducationModelRuntime {
       },
     };
   }
+
+  private buildAssessmentSubsystemOutput(
+    sourceInput: FamilyModelUi02AssessmentResponseSetInput,
+    interpretation: FamilyModelUi02AssessmentInterpretationDraft,
+    serviceDepth: FamilyAssessmentAiSubsystemOutput['service_depth'],
+  ): FamilyAssessmentAiSubsystemOutput {
+    return {
+      subsystem_ref: 'FAMILY_ASSESSMENT_AI_SUBSYSTEM',
+      subsystem_version: '0.1.0',
+      service_depth: serviceDepth,
+      interpretation,
+      scorecard: buildAssessmentAiScorecard(sourceInput, interpretation),
+      boundaries: {
+        perspective_boundary: 'PERSPECTIVE_NOT_FACT',
+        score_boundary: 'SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING',
+        action_boundary: 'RECOMMENDATION_NOT_DECISION_REQUIRES_NAMED_ACTION',
+        may_mutate_business_state: false,
+      },
+      provenance: {
+        assessment_session_id: sourceInput.assessment_session_id,
+        tool_ref: sourceInput.tool_ref,
+        tool_version: sourceInput.tool_version,
+        generator: interpretation.generator,
+        source_response_count: interpretation.coverage.source_response_count,
+        interpreted_response_count: interpretation.coverage.interpreted_response_count,
+      },
+    };
+  }
 }
+
+function buildAssessmentAiScorecard(sourceInput: FamilyModelUi02AssessmentResponseSetInput, interpretation: FamilyModelUi02AssessmentInterpretationDraft): FamilyAssessmentAiScorecard {
+  const constructRefs = new Set(interpretation.draft.construct_signals.map((signal) => signal.construct_ref));
+  const needRefs = new Set(interpretation.draft.need_summary.map((need) => need.need_ref));
+  const focusSeed = stableSeed(`${focusRefFromResponses(sourceInput.responses) ?? 'UNKNOWN'}:${sourceInput.assessment_session_id}`, 6);
+  const dimensions = [
+    assessmentScoreDimension('PARENT_CHILD_COMMUNICATION', '沟通', 76 - focusSeed, 72, constructRefs.has('PARENT_CHILD_COMMUNICATION'), needRefs.has('FAMILY_COMMUNICATION_NEED')),
+    assessmentScoreDimension('SELF_REGULATION', '自律', 66 - focusSeed, 70, constructRefs.has('SELF_REGULATION'), needRefs.has('SELF_REGULATION_NEED')),
+    assessmentScoreDimension('LEARNING_HABITS', '学习', 72 - focusSeed, 71, constructRefs.has('LEARNING_HABITS'), needRefs.has('LEARNING_HABIT_NEED')),
+    assessmentScoreDimension('EMOTION_REGULATION', '情绪', 69 - focusSeed, 70, constructRefs.has('EMOTION_REGULATION'), needRefs.has('EMOTION_SUPPORT_NEED')),
+    assessmentScoreDimension('FAMILY_RELATIONSHIP_SUPPORT', '关系', 78 - focusSeed, 73, constructRefs.has('PARENT_CHILD_COMMUNICATION'), interpretation.focus_ref === 'PARENT_CHILD_COMMUNICATION'),
+  ];
+  const overallScore = Math.round(dimensions.reduce((sum, item) => sum + item.score, 0) / dimensions.length);
+  return {
+    generated_by: 'FAMILI_PRINCIPAL_FAMILY_EDUCATION_MODEL',
+    overall_score: overallScore,
+    overall_band: overallScore >= 75 ? '良好' : overallScore >= 65 ? '发展中' : '需要支持',
+    dimensions,
+    core_issue_tags: interpretation.draft.need_summary.map((need) => assessmentNeedLabel(need.need_ref)).filter(uniqueValue).slice(0, 3),
+    recommendations: interpretation.draft.action_candidates.map((candidate) => assessmentActionLabel(candidate.action_ref)).filter(uniqueValue).slice(0, 3),
+    score_boundary: 'SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING',
+  };
+}
+
+function assessmentScoreDimension(dimensionRef: string, label: string, baseScore: number, peerReference: number, hasConstructSignal: boolean, hasNeedSignal: boolean): FamilyAssessmentAiScoreDimension {
+  const score = Math.max(45, Math.min(92, baseScore + (hasConstructSignal ? 4 : 0) - (hasNeedSignal ? 6 : 0)));
+  return { dimension_ref: dimensionRef, label, score, peer_reference: peerReference };
+}
+
+function assessmentNeedLabel(needRef: string) {
+  return ({
+    FAMILY_COMMUNICATION_NEED: '亲子沟通需要被看见',
+    CHILD_RELATIONSHIP_NEED: '亲子关系需要更稳定的回应',
+    CHILD_LEARNING_SUPPORT_NEED: '学习过程需要可执行支持',
+    FAMILY_LEARNING_ENVIRONMENT_NEED: '家庭学习环境需要减阻',
+    CHILD_EMOTIONAL_SUPPORT_NEED: '情绪支持需要提前安排',
+    CHILD_DIGITAL_AI_NEED: '数字与 AI 使用需要边界',
+    FAMILY_RHYTHM_NEED: '家庭节律需要一起校准',
+    PARENT_METHOD_NEED: '家长方法需要可练习脚手架',
+    PARENT_EMOTIONAL_SUPPORT_NEED: '家长状态需要被纳入支持',
+    FAMILY_SCHOOL_ALIGNMENT_NEED: '家校反馈需要形成闭环',
+  } as Record<string, string>)[needRef] ?? '家庭支持需要进一步观察';
+}
+
+function assessmentActionLabel(actionRef: string) {
+  return ({
+    COMMUNICATION_REPAIR_CONVERSATION: '每天安排一次不评价的短对话，先听孩子描述当天最难的一件事。',
+    SEVEN_DAY_HOMEWORK_START_RITUAL: '把一个固定时段变成可坚持的小流程，用完成记录替代反复提醒。',
+    SLEEP_AND_ENERGY_RHYTHM_CHECK: '连续七天记录睡眠、精力和学习状态，再一起找最小调整点。',
+    FAMILY_DEVICE_AGREEMENT_DRAFT: '把设备使用边界写成家庭约定，并一起复盘执行感受。',
+    AI_USE_FAMILY_RULES_MINI_PLAN: '约定 AI 学习工具的提问、核验和引用规则，保留孩子自己的思考过程。',
+    MULTIMODAL_LEARNING_ARTIFACT_REVIEW: '让孩子用图、音频、讲解或作品复述一次学习内容，观察优势表达方式。',
+    SCHOOL_FAMILY_FEEDBACK_HANDOFF: '把老师反馈转成一条家庭可执行动作，并约定下次复盘时间。',
+    HUMAN_SERVICE_CONTEXT_PACKAGE: '整理家庭观察和关键场景，必要时交给专业人工支持继续判断。',
+  } as Record<string, string>)[actionRef] ?? '选择一个最小行动试行一周，再用观察记录决定是否调整。';
+}
+
+function stableSeed(value: string, modulo: number) {
+  return Array.from(value).reduce((sum, char) => sum + char.charCodeAt(0), 0) % modulo;
+}
+
+function uniqueValue<T>(value: T, index: number, values: T[]) { return values.indexOf(value) === index; }
 
 const UI02_FOCUS_TO_MODEL_ITEM_REFS: Record<Ui02AssessmentFocusRef, string[]> = {
   LEARNING_HABITS: ['HOMEWORK_START_DELAY', 'CHILD_ERROR_REVIEW_PATTERN'],

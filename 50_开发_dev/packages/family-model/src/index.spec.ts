@@ -312,6 +312,50 @@ describe('FamilyEducationModelRuntime', () => {
     });
   });
 
+  it('builds a bounded Family Assessment AI subsystem output for UI-02 and UI-03', () => {
+    const runtime = createFamilyEducationAssessmentModelRuntime();
+    const output = runtime.assessUi02ResponseSet({
+      request_id: 'REQ-ASSESSMENT-SUBSYSTEM',
+      assessment_session_id: 'SESSION-ASSESSMENT-SUBSYSTEM',
+      tool_ref: 'FAMILY_SUPPORT_NEEDS',
+      tool_version: 2,
+      responses: [
+        { item_ref: 'FOCUS', response_type: 'SINGLE_CHOICE', response_value: 'PARENT_CHILD_COMMUNICATION' },
+        { item_ref: 'PARENT_CHILD_COMMUNICATION_Q01', response_type: 'SINGLE_CHOICE', response_value: 'OFTEN' },
+        { item_ref: 'PARENT_CHILD_COMMUNICATION_Q02', response_type: 'SINGLE_CHOICE', response_value: 'SOMETIMES' },
+      ],
+    });
+
+    expect(output).toMatchObject({
+      subsystem_ref: 'FAMILY_ASSESSMENT_AI_SUBSYSTEM',
+      subsystem_version: '0.1.0',
+      service_depth: 'DEEP_AI_INTERPRETATION',
+      boundaries: {
+        perspective_boundary: 'PERSPECTIVE_NOT_FACT',
+        score_boundary: 'SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING',
+        action_boundary: 'RECOMMENDATION_NOT_DECISION_REQUIRES_NAMED_ACTION',
+        may_mutate_business_state: false,
+      },
+      provenance: {
+        assessment_session_id: 'SESSION-ASSESSMENT-SUBSYSTEM',
+        tool_ref: 'FAMILY_SUPPORT_NEEDS',
+        tool_version: 2,
+        generator: 'FAMILY_EDUCATION_MODEL_RUNTIME_DETERMINISTIC',
+        source_response_count: 3,
+      },
+    });
+    expect(output.interpretation.focus_ref).toBe('PARENT_CHILD_COMMUNICATION');
+    expect(output.scorecard.generated_by).toBe('FAMILI_PRINCIPAL_FAMILY_EDUCATION_MODEL');
+    expect(output.scorecard.score_boundary).toBe('SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING');
+    expect(output.scorecard.dimensions).toHaveLength(5);
+    for (const dimension of output.scorecard.dimensions) {
+      expect(dimension.score).toBeGreaterThanOrEqual(45);
+      expect(dimension.score).toBeLessThanOrEqual(92);
+    }
+    expect(output.interpretation.draft.prohibited_outputs).toEqual(expect.arrayContaining(['family_ranking', 'child_ranking', 'medical_diagnosis', 'psychiatric_diagnosis']));
+    expect(JSON.stringify(output.scorecard)).not.toMatch(/child_ranking|family_ranking|medical_diagnosis|psychiatric_diagnosis/i);
+  });
+
   it('constructs the backend Family Education assessment model from packaged assets', () => {
     const runtime = createFamilyEducationAssessmentModelRuntime();
     const cases = [

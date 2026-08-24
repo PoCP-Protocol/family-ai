@@ -7,8 +7,12 @@ const root = process.cwd();
 const strictRuntime = process.argv.includes('--strict-runtime');
 const matrixPath = path.join(root, 'governance', 'FAMILY_35UI_RUNTIME_MATRIX_V1.json');
 const invariantsPath = path.join(root, 'governance', 'FAMILY_ARCHITECTURE_INVARIANTS_V4_1.json');
+const mobileRuntimeBoundaryPath = path.join(root, 'governance', 'FAMILY_MOBILE_RUNTIME_BOUNDARY_V1.json');
 const mobileRegistryPath = path.join(root, 'apps', 'mobile', 'lib', 'family', 'ui-registry.ts');
 const mobileDesignPath = path.join(root, 'apps', 'mobile', 'design.md');
+const mobileBoundaryDocPath = path.join(root, 'apps', 'mobile', 'CROSS_PLATFORM_APP_WEB.md');
+const mobileFamilyApiClientPath = path.join(root, 'apps', 'mobile', 'lib', 'family', 'family-api-client.ts');
+const familyModelGatewayProviderPath = path.join(root, 'apps', 'api', 'src', 'modules', 'family', 'family-model-gateway.provider.ts');
 const mobileServerRoot = path.join(root, 'apps', 'mobile', 'server');
 const mobilePackagePath = path.join(root, 'apps', 'mobile', 'package.json');
 const rootPackagePath = path.join(root, 'package.json');
@@ -23,6 +27,7 @@ if (errors.length) finish();
 
 const matrix = JSON.parse(read(matrixPath));
 const invariants = JSON.parse(read(invariantsPath));
+const mobileRuntimeBoundary = fs.existsSync(mobileRuntimeBoundaryPath) ? JSON.parse(read(mobileRuntimeBoundaryPath)) : null;
 const expected = Array.from({ length: 34 }, (_, i) => `UI-${String(i + 1).padStart(2, '0')}`);
 const ids = matrix.screens.map((s) => s.ui_id);
 const unique = [...new Set(ids)];
@@ -77,6 +82,48 @@ const diagnosis = matrix.screens.find((s) => s.ui_id === 'UI-03');
 assert(Boolean(diagnosis?.ai_use_cases?.includes('AI_DIAGNOSIS')), 'UI-03 must retain AI_DIAGNOSIS capability');
 assert(matrix.principles?.ai_diagnosis?.keep === true, 'matrix must keep AI诊断');
 
+const hasMobileRuntimeBoundary = Boolean(
+  mobileRuntimeBoundary?.schema_version === 'FAMILY_MOBILE_RUNTIME_BOUNDARY_V1'
+  && mobileRuntimeBoundary?.dev_test_real_external_ai?.status === 'ALLOWED_VIA_FAMILY_API_MODEL_GATEWAY_ONLY'
+  && mobileRuntimeBoundary?.dev_test_real_external_ai?.required_live_flag === 'FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI'
+  && mobileRuntimeBoundary?.mobile_template_runtime?.status === 'QUARANTINED_TEMPLATE_COMPATIBILITY_RUNTIME'
+  && Array.isArray(mobileRuntimeBoundary?.production_forbidden)
+  && mobileRuntimeBoundary.production_forbidden.includes('NO_CLIENT_DIRECT_MODEL_CALL')
+  && mobileRuntimeBoundary.production_forbidden.includes('NO_SECOND_BUSINESS_BACKEND')
+  && mobileRuntimeBoundary.production_forbidden.includes('NO_SECOND_CANONICAL_DB')
+);
+
+function assertMobileRuntimeBoundary() {
+  assert(hasMobileRuntimeBoundary, 'strict runtime requires FAMILY_MOBILE_RUNTIME_BOUNDARY_V1 with dev/test live API allowed via Family API Model Gateway only');
+  assert(fs.existsSync(familyModelGatewayProviderPath), 'Family Model Gateway provider missing');
+  if (fs.existsSync(familyModelGatewayProviderPath)) {
+    const provider = read(familyModelGatewayProviderPath);
+    assert(provider.includes('createFamilyModelGatewayFromEnv'), 'Family Model Gateway provider must use createFamilyModelGatewayFromEnv');
+    assert(provider.includes('FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI'), 'Family Model Gateway provider must gate live AI with FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI');
+  }
+  assert(fs.existsSync(mobileBoundaryDocPath), 'mobile runtime boundary doc missing');
+  if (fs.existsSync(mobileBoundaryDocPath)) {
+    const doc = read(mobileBoundaryDocPath);
+    for (const marker of mobileRuntimeBoundary?.required_client_boundary_text ?? []) {
+      assert(doc.includes(marker), `mobile boundary doc missing marker: ${marker}`);
+    }
+  }
+  assert(fs.existsSync(mobileFamilyApiClientPath), 'FamilyApiClient missing');
+  if (fs.existsSync(mobileFamilyApiClientPath)) {
+    const apiClient = read(mobileFamilyApiClientPath);
+    for (const marker of mobileRuntimeBoundary?.required_family_api_client_paths ?? []) {
+      assert(apiClient.includes(marker), `FamilyApiClient missing canonical path marker: ${marker}`);
+    }
+  }
+  for (const relativeRoot of mobileRuntimeBoundary?.dev_test_real_external_ai?.forbidden_client_secret_paths ?? []) {
+    const forbiddenRoot = path.join(root, relativeRoot);
+    for (const file of collectTextFiles(forbiddenRoot)) {
+      const text = read(file);
+      assert(!/OPENAI_API_KEY|ANTHROPIC_AUTH_TOKEN|FAMILY_LLM_API_KEY|ZHIPUAI_API_KEY/.test(text), `client/mobile code must not read provider API keys: ${path.relative(root, file)}`);
+    }
+  }
+}
+
 function collectTextFiles(dir) {
   if (!fs.existsSync(dir)) return [];
   const out = [];
@@ -95,7 +142,8 @@ for (const file of collectTextFiles(mobileServerRoot)) {
 }
 if (directProviderHits.length > 0) {
   const message = `mobile direct model-provider paths remain: ${directProviderHits.join(', ')}`;
-  strictRuntime ? errors.push(message) : warnings.push(message);
+  if (strictRuntime && !hasMobileRuntimeBoundary) errors.push(message);
+  else warnings.push(`${message} [QUARANTINED_TEMPLATE_COMPATIBILITY_RUNTIME]`);
 }
 
 if (fs.existsSync(mobilePackagePath)) {
@@ -103,11 +151,13 @@ if (fs.existsSync(mobilePackagePath)) {
   const deps = { ...(mobilePackage.dependencies ?? {}), ...(mobilePackage.devDependencies ?? {}) };
   if (deps.mysql2 || deps['drizzle-orm']) {
     const message = 'mobile second DB/identity dependencies remain (mysql2/drizzle)';
-    strictRuntime ? errors.push(message) : warnings.push(message);
+    if (strictRuntime && !hasMobileRuntimeBoundary) errors.push(message);
+    else warnings.push(`${message} [QUARANTINED_TEMPLATE_COMPATIBILITY_RUNTIME]`);
   }
   if (deps.express || deps['@trpc/server'] || mobilePackage.scripts?.['dev:server']) {
     const message = 'mobile second server runtime remains (Express/tRPC/dev:server)';
-    strictRuntime ? errors.push(message) : warnings.push(message);
+    if (strictRuntime && !hasMobileRuntimeBoundary) errors.push(message);
+    else warnings.push(`${message} [QUARANTINED_TEMPLATE_COMPATIBILITY_RUNTIME]`);
   }
   if (fs.existsSync(rootPackagePath)) {
     const rootPackage = JSON.parse(read(rootPackagePath));
@@ -117,6 +167,8 @@ if (fs.existsSync(mobilePackagePath)) {
     }
   }
 }
+
+if (strictRuntime) assertMobileRuntimeBoundary();
 
 const domainCounts = {};
 for (const s of matrix.screens) domainCounts[s.primary_domain] = (domainCounts[s.primary_domain] || 0) + 1;

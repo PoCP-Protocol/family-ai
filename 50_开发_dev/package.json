@@ -64,7 +64,8 @@
     "legacy:test": "pnpm --filter @family/fels-contracts test && pnpm --filter @family/fels-api test && pnpm --filter @family/fels-web test",
     "validate:arch:v4.1": "node tools/validate-architecture-v4-1.mjs",
     "validate:business-runtime": "node tools/validate-business-runtime-model.mjs",
-    "validate:ppt-ui-trace": "node tools/validate-ppt-ui-traceability.mjs"
+    "validate:ppt-ui-trace": "node tools/validate-ppt-ui-traceability.mjs",
+    "validate:mobile-runtime-boundary": "node tools/validate-35ui-alignment.mjs --strict-runtime"
   },
   "devDependencies": {
     "ajv": "^8.20.0",

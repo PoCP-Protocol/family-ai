@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { GrowthHypothesisDecisionReceipt, Ui03GrowthHypothesis, Ui03GrowthHypothesisProjection } from '@family/contracts';
 import { createFamilyEducationAssessmentModelRuntime } from '@family/family-model';
-import type { FamilyModelUi02AssessmentInterpretationDraft, FamilyModelUi02AssessmentResponseSetInput } from '@family/family-model';
+import type { FamilyAssessmentAiSubsystemOutput, FamilyModelUi02AssessmentResponseSetInput } from '@family/family-model';
 import { PRINCIPAL_SOUL_PROFILE } from '@family/principal-ai';
 import type pg from 'pg';
 import { FamilyRepository } from './family.repository';
@@ -39,7 +39,7 @@ export class GrowthHypothesisService {
       const policy = await client.query<{ allowed_pages: string[] | null }>(`select allowed_pages from tenant_policy_profiles where tenant_id=$1 and status='ACTIVE' order by created_at desc limit 1`, [tenantId]);
       if (!(policy.rows[0]?.allowed_pages ?? []).includes('UI-03')) return projection(tenantId, familyId, 'POLICY_BLOCKED', null);
       const row = await this.loadHypothesisRow(client, familyId, tenantId);
-      return row ? projection(tenantId, familyId, 'READY', mapHypothesis(row, this.createModelDraft(familyId, row)), 'MODEL_DRAFT_READY') : projection(tenantId, familyId, 'NO_SUBMITTED_ASSESSMENT', null);
+      return row ? projection(tenantId, familyId, 'READY', mapHypothesis(row, this.createAssessmentSubsystemOutput(familyId, row)), 'MODEL_DRAFT_READY') : projection(tenantId, familyId, 'NO_SUBMITTED_ASSESSMENT', null);
     });
   }
 
@@ -61,7 +61,7 @@ export class GrowthHypothesisService {
       await this.assertScope(client, familyId, tenantId, actorId);
       const row = await this.loadHypothesisRow(client, familyId, tenantId, input.assessment_session_id);
       if (!row) throw new NotFoundException('growth_hypothesis_not_found');
-      const hypothesis = mapHypothesis(row, this.createModelDraft(familyId, row));
+      const hypothesis = mapHypothesis(row, this.createAssessmentSubsystemOutput(familyId, row));
       if (hypothesis.hypothesis_ref !== input.hypothesis_ref) throw new ConflictException('growth_hypothesis_reference_mismatch');
       await this.assertAssessmentConsent(client, familyId, row.subject_person_id);
 
@@ -125,7 +125,7 @@ export class GrowthHypothesisService {
     return result.rows[0] ?? null;
   }
 
-  private createModelDraft(familyId: string, row: HypothesisRow): FamilyModelUi02AssessmentInterpretationDraft {
+  private createAssessmentSubsystemOutput(familyId: string, row: HypothesisRow): FamilyAssessmentAiSubsystemOutput {
     const input: FamilyModelUi02AssessmentResponseSetInput = {
       request_id: `UI03:${row.assessment_session_id}`,
       assessment_session_id: row.assessment_session_id,
@@ -135,7 +135,7 @@ export class GrowthHypothesisService {
       child_age_stage: 'UNKNOWN_OR_NOT_COLLECTED',
       responses: row.response_set,
     };
-    return createFamilyEducationAssessmentModelRuntime().interpretUi02AssessmentResponses(input);
+    return createFamilyEducationAssessmentModelRuntime().assessUi02ResponseSet(input, 'DEEP_AI_INTERPRETATION');
   }
 
   private async assertScope(client: pg.PoolClient, familyId: string, tenantId: string, actorId: string) {
@@ -154,7 +154,8 @@ function projection(tenantId: string, familyId: string, availability: Ui03Growth
   return { projection_version: 'UI03_GROWTH_HYPOTHESIS_V1', tenant_id: tenantId, family_id: familyId, availability, hypothesis, named_actions: { confirm: 'CONFIRM_GROWTH_HYPOTHESIS', dismiss: 'DISMISS_GROWTH_HYPOTHESIS' }, ai_state: aiState };
 }
 
-function mapHypothesis(row: HypothesisRow, modelDraft: FamilyModelUi02AssessmentInterpretationDraft): Ui03GrowthHypothesis {
+function mapHypothesis(row: HypothesisRow, assessmentOutput: FamilyAssessmentAiSubsystemOutput): Ui03GrowthHypothesis {
+  const modelDraft = assessmentOutput.interpretation;
   const modelHypothesis = modelDraft.draft.hypotheses[0];
   return {
     hypothesis_ref: `ASSESSMENT:${row.assessment_session_id}:${row.tool_ref}:v${row.tool_version}:H1`,
@@ -178,60 +179,11 @@ function mapHypothesis(row: HypothesisRow, modelDraft: FamilyModelUi02Assessment
     action_candidate_refs: modelDraft.draft.action_candidates.map((candidate) => candidate.action_ref),
     fact_boundary: 'HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS',
     principal: mapPrincipalInterpretation(row, modelDraft),
-    scorecard: mapBaselineScorecard(row, modelDraft),
+    scorecard: assessmentOutput.scorecard,
   };
 }
 
-function mapBaselineScorecard(row: HypothesisRow, modelDraft: FamilyModelUi02AssessmentInterpretationDraft): NonNullable<Ui03GrowthHypothesis['scorecard']> {
-  const constructRefs = new Set(modelDraft.draft.construct_signals.map((signal) => signal.construct_ref));
-  const needRefs = new Set(modelDraft.draft.need_summary.map((need) => need.need_ref));
-  const focusSeed = hashRequest({ focus_ref: row.focus_ref, assessment_session_id: row.assessment_session_id }).charCodeAt(0) % 6;
-  const dimensions = [
-    scoreDimension('PARENT_CHILD_COMMUNICATION', '沟通', 76 - focusSeed, 72, constructRefs.has('PARENT_CHILD_COMMUNICATION'), needRefs.has('FAMILY_COMMUNICATION_NEED')),
-    scoreDimension('SELF_REGULATION', '自律', 66 - focusSeed, 70, constructRefs.has('SELF_REGULATION'), needRefs.has('SELF_REGULATION_NEED')),
-    scoreDimension('LEARNING_HABITS', '学习', 72 - focusSeed, 71, constructRefs.has('LEARNING_HABITS'), needRefs.has('LEARNING_HABIT_NEED')),
-    scoreDimension('EMOTION_REGULATION', '情绪', 69 - focusSeed, 70, constructRefs.has('EMOTION_REGULATION'), needRefs.has('EMOTION_SUPPORT_NEED')),
-    scoreDimension('FAMILY_RELATIONSHIP_SUPPORT', '关系', 78 - focusSeed, 73, constructRefs.has('PARENT_CHILD_COMMUNICATION'), row.focus_ref === 'PARENT_CHILD_COMMUNICATION'),
-  ];
-  const overallScore = Math.round(dimensions.reduce((sum, item) => sum + item.score, 0) / dimensions.length);
-  return {
-    generated_by: 'FAMILI_PRINCIPAL_FAMILY_EDUCATION_MODEL',
-    overall_score: overallScore,
-    overall_band: overallScore >= 75 ? '良好' : overallScore >= 65 ? '发展中' : '需要支持',
-    dimensions,
-    core_issue_tags: [row.title, ...modelDraft.draft.need_summary.map((need) => needLabel(need.need_ref))].filter(unique).slice(0, 3),
-    recommendations: modelDraft.draft.action_candidates.map((candidate) => actionLabel(candidate.action_ref)).concat(row.description).filter(unique).slice(0, 3),
-    score_boundary: 'SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING',
-  };
-}
-
-function scoreDimension(dimensionRef: string, label: string, baseScore: number, peerReference: number, hasConstructSignal: boolean, hasNeedSignal: boolean): NonNullable<Ui03GrowthHypothesis['scorecard']>['dimensions'][number] {
-  const score = Math.max(45, Math.min(92, baseScore + (hasConstructSignal ? 4 : 0) - (hasNeedSignal ? 6 : 0)));
-  return { dimension_ref: dimensionRef, label, score, peer_reference: peerReference };
-}
-
-function unique<T>(value: T, index: number, values: T[]) { return values.indexOf(value) === index; }
-
-function needLabel(needRef: string) {
-  return ({
-    FAMILY_COMMUNICATION_NEED: '亲子沟通需要被看见',
-    SELF_REGULATION_NEED: '自我管理需要陪练',
-    LEARNING_HABIT_NEED: '学习习惯需要稳定支持',
-    EMOTION_SUPPORT_NEED: '情绪支持需要提前安排',
-    DEVICE_BOUNDARY_NEED: '手机边界需要家庭协作',
-  } as Record<string, string>)[needRef] ?? '家庭支持需要进一步观察';
-}
-
-function actionLabel(actionRef: string) {
-  return ({
-    FAMILY_MICRO_CONVERSATION: '每天安排一次不评价的短对话，先听孩子描述当天最难的一件事。',
-    ROUTINE_ANCHOR: '把一个固定时段变成可坚持的小流程，用完成记录替代反复提醒。',
-    EMOTION_CHECK_IN: '在冲突前约定情绪暂停语，等双方平稳后再讨论下一步。',
-    DEVICE_BOUNDARY_CONTRACT: '把手机使用边界写成家庭约定，并一起复盘执行感受。',
-  } as Record<string, string>)[actionRef] ?? '选择一个最小行动试行一周，再用观察记录决定是否调整。';
-}
-
-function mapPrincipalInterpretation(row: HypothesisRow, modelDraft: FamilyModelUi02AssessmentInterpretationDraft): NonNullable<Ui03GrowthHypothesis['principal']> {
+function mapPrincipalInterpretation(row: HypothesisRow, modelDraft: FamilyAssessmentAiSubsystemOutput['interpretation']): NonNullable<Ui03GrowthHypothesis['principal']> {
   return {
     public_role: PRINCIPAL_SOUL_PROFILE.public_role,
     codename: PRINCIPAL_SOUL_PROFILE.codename,

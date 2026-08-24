@@ -23,7 +23,9 @@
 ## 工程边界
 
 - Web 不复制 Mobile 页面。
-- 新增家庭业务能力必须统一走 Family API；现存模板内的 tRPC/MySQL 兼容层仍待后续迁移，不得继续扩展为第二套领域后台。
+- 开发/测试环境允许调用真实 API key，但只能通过 Family API 的 Model Gateway 入口；Mobile 端不得读取 provider key，不得绕过 Family API 直连模型。
+- 新增家庭业务能力必须统一走 Family API：Mobile UI → Family API → Model Gateway → Policy / Consent / Safety → Provider Adapter。
+- `apps/mobile/server` 是 `QUARANTINED_TEMPLATE_COMPATIBILITY_RUNTIME`，仅保留历史 Expo 模板调试能力；其中 tRPC/MySQL/Express/LLM helper 不得扩展为第二套 Family 业务后台、身份系统、规范数据库或客户端直连模型路径。
 - 34 个产品页面必须全部登记在 `lib/family/ui-registry.ts`；UI-35 不再是产品页面、路由或验收基线。
 - `tests/cross-platform-parity.test.ts` 负责验证 Web 与 App 共享全部注册能力。
 - 原 `apps/web` 仅保留旧的确定性工作台与兼容入口；面向家庭用户的新 Web 以本客户端为准。

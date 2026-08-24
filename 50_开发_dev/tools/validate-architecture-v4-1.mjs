@@ -11,13 +11,14 @@ const read = (p) => fs.readFileSync(p, 'utf8');
 const invariantsPath = path.join(root, 'governance', 'FAMILY_ARCHITECTURE_INVARIANTS_V4_1.json');
 const matrixPath = path.join(root, 'governance', 'FAMILY_35UI_RUNTIME_MATRIX_V1.json');
 const canonicalContractPath = path.join(root, 'packages', 'contracts', 'src', 'family-34ui.ts');
+const growthEpisodeContractPath = path.join(root, 'packages', 'contracts', 'src', 'growth-episode.ts');
 const legacyContractPath = path.join(root, 'packages', 'contracts', 'src', 'family-growth-os.ts');
 const programPath = path.join(root, 'governance', 'FAMILY_35UI_PROGRAM_V1.yaml');
 const architecturePath = path.join(root, 'architecture', 'FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md');
 const harnessBoundaryPath = path.join(root, 'architecture', 'FAMILY_INTELLIGENCE_OS_HARNESS_BOUNDARY_V0_1.md');
 const harnessPackagePath = path.join(root, 'packages', 'harness', 'src', 'index.ts');
 
-for (const p of [invariantsPath, matrixPath, canonicalContractPath, legacyContractPath, programPath, architecturePath, harnessBoundaryPath, harnessPackagePath]) {
+for (const p of [invariantsPath, matrixPath, canonicalContractPath, growthEpisodeContractPath, legacyContractPath, programPath, architecturePath, harnessBoundaryPath, harnessPackagePath]) {
   assert(fs.existsSync(p), `missing required V4.1 artifact: ${p}`);
 }
 if (errors.length) finish();
@@ -59,6 +60,22 @@ assert(/export type FamilyBusinessLoop\b/.test(canonical), 'canonical FamilyBusi
 assert(!/Family35UiId|Family35BusinessLoop/.test(canonical), 'temporary Family35* aliases must be removed');
 for (const loop of invariants.canonical_business_loops) assert(canonical.includes(`'${loop}'`), `canonical loop ${loop} missing`);
 for (const domain of invariants.canonical_business_domains) assert(canonical.includes(`'${domain}'`), `canonical domain ${domain} missing`);
+
+const growthEpisode = read(growthEpisodeContractPath);
+for (const required of [
+  'export interface GrowthEpisodeDto',
+  'PROGRAM',
+  'JOURNEY',
+  'AI_GUIDED',
+  'HUMAN_SERVICE',
+  'HYBRID',
+  'GROWTH_EPISODE_IS_SUPPORT_PROCESS_NOT_OUTCOME',
+  'EPISODE_STATE_CHANGES_REQUIRE_NAMED_ACTION',
+  'OUTCOME_OBSERVATION_REQUIRED_BEFORE_COMPLETION_CLAIM',
+]) {
+  assert(growthEpisode.includes(required), `GrowthEpisode contract missing marker: ${required}`);
+}
+assert(!/family_total_score|family_ranking/i.test(growthEpisode), 'GrowthEpisode contract must not introduce score/ranking semantics');
 
 const legacy = read(legacyContractPath);
 assert(/LegacyFamilySurfaceLoop/.test(legacy), 'legacy surface loop type must be explicitly named');

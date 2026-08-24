@@ -12,6 +12,8 @@ export * from './ui02-assessment';
 export * from './ui03-growth-hypothesis';
 export * from './family-34ui';
 export * from './platform-v4-1';
+export * from './journey-plan';
+export * from './growth-episode';
 
 export type FamilyStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 export type PersonType = 'PARENT' | 'CHILD';

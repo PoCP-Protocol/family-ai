@@ -3,6 +3,7 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { commerceProductsForDisplay } from "@/lib/family/commerce-entitlements";
@@ -96,7 +97,7 @@ export default function GrowthProductDetailScreen() {
   return (
     <ScreenContainer edges={["left", "right", "bottom"]} containerClassName="bg-white" safeAreaClassName="bg-white" style={styles.screen}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView refreshControl={<FamilyRefreshControl />} style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.statusBar}>
           <Text style={styles.statusTime}>9:41</Text>
           <View style={styles.statusMarks}><View style={styles.signalBars} /><Text style={styles.wifiMark}>⌁</Text><View style={styles.batteryMark} /></View>
