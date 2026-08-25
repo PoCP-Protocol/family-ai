@@ -27,11 +27,11 @@ import { UI_ACTION_POLICIES } from "../lib/family/ui-action-policies";
 import { FAMILY_SCREENS, getFamilyScreen, getScreensForTab } from "../lib/family/ui-registry";
 
 describe("Family AI UI registry", () => {
-  it("contains UI-01 through UI-34 (plus UI-02-result) exactly once", () => {
+  it("contains UI-01 through UI-34 exactly once", () => {
     const ids = FAMILY_SCREENS.map((screen) => screen.id);
 
-    expect(ids).toHaveLength(35);
-    expect(new Set(ids).size).toBe(35);
+    expect(ids).toHaveLength(34);
+    expect(new Set(ids).size).toBe(34);
     expect(ids[0]).toBe("UI-01");
     expect(ids[ids.length - 1]).toBe("UI-34");
     expect(getFamilyScreen("UI-35")).toBeUndefined();
@@ -54,7 +54,7 @@ describe("Family AI UI registry", () => {
   it("keeps a named visual baseline and feature set for every baseline screen and the assessment result route", () => {
     expect(FAMILY_SCREENS.every((screen) => screen.baseline.trim().length > 0)).toBe(true);
     expect(FAMILY_SCREENS.every((screen) => screen.featurePoints.length >= 4)).toBe(true);
-    expect(FAMILY_SCREENS.slice(13, 19).map((screen) => screen.baseline)).toEqual([
+    expect(FAMILY_SCREENS.slice(12, 18).map((screen) => screen.baseline)).toEqual([
       "commerce-01-mall-home",
       "commerce-02-product-detail",
       "commerce-03-invite",
@@ -62,7 +62,7 @@ describe("Family AI UI registry", () => {
       "commerce-05-points-task",
       "commerce-06-mine-member",
     ]);
-    expect(FAMILY_SCREENS.slice(19, 25).map((screen) => screen.baseline)).toEqual([
+    expect(FAMILY_SCREENS.slice(18, 24).map((screen) => screen.baseline)).toEqual([
       "teacher-zone",
       "teacher-detail",
       "consultation-booking",
@@ -70,7 +70,7 @@ describe("Family AI UI registry", () => {
       "activity-detail",
       "service-mine",
     ]);
-    expect(FAMILY_SCREENS.slice(25, 29).map((screen) => screen.baseline)).toEqual([
+    expect(FAMILY_SCREENS.slice(24, 28).map((screen) => screen.baseline)).toEqual([
       "parent-community",
       "publish-dynamic",
       "dynamic-detail",
@@ -86,14 +86,16 @@ describe("UI-01 to UI-34 global navigation and state readback", () => {
       ? resolve(mobileRoot, "app", "(tabs)", "index.tsx")
       : resolve(mobileRoot, "app", "ui", `${id}.tsx`);
 
-    expect(FAMILY_SCREENS).toHaveLength(35);
+    expect(FAMILY_SCREENS).toHaveLength(34);
     for (const screen of FAMILY_SCREENS) {
       expect(existsSync(screenFile(screen.id))).toBe(true);
       expect(screen.primaryAction.trim().length).toBeGreaterThan(0);
       expect(screen.featurePoints.length).toBeGreaterThanOrEqual(4);
       if (screen.primaryTarget) {
-        expect(getFamilyScreen(screen.primaryTarget)).toBeDefined();
         expect(existsSync(screenFile(screen.primaryTarget))).toBe(true);
+        if (screen.primaryTarget !== "UI-02-result") {
+          expect(getFamilyScreen(screen.primaryTarget)).toBeDefined();
+        }
       }
     }
   });

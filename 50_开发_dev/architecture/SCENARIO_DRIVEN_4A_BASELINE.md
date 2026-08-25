@@ -191,7 +191,7 @@
 
 ## 7. 当前优化方向
 
-1. 暂停从 UI06 直接继续堆页面，先让 UI06 映射到 S6 会员/积分/订单资产场景，完成 4A 后再检查代码。
+1. ~~暂停从 UI06 直接继续堆页面，先让 UI06 映射到 S6 会员/积分/订单资产场景，完成 4A 后再检查代码。~~ 已完成：UI-06 4A 解构见本文件第 5 节 S6 表格及 `apps/mobile/research/ui06-original-screen-alignment.md`；S6 其余关联页面 UI-15、UI-16、UI-17、UI-18、UI-30、UI-32 的 4A 解构已补齐于对应 `apps/mobile/research/ui*-original-screen-alignment.md`。
 2. UI01-UI05 已做的修正应回填到 S1-S4 的证据链，尤其是 UI02 免费测评、UI03 支持方向、UI04 确认后计划、UI05 私有过程记录。
 3. 商业、服务、社区、成果类页面优先识别 Gate，不通过静态文案制造真实支付、真人服务、社区外发、成长结果。
 4. 后续任何“AI 诊断/校长 AI/AI 管家”可见能力，都必须在 S10 中声明能力包、输入输出、Evidence、Eval 和 Human Gate。

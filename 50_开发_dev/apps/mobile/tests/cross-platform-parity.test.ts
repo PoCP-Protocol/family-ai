@@ -5,11 +5,11 @@ import { describe, expect, it } from "vitest";
 import { FAMILY_SCREENS, getScreensForTab } from "../lib/family/ui-registry";
 
 describe("App and Web feature parity", () => {
-  it("uses the same Expo Router screen registry for all 35 capabilities", () => {
+  it("uses the same Expo Router screen registry for all 34 product pages", () => {
     const tabs = ["today", "growth", "discover", "services", "mine"] as const;
     const webReachableScreens = tabs.flatMap((tab) => getScreensForTab(tab));
 
-    expect(FAMILY_SCREENS).toHaveLength(35);
+    expect(FAMILY_SCREENS).toHaveLength(34);
     expect(webReachableScreens.map((screen) => screen.id).sort()).toEqual(FAMILY_SCREENS.map((screen) => screen.id).sort());
   });
 
