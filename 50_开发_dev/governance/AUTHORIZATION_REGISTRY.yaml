@@ -4,7 +4,7 @@
 # 授权只能由总架构师(或其上级)通过 authorized_by + authorization_ref 落记;AI Agent 不得自增授权。
 schema_version: AUTH_REGISTRY_V1
 maintained_by: family-chief-architect
-updated_at: "2026-08-23"
+updated_at: "2026-08-25"
 
 # M3-W1 收口(架构师 M3_W1_RUNTIME_INTEGRATION_FINAL_REVIEW = PASS,授权合并 PR #1)
 program_gates:

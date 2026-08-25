@@ -129,7 +129,7 @@ Sprint 0完成条件：
 
 ---
 
-# Sprint 1 — Family Core
+# HISTORICAL — Sprint 1 — Family Core (CLOSED)
 
 只有Sprint 0 PASS后才能开始。
 
@@ -147,7 +147,9 @@ Sprint 1 status: CLOSED after TASK-107 PASS on 2026-08-10.
 
 ---
 
-# Explicitly Out of Scope
+# HISTORICAL — Explicitly Out of Scope (Sprint 1 / M1)
+
+当前执行边界以文档顶部 Executable Truth 代码块与 `governance/AUTHORIZATION_REGISTRY.yaml` 为准，以下清单仅为 M1 阶段历史记录。
 
 本Sprint禁止开发：
 

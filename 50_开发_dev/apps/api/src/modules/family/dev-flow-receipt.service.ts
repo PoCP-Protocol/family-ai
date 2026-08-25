@@ -7,6 +7,14 @@ import {
 import { FamilyRepository } from './family.repository';
 import { assertFamilyManagePermission } from './family-permission';
 
+/**
+ * UI-35 (21-day growth camp) is a formally deleted product surface — see
+ * governance/FAMILY_SUBTRACTIVE_FREEZE_V1.json ("deleted UI-35 product surface").
+ * It has a known historical identity, unlike a merely unknown/mistyped ui_id,
+ * so it gets a distinct rejection message instead of the generic unknown-ui error.
+ */
+const DELETED_DEV_FLOW_UI_IDS = new Set<string>(['UI-35']);
+
 export interface DevFlowReceipt {
   event_id: string;
   family_id: string;
@@ -38,6 +46,9 @@ export class DevFlowReceiptService {
     input: { ui_id: string; command: string; correlation_id: string; idempotency_key?: string; selection?: string },
   ): Promise<DevFlowReceipt> {
     const uiId = input.ui_id as FamilyUiId;
+    if (DELETED_DEV_FLOW_UI_IDS.has(uiId)) {
+      throw new BadRequestException('unsupported_dev_surface');
+    }
     let architecture;
     try {
       architecture = getLegacyFamilyGrowthSurfaceArchitectureBinding(uiId);
