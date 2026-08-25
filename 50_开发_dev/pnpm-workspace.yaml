@@ -6,6 +6,7 @@ packages:
   - "legacy-system/contracts"
 allowBuilds:
   esbuild: true
+  sharp: true
   unrs-resolver: true
 onlyBuiltDependencies:
   - esbuild

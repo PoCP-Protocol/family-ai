@@ -1,0 +1,1 @@
+export default function OnboardingPage(){return <main className="main"><span className="eyebrow">开始使用</span><h1>建立家庭工作台</h1><section className="card"><p>完成登录后，从服务端返回的家庭上下文中选择当前家庭。</p></section></main>}
