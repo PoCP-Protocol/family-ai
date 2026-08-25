@@ -65,14 +65,14 @@ export class FamilyController {
   @Post(':familyId/curriculum/drafts/:draftId/review')
   reviewCurriculumDraft(@Param('familyId') familyId: string, @Param('draftId') draftId: string, @Body() body: unknown, @ActorId() actorId: string, @Headers('idempotency-key') idempotencyKey?: string, @Headers('x-correlation-id') correlationId?: string, @Headers('x-source') source?: string) {
     if (!actorId || !isUuid(familyId)) throw new BadRequestException('Invalid schema');
-    return this.growthCamp21Service.reviewDraft(validateReviewCurriculumDraftRequest(draftId, idempotencyKey, body), buildAuditMeta(actorId, correlationId, source));
+    return this.growthCamp21Service.reviewDraft(validateReviewCurriculumDraftRequest(draftId, idempotencyKey, body), buildAuditMeta(actorId, correlationId, source), familyId);
   }
 
   @RequireFamilyAction('ReleaseCurriculumDraft')
   @Post(':familyId/curriculum/drafts/:draftId/release')
   releaseCurriculumDraft(@Param('familyId') familyId: string, @Param('draftId') draftId: string, @Body() body: unknown, @ActorId() actorId: string, @Headers('idempotency-key') idempotencyKey?: string, @Headers('x-correlation-id') correlationId?: string, @Headers('x-source') source?: string) {
     if (!actorId || !isUuid(familyId)) throw new BadRequestException('Invalid schema');
-    return this.growthCamp21Service.releaseDraft(validateReleaseCurriculumDraftRequest(draftId, idempotencyKey, body), buildAuditMeta(actorId, correlationId, source));
+    return this.growthCamp21Service.releaseDraft(validateReleaseCurriculumDraftRequest(draftId, idempotencyKey, body), buildAuditMeta(actorId, correlationId, source), familyId);
   }
 
   @RequireFamilyAction('EnrollGrowthCamp21')

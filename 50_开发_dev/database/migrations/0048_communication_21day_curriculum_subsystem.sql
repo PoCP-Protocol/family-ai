@@ -28,6 +28,11 @@ CREATE TABLE IF NOT EXISTS family_curriculum_drafts (
 ALTER TABLE family_curriculum_drafts
   ADD COLUMN IF NOT EXISTS family_id uuid NULL REFERENCES families(family_id),
   ADD COLUMN IF NOT EXISTS scope_type varchar(24) NOT NULL DEFAULT 'PLATFORM';
+ALTER TABLE family_curriculum_drafts
+  DROP CONSTRAINT IF EXISTS family_curriculum_drafts_scope_type_check;
+ALTER TABLE family_curriculum_drafts
+  ADD CONSTRAINT family_curriculum_drafts_scope_type_check
+  CHECK (scope_type IN ('PLATFORM','TENANT','FAMILY'));
 CREATE INDEX IF NOT EXISTS idx_family_curriculum_drafts_scope
   ON family_curriculum_drafts(scope_type, tenant_id, family_id);
 CREATE INDEX IF NOT EXISTS idx_family_curriculum_drafts_status
@@ -51,7 +56,7 @@ CREATE TABLE IF NOT EXISTS family_curriculum_review_operations (
 CREATE TABLE IF NOT EXISTS family_curriculum_operations (
   operation_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   operation_ref varchar(128) NOT NULL,
-  action_name varchar(64) NOT NULL CHECK (action_name IN ('ENROLL_GROWTH_CAMP_21','CHECK_IN_GROWTH_CAMP_21_DAY')),
+  action_name varchar(64) NOT NULL CHECK (action_name IN ('ENROLL_GROWTH_CAMP_21','CHECK_IN_GROWTH_CAMP_21_DAY','RELEASE_CURRICULUM_DRAFT')),
   actor_id varchar(128) NOT NULL,
   idempotency_key varchar(128) NOT NULL,
   request_hash varchar(128) NOT NULL,

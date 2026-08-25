@@ -18,10 +18,14 @@ const CHECKIN = 'CHECK_IN_GROWTH_CAMP_21_DAY';
 export class GrowthCamp21Service {
   constructor(@Inject(FamilyRepository) private readonly repository: FamilyRepository) {}
 
-  async reviewDraft(request: ReviewCurriculumDraftRequest, meta: AuditMeta): Promise<CurriculumDraftReviewReceipt> {
+  async reviewDraft(request: ReviewCurriculumDraftRequest, meta: AuditMeta, familyId?: string): Promise<CurriculumDraftReviewReceipt> {
     assertCurriculumReviewer(meta.actor);
     return this.repository.withTransaction(async (client) => {
-      const draft = await client.query<{ status: string; released_at: string | null }>('select status, released_at from family_curriculum_drafts where draft_id=$1 and (scope_type=\'PLATFORM\' or tenant_id is not null) for update', [request.draft_id]);
+      const draft = await client.query<{ status: string; released_at: string | null; family_id: string | null }>(`select d.status, d.released_at, d.family_id
+        from family_curriculum_drafts d
+        left join tenant_family_bindings b on b.family_id=$2 and b.status='ACTIVE'
+        where d.draft_id=$1 and (d.scope_type='PLATFORM' or (d.scope_type='FAMILY' and d.family_id=$2) or (d.scope_type='TENANT' and d.tenant_id=b.tenant_id))
+        for update`, [request.draft_id, familyId ?? null]);
       if (!draft.rows[0]) throw new NotFoundException('curriculum_draft_not_found');
       if (draft.rows[0].released_at) throw new ConflictException('curriculum_draft_already_released');
       const hash = hashRequest({ ...request, actor: meta.actor });
@@ -31,16 +35,20 @@ export class GrowthCamp21Service {
       const response: CurriculumDraftReviewReceipt = { draft_id: request.draft_id, decision: request.decision, status: request.decision, human_gate: request.decision === 'APPROVED' ? 'PASSED' : 'REJECTED', model_gateway_status: 'NOOP_NOT_INVOKED', released: false, reviewed_by: meta.actor, reviewed_at: reviewedAt, review_note: request.review_note ?? null };
       await client.query(`update family_curriculum_drafts set status=$2,reviewed_by_actor_id=$3,review_note=$4,reviewed_at=$5,updated_at=now() where draft_id=$1`, [request.draft_id, request.decision, meta.actor, request.review_note ?? null, reviewedAt]);
       await persistOperation(client, request.draft_id, REVIEW, meta.actor, request.decision, request.review_note ?? null, request.idempotency_key, hash, response, meta);
-      await audit(client, REVIEW, 'CurriculumDraft', request.draft_id, request.idempotency_key, meta, response);
+      await audit(client, REVIEW, 'CurriculumDraft', request.draft_id, request.idempotency_key, meta, response, draft.rows[0].family_id ?? familyId ?? null);
       await outbox(client, 'CurriculumDraft', request.draft_id, 'CurriculumDraftReviewed', response, meta);
       return response;
     });
   }
 
-  async releaseDraft(request: ReleaseCurriculumDraftRequest, meta: AuditMeta): Promise<CurriculumDraftReleaseReceipt> {
+  async releaseDraft(request: ReleaseCurriculumDraftRequest, meta: AuditMeta, familyId?: string): Promise<CurriculumDraftReleaseReceipt> {
     assertCurriculumReviewer(meta.actor);
     return this.repository.withTransaction(async (client) => {
-      const draft = await client.query<{ status: string; released_at: string | null }>('select status, released_at from family_curriculum_drafts where draft_id=$1 for update', [request.draft_id]);
+      const draft = await client.query<{ status: string; released_at: string | null; family_id: string | null }>(`select d.status, d.released_at, d.family_id
+        from family_curriculum_drafts d
+        left join tenant_family_bindings b on b.family_id=$2 and b.status='ACTIVE'
+        where d.draft_id=$1 and (d.scope_type='PLATFORM' or (d.scope_type='FAMILY' and d.family_id=$2) or (d.scope_type='TENANT' and d.tenant_id=b.tenant_id))
+        for update`, [request.draft_id, familyId ?? null]);
       if (!draft.rows[0]) throw new NotFoundException('curriculum_draft_not_found');
       const hash = hashRequest({ ...request, actor: meta.actor });
       const replay = await replayOperation<CurriculumDraftReleaseReceipt>(client, request.draft_id, RELEASE, request.idempotency_key, hash);
@@ -51,7 +59,7 @@ export class GrowthCamp21Service {
       await client.query(`update family_curriculum_drafts set released_at=$2,updated_at=now() where draft_id=$1 and status='APPROVED' and released_at is null`, [request.draft_id, releasedAt]);
       const response: CurriculumDraftReleaseReceipt = { draft_id: request.draft_id, status: 'RELEASED', human_gate: 'PASSED', model_gateway_status: 'NOOP_NOT_INVOKED', released_by: meta.actor, released_at: releasedAt };
       await persistOperation(client, request.draft_id, RELEASE, meta.actor, 'APPROVED', null, request.idempotency_key, hash, response, meta);
-      await audit(client, RELEASE, 'CurriculumDraft', request.draft_id, request.idempotency_key, meta, response);
+      await audit(client, RELEASE, 'CurriculumDraft', request.draft_id, request.idempotency_key, meta, response, draft.rows[0].family_id ?? familyId ?? null);
       await outbox(client, 'CurriculumDraft', request.draft_id, 'CurriculumDraftReleased', response, meta);
       return response;
     });
@@ -66,6 +74,15 @@ export class GrowthCamp21Service {
       if (!draft.rowCount && process.env.FPAI_REQUIRE_CURRICULUM_REVIEW === 'on') throw new ForbiddenException('curriculum_review_required_before_assign');
       const subject = await client.query(`select 1 from persons where person_id=$1 and family_id=$2`, [request.subject_person_id, request.family_id]);
       if (!subject.rowCount) throw new NotFoundException('subject_person_not_found');
+      const consent = await client.query<{ purpose: string }>(`select purpose from consents where family_id=$1 and subject_person_id=$2 and purpose in ('SERVICE','GROWTH_TRACKING') and status='GRANTED'`, [request.family_id, request.subject_person_id]);
+      const granted = new Set(consent.rows.map((row) => row.purpose));
+      for (const purpose of ['SERVICE', 'GROWTH_TRACKING'] as const) {
+        if (!granted.has(purpose)) throw new ForbiddenException(`missing_required_consent:${purpose}`);
+      }
+      if (process.env.FPAI_REQUIRE_CURRICULUM_ADMISSION === 'on') {
+        const admission = await client.query(`select 1 from family_growth_camp_admissions where family_id=$1 and subject_person_id=$2 and program_ref=$3 and status='ADMITTED'`, [request.family_id, request.subject_person_id, PROGRAM_REF]);
+        if (!admission.rowCount) throw new ForbiddenException('curriculum_d0_admission_required');
+      }
       const hash = hashRequest({ ...request, actor: meta.actor }); const replay = await replayOperation<GrowthCamp21Enrollment>(client, request.family_id, ENROLL, request.idempotency_key, hash);
       if (replay) return replay;
       const existing = await client.query<EnrollmentRow>(`select enrollment_id,family_id,subject_person_id,program_ref,program_version,status,current_day from family_growth_camp_enrollments where family_id=$1 and subject_person_id=$2 and program_ref=$3 and status in ('ACTIVE','PAUSED') limit 1`, [request.family_id, request.subject_person_id, PROGRAM_REF]);
@@ -81,6 +98,11 @@ export class GrowthCamp21Service {
       await ensureFamily(client, request.family_id); await assertFamilyManagePermission(client, request.family_id, meta.actor);
       const enrollment = await client.query<EnrollmentRow>(`select enrollment_id,family_id,subject_person_id,program_ref,program_version,status,current_day from family_growth_camp_enrollments where enrollment_id=$1 and family_id=$2 for update`, [request.enrollment_id, request.family_id]);
       const row = enrollment.rows[0]; if (!row) throw new NotFoundException('growth_camp_enrollment_not_found'); if (!['ACTIVE', 'PAUSED'].includes(row.status)) throw new ConflictException('growth_camp_enrollment_not_active'); if (request.day_no !== row.current_day) throw new ConflictException('growth_camp_day_not_current');
+      const consent = await client.query<{ purpose: string }>(`select purpose from consents where family_id=$1 and subject_person_id=$2 and purpose in ('SERVICE','GROWTH_TRACKING') and status='GRANTED'`, [request.family_id, row.subject_person_id]);
+      const granted = new Set(consent.rows.map((item) => item.purpose));
+      for (const purpose of ['SERVICE', 'GROWTH_TRACKING'] as const) {
+        if (!granted.has(purpose)) throw new ForbiddenException(`missing_required_consent:${purpose}`);
+      }
       const hash = hashRequest({ ...request, actor: meta.actor }); const replay = await replayOperation<GrowthCamp21CheckinReceipt>(client, request.enrollment_id, CHECKIN, request.idempotency_key, hash); if (replay) return replay;
       const checkin = await client.query<{ checkin_id: string }>(`insert into family_growth_camp_day_checkins(enrollment_id,day_no,completion_status,reflection,recorded_by_person_id,occurred_at) values ($1,$2,$3,$4,$5,coalesce($6::timestamptz,now())) returning checkin_id`, [request.enrollment_id, request.day_no, request.completion_status, request.reflection ?? null, meta.actor, request.occurred_at ?? null]);
       const nextDay = request.day_no < 21 ? request.day_no + 1 : 21; await client.query(`update family_growth_camp_enrollments set current_day=$2,status=case when $2=21 and $3='COMPLETED' then 'COMPLETED' else status end,row_version=row_version+1,updated_at=now() where enrollment_id=$1`, [request.enrollment_id, nextDay, request.completion_status]);

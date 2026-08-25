@@ -34,6 +34,13 @@ describe('正式多租户 Web 控制台', () => {
     expect(source).not.toMatch(/paymentIntent|Share\.share|Linking\.openURL/);
   });
 
+  it('将快速任务动作接入 DEV 服务任务创建回调，并保持无外部副作用', () => {
+    expect(source).toContain('createServiceTask?:');
+    expect(source).toContain("blueprint_ref: 'DEV_21DAY_SERVICE'");
+    expect(source).toContain('尚未产生支付、结算或外部通知');
+    expect(main).toContain('familyAdapter.createServiceTask(caseId, input)');
+  });
+
   it('仅在已有 Bearer 家庭会话时加载统一 tenant-scoped 投影，并保留无会话开发预览', () => {
     expect(main).toContain('createFamilyApiAdapter');
     expect(main).toContain('getTenantScopedUiProjection');

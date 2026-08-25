@@ -156,6 +156,63 @@ export class OrchestrationController {
     return c ?? { case_id: caseId, found: false };
   }
 
+  @Get('orchestration/cases/:caseId/tasks')
+  @RequireOrchestrationAction('ReadFamily')
+  async listServiceTasks(@Param('familyId') familyId: string, @Param('caseId') caseId: string) {
+    return this.svc.listServiceTasks(familyId, caseId);
+  }
+
+  @Post('orchestration/cases/:caseId/tasks')
+  @RequireOrchestrationAction('CreateServiceTask')
+  async createServiceTask(
+    @Param('familyId') familyId: string,
+    @Param('caseId') caseId: string,
+    @Body() body: { blueprint_ref?: string; task_key?: string; title?: string; description?: string; due_at?: string | null },
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    if (!body?.blueprint_ref || !body.task_key || !body.title || !body.description) throw new BadRequestException('blueprint_ref, task_key, title, description required');
+    return this.svc.createServiceTask({ familyId, caseId, blueprintRef: body.blueprint_ref, taskKey: body.task_key, title: body.title, description: body.description, dueAt: body.due_at ?? null, idempotencyKey: idempotencyKey?.trim() || undefined });
+  }
+
+  @Post('orchestration/cases/:caseId/tasks/:taskId/assign')
+  @RequireOrchestrationAction('AssignServiceTask')
+  async assignServiceTask(
+    @Param('familyId') familyId: string,
+    @Param('caseId') caseId: string,
+    @Param('taskId') taskId: string,
+    @Body() body: { assignee_ref?: string; assignee_kind?: 'STEWARD' | 'AI' | 'COACH' | 'EXPERT' | 'CONTENT' },
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    if (!body?.assignee_ref || !body.assignee_kind) throw new BadRequestException('assignee_ref, assignee_kind required');
+    return this.svc.assignServiceTask({ familyId, caseId, taskId, assigneeRef: body.assignee_ref, assigneeKind: body.assignee_kind, idempotencyKey: idempotencyKey?.trim() || undefined });
+  }
+
+  @Post('orchestration/cases/:caseId/tasks/:taskId/deliver')
+  @RequireOrchestrationAction('DeliverServiceTask')
+  async deliverServiceTask(
+    @Param('familyId') familyId: string,
+    @Param('caseId') caseId: string,
+    @Param('taskId') taskId: string,
+    @Body() body: { deliverable?: Record<string, unknown> },
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    if (!body?.deliverable || typeof body.deliverable !== 'object') throw new BadRequestException('deliverable required');
+    return this.svc.deliverServiceTask({ familyId, caseId, taskId, deliverable: body.deliverable, idempotencyKey: idempotencyKey?.trim() || undefined });
+  }
+
+  @Post('orchestration/cases/:caseId/tasks/:taskId/verify')
+  @RequireOrchestrationAction('VerifyServiceTask')
+  async verifyServiceTask(
+    @Param('familyId') familyId: string,
+    @Param('caseId') caseId: string,
+    @Param('taskId') taskId: string,
+    @Body() body: { reviewer_ref?: string; quality_state?: 'PASSED' | 'REWORK_REQUIRED' | 'REJECTED'; review_note?: string | null },
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    if (!body?.reviewer_ref || !body.quality_state) throw new BadRequestException('reviewer_ref, quality_state required');
+    return this.svc.verifyServiceTask({ familyId, caseId, taskId, reviewerRef: body.reviewer_ref, qualityState: body.quality_state, reviewNote: body.review_note ?? null, idempotencyKey: idempotencyKey?.trim() || undefined });
+  }
+
   @Post('orchestration/cases/:caseId/followups')
   @RequireOrchestrationAction('SubmitServiceFollowUp')
   async followUp(

@@ -1,0 +1,24 @@
+version: 0.1
+action: AdmitGrowthCamp21Subject
+purpose: Record a D0 admission decision before runtime Day 1.
+wave: G1-B
+scenario: CHALLENGE_21_CURRICULUM_ADMISSION
+input:
+  required: [family_id, subject_person_id, baseline, risk_signals, idempotency_key]
+preconditions:
+  - family_and_subject_match
+  - service_and_growth_tracking_consent_granted
+  - structured_risk_signals_are_complete
+effects:
+  - persist_admission_or_human_gate_required
+  - append_audit_record
+  - emit_GrowthCamp21AdmissionDecided_compat_event
+boundaries:
+  - admission_is_not_diagnosis
+  - admission_is_not_outcome
+  - day_zero_is_not_runtime_day_one
+human_gate:
+  required_for: [HIGH_RISK_SIGNAL, INCOMPLETE_SAFETY_CONTEXT]
+idempotency: required
+audit: required
+outbox: required

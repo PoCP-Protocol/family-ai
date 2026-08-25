@@ -7,6 +7,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { PrincipalModule } from '../principal/principal.module';
 import { OrchestrationController } from './orchestration.controller';
+import { CaseAccessController } from './case-access.controller';
 import { OrchestrationService } from './orchestration.service';
 import { OrchestrationRepository } from './orchestration.repository';
 import { OrchestrationAuthGuard } from './orchestration-auth.guard';
@@ -23,7 +24,7 @@ import { FamilyMembershipEntitlementService } from './family-membership-entitlem
 
 @Module({
   imports: [AuthModule, PrincipalModule],
-  controllers: [OrchestrationController],
+  controllers: [OrchestrationController, CaseAccessController],
   providers: [
     OrchestrationService,
     OrchestrationRepository,

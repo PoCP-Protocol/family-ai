@@ -180,6 +180,19 @@ export class FamilyApiClient {
     return this.request<ActiveOnboarding | null>(`/families/${familyId}/growth/onboarding/active`, { token });
   }
 
+  startGrowthOnboarding<T>(token: string, familyId: string, body: { childId: string; guardianPersonId: string; structuredSafetySignals: string[] }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/growth/onboarding`, {
+      method: "POST",
+      token,
+      body,
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-onboarding-start"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
   getDevCoreGrowth<T>(token: string, familyId: string) {
     return this.request<T>(`/families/${familyId}/dev/core-growth`, { token });
   }

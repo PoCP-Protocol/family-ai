@@ -20,6 +20,10 @@ export type OrchestrationPlanStatus = 'DRAFT' | 'PROPOSED' | 'ACCEPTED' | 'SUPER
 export type PlanStepTrigger = 'NOW' | 'AFTER_PREV' | 'SCHEDULED' | 'CONDITIONAL';
 export type PlanStepCondition = 'repeated_ge_n' | 'complex' | 'risk' | 'out_of_scope';
 export type ServiceCaseStatus = 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'WAITING_FAMILY' | 'ESCALATED' | 'COMPLETED' | 'CANCELLED';
+export type ServiceTaskStatus = 'PENDING' | 'OFFERED' | 'ACCEPTED' | 'IN_PROGRESS' | 'DELIVERED' | 'VERIFIED' | 'CLOSED' | 'CANCELLED';
+export type TaskAssignmentStatus = 'OFFERED' | 'ACCEPTED' | 'DECLINED' | 'REVOKED' | 'COMPLETED';
+export type TaskQualityState = 'PENDING' | 'PASSED' | 'REWORK_REQUIRED' | 'REJECTED';
+export type ServiceAllocationBucket = 'PLATFORM' | 'CONTENT_RESOURCE' | 'STEWARD' | 'DELIVERY_RESOURCE' | 'QUALITY_RESERVE';
 export type EligibilityStage = 'T1' | 'T2';
 export type Helpfulness = 'HELPFUL' | 'SOMEWHAT_HELPFUL' | 'NOT_HELPFUL_YET' | 'UNANSWERED';
 export type FollowUpTruthClass = 'PERSPECTIVE' | 'SERVICE_NOTE' | 'OBSERVATION_CANDIDATE';
@@ -166,6 +170,40 @@ export interface ServiceContributionDto {
   started_at: string;
   completed_at: string | null;
   quality_state: string;
+}
+
+// ---- DEV 履约协作（任务是履约单元；不等同成长结果）----
+export interface ServiceTaskDto {
+  task_id: string;
+  case_id: string;
+  blueprint_ref: string;
+  task_key: string;
+  title: string;
+  description: string;
+  status: ServiceTaskStatus;
+  responsible_ref: string | null;
+  due_at: string | null;
+  deliverable: Record<string, unknown> | null;
+  verified_at: string | null;
+}
+
+export interface TaskAssignmentDto {
+  assignment_id: string;
+  task_id: string;
+  assignee_ref: string;
+  assignee_kind: 'STEWARD' | 'AI' | 'COACH' | 'EXPERT' | 'CONTENT';
+  status: TaskAssignmentStatus;
+  accepted_at: string | null;
+}
+
+export interface ServiceContributionAllocationDto {
+  allocation_id: string;
+  case_id: string;
+  task_id: string;
+  allocation_bucket: ServiceAllocationBucket;
+  units: number;
+  release_state: 'HELD' | 'RELEASED';
+  reason: string;
 }
 
 // ---- 回访真相（服务层只读派生，非 canonical）----

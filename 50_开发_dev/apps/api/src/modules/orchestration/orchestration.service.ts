@@ -11,6 +11,7 @@ import type { PrincipalRiskRoute } from '@family/principal-ai';
 import type {
   ContextReuseProjectionDto, FamilyDecisionType, GrowthCapabilityKey,
   ResourceOfferDto, ResourceRecommendationDto, SafeOrchestrationOutcome,
+  ServiceTaskDto, TaskAssignmentDto, ServiceContributionAllocationDto,
 } from '@family/contracts';
 import { PrincipalAiCoachResource } from '../principal/principal-ai-coach.resource';
 import { classifyNeed } from './need-classification.policy';
@@ -741,7 +742,13 @@ export class OrchestrationService {
         limit 1`, [caseId, party.rows[0].party_id]);
     const row = result.rows[0];
     if (!row) throw new ForbiddenException('case_access_not_granted');
-    const scope = row.scope ?? {};
+    const rawScope = row.scope ?? {};
+    const scope = Object.fromEntries(
+      Object.entries(rawScope).filter(([key, value]) => {
+        return (key === 'service_case' && (value === 'summary' || value === 'status'))
+          || (key === 'child_profile' && value === 'minimum');
+      }),
+    );
     const projection: Record<string, unknown> = {
       case_id: row.case_id,
       family_id: row.family_id,
@@ -783,6 +790,86 @@ export class OrchestrationService {
     return r.rows[0] ?? null;
   }
 
+  /** DEV 履约协作：为既有 Case 建立一个最小任务。一个 Case 可有多个 task_key，但同一 key 幂等。 */
+  async createServiceTask(params: { familyId: string; caseId: string; blueprintRef: string; taskKey: string; title: string; description: string; dueAt?: string | null; idempotencyKey?: string }): Promise<ServiceTaskDto> {
+    return this.withIdempotency('CreateServiceTask', params.idempotencyKey, params, async () => {
+      if (!params.taskKey.trim() || !params.title.trim() || !params.description.trim()) throw new BadRequestException('task_key_title_description_required');
+      const own = await this.repo.query<{ case_id: string }>('select case_id from service_cases where case_id=$1 and family_id=$2', [params.caseId, params.familyId]);
+      if (!own.rowCount) throw new ForbiddenException('case_not_in_family');
+      const row = await this.repo.query<ServiceTaskDto>(
+        `insert into service_tasks(case_ref, blueprint_ref, task_key, title, description, due_at)
+         values ($1,$2,$3,$4,$5,$6) on conflict (case_ref, task_key) do update set updated_at=service_tasks.updated_at
+         returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, due_at, deliverable, verified_at`,
+        [params.caseId, params.blueprintRef, params.taskKey.trim(), params.title.trim(), params.description.trim(), params.dueAt ?? null],
+      );
+      return row.rows[0];
+    });
+  }
+
+  /** DEV 履约协作：一个任务只保留一个当前 ACCEPTED 责任人；新责任人会撤销旧分配。 */
+  async assignServiceTask(params: { familyId: string; caseId: string; taskId: string; assigneeRef: string; assigneeKind: TaskAssignmentDto['assignee_kind']; idempotencyKey?: string }): Promise<TaskAssignmentDto> {
+    return this.withIdempotency('AssignServiceTask', params.idempotencyKey, params, async () => {
+      if (!params.assigneeRef.trim()) throw new BadRequestException('assignee_ref_required');
+      const task = await this.repo.query<{ task_id: string; status: string }>(`select st.task_id, st.status from service_tasks st join service_cases sc on sc.case_id=st.case_ref where st.task_id=$1 and sc.case_id=$2 and sc.family_id=$3`, [params.taskId, params.caseId, params.familyId]);
+      if (!task.rowCount) throw new ForbiddenException('task_not_in_family_case');
+      if (['VERIFIED', 'CLOSED', 'CANCELLED'].includes(task.rows[0].status)) throw new ConflictException('task_not_assignable');
+      await this.repo.query(`update task_assignments set status='REVOKED', revoked_at=now() where task_id=$1 and status in ('OFFERED','ACCEPTED')`, [params.taskId]);
+      const row = await this.repo.query<TaskAssignmentDto>(
+        `insert into task_assignments(task_id, assignee_ref, assignee_kind, status, accepted_at)
+         values ($1,$2,$3,'ACCEPTED',now())
+         returning assignment_id, task_id, assignee_ref, assignee_kind, status, accepted_at`,
+        [params.taskId, params.assigneeRef.trim(), params.assigneeKind],
+      );
+      await this.repo.query(`update service_tasks set responsible_ref=$2, status=case when status='PENDING' then 'ACCEPTED' else status end, updated_at=now() where task_id=$1`, [params.taskId, params.assigneeRef.trim()]);
+      return row.rows[0];
+    });
+  }
+
+  /** DEV 履约协作：责任人提交交付物，仍未形成贡献，必须经过 VERIFY。 */
+  async deliverServiceTask(params: { familyId: string; caseId: string; taskId: string; deliverable: Record<string, unknown>; idempotencyKey?: string }): Promise<ServiceTaskDto> {
+    return this.withIdempotency('DeliverServiceTask', params.idempotencyKey, params, async () => {
+      const row = await this.repo.query<ServiceTaskDto>(
+        `update service_tasks set status='DELIVERED', deliverable=$4::jsonb, updated_at=now()
+         where task_id=$1 and case_ref=$2 and exists (select 1 from service_cases where case_id=$2 and family_id=$3)
+           and status in ('ACCEPTED','IN_PROGRESS')
+         returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, due_at, deliverable, verified_at`,
+        [params.taskId, params.caseId, params.familyId, JSON.stringify(params.deliverable ?? {})],
+      );
+      if (!row.rows[0]) throw new ConflictException('task_not_deliverable');
+      return row.rows[0];
+    });
+  }
+
+  /** DEV 履约协作：验收通过后才记录贡献；贡献分配先 HELD，Case 回访闭环后释放。 */
+  async verifyServiceTask(params: { familyId: string; caseId: string; taskId: string; reviewerRef: string; qualityState: 'PASSED' | 'REWORK_REQUIRED' | 'REJECTED'; reviewNote?: string | null; idempotencyKey?: string }): Promise<{ task: ServiceTaskDto; contribution: { contribution_id: string } | null; allocations: ServiceContributionAllocationDto[] }> {
+    return this.withIdempotency('VerifyServiceTask', params.idempotencyKey, params, async () => this.repo.withTransaction(async (client) => {
+      const task = await client.query<ServiceTaskDto>(`select task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, due_at, deliverable, verified_at from service_tasks where task_id=$1 and case_ref=$2 and exists (select 1 from service_cases where case_id=$2 and family_id=$3) for update`, [params.taskId, params.caseId, params.familyId]);
+      if (!task.rows[0]) throw new ForbiddenException('task_not_in_family_case');
+      if (task.rows[0].status !== 'DELIVERED') throw new ConflictException('task_requires_delivered_state');
+      await client.query(`insert into task_quality_reviews(task_id, reviewer_ref, quality_state, review_note, reviewed_at) values ($1,$2,$3,$4,now())`, [params.taskId, params.reviewerRef, params.qualityState, params.reviewNote ?? null]);
+      if (params.qualityState !== 'PASSED') {
+        const next = params.qualityState === 'REWORK_REQUIRED' ? 'IN_PROGRESS' : 'CANCELLED';
+        const updated = await client.query<ServiceTaskDto>(`update service_tasks set status=$2, updated_at=now() where task_id=$1 returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, due_at, deliverable, verified_at`, [params.taskId, next]);
+        return { task: updated.rows[0], contribution: null, allocations: [] };
+      }
+      const updated = await client.query<ServiceTaskDto>(`update service_tasks set status='VERIFIED', verified_at=now(), updated_at=now() where task_id=$1 returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, due_at, deliverable, verified_at`, [params.taskId]);
+      const contribution = await client.query<{ contribution_id: string }>(`insert into service_contributions(case_ref, provider_ref, role, task_ref, completed_at, quality_state) values ($1,$2,$3,$4,now(),'VERIFIED') returning contribution_id`, [params.caseId, task.rows[0].responsible_ref, task.rows[0].responsible_ref ? 'DELIVERY_RESOURCE' : 'STEWARD', params.taskId]);
+      const contributionId = contribution.rows[0].contribution_id;
+      const buckets: Array<[string, number]> = [['PLATFORM', 20], ['CONTENT_RESOURCE', 15], ['STEWARD', 15], ['DELIVERY_RESOURCE', 40], ['QUALITY_RESERVE', 10]];
+      const allocations: ServiceContributionAllocationDto[] = [];
+      for (const [bucket, units] of buckets) {
+        const allocation = await client.query<ServiceContributionAllocationDto>(`insert into service_contribution_allocations(contribution_ref, case_ref, task_ref, allocation_bucket, units, release_state, reason) values ($1,$2,$3,$4,$5,'HELD','DEV_21DAY_INITIAL_TEMPLATE') returning allocation_id, case_ref, task_ref, allocation_bucket, units, release_state, reason`, [contributionId, params.caseId, params.taskId, bucket, units]);
+        allocations.push(allocation.rows[0]);
+      }
+      return { task: updated.rows[0], contribution: contribution.rows[0], allocations };
+    }));
+  }
+
+  async listServiceTasks(familyId: string, caseId: string): Promise<ServiceTaskDto[]> {
+    const rows = await this.repo.query<ServiceTaskDto>(`select task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, due_at, deliverable, verified_at from service_tasks where case_ref=$1 and exists (select 1 from service_cases where case_id=$1 and family_id=$2) order by created_at asc`, [caseId, familyId]);
+    return rows.rows;
+  }
+
   /** ⑤ 回访 + helpfulness(actor provenance;非 Observation)。有效反馈→完成服务环:Case COMPLETED + Intent CLOSED/SERVICE_DELIVERED。 */
   async submitFollowUp(familyId: string, actorPersonId: string, caseId: string, helpfulness: string, text: string | null, idempotencyKey?: string): Promise<{ followup_id: string }> {
     return this.withIdempotency('SubmitServiceFollowUp', idempotencyKey, { familyId, actorPersonId, caseId, helpfulness, text }, async () => {
@@ -799,6 +886,7 @@ export class OrchestrationService {
     if (helpfulness !== 'UNANSWERED' && own.rows[0].status === 'WAITING_FAMILY') {
       await this.repo.query(`update service_cases set status='COMPLETED', closed_at=now() where case_id=$1`, [caseId]);
       await this.repo.query(`update growth_intents set status='CLOSED', close_reason='SERVICE_DELIVERED' where intent_id=$1 and family_id=$2`, [own.rows[0].intent_ref, familyId]);
+      await this.repo.query(`update service_contribution_allocations set release_state='RELEASED', released_at=now() where case_ref=$1 and release_state='HELD'`, [caseId]);
     }
     return { followup_id: r.rows[0].followup_id };
     });

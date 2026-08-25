@@ -131,11 +131,11 @@ describe('Patch 4 ServiceRelationship / CaseAccessGrant', () => {
       scope: { service_case: 'summary' }, purpose: 'SERVICE_DELIVERY', consent_snapshot_ref: 'consent:patch4:projection',
     });
     expect(grant.status).toBe(201);
-    const projection = await request(`/families/${s.familyId}/orchestration/case-access/${caseId}/projection`, s.token, 'GET');
+    const projection = await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET');
     expect(projection.status).toBe(200);
     expect(projection.body.projection).toMatchObject({ case_id: caseId, status: expect.any(String) });
     expect(projection.body.projection).not.toHaveProperty('subject_person_id');
     await pool.query(`update account_party_bindings set status='REVOKED', valid_to=now() where account_id=$1 and party_id=$2`, [s.accountId, teacherParty]);
-    expect((await request(`/families/${s.familyId}/orchestration/case-access/${caseId}/projection`, s.token, 'GET')).status).toBe(403);
+    expect((await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET')).status).toBe(403);
   });
 });

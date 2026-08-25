@@ -7,8 +7,9 @@ import Svg, { Circle, Line, Polygon, Text as SvgText } from "react-native-svg";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { familyApi } from "@/lib/family/family-api-client";
+import { createMobileRequestId, familyApi, FamilyApiError } from "@/lib/family/family-api-client";
 import { useFamilyApiSession } from "@/lib/family/family-api-session";
+import { useFamilyMobile } from "@/lib/family/family-state";
 
 interface Ui03ScoreDimension {
   dimension_ref: string;
@@ -49,6 +50,7 @@ interface RemoteHypothesisProjection {
   named_actions?: { generate?: "GENERATE_GROWTH_HYPOTHESIS"; confirm?: "CONFIRM_GROWTH_HYPOTHESIS" };
   hypothesis: null | {
     hypothesis_ref: string;
+    subject_person_id: string;
     subject_display_name: string;
     focus_ref: string;
     title: string;
@@ -103,12 +105,14 @@ const RADAR_POINTS = [
 export default function GrowthExplanationScreen() {
   const colors = useColors();
   const session = useFamilyApiSession();
+  const { activeOnboardingId, setActiveOnboardingId } = useFamilyMobile();
   const [remote, setRemote] = useState<RemoteHypothesisProjection | null>(null);
   const [remoteState, setRemoteState] = useState<"idle" | "loading" | "generating" | "ready" | "fallback">("idle");
   const [decisionState, setDecisionState] = useState<"idle" | "saving" | "error">("idle");
   const [confirmed, setConfirmed] = useState(false);
   const decisionKeys = useRef<Record<string, string>>({});
   const generateKeys = useRef<Record<string, string>>({});
+  const onboardingKeys = useRef<Record<string, string>>({});
   const hypothesis = remote?.hypothesis ?? null;
   const scorecard = hypothesis?.scorecard ?? null;
   const safetyGateRequired = hypothesis?.safety_gate?.required === true;
@@ -153,10 +157,36 @@ export default function GrowthExplanationScreen() {
     return () => { active = false; if (pollTimer) clearTimeout(pollTimer); };
   }, [session.selectedFamily, session.status, session.token]);
 
+  const ensureActiveOnboarding = async (token: string, familyId: string, guardianPersonId: string, childId: string) => {
+    if (activeOnboardingId) return;
+    const fingerprint = `${familyId}:${childId}:START_ONBOARDING`;
+    onboardingKeys.current[fingerprint] ??= createMobileRequestId("ui03-start-onboarding");
+    try {
+      const result = await familyApi.startGrowthOnboarding<{ onboarding: { onboarding_id: string } }>(token, familyId, {
+        childId,
+        guardianPersonId,
+        structuredSafetySignals: ["NONE"],
+      }, onboardingKeys.current[fingerprint]);
+      setActiveOnboardingId(result.onboarding.onboarding_id);
+    } catch (error) {
+      if (error instanceof FamilyApiError && error.code.includes("growth_onboarding_already_active")) {
+        const active = await familyApi.getActiveOnboarding(token, familyId);
+        if (active?.onboarding_id) setActiveOnboardingId(active.onboarding_id);
+        return;
+      }
+      // Onboarding-start 失败（如缺少必要同意、生命阶段不支持）不阻塞成长意向确认；
+      // UI-04 会在缺少 activeOnboardingId 时引导用户回到 UI-02 补齐前置条件。
+    }
+  };
+
   const generatePlan = async () => {
     if (confirmed) { router.push("/ui/UI-04" as Href); return; }
     if (session.status !== "connected" || !session.token || !session.selectedFamily || !hypothesis) { router.replace("/ui/UI-02" as Href); return; }
     if (safetyGateRequired) {
+      setDecisionState("error");
+      return;
+    }
+    if (named_actions.confirm !== "CONFIRM_GROWTH_HYPOTHESIS") {
       setDecisionState("error");
       return;
     }
@@ -167,13 +197,16 @@ export default function GrowthExplanationScreen() {
       const result = await familyApi.decideGrowthHypothesis<HypothesisDecisionReceipt>(session.token, session.selectedFamily.family_id, {
         assessment_session_id: hypothesis.source_refs.assessment_session_id,
         hypothesis_ref: hypothesis.hypothesis_ref,
-        decision_type: named_actions.confirm === "CONFIRM_GROWTH_HYPOTHESIS" ? "CONFIRM" : "CONFIRM",
+        decision_type: "CONFIRM",
       }, decisionKeys.current[fingerprint]);
-      setDecisionState("idle");
       if (result.outcome === "INTENT_CREATED") {
+        await ensureActiveOnboarding(session.token, session.selectedFamily.family_id, session.selectedFamily.person_id, hypothesis.subject_person_id);
+        setDecisionState("idle");
         setConfirmed(true);
         router.push("/ui/UI-04" as Href);
+        return;
       }
+      setDecisionState("idle");
     } catch { setDecisionState("error"); }
   };
 
