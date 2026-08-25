@@ -58,6 +58,30 @@ export interface DevAiCurriculumDraft {
 
 export type CurriculumReviewDecision = 'APPROVED' | 'REJECTED';
 export type GrowthCamp21CheckinStatus = 'COMPLETED' | 'PARTIAL' | 'NOT_COMPLETED';
+export type GrowthCamp21AdmissionStatus = 'ADMITTED' | 'HUMAN_GATE_REQUIRED' | 'REJECTED';
+
+export interface AdmitGrowthCamp21SubjectRequest {
+  family_id: string;
+  subject_person_id: string;
+  baseline: Record<string, unknown>;
+  risk_signals: readonly string[];
+  decision: GrowthCamp21AdmissionStatus;
+  idempotency_key: string;
+}
+
+export interface GrowthCamp21AdmissionReceipt {
+  admission_id: string;
+  family_id: string;
+  subject_person_id: string;
+  program_ref: 'communication-21day';
+  status: GrowthCamp21AdmissionStatus;
+  baseline_boundary: 'BASELINE_NOT_DIAGNOSIS';
+  risk_boundary: 'STRUCTURED_SIGNAL_NOT_OUTCOME';
+  decision_boundary: 'ADMISSION_NOT_DIAGNOSIS_NOT_OUTCOME';
+  decided_by: string;
+  decided_at: string;
+  replayed: boolean;
+}
 
 export interface CurriculumSourceLineage {
   source_system: string;

@@ -15,7 +15,7 @@ export type FamilyNamedAction =
   | 'ExecuteTestExperienceAction' | 'ExecuteFamilyPageObjectAction'
   | 'SubmitCommerceIntent' | 'SubmitServiceBooking' | 'ManageMembershipEntitlement'
   | 'CreateJourneyPlan' | 'ConfirmJourneyPlan' | 'PauseJourneyPlan' | 'ReviewJourneyPhase'
-  | 'ManageOperationReceipt' | 'ReviewCurriculumDraft' | 'ReleaseCurriculumDraft' | 'EnrollGrowthCamp21' | 'CheckInGrowthCamp21Day'
+  | 'ManageOperationReceipt' | 'ReviewCurriculumDraft' | 'ReleaseCurriculumDraft' | 'AdmitGrowthCamp21Subject' | 'EnrollGrowthCamp21' | 'CheckInGrowthCamp21Day'
   | 'CreateServiceTask' | 'AssignServiceTask' | 'DeliverServiceTask' | 'VerifyServiceTask';
 type Decision = 'ALLOW' | 'DENY' | 'LIMITED';
 
@@ -56,6 +56,7 @@ const MATRIX: Record<FamilyNamedAction, Record<FamilyRole, Decision>> = {
   ManageOperationReceipt: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
   ReviewCurriculumDraft: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
   ReleaseCurriculumDraft: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
+  AdmitGrowthCamp21Subject: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
   EnrollGrowthCamp21: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
   CheckInGrowthCamp21Day: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
   CreateServiceTask: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },

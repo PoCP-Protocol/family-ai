@@ -4,6 +4,7 @@ import type {
   EnrollGrowthCamp21Request,
   ReviewCurriculumDraftRequest,
   ReleaseCurriculumDraftRequest,
+  AdmitGrowthCamp21SubjectRequest,
 } from '@family/contracts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -40,4 +41,13 @@ export function validateReleaseCurriculumDraftRequest(draftId: string, idempoten
   const input = objectBody(body); fields(input, []);
   if (!UUID.test(draftId) || !key(idempotencyKey)) throw new BadRequestException('Invalid schema');
   return { draft_id: draftId, idempotency_key: idempotencyKey };
+}
+
+export function validateAdmitGrowthCamp21SubjectRequest(familyId: string, idempotencyKey: string | undefined, body: unknown): AdmitGrowthCamp21SubjectRequest {
+  const input = objectBody(body); fields(input, ['subject_person_id', 'baseline', 'risk_signals', 'decision']);
+  if (!UUID.test(familyId) || !UUID.test(String(input.subject_person_id)) || !key(idempotencyKey)) throw new BadRequestException('Invalid schema');
+  if (typeof input.baseline !== 'object' || input.baseline === null || Array.isArray(input.baseline)) throw new BadRequestException('Invalid schema');
+  if (!Array.isArray(input.risk_signals) || input.risk_signals.some((signal) => typeof signal !== 'string' || signal.length > 64)) throw new BadRequestException('Invalid schema');
+  if (!['ADMITTED', 'HUMAN_GATE_REQUIRED', 'REJECTED'].includes(String(input.decision))) throw new BadRequestException('Invalid schema');
+  return { family_id: familyId, subject_person_id: String(input.subject_person_id), baseline: input.baseline as Record<string, unknown>, risk_signals: input.risk_signals as string[], decision: input.decision as AdmitGrowthCamp21SubjectRequest['decision'], idempotency_key: idempotencyKey };
 }

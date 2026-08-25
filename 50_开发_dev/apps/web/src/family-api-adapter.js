@@ -56,10 +56,15 @@ export function createFamilyApiAdapter({ baseUrl, bearerToken, familyId }) {
     requestGrowthRecommendation: (intentId, idempotencyKey) => write(`/orchestration/intents/${intentId}/recommendations`, {}, idempotencyKey),
     /** @param {{ intent_id: string, recommendation_id: string, recommendation_version: number, decision_type: 'ACCEPT_RECOMMENDATION'|'DISMISS', selected_offer_refs: string[] }} input @param {string} idempotencyKey */
     decideGrowthService: (input, idempotencyKey) => write('/orchestration/decisions', input, idempotencyKey),
+    /** @param {string} caseId */
     getServiceTasks: (caseId) => read(`/orchestration/cases/${encodeURIComponent(caseId)}/tasks`),
+    /** @param {string} caseId @param {Record<string, unknown>} input @param {string} [idempotencyKey] */
     createServiceTask: (caseId, input, idempotencyKey) => write(`/orchestration/cases/${encodeURIComponent(caseId)}/tasks`, input, idempotencyKey),
+    /** @param {string} caseId @param {string} taskId @param {Record<string, unknown>} input @param {string} [idempotencyKey] */
     assignServiceTask: (caseId, taskId, input, idempotencyKey) => write(`/orchestration/cases/${encodeURIComponent(caseId)}/tasks/${encodeURIComponent(taskId)}/assign`, input, idempotencyKey),
+    /** @param {string} caseId @param {string} taskId @param {Record<string, unknown>} input @param {string} [idempotencyKey] */
     deliverServiceTask: (caseId, taskId, input, idempotencyKey) => write(`/orchestration/cases/${encodeURIComponent(caseId)}/tasks/${encodeURIComponent(taskId)}/deliver`, input, idempotencyKey),
+    /** @param {string} caseId @param {string} taskId @param {Record<string, unknown>} input @param {string} [idempotencyKey] */
     verifyServiceTask: (caseId, taskId, input, idempotencyKey) => write(`/orchestration/cases/${encodeURIComponent(caseId)}/tasks/${encodeURIComponent(taskId)}/verify`, input, idempotencyKey),
     getJourneyPlan: () => read('/growth/journey-plan'),
     getExperienceCustomerProjection: () => read('/orchestration/test-loop/experience/customer-projection'),

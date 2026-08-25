@@ -37,7 +37,7 @@ import { FamilyHomeService } from './family-home.service';
 import { AssessmentService } from './assessment.service';
 import { GrowthHypothesisService } from './growth-hypothesis.service';
 import { GrowthCamp21Service } from './growth-camp21.service';
-import { validateCheckInGrowthCamp21DayRequest, validateEnrollGrowthCamp21Request, validateReleaseCurriculumDraftRequest, validateReviewCurriculumDraftRequest } from './curriculum.dto';
+import { validateAdmitGrowthCamp21SubjectRequest, validateCheckInGrowthCamp21DayRequest, validateEnrollGrowthCamp21Request, validateReleaseCurriculumDraftRequest, validateReviewCurriculumDraftRequest } from './curriculum.dto';
 
 @Controller('families')
 @UseGuards(FamilyPlatformAuthGuard)   // PLATFORM-IAM-104:统一解析可信 actor;required 模式拒 x-actor-id-only
@@ -73,6 +73,13 @@ export class FamilyController {
   releaseCurriculumDraft(@Param('familyId') familyId: string, @Param('draftId') draftId: string, @Body() body: unknown, @ActorId() actorId: string, @Headers('idempotency-key') idempotencyKey?: string, @Headers('x-correlation-id') correlationId?: string, @Headers('x-source') source?: string) {
     if (!actorId || !isUuid(familyId)) throw new BadRequestException('Invalid schema');
     return this.growthCamp21Service.releaseDraft(validateReleaseCurriculumDraftRequest(draftId, idempotencyKey, body), buildAuditMeta(actorId, correlationId, source), familyId);
+  }
+
+  @RequireFamilyAction('AdmitGrowthCamp21Subject')
+  @Post(':familyId/curriculum/21day/admissions')
+  admitGrowthCamp21Subject(@Param('familyId') familyId: string, @Body() body: unknown, @ActorId() actorId: string, @Headers('idempotency-key') idempotencyKey?: string, @Headers('x-correlation-id') correlationId?: string, @Headers('x-source') source?: string) {
+    if (!actorId) throw new UnauthorizedException('actor_is_authenticated');
+    return this.growthCamp21Service.admitSubject(validateAdmitGrowthCamp21SubjectRequest(familyId, idempotencyKey, body), buildAuditMeta(actorId, correlationId, source));
   }
 
   @RequireFamilyAction('EnrollGrowthCamp21')

@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import type pg from 'pg';
-import type { AuditMeta, CurriculumDraftReleaseReceipt, CurriculumDraftReviewReceipt, EnrollGrowthCamp21Request, GrowthCamp21CheckinReceipt, GrowthCamp21Enrollment, CheckInGrowthCamp21DayRequest, ReleaseCurriculumDraftRequest, ReviewCurriculumDraftRequest } from '@family/contracts';
+import type { AdmitGrowthCamp21SubjectRequest, AuditMeta, CurriculumDraftReleaseReceipt, CurriculumDraftReviewReceipt, EnrollGrowthCamp21Request, GrowthCamp21AdmissionReceipt, GrowthCamp21CheckinReceipt, GrowthCamp21Enrollment, CheckInGrowthCamp21DayRequest, ReleaseCurriculumDraftRequest, ReviewCurriculumDraftRequest } from '@family/contracts';
 import { COMMUNICATION_21DAY, projectProgramSchedule } from '@family/program-runtime';
 import { assertCurriculumReviewer } from '../principal/curriculum-review-policy';
 import { FamilyRepository } from './family.repository';
@@ -13,10 +13,41 @@ const REVIEW = 'REVIEW_CURRICULUM_DRAFT';
 const RELEASE = 'RELEASE_CURRICULUM_DRAFT';
 const ENROLL = 'ENROLL_GROWTH_CAMP_21';
 const CHECKIN = 'CHECK_IN_GROWTH_CAMP_21_DAY';
+const ADMIT = 'ADMIT_GROWTH_CAMP_21_SUBJECT';
 
 @Injectable()
 export class GrowthCamp21Service {
   constructor(@Inject(FamilyRepository) private readonly repository: FamilyRepository) {}
+
+  async admitSubject(request: AdmitGrowthCamp21SubjectRequest, meta: AuditMeta): Promise<GrowthCamp21AdmissionReceipt> {
+    return this.repository.withTransaction(async (client) => {
+      await ensureFamily(client, request.family_id);
+      await assertFamilyManagePermission(client, request.family_id, meta.actor);
+      const subject = await client.query(`select person_id from persons where person_id=$1 and family_id=$2`, [request.subject_person_id, request.family_id]);
+      if (!subject.rowCount) throw new NotFoundException('subject_person_not_found');
+      const consent = await client.query<{ purpose: string }>(`select purpose from consents where family_id=$1 and subject_person_id=$2 and purpose in ('SERVICE','GROWTH_TRACKING') and status='GRANTED'`, [request.family_id, request.subject_person_id]);
+      const granted = new Set(consent.rows.map((row) => row.purpose));
+      for (const purpose of ['SERVICE', 'GROWTH_TRACKING'] as const) if (!granted.has(purpose)) throw new ForbiddenException(`missing_required_consent:${purpose}`);
+      const hash = hashRequest({ ...request, actor: meta.actor });
+      const operationRef = `${request.family_id}:${request.subject_person_id}`;
+      const replay = await replayOperation<GrowthCamp21AdmissionReceipt>(client, operationRef, ADMIT, request.idempotency_key, hash);
+      if (replay) return replay;
+      const tenant = await client.query<{ tenant_id: string }>(`select tenant_id from tenant_family_bindings where family_id=$1 and status='ACTIVE' limit 1`, [request.family_id]);
+      if (!tenant.rows[0]) throw new NotFoundException('family_tenant_binding_not_found');
+      const decidedAt = new Date().toISOString();
+      const highRiskSignals = new Set(['SELF_HARM', 'HARM_TO_OTHERS', 'ABUSE', 'VIOLENCE', 'SEVERE_CRISIS']);
+      const safetyContextIncomplete = Object.keys(request.baseline).length === 0 || request.risk_signals.length === 0;
+      const effectiveDecision = request.risk_signals.some((signal) => highRiskSignals.has(signal)) || safetyContextIncomplete
+        ? 'HUMAN_GATE_REQUIRED'
+        : request.decision;
+      const admission = await client.query<{ admission_id: string }>(`insert into family_growth_camp_admissions(tenant_id,family_id,subject_person_id,program_ref,status,baseline,risk_signals,decided_by_actor_id,decided_at,updated_at) values ($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb,$8,$9,$9) on conflict (family_id,subject_person_id,program_ref) do update set status=excluded.status,baseline=excluded.baseline,risk_signals=excluded.risk_signals,decided_by_actor_id=excluded.decided_by_actor_id,decided_at=excluded.decided_at,updated_at=excluded.updated_at returning admission_id`, [tenant.rows[0].tenant_id, request.family_id, request.subject_person_id, PROGRAM_REF, effectiveDecision, JSON.stringify(request.baseline), JSON.stringify(request.risk_signals), meta.actor, decidedAt]);
+      const response: GrowthCamp21AdmissionReceipt = { admission_id: admission.rows[0].admission_id, family_id: request.family_id, subject_person_id: request.subject_person_id, program_ref: PROGRAM_REF, status: effectiveDecision, baseline_boundary: 'BASELINE_NOT_DIAGNOSIS', risk_boundary: 'STRUCTURED_SIGNAL_NOT_OUTCOME', decision_boundary: 'ADMISSION_NOT_DIAGNOSIS_NOT_OUTCOME', decided_by: meta.actor, decided_at: decidedAt, replayed: false };
+      await persistOperation(client, operationRef, ADMIT, meta.actor, effectiveDecision, null, request.idempotency_key, hash, response, meta);
+      await audit(client, ADMIT, 'GrowthCamp21Admission', admission.rows[0].admission_id, request.idempotency_key, meta, response, request.family_id);
+      await outbox(client, 'GrowthCamp21Admission', admission.rows[0].admission_id, 'GrowthCamp21AdmissionDecided', response, meta);
+      return response;
+    });
+  }
 
   async reviewDraft(request: ReviewCurriculumDraftRequest, meta: AuditMeta, familyId?: string): Promise<CurriculumDraftReviewReceipt> {
     assertCurriculumReviewer(meta.actor);
