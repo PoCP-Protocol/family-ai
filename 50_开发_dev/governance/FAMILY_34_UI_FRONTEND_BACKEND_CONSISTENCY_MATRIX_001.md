@@ -1,5 +1,8 @@
 # Family / 伐木累 34 页 UI 前后端一致性矩阵
 
+> **SUPERSEDED_BY: `governance/FAMILY_35UI_CONSISTENCY_MATRIX_V1.json`(2026-08-23)**。
+> 本文件是 34-UI 时期的手写一致性矩阵,已被 35UI 实测矩阵取代(校验器 `tools/validate-35ui-consistency.mjs` 从代码实测回填,防止文档高于代码)。34→35 编号差异在新矩阵中已核销。此处内容仅作历史留痕,不再作为一致性依据。
+
 > **用途：** 本矩阵是继续开发的逐页基线，不把“原图可渲染”误认为“前后端业务已完成”。页面显示名使用 Family / 伐木累；`bangyang-reference`、历史 source_file 与 asset id 保持原样，仅作为原素材可追溯路径。所有 DEV/TEST 写入只使用固定 fixture、family_test PostgreSQL、测试账户和零外部副作用适配器。
 
 ## 状态定义

@@ -1,5 +1,7 @@
 # Family Project Status
 
+> **整合视图指针(2026-08-23,附加·非改判)**:系统整合基线见 `architecture/FAMILY_SYSTEM_INTEGRATION_BASELINE_V1.md`;35UI 前端/契约/后端一致性以**实测**矩阵 `governance/FAMILY_35UI_CONSISTENCY_MATRIX_V1.json` 为准(校验器 `tools/validate-35ui-consistency.mjs`)。本文件的 `M3 MOS` 阶段词汇与 `G0/V4.1` 门禁线的从属关系**待架构师裁决**(见 `00_复盘/2026-08-23_全面阶段性复盘.md`);裁决前运行时真相以一致性矩阵与 registry 为准,本文件状态可能滞后。
+
 status_version: 6
 phase: M3_FAMILY_1_0_MOS
 milestone: M3_EXECUTION_REBASELINE_V3_3_CLOSED
