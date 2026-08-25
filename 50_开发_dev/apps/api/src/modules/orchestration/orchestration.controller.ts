@@ -226,6 +226,17 @@ export class OrchestrationController {
     return this.svc.submitFollowUp(familyId, actor.personId, caseId, body.helpfulness, body.text ?? null, idempotencyKey && idempotencyKey.trim() ? idempotencyKey.trim() : undefined);
   }
 
+  @Post('orchestration/cases/:caseId/shadow-allocation/finalize')
+  @RequireOrchestrationAction('VerifyServiceTask')
+  async finalizeShadowAllocation(
+    @Param('familyId') familyId: string,
+    @Param('caseId') caseId: string,
+    @Body() body: { helpfulness?: 'HELPFUL' | 'SOMEWHAT_HELPFUL' | 'NOT_HELPFUL_YET' | 'UNANSWERED' },
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.svc.finalizeShadowAllocation({ familyId, caseId, helpfulness: body?.helpfulness, idempotencyKey: idempotencyKey?.trim() || undefined });
+  }
+
   // ===== ARCH-GO-TEST-FULL-FUNCTION-001: DEV-only synthetic full-loop =====
   // These endpoints are capability-gated in the service. They remain authenticated and derive actor/family server-side.
   @Get('orchestration/test-loop/capability')

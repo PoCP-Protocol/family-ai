@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   topActions: { width: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   more: { color: "#20242A", fontSize: 17, lineHeight: 20, fontWeight: "900", letterSpacing: 1 },
   topCircle: { color: "#20242A", fontSize: 25, lineHeight: 25 },
-  memberCard: { marginHorizontal: 17, minHeight: 211, borderRadius: 17, padding: 20, backgroundColor: "#E8F2FF" },
+  memberCard: { marginHorizontal: 17, minHeight: 211, borderRadius: 17, padding: 20, backgroundColor: "#092F76" },
   memberHead: { flexDirection: "row", alignItems: "center" },
   avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   memberIdentity: { flex: 1, marginLeft: 12, gap: 4 },

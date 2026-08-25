@@ -803,27 +803,31 @@ export class OrchestrationService {
         blueprint = blueprintRow.rows[0];
         await this.repo.query(`update service_cases set collaboration_blueprint_ref=$2, collaboration_blueprint_version=$3, collaboration_blueprint_snapshot=$4::jsonb where case_id=$1 and family_id=$5 and collaboration_blueprint_snapshot is null`, [params.caseId, params.blueprintRef, blueprint.version, JSON.stringify(blueprint), params.familyId]);
       }
-      const templates = Array.isArray(blueprint.task_templates) ? blueprint.task_templates as Array<{ task_key?: string }> : [];
-      if (!templates.some((template) => template.task_key === params.taskKey.trim())) throw new BadRequestException('task_not_in_collaboration_blueprint');
+      const templates = Array.isArray(blueprint.task_templates) ? blueprint.task_templates as Array<{ task_key?: string; role_key?: string; weight?: number }> : [];
+      const template = templates.find((candidate) => candidate.task_key === params.taskKey.trim());
+      if (!template || !template.role_key) throw new BadRequestException('task_not_in_collaboration_blueprint');
       const row = await this.repo.query<ServiceTaskDto>(
         `insert into service_tasks(case_ref, blueprint_ref, task_key, title, description, role_key, required_capability_keys, task_weight, due_at)
-         values ($1,$2,$3,$4,$5,coalesce((select value->>'role_key' from service_collaboration_blueprints b, jsonb_array_elements(b.task_templates) value where b.blueprint_ref=$2 and b.version=1 and value->>'task_key'=$3 limit 1),'DELIVERY_RESOURCE'),coalesce((select required_capability_keys from service_collaboration_blueprints where blueprint_ref=$2 and version=1),'[]'::jsonb),coalesce((select (value->>'weight')::numeric from service_collaboration_blueprints b, jsonb_array_elements(b.task_templates) value where b.blueprint_ref=$2 and b.version=1 and value->>'task_key'=$3 limit 1),1),$6) on conflict (case_ref, task_key) do update set updated_at=service_tasks.updated_at
+         values ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9) on conflict (case_ref, task_key) do update set updated_at=service_tasks.updated_at
          returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, role_key, required_capability_keys, task_weight, due_at, deliverable, verified_at`,
-        [params.caseId, params.blueprintRef, params.taskKey.trim(), params.title.trim(), params.description.trim(), params.dueAt ?? null],
+        [params.caseId, params.blueprintRef, params.taskKey.trim(), params.title.trim(), params.description.trim(), template.role_key, JSON.stringify(Array.isArray(blueprint.required_capability_keys) ? blueprint.required_capability_keys : []), template.weight ?? 1, params.dueAt ?? null],
       );
       return row.rows[0];
     });
   }
 
   /** DEV 履约协作：一个任务只保留一个当前 ACCEPTED 责任人；新责任人会撤销旧分配。 */
-  async assignServiceTask(params: { familyId: string; caseId: string; taskId: string; assigneeRef: string; assigneeKind: TaskAssignmentDto['assignee_kind']; idempotencyKey?: string }): Promise<TaskAssignmentDto> {
+  async assignServiceTask(params: { familyId: string; caseId: string; taskId: string; assigneeRef: string; roleKey: string; idempotencyKey?: string }): Promise<TaskAssignmentDto> {
     return this.withIdempotency('AssignServiceTask', params.idempotencyKey, params, async () => this.repo.withTransaction(async (client) => {
-      if (!params.assigneeRef.trim()) throw new BadRequestException('assignee_ref_required');
+      if (!params.assigneeRef.trim() || !params.roleKey.trim()) throw new BadRequestException('assignee_ref_role_key_required');
       const task = await client.query<{ task_id: string; status: string; role_key: string | null; required_capability_keys: string[] }>(`select st.task_id, st.status, st.role_key, st.required_capability_keys from service_tasks st join service_cases sc on sc.case_id=st.case_ref where st.task_id=$1 and sc.case_id=$2 and sc.family_id=$3 for update`, [params.taskId, params.caseId, params.familyId]);
       if (!task.rowCount) throw new ForbiddenException('task_not_in_family_case');
       if (['VERIFIED', 'CLOSED', 'CANCELLED'].includes(task.rows[0].status)) throw new ConflictException('task_not_assignable');
-      const roleKey = task.rows[0].role_key ?? (params.assigneeKind === 'STEWARD' ? 'CASE_STEWARD' : params.assigneeKind === 'CONTENT' ? 'CONTENT_RESOURCE' : 'DELIVERY_RESOURCE');
-      if (params.assigneeKind !== 'AI' && params.assigneeKind !== 'CONTENT') {
+      const roleKey = task.rows[0].role_key ?? params.roleKey.trim();
+      if (roleKey !== params.roleKey.trim()) throw new ForbiddenException('task_role_mismatch');
+      const roleCheck = await client.query<{ ok: boolean }>(`select exists (select 1 from service_collaboration_blueprints b join service_cases sc on sc.collaboration_blueprint_ref=b.blueprint_ref and sc.collaboration_blueprint_version=b.version join service_tasks st on st.case_ref=sc.case_id where st.task_id=$1 and b.status='ACTIVE' and b.roles @> jsonb_build_array(jsonb_build_object('role_key',$2))) as ok`, [params.taskId, roleKey]);
+      if (!roleCheck.rows[0]?.ok) throw new ForbiddenException('role_not_in_blueprint');
+      if (['DELIVERY_RESOURCE', 'HUMAN_COACH'].includes(roleKey)) {
         const provider = await client.query(`select pp.provider_profile_id from provider_profiles pp join provider_admissions pa on pa.provider_profile_id=pp.provider_profile_id join service_cases sc on sc.case_id=$2 join tenant_family_bindings tfb on tfb.family_id=sc.family_id and tfb.status='ACTIVE' where pp.provider_ref=$1 and pp.status='ACTIVE' and pa.tenant_id=tfb.tenant_id and pa.status='ADMITTED'`, [params.assigneeRef.trim(), params.caseId]);
         if (!provider.rowCount) throw new ForbiddenException('assignee_provider_not_admitted');
         const capabilities = await client.query(`select 1 from teacher_capabilities tc join teacher_profiles tp on tp.teacher_profile_id=tc.teacher_profile_id join provider_profiles pp on pp.owner_party_id=tp.party_id where pp.provider_ref=$1 and tc.status='ACTIVE' and tc.capability_ref = any($2::text[])`, [params.assigneeRef.trim(), task.rows[0].required_capability_keys ?? []]);
@@ -832,8 +836,8 @@ export class OrchestrationService {
       await client.query(`update task_assignments set status='REVOKED', revoked_at=now() where task_id=$1 and status in ('OFFERED','ACCEPTED')`, [params.taskId]);
       const row = await client.query<TaskAssignmentDto>(
         `insert into task_assignments(task_id, assignee_ref, assignee_kind, status, accepted_at)
-         values ($1,$2,$3,'ACCEPTED',now())
-         returning assignment_id, task_id, assignee_ref, assignee_kind, status, accepted_at`, [params.taskId, params.assigneeRef.trim(), params.assigneeKind],
+         values ($1,$2,'EXPERT','ACCEPTED',now())
+         returning assignment_id, task_id, assignee_ref, assignee_kind, status, accepted_at`, [params.taskId, params.assigneeRef.trim()],
       );
       await client.query(`update service_tasks set responsible_ref=$2, role_key=$3, status=case when status='PENDING' then 'ACCEPTED' else status end, updated_at=now() where task_id=$1`, [params.taskId, params.assigneeRef.trim(), roleKey]);
       return { ...row.rows[0], role_key: roleKey };

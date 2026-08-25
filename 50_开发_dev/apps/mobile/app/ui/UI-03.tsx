@@ -265,14 +265,16 @@ export default function GrowthExplanationScreen() {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>综合成长评估</Text>
         <GrowthRadarOverview scorecard={displayScorecard} isPreview={isPreview} />
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>核心问题</Text>
-        <View style={styles.tags}>
-          {displayScorecard.core_issue_tags.slice(0, 3).map((tag, index) => (
-            <View key={tag} style={[styles.tag, { backgroundColor: tagColors[index].background }]}>
-              <Text style={[styles.tagText, { color: tagColors[index].text }]}>{tag}</Text>
-            </View>
-          ))}
-        </View>
+        {scorecard ? <>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>核心问题</Text>
+          <View style={styles.tags}>
+            {scorecard.core_issue_tags.slice(0, 3).map((tag, index) => (
+              <View key={tag} style={[styles.tag, { backgroundColor: tagColors[index].background }]}>
+                <Text style={[styles.tagText, { color: tagColors[index].text }]}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        </> : null}
 
         {evidenceCoverage ? <>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>证据覆盖度</Text>
@@ -292,15 +294,17 @@ export default function GrowthExplanationScreen() {
           </View> : null}
         </> : null}
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>成长建议</Text>
-        <View style={styles.suggestions}>
-          {displayScorecard.recommendations.slice(0, 3).map((item, index) => (
-            <View key={`${index}-${item}`} style={styles.suggestionRow}>
-              <View style={styles.suggestionIndex}><Text style={styles.suggestionIndexText}>{index + 1}</Text></View>
-              <Text style={[styles.suggestionText, { color: colors.text }]}>{item}</Text>
-            </View>
-          ))}
-        </View>
+        {scorecard ? <>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>成长建议</Text>
+          <View style={styles.suggestions}>
+            {scorecard.recommendations.slice(0, 3).map((item, index) => (
+              <View key={`${index}-${item}`} style={styles.suggestionRow}>
+                <View style={styles.suggestionIndex}><Text style={styles.suggestionIndexText}>{index + 1}</Text></View>
+                <Text style={[styles.suggestionText, { color: colors.text }]}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        </> : null}
 
         {evidenceCoverage && evidenceCoverage.support_direction_labels.length > 0 ? <>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>支持方向</Text>
