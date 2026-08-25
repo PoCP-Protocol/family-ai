@@ -817,22 +817,24 @@ export class OrchestrationService {
   }
 
   /** DEV 履约协作：一个任务只保留一个当前 ACCEPTED 责任人；新责任人会撤销旧分配。 */
-  async assignServiceTask(params: { familyId: string; caseId: string; taskId: string; assigneeRef: string; roleKey: string; idempotencyKey?: string }): Promise<TaskAssignmentDto> {
+  async assignServiceTask(params: { familyId: string; caseId: string; taskId: string; assigneeRef: string; idempotencyKey?: string }): Promise<TaskAssignmentDto> {
     return this.withIdempotency('AssignServiceTask', params.idempotencyKey, params, async () => this.repo.withTransaction(async (client) => {
-      if (!params.assigneeRef.trim() || !params.roleKey.trim()) throw new BadRequestException('assignee_ref_role_key_required');
+      if (!params.assigneeRef.trim()) throw new BadRequestException('assignee_ref_required');
       const task = await client.query<{ task_id: string; status: string; role_key: string | null; required_capability_keys: string[] }>(`select st.task_id, st.status, st.role_key, st.required_capability_keys from service_tasks st join service_cases sc on sc.case_id=st.case_ref where st.task_id=$1 and sc.case_id=$2 and sc.family_id=$3 for update`, [params.taskId, params.caseId, params.familyId]);
       if (!task.rowCount) throw new ForbiddenException('task_not_in_family_case');
       if (['VERIFIED', 'CLOSED', 'CANCELLED'].includes(task.rows[0].status)) throw new ConflictException('task_not_assignable');
-      const roleKey = task.rows[0].role_key ?? params.roleKey.trim();
-      if (roleKey !== params.roleKey.trim()) throw new ForbiddenException('task_role_mismatch');
+      const roleKey = task.rows[0].role_key;
+      if (!roleKey) throw new ConflictException('task_blueprint_role_required');
       const roleCheck = await client.query<{ ok: boolean }>(`select exists (select 1 from service_collaboration_blueprints b join service_cases sc on sc.collaboration_blueprint_ref=b.blueprint_ref and sc.collaboration_blueprint_version=b.version join service_tasks st on st.case_ref=sc.case_id where st.task_id=$1 and b.status='ACTIVE' and b.roles @> jsonb_build_array(jsonb_build_object('role_key',$2))) as ok`, [params.taskId, roleKey]);
       if (!roleCheck.rows[0]?.ok) throw new ForbiddenException('role_not_in_blueprint');
       if (['DELIVERY_RESOURCE', 'HUMAN_COACH'].includes(roleKey)) {
         const provider = await client.query(`select pp.provider_profile_id from provider_profiles pp join provider_admissions pa on pa.provider_profile_id=pp.provider_profile_id join service_cases sc on sc.case_id=$2 join tenant_family_bindings tfb on tfb.family_id=sc.family_id and tfb.status='ACTIVE' where pp.provider_ref=$1 and pp.status='ACTIVE' and pa.tenant_id=tfb.tenant_id and pa.status='ADMITTED'`, [params.assigneeRef.trim(), params.caseId]);
         if (!provider.rowCount) throw new ForbiddenException('assignee_provider_not_admitted');
-        const capabilities = await client.query(`select 1 from teacher_capabilities tc join teacher_profiles tp on tp.teacher_profile_id=tc.teacher_profile_id join provider_profiles pp on pp.owner_party_id=tp.party_id where pp.provider_ref=$1 and tc.status='ACTIVE' and tc.capability_ref = any($2::text[])`, [params.assigneeRef.trim(), task.rows[0].required_capability_keys ?? []]);
-        if ((task.rows[0].required_capability_keys ?? []).length > 0 && capabilities.rowCount !== (task.rows[0].required_capability_keys ?? []).length) throw new ForbiddenException('assignee_capability_mismatch');
+        const capabilities = await client.query(`select count(distinct tc.capability_ref)::int as count from teacher_capabilities tc join teacher_profiles tp on tp.teacher_profile_id=tc.teacher_profile_id join provider_profiles pp on pp.owner_party_id=tp.party_id where pp.provider_ref=$1 and tc.status='ACTIVE' and tc.capability_ref = any($2::text[])`, [params.assigneeRef.trim(), task.rows[0].required_capability_keys ?? []]);
+        if ((task.rows[0].required_capability_keys ?? []).length > 0 && capabilities.rows[0].count !== (task.rows[0].required_capability_keys ?? []).length) throw new ForbiddenException('assignee_capability_mismatch');
       }
+      const access = await client.query(`select 1 from service_relationships sr join provider_profiles pp on pp.provider_profile_id=sr.provider_profile_id where sr.family_id=$1 and sr.status='ACTIVE' and sr.purpose='SERVICE_DELIVERY' and sr.effective_from <= now() and (sr.effective_to is null or sr.effective_to > now()) and pp.provider_ref=$2 and exists (select 1 from case_access_grants g where g.service_case_id=$3 and g.service_relationship_id=sr.service_relationship_id and g.revoked_at is null and g.effective_from <= now() and (g.expires_at is null or g.expires_at > now()))`, [params.familyId, params.assigneeRef.trim(), params.caseId]);
+      if (['DELIVERY_RESOURCE', 'HUMAN_COACH'].includes(roleKey) && !access.rowCount) throw new ForbiddenException('active_case_access_required');
       await client.query(`update task_assignments set status='REVOKED', revoked_at=now() where task_id=$1 and status in ('OFFERED','ACCEPTED')`, [params.taskId]);
       const row = await client.query<TaskAssignmentDto>(
         `insert into task_assignments(task_id, assignee_ref, assignee_kind, status, accepted_at)
@@ -871,7 +873,7 @@ export class OrchestrationService {
         const updated = await client.query<ServiceTaskDto>(`update service_tasks set status=$2, updated_at=now() where task_id=$1 returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, due_at, deliverable, verified_at`, [params.taskId, next]);
         return { task: updated.rows[0], contribution: null, allocations: [] };
       }
-      const updated = await client.query<ServiceTaskDto>(`update service_tasks set status='VERIFIED', verified_at=now(), updated_at=now() where task_id=$1 returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, due_at, deliverable, verified_at`, [params.taskId]);
+      const updated = await client.query<ServiceTaskDto>(`update service_tasks set status='VERIFIED', verified_at=now(), updated_at=now() where task_id=$1 returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, role_key, required_capability_keys, task_weight, due_at, deliverable, verified_at`, [params.taskId]);
       const contribution = await client.query<{ contribution_id: string }>(`insert into service_contributions(case_ref, provider_ref, role, task_ref, completed_at, quality_state) values ($1,$2,$3,$4,now(),'VERIFIED') returning contribution_id`, [params.caseId, task.rows[0].responsible_ref, task.rows[0].role_key ?? 'DELIVERY_RESOURCE', params.taskId]);
       return { task: updated.rows[0], contribution: contribution.rows[0], allocations: [] };
     }));
@@ -883,7 +885,7 @@ export class OrchestrationService {
       const own = await client.query<{ case_id: string; blueprint_ref: string | null; blueprint_version: number | null; shadow_allocation_finalized_at: string | null }>(`select case_id, collaboration_blueprint_ref as blueprint_ref, collaboration_blueprint_version as blueprint_version, shadow_allocation_finalized_at from service_cases where case_id=$1 and family_id=$2 for update`, [params.caseId, params.familyId]);
       if (!own.rows[0]) throw new ForbiddenException('case_not_in_family');
       if (own.rows[0].shadow_allocation_finalized_at) return { case_id: params.caseId, finalized: true, allocations: [] };
-      const contributions = await client.query<{ contribution_id: string; provider_ref: string | null; role: string; task_ref: string }>(`select contribution_id, provider_ref, role, task_ref from service_contributions where case_ref=$1 and quality_state='VERIFIED' order by completed_at asc`, [params.caseId]);
+      const contributions = await client.query<{ contribution_id: string; provider_ref: string | null; role: string; task_ref: string; task_weight: number }>(`select c.contribution_id, c.provider_ref, c.role, c.task_ref, st.task_weight from service_contributions c join service_tasks st on st.task_id=c.task_ref where c.case_ref=$1 and c.quality_state='VERIFIED' order by c.completed_at asc`, [params.caseId]);
       if (!contributions.rows.length) throw new ConflictException('verified_contribution_required');
       const policyRef = own.rows[0].blueprint_ref ?? 'communication-21day-service-collab';
       const policyVersion = own.rows[0].blueprint_version ?? 1;
@@ -898,10 +900,13 @@ export class OrchestrationService {
       const content = contributions.rows.find((item) => item.role === 'CONTENT_RESOURCE');
       if (content) await add(content, 'CONTENT_RESOURCE', 15, content.provider_ref ?? 'CONTENT_RESOURCE', 'CONTENT_RESOURCE', 'CONTRIBUTION', content.contribution_id);
       const steward = contributions.rows.find((item) => item.role === 'CASE_STEWARD' || item.role === 'STEWARD');
-      if (steward) await add(steward, 'STEWARD', 15, steward.provider_ref ?? 'CASE_STEWARD', 'CASE_STEWARD', 'CONTRIBUTION', steward.contribution_id);
+      if (steward) await add(steward, 'CASE_STEWARD', 15, steward.provider_ref ?? 'CASE_STEWARD', 'CASE_STEWARD', 'CONTRIBUTION', steward.contribution_id);
       const delivery = contributions.rows.filter((item) => item.role === 'DELIVERY_RESOURCE' || item.role === 'DELIVERY');
-      const share = delivery.length ? 40 / delivery.length : 0;
-      for (const item of delivery) await add(item, 'DELIVERY_RESOURCE', share, item.provider_ref ?? item.contribution_id, 'DELIVERY_RESOURCE', 'CONTRIBUTION', item.contribution_id);
+      const totalWeight = delivery.reduce((sum, item) => sum + Number(item.task_weight || 1), 0);
+      for (const item of delivery) {
+        const units = totalWeight ? 40 * Number(item.task_weight || 1) / totalWeight : 0;
+        await add(item, 'DELIVERY_RESOURCE', units, item.provider_ref ?? item.contribution_id, 'DELIVERY_RESOURCE', 'CONTRIBUTION_WEIGHT', item.contribution_id);
+      }
       await add(first, 'QUALITY_RESERVE', 10, 'QUALITY_RESERVE', 'QUALITY_RESERVE', 'CASE', params.caseId, qualityState);
       await client.query(`update service_cases set shadow_allocation_finalized_at=now(), shadow_allocation_policy_ref=$2, shadow_allocation_policy_version=$3 where case_id=$1`, [params.caseId, policyRef, policyVersion]);
       return { case_id: params.caseId, finalized: true, allocations };

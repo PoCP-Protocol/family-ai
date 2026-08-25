@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-const BUCKETS = { PLATFORM: 20, CONTENT_RESOURCE: 15, STEWARD: 15, DELIVERY_RESOURCE: 40, QUALITY_RESERVE: 10 };
+const BUCKETS = { PLATFORM: 20, CONTENT_RESOURCE: 15, CASE_STEWARD: 15, DELIVERY_RESOURCE: 40, QUALITY_RESERVE: 10 };
 
 describe('DEV service task allocation contract', () => {
   it('案件级影子分配合计 100，而不是每个任务 100', () => {
@@ -14,7 +14,11 @@ describe('DEV service task allocation contract', () => {
   });
 
   it('交付池可在多个已验收贡献之间拆分且合计严格为 40', () => {
-    expect((BUCKETS.DELIVERY_RESOURCE / 3) * 3).toBe(40);
+    const weights = [1, 2, 1];
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    const split = weights.map((weight) => BUCKETS.DELIVERY_RESOURCE * weight / totalWeight);
+    expect(split.reduce((sum, units) => sum + units, 0)).toBe(40);
+    expect(split).toEqual([10, 20, 10]);
   });
 
   it('质量池只有有帮助反馈才释放', () => {
