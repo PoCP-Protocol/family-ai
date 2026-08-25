@@ -264,6 +264,123 @@ The seven product domains are:
 
 Commerce must not reverse-control growth recommendations.
 
+## 9A. Family Membership OS V2 Direction
+
+The two membership design reviews are adopted together. The conclusion is not to remove membership tiers, and not to return to traditional VIP tiers. Family will use three relationship-depth tiers, while keeping growth stage, loyalty points, and community role as independent dimensions.
+
+### Membership Tier
+
+Membership tier answers only:
+
+```text
+What depth of long-term service relationship has this family established with Family?
+```
+
+The initial tier set is deliberately limited to three levels:
+
+```text
+M0_FREE    家庭会员
+M1_GROWTH  成长会员
+M2_ANNUAL  年度会员
+```
+
+| Tier | Entry basis | Relationship promise | Typical value |
+|---|---|---|---|
+| M0 家庭会员 | Family account and basic relationship | Establish the family relationship | Basic assessment, selected AI/content, community browsing, private growth record |
+| M1 成长会员 | Eligible 21-day/90-day growth product or approved effective relationship | Enter an active growth relationship | Growth plan, AI companion, growth records, selected activities/content, points acceleration |
+| M2 年度会员 | Annual Family Growth Membership activation | Establish a 365-day relationship | Four growth cycles, Family Steward, expert/activity benefits, annual family report, member service |
+
+These are relationship tiers, not child or family ability scores. They must never be used for family ranking, clinical inference, growth judgment, or safety prioritization.
+
+### Independent Dimensions
+
+```text
+Membership Tier
+   M0 家庭会员 → M1 成长会员 → M2 年度会员
+   Answers: what long-term service relationship exists?
+
+Growth Stage
+   ONBOARDING → FIRST_VALUE → ACTIVE_GROWTH → REVIEW → RENEWAL_WINDOW
+   Answers: where is the current growth journey?
+
+Loyalty Points
+   PointsAccount / PointsLedger / PointsRule / Redemption
+   Answers: what eligible participation assets have accumulated?
+
+Community Role
+   GROWTH_PARTNER → SHARING_AMBASSADOR → CITY_INITIATOR
+   Answers: what contribution role exists in the ecosystem?
+```
+
+No dimension may be rendered as another dimension. For example:
+
+```text
+M2 年度会员
+≠
+成长阶段：稳定行动期
+≠
+成长积分：1,280
+≠
+社区身份：成长伙伴
+```
+
+### Product-to-Tier Rules
+
+Not every purchase changes the membership tier:
+
+```text
+Family account                  → M0
+One event / one salon           → M0 + Event Entitlement
+21-day or 90-day growth product → M0 → M1, subject to activation policy
+Annual membership               → M1 → M2, subject to commerce activation
+One expert consultation         → current tier + Consultation Entitlement
+```
+
+Tier change is a deterministic domain decision. It cannot be directly changed by an AI agent, points display, referral draft, or UI local state.
+
+### Commercial And Honorary Progression
+
+Commercial progression is:
+
+```text
+M0 家庭会员 → M1 成长会员 → M2 年度会员 → renewal
+```
+
+Honorary/community progression is separate:
+
+```text
+成长伙伴 → 分享官 → 城市发起人
+```
+
+Community roles require evidence of sustained participation, contribution quality, qualified referrals, service feedback, and compliance. Payment amount alone cannot grant a community role.
+
+### UI Semantic Rule
+
+The UI may show the four facts together, but each label must remain explicit:
+
+```text
+张女士
+年度会员 M2
+成长阶段：第二周期 · 稳定行动期
+成长积分：1,280
+社区身份：成长伙伴
+```
+
+The following patterns are forbidden:
+
+- Annual subscription automatically displayed as `Lv.3`.
+- Non-member automatically displayed as `Lv.1`.
+- Fixed `LV3 成长达人` copy.
+- Fixed points such as `1280` or a fixed progress bar.
+- A community role displayed as a membership tier.
+- A local invitation draft displayed as a qualified referral.
+
+### First-Phase Commercial Constraint
+
+M0/M1/M2 is a product and contract direction, not authorization for production billing. Current fixture-only `DEV/TEST`, `external_effect=false`, and `TEST_NOOP_ADAPTER` boundaries remain unchanged until Commerce Order → PaymentSucceeded → MembershipActivation is separately approved.
+
+The first membership domain task must establish `MembershipPeriod`, `ActivationSource`, and tier transition policy before UI redesign or production activation.
+
 ## 10. Trust Zones And Ecosystem
 
 Schools and providers are not just tenants. V5 adopts explicit trust zones:

@@ -18,6 +18,92 @@ export interface FamilyAssessmentItem {
   safety_boundary?: string;
 }
 
+export type FamilySafetyScreeningStatus = 'CLEAR' | 'REVIEW_REQUIRED' | 'BLOCKED';
+
+export interface FamilySafetyScreeningResult {
+  status: FamilySafetyScreeningStatus;
+  requires_human_review: boolean;
+  reason_refs: string[];
+  uncertainty_refs: string[];
+  errors: string[];
+}
+
+/**
+ * 独立于题目 annotation 的家庭安全筛查器。
+ * 它只产生门禁信号，不产生诊断、分数或业务状态。
+ */
+export class FamilySafetyScreeningService {
+  screen(
+    responses: FamilyAssessmentResponseSignal[],
+    itemBank: FamilyAssessmentItem[] | Map<string, FamilyAssessmentItem>,
+  ): FamilySafetyScreeningResult {
+    const items = itemBank instanceof Map ? itemBank : new Map(itemBank.map((item) => [item.item_ref, item]));
+    const reasonRefs = new Set<string>();
+    const uncertaintyRefs = new Set<string>();
+    const errors: string[] = [];
+
+    try {
+      const safetyItems = Array.from(items.values()).filter((item) => !!item.safety_boundary);
+      const observedSafetySignals = responses.filter((response) => {
+        const item = items.get(response.item_ref);
+        return !!item?.safety_boundary;
+      });
+
+      for (const response of observedSafetySignals) {
+        const normalized = String(response.answer_ref ?? '').trim().toUpperCase();
+        if (!normalized) {
+          errors.push(`empty_safety_answer:${response.item_ref}`);
+          continue;
+        }
+        if (normalized === 'NOT_SURE' || normalized === 'UNKNOWN' || normalized === 'PREFER_NOT_TO_SAY') {
+          uncertaintyRefs.add(response.item_ref);
+          reasonRefs.add(`SAFETY_UNCERTAINTY:${response.item_ref}`);
+        }
+        if (['OFTEN', 'YES', 'TRUE', 'HIGH', 'SEVERE', 'CRISIS'].includes(normalized)) {
+          reasonRefs.add(response.item_ref);
+        }
+      }
+
+      const highSignalCount = observedSafetySignals.filter((response) =>
+        ['OFTEN', 'YES', 'TRUE', 'HIGH', 'SEVERE', 'CRISIS'].includes(String(response.answer_ref ?? '').trim().toUpperCase()),
+      ).length;
+      if (highSignalCount >= 2) reasonRefs.add('SAFETY_COMBINATION_MULTIPLE_HIGH_SIGNALS');
+
+      const malformedResponse = responses.some((response) => !response.item_ref || response.answer_ref === undefined || response.answer_ref === null);
+      if (malformedResponse) errors.push('malformed_safety_input');
+
+      // 缺失安全题本身是“不确定性”，只有和已有高风险信号组合时才升级人工复核，避免把普通未作答误报成危机。
+      const missingSafetyItems = safetyItems
+        .filter((item) => !observedSafetySignals.some((response) => response.item_ref === item.item_ref))
+        .map((item) => item.item_ref);
+      if (highSignalCount > 0) {
+        for (const itemRef of missingSafetyItems) uncertaintyRefs.add(itemRef);
+        if (missingSafetyItems.length > 0) reasonRefs.add('SAFETY_SCREEN_INCOMPLETE_WITH_HIGH_SIGNAL');
+      }
+
+      if (errors.length > 0) {
+        return { status: 'BLOCKED', requires_human_review: true, reason_refs: [...reasonRefs, 'SAFETY_SCREENING_FAILED'], uncertainty_refs: [...uncertaintyRefs], errors };
+      }
+      const requiresHumanReview = reasonRefs.size > 0;
+      return {
+        status: requiresHumanReview ? 'REVIEW_REQUIRED' : 'CLEAR',
+        requires_human_review: requiresHumanReview,
+        reason_refs: [...reasonRefs],
+        uncertainty_refs: [...uncertaintyRefs],
+        errors: [],
+      };
+    } catch {
+      return {
+        status: 'BLOCKED',
+        requires_human_review: true,
+        reason_refs: ['SAFETY_SCREENING_FAILED'],
+        uncertainty_refs: [],
+        errors: ['safety_screening_exception'],
+      };
+    }
+  }
+}
+
 export interface FamilyAssessmentActionMap {
   construct_ref: string;
   candidate_action_refs: string[];
@@ -160,6 +246,20 @@ export interface FamilyModelUi02AssessmentInterpretationDraft {
   };
 }
 
+export interface FamilyAssessmentEvidenceCoverage {
+  source_response_count: number;
+  interpreted_response_count: number;
+  coverage_ratio: number;
+  mapped_item_refs: string[];
+  evidence_summaries: string[];
+  uninterpreted_item_refs: string[];
+  uncertainty_item_refs: string[];
+  uncertainty_reasons: string[];
+  support_direction_refs: string[];
+  support_direction_labels: string[];
+  next_questions?: string[];
+}
+
 export interface FamilyAssessmentAiScoreDimension {
   dimension_ref: string;
   label: string;
@@ -183,6 +283,7 @@ export interface FamilyAssessmentAiSubsystemOutput {
   service_depth: 'BASIC_SELF_CHECK' | 'DEEP_AI_INTERPRETATION';
   interpretation: FamilyModelUi02AssessmentInterpretationDraft;
   scorecard: FamilyAssessmentAiScorecard;
+  evidence_coverage: FamilyAssessmentEvidenceCoverage;
   boundaries: {
     perspective_boundary: 'PERSPECTIVE_NOT_FACT';
     score_boundary: 'SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING';
@@ -582,15 +683,20 @@ export class FamilyEducationModelRuntime {
   }
 
   interpretDeterministically(input: FamilyModelInterpretationInput): FamilyModelInterpretationDraft {
-    const matchedItems = input.responses.map((response) => this.itemsByRef.get(response.item_ref)).filter((item): item is FamilyAssessmentItem => !!item);
+    const matchedItems = input.responses
+      .filter((response) => isEvidenceBearingAnswer(response.answer_ref))
+      .map((response) => this.itemsByRef.get(response.item_ref))
+      .filter((item): item is FamilyAssessmentItem => !!item);
     const needRefs = collectRefs(matchedItems, 'need_refs');
     const constructRefs = collectRefs(matchedItems, 'construct_refs');
     const basisItemRefsByNeed = groupBasisByRef(matchedItems, 'need_refs');
     const basisItemRefsByConstruct = groupBasisByRef(matchedItems, 'construct_refs');
     const actionCandidates = this.actionCandidatesForConstructs(constructRefs);
-    const humanGateReasons = matchedItems
+    const annotationGateReasons = matchedItems
       .filter((item) => item.safety_boundary?.includes('human_gate'))
       .map((item) => item.item_ref);
+    const safetyScreening = new FamilySafetyScreeningService().screen(input.responses, this.itemsByRef);
+    const humanGateReasons = uniqueRefs([...annotationGateReasons, ...safetyScreening.reason_refs]);
 
     return {
       model_component_ref: 'FAMILY_ASSESSMENT_V0_COMPONENT',
@@ -618,7 +724,7 @@ export class FamilyEducationModelRuntime {
       })),
       action_candidates: actionCandidates,
       human_gate: {
-        required: humanGateReasons.length > 0,
+        required: safetyScreening.requires_human_review || humanGateReasons.length > 0,
         reason_refs: humanGateReasons,
       },
       prohibited_outputs: ['family_total_score', 'family_ranking', 'child_ranking', 'medical_diagnosis', 'psychiatric_diagnosis'],
@@ -676,9 +782,7 @@ export class FamilyEducationModelRuntime {
         continue;
       }
       if (response.item_ref === 'FOCUS') {
-        for (const mappedItemRef of ui02ItemRefsForFocus(String(response.response_value))) {
-          pushSignal(mappedItemRef, `FOCUS:${String(response.response_value)}`, String(response.response_value), response.item_ref);
-        }
+        // FOCUS 只定义本次自查范围，不是家庭证据，不能自动制造需要或构念信号。
         continue;
       }
       for (const mappedItemRef of ui02ItemRefsForDeepQuestion(response.item_ref)) {
@@ -706,7 +810,7 @@ export class FamilyEducationModelRuntime {
       draft,
       coverage: {
         source_response_count: sourceInput.responses.length,
-        interpreted_response_count: modelInput.responses.length,
+        interpreted_response_count: mappedItemRefs.length,
         mapped_item_refs: mappedItemRefs,
         uninterpreted_item_refs: sourceInput.responses
           .map((response) => response.item_ref)
@@ -726,6 +830,7 @@ export class FamilyEducationModelRuntime {
       service_depth: serviceDepth,
       interpretation,
       scorecard: buildAssessmentAiScorecard(sourceInput, interpretation),
+      evidence_coverage: buildEvidenceCoverage(sourceInput, interpretation, this.itemsByRef),
       boundaries: {
         perspective_boundary: 'PERSPECTIVE_NOT_FACT',
         score_boundary: 'SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING',
@@ -742,6 +847,40 @@ export class FamilyEducationModelRuntime {
       },
     };
   }
+}
+
+function buildEvidenceCoverage(
+  sourceInput: FamilyModelUi02AssessmentResponseSetInput,
+  interpretation: FamilyModelUi02AssessmentInterpretationDraft,
+  itemsByRef: Map<string, FamilyAssessmentItem>,
+): FamilyAssessmentEvidenceCoverage {
+  const responses = sourceInput.responses;
+  const uncertaintyResponses = responses.filter((response) => ['NOT_SURE', 'UNKNOWN', 'PREFER_NOT_TO_SAY'].includes(String(response.response_value).trim().toUpperCase()));
+  const sourceCount = responses.length;
+  const interpretedCount = interpretation.coverage.interpreted_response_count;
+  const supportDirectionRefs = interpretation.draft.action_candidates.map((candidate) => candidate.action_ref).filter(uniqueValue);
+  const nextQuestions = uncertaintyResponses.length > 0
+    ? ['这类情况最近多久发生一次？', '通常在什么场景下更容易出现？', '孩子和家长分别如何描述这件事？']
+    : interpretation.coverage.uninterpreted_item_refs.length > 0
+      ? ['如果愿意，可以补充未纳入本次解读的观察项。']
+      : [];
+  return {
+    source_response_count: sourceCount,
+    interpreted_response_count: interpretedCount,
+    coverage_ratio: sourceCount === 0 ? 0 : Number((interpretedCount / sourceCount).toFixed(3)),
+    mapped_item_refs: interpretation.coverage.mapped_item_refs,
+    evidence_summaries: interpretation.coverage.mapped_item_refs.map((itemRef) => {
+      const response = responses.find((candidate) => candidate.item_ref === itemRef);
+      const item = itemsByRef.get(itemRef);
+      return item && response ? `${item.prompt}（本次回答：${response.response_value}）` : itemRef;
+    }),
+    uninterpreted_item_refs: interpretation.coverage.uninterpreted_item_refs,
+    uncertainty_item_refs: uncertaintyResponses.map((response) => response.item_ref).filter(uniqueValue),
+    uncertainty_reasons: uncertaintyResponses.length > 0 ? ['家庭回答包含不确定或暂不回答项目，相关方向需要进一步核实。'] : [],
+    support_direction_refs: supportDirectionRefs,
+    support_direction_labels: supportDirectionRefs.map(assessmentActionLabel),
+    next_questions: nextQuestions,
+  };
 }
 
 function buildAssessmentAiScorecard(sourceInput: FamilyModelUi02AssessmentResponseSetInput, interpretation: FamilyModelUi02AssessmentInterpretationDraft): FamilyAssessmentAiScorecard {
@@ -1158,4 +1297,9 @@ function groupTurnBasisByRef(items: FamilyDialogueTurnSignal[], field: 'need_ref
 
 function uniqueRefs<T extends string>(refs: T[]): T[] {
   return Array.from(new Set(refs));
+}
+
+function isEvidenceBearingAnswer(answerRef: string): boolean {
+  const normalized = String(answerRef).trim().toUpperCase();
+  return ['OFTEN', 'SOMETIMES', 'YES', 'TRUE', 'HIGH', 'SEVERE', 'CRISIS'].includes(normalized);
 }

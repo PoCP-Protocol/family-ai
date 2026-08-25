@@ -20,6 +20,7 @@ import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.s
 import { FamilyHomeService } from './family-home.service';
 import { AssessmentService } from './assessment.service';
 import { GrowthHypothesisService } from './growth-hypothesis.service';
+import { GrowthCamp21Service } from './growth-camp21.service';
 import { FamilyAssessmentModelProvider } from '../model/family-assessment-model.provider';
 import { FamilyModelGatewayProvider, FamilyModelLiveGatewayEnabledProvider } from './family-model-gateway.provider';
 
@@ -53,6 +54,7 @@ import { FamilyModelGatewayProvider, FamilyModelLiveGatewayEnabledProvider } fro
 	    AssessmentService,
 	    FamilyAssessmentModelProvider,
 	    GrowthHypothesisService,
+	    GrowthCamp21Service,
 	    FamilyModelGatewayProvider,
 	    FamilyModelLiveGatewayEnabledProvider,
 

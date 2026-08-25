@@ -26,6 +26,7 @@ interface OfferingRow {
   provider_ref: string;
   provider_display_name: string;
   provider_kind: 'TEACHER';
+  provider_profile_id: string;
   qualification_status: 'ACTIVE';
   admission_status: 'ADMITTED';
   offering_status: 'ACTIVE';
@@ -77,7 +78,7 @@ export class FamilyServiceBookingService {
     return requireDevSyntheticTestLoop().environment_status === 'TEST_VALIDATED' ? 'TEST' : 'DEV';
   }
 
-  private async tenantForFamily(familyId: string): Promise<string> {
+  async tenantForFamily(familyId: string): Promise<string> {
     const result = await this.repo.query<{ tenant_id: string }>(
       `select tenant_id from tenant_family_bindings
         where family_id=$1 and status='ACTIVE'
@@ -87,6 +88,46 @@ export class FamilyServiceBookingService {
     const tenantId = result.rows[0]?.tenant_id;
     if (!tenantId) throw new ForbiddenException('tenant_family_binding_required');
     return tenantId;
+  }
+
+  async providerFoundation(tenantId: string): Promise<{
+    tenant_id: string;
+    organizations: Array<{ organization_id: string; organization_ref: string; legal_name: string; status: string }>;
+    teachers: Array<{ teacher_profile_id: string; teacher_ref: string; public_display_name: string; status: string; provider_profile_id: string | null }>;
+  }> {
+    const organizations = await this.repo.query<{ organization_id: string; organization_ref: string; legal_name: string; status: string }>(
+      `select o.organization_id, o.organization_ref, o.legal_name, o.status
+         from organizations o
+         join organization_tenant_bindings otb on otb.organization_id=o.organization_id
+        where otb.tenant_id=$1 and otb.status='ACTIVE'
+          and otb.valid_from <= now() and (otb.valid_to is null or otb.valid_to > now())
+        order by o.organization_ref`,
+      [tenantId],
+    );
+    const teachers = await this.repo.query<{ teacher_profile_id: string; teacher_ref: string; public_display_name: string; status: string; provider_profile_id: string | null }>(
+      `select tp.teacher_profile_id, tp.teacher_ref, tp.public_display_name, tp.status,
+              pp.provider_profile_id
+         from teacher_profiles tp
+         left join provider_profiles pp on pp.owner_party_id=tp.party_id
+        where tp.status in ('ADMITTED','PENDING_REVIEW')
+          and (
+            exists (
+              select 1 from provider_admissions pa
+               where pa.provider_profile_id=pp.provider_profile_id and pa.tenant_id=$1
+                 and pa.status='ADMITTED' and (pa.expires_at is null or pa.expires_at > now())
+            )
+            or exists (
+              select 1 from teacher_affiliations ta
+               join organization_tenant_bindings otb on otb.organization_id=ta.organization_id
+              where ta.teacher_profile_id=tp.teacher_profile_id and ta.status='ACTIVE'
+                and otb.tenant_id=$1 and otb.status='ACTIVE'
+                and ta.valid_from <= now() and (ta.valid_to is null or ta.valid_to > now())
+            )
+          )
+        order by tp.teacher_ref`,
+      [tenantId],
+    );
+    return { tenant_id: tenantId, organizations: organizations.rows, teachers: teachers.rows };
   }
 
   private async assertServiceConsent(familyId: string): Promise<void> {
@@ -107,10 +148,12 @@ export class FamilyServiceBookingService {
     const result = await this.repo.query<OfferingRow>(
       `select o.service_offering_id, o.service_offering_ref, o.version_no, o.title,
               p.provider_ref, p.display_name as provider_display_name,
+              p.provider_profile_id,
               p.qualification_status, o.admission_status, o.fixture_only, o.attributes_schema_version
          from family_service_offerings o
          join family_service_providers p on p.provider_id=o.provider_id
-        where o.tenant_id=$1 and o.service_offering_ref=$2 and o.version_no=$3
+        where o.tenant_id=$1 and o.owner_tenant_id=$1 and p.provider_profile_id is not null
+          and o.service_offering_ref=$2 and o.version_no=$3
           and o.status='ACTIVE' and o.admission_status='ADMITTED' and o.fixture_only=true
           and p.status='ACTIVE' and p.qualification_status='ACTIVE' and p.admission_status='ADMITTED'
           and o.effective_from <= now() and (o.effective_to is null or o.effective_to > now())
@@ -160,6 +203,7 @@ export class FamilyServiceBookingService {
     const result = await this.repo.query<OfferingRow>(
       `select o.service_offering_id, o.service_offering_ref, o.version_no, o.title,
               p.provider_ref, p.display_name as provider_display_name, p.provider_kind,
+              p.provider_profile_id,
               p.qualification_status, o.admission_status, o.status::varchar as offering_status,
               nullif(o.attributes->>'service_type','') as service_type,
               nullif(o.attributes->>'age_band','') as age_band,
@@ -178,7 +222,8 @@ export class FamilyServiceBookingService {
             order by s.starts_at
             limit 1
          ) next_slot on true
-        where o.tenant_id=$1 and p.provider_kind='TEACHER'
+        where o.tenant_id=$1 and o.owner_tenant_id=$1 and p.provider_kind='TEACHER'
+          and p.provider_profile_id is not null
           and o.status='ACTIVE' and o.admission_status='ADMITTED' and o.fixture_only=true
           and p.status='ACTIVE' and p.qualification_status='ACTIVE' and p.admission_status='ADMITTED'
           and o.effective_from <= now() and (o.effective_to is null or o.effective_to > now())

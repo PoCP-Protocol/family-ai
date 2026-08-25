@@ -27,9 +27,23 @@ interface Ui03Scorecard {
   score_boundary: "SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING";
 }
 
+interface Ui03EvidenceCoverage {
+  source_response_count: number;
+  interpreted_response_count: number;
+  coverage_ratio: number;
+  mapped_item_refs: string[];
+  evidence_summaries: string[];
+  uninterpreted_item_refs: string[];
+  uncertainty_item_refs: string[];
+  uncertainty_reasons: string[];
+  support_direction_refs: string[];
+  support_direction_labels: string[];
+  next_questions?: string[];
+}
+
 interface RemoteHypothesisProjection {
   projection_version: "UI03_GROWTH_HYPOTHESIS_V1";
-  availability: "READY" | "NO_SUBMITTED_ASSESSMENT" | "POLICY_BLOCKED" | "SUBMITTED" | "ANALYZING" | "ACKNOWLEDGED" | "DISMISSED" | "ANALYSIS_FAILED";
+  availability: "READY" | "NO_SUBMITTED_ASSESSMENT" | "POLICY_BLOCKED" | "CONSENT_WITHDRAWN" | "SUBMITTED" | "ANALYZING" | "ACKNOWLEDGED" | "DISMISSED" | "ANALYSIS_FAILED";
   ai_state: "NOT_INVOKED" | "MODEL_DRAFT_READY" | "MODEL_GATEWAY_BLOCKED" | "READ_ONLY_PERSISTED";
   latest_assessment_session_id?: string | null;
   named_actions?: { generate?: "GENERATE_GROWTH_HYPOTHESIS"; confirm?: "CONFIRM_GROWTH_HYPOTHESIS" };
@@ -50,6 +64,7 @@ interface RemoteHypothesisProjection {
     limitations: string[];
     fact_boundary: "HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS";
     safety_gate?: { required: boolean; reason_refs: string[]; mode: "HUMAN_REVIEW_REQUIRED" };
+    evidence_coverage?: Ui03EvidenceCoverage;
     scorecard?: Ui03Scorecard;
   };
 }
@@ -110,6 +125,7 @@ export default function GrowthExplanationScreen() {
       const result = await familyApi.getGrowthHypothesis<RemoteHypothesisProjection>(token, familyId);
       if (!active) return;
       setRemote(result);
+      if (result.availability === "CONSENT_WITHDRAWN") { setRemoteState("ready"); return; }
       if (result.availability === "SUBMITTED" || result.availability === "ANALYSIS_FAILED") {
         const sessionId = result.latest_assessment_session_id;
         if (!sessionId) { setRemoteState("ready"); return; }
@@ -175,7 +191,9 @@ export default function GrowthExplanationScreen() {
   }
 
   const isPreview = !hypothesis || !scorecard;
+  const consentWithdrawn = remote?.availability === "CONSENT_WITHDRAWN";
   const displayScorecard = scorecard ?? PREVIEW_SCORECARD;
+  const evidenceCoverage = hypothesis?.evidence_coverage ?? null;
   const aiState = remote?.ai_state ?? "NOT_INVOKED";
   const submittedAt = formatDate(hypothesis?.source_refs.assessment_submitted_at);
   const summaryRows = [
@@ -196,7 +214,7 @@ export default function GrowthExplanationScreen() {
         }}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        {isPreview ? <View style={styles.previewNotice}><Text style={styles.previewNoticeTitle}>先完成免费家庭测评</Text><Text style={styles.previewNoticeText}>AI 会基于你提交的免费测评生成成长诊断报告；这不是儿童诊断结论、能力测验或排名。</Text></View> : null}
+        {isPreview ? <View style={styles.previewNotice}><Text style={styles.previewNoticeTitle}>{consentWithdrawn ? "测评授权已撤回" : "先完成免费家庭测评"}</Text><Text style={styles.previewNoticeText}>{consentWithdrawn ? "根据你的授权选择，系统已停止展示这次测评和 AI 分析内容。如需继续，请重新确认测评授权。" : "AI 会基于你提交的免费测评生成成长诊断报告；这不是儿童诊断结论、能力测验或排名。"}</Text></View> : null}
         <View style={styles.assessmentSummary}>
           <View style={styles.summaryAvatar}><IconSymbol name="person.crop.circle.fill" size={58} color="#2563EB" /></View>
           <View style={styles.summaryCopy}>
@@ -223,6 +241,24 @@ export default function GrowthExplanationScreen() {
           ))}
         </View>
 
+        {evidenceCoverage ? <>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>证据覆盖度</Text>
+          <View style={styles.evidenceCard}>
+            <Text style={styles.evidenceHeadline}>{Math.round(evidenceCoverage.coverage_ratio * 100)}% 已纳入结构化解读</Text>
+            <Text style={styles.evidenceMeta}>已解释 {evidenceCoverage.interpreted_response_count} / {evidenceCoverage.source_response_count} 项回答</Text>
+            {evidenceCoverage.uninterpreted_item_refs.length > 0 ? <Text style={styles.evidenceWarning}>仍有 {evidenceCoverage.uninterpreted_item_refs.length} 项未纳入当前解读</Text> : null}
+            {evidenceCoverage.uncertainty_reasons.map((reason) => <Text key={reason} style={styles.evidenceWarning}>{reason}</Text>)}
+          </View>
+          {evidenceCoverage.evidence_summaries.length > 0 ? <View style={styles.evidenceCard}>
+            <Text style={styles.evidenceHeadline}>本次分析依据</Text>
+            {evidenceCoverage.evidence_summaries.slice(0, 3).map((summary) => <Text key={summary} style={styles.evidenceMeta}>• {summary}</Text>)}
+          </View> : null}
+          {evidenceCoverage.next_questions && evidenceCoverage.next_questions.length > 0 ? <View style={styles.questionCard}>
+            <Text style={styles.questionCardTitle}>如果你愿意，可以继续补充</Text>
+            {evidenceCoverage.next_questions.map((question) => <Text key={question} style={styles.questionCardText}>• {question}</Text>)}
+          </View> : null}
+        </> : null}
+
         <Text style={[styles.sectionTitle, { color: colors.text }]}>成长建议</Text>
         <View style={styles.suggestions}>
           {displayScorecard.recommendations.slice(0, 3).map((item, index) => (
@@ -232,6 +268,13 @@ export default function GrowthExplanationScreen() {
             </View>
           ))}
         </View>
+
+        {evidenceCoverage && evidenceCoverage.support_direction_labels.length > 0 ? <>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>支持方向</Text>
+          <View style={styles.directionCard}>
+            {evidenceCoverage.support_direction_labels.slice(0, 3).map((label) => <Text key={label} style={[styles.directionText, { color: colors.text }]}>• {label}</Text>)}
+          </View>
+        </> : null}
 
         {decisionState === "error" ? <Text style={[styles.errorText, { color: "#D96464" }]}>支持方案暂时未形成，请稍后重试。</Text> : null}
         {safetyGateRequired ? <View style={styles.safetyNotice}>
@@ -333,11 +376,20 @@ const styles = StyleSheet.create({
   tags: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   tag: { borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
   tagText: { fontSize: 12, lineHeight: 17, fontWeight: "700" },
+  evidenceCard: { borderRadius: 14, backgroundColor: "#F5F9FF", borderWidth: 1, borderColor: "#D9E8FA", padding: 14, gap: 5 },
+  evidenceHeadline: { color: "#164B8A", fontSize: 16, lineHeight: 22, fontWeight: "900" },
+  evidenceMeta: { color: "#5B7091", fontSize: 12, lineHeight: 18, fontWeight: "700" },
+  evidenceWarning: { color: "#8A5A00", fontSize: 12, lineHeight: 18, fontWeight: "700" },
   suggestions: { gap: 12 },
   suggestionRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   suggestionIndex: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", marginTop: 1, backgroundColor: "#EAF0FF" },
   suggestionIndexText: { fontSize: 12, lineHeight: 17, fontWeight: "800", color: "#2F8FFB" },
   suggestionText: { flex: 1, fontSize: 14, lineHeight: 22 },
+  directionCard: { borderRadius: 14, backgroundColor: "#F7FBF8", borderWidth: 1, borderColor: "#D8EBDD", padding: 14, gap: 8 },
+  directionText: { fontSize: 13, lineHeight: 20, fontWeight: "700" },
+  questionCard: { borderRadius: 14, backgroundColor: "#FFF9EC", borderWidth: 1, borderColor: "#F4DEAA", padding: 14, gap: 5 },
+  questionCardTitle: { color: "#8A5A00", fontSize: 14, lineHeight: 20, fontWeight: "900" },
+  questionCardText: { color: "#6F5A36", fontSize: 12, lineHeight: 18, fontWeight: "700" },
   errorText: { fontSize: 12, lineHeight: 18, textAlign: "center" },
   primaryButton: { minHeight: 52, borderRadius: 26, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 2 },
   primaryButtonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "800" },

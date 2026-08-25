@@ -1,0 +1,26 @@
+version: 0.1
+action: ReleaseCurriculumDraft
+purpose: Release an approved immutable curriculum draft for enrollment.
+wave: G1-B
+scenario: CHALLENGE_21_CURRICULUM_DRAFT
+input:
+  required: [draft_id, idempotency_key]
+preconditions:
+  - draft_exists
+  - draft_is_approved
+  - release_reviewer_authorized
+  - draft_scope_matches_family_or_tenant
+effects:
+  - set_released_at_once
+  - append_audit_record
+  - emit_CurriculumDraftReleased_compat_event
+boundaries:
+  - release_is_not_enrollment
+  - release_is_not_learning_outcome
+  - no_model_call
+idempotency: required
+audit: required
+outbox: required
+compatibility:
+  event_name: CurriculumDraftReleased
+policy_version: G1B_CURRICULUM_RELEASE_V1

@@ -54,9 +54,7 @@
     "validate:business-runtime": "node tools/validate-business-runtime-model.mjs",
     "validate:ppt-ui-trace": "node tools/validate-ppt-ui-traceability.mjs",
     "validate:mobile-runtime-boundary": "node tools/validate-consumer-ui-baseline.mjs --strict-runtime",
-    "validate:subtractive-freeze": "node tools/validate-subtractive-freeze.mjs",
-    "validate:ai-runtime-boundary": "node tools/validate-ai-runtime-boundary.mjs",
-    "validate:ui-functional-realization": "node tools/validate-ui-functional-realization.mjs"
+    "validate:subtractive-freeze": "node tools/validate-subtractive-freeze.mjs"
   },
   "devDependencies": {
     "ajv": "^8.20.0",

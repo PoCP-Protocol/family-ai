@@ -15,6 +15,12 @@ export default function FamilyAssessmentResultScreen() {
   const focus = getGrowthFocus(selectedGrowthFocus);
   const observations = focus?.subtitle ? focus.subtitle.split("、").filter(Boolean) : [];
   const resultSummary = buildUi02AssessmentResultSummary(selectedGrowthFocus, assessmentAnswers);
+  const uncertainCount = resultSummary
+    ? resultSummary.totalCount - resultSummary.answeredCount
+    : 0;
+  const coveragePercent = resultSummary && resultSummary.totalCount > 0
+    ? Math.round((resultSummary.answeredCount / resultSummary.totalCount) * 100)
+    : 0;
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
@@ -76,6 +82,18 @@ export default function FamilyAssessmentResultScreen() {
         ) : null}
 
         {resultSummary ? (
+          <View style={[styles.coverageCard, { backgroundColor: "#F5F9FF", borderColor: "#D9E8FA" }]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.cardLabel, { color: colors.muted }]}>证据覆盖度</Text>
+              <Text style={[styles.progressCount, { color: "#164B8A" }]}>{coveragePercent}%</Text>
+            </View>
+            <Text style={[styles.coverageTitle, { color: colors.text }]}>已记录 {resultSummary.answeredCount} / {resultSummary.totalCount} 项观察</Text>
+            <Text style={[styles.cardText, { color: colors.muted }]}>这里只整理本次家庭自查的原始表达，不代表完整评估结论。</Text>
+            {uncertainCount > 0 ? <Text style={styles.uncertaintyText}>还有 {uncertainCount} 项未回答或暂不确定，AI 解读时会明确标注信息不足。</Text> : null}
+          </View>
+        ) : null}
+
+        {resultSummary ? (
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={[styles.cardLabel, { color: colors.muted }]}>为什么这样建议</Text>
             <Text style={[styles.cardText, { color: colors.text }]}>可先从：{resultSummary.supportDirections.slice(0, 3).join("、")}</Text>
@@ -115,8 +133,9 @@ export default function FamilyAssessmentResultScreen() {
 
         <Pressable onPress={() => router.push("/ui/UI-03" as Href)} style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
           <IconSymbol name="star.fill" size={18} color="#FFFFFF" />
-          <Text style={styles.primaryButtonText}>升级到 AI 成长诊断，看更完整的分析</Text>
+          <Text style={styles.primaryButtonText}>进入 AI 成长综合解读</Text>
         </Pressable>
+        <Text style={[styles.nextStepHint, { color: colors.muted }]}>下一步，AI 会基于本次家庭自查整理支持假设；你可以先阅读，再决定是否继续。</Text>
         <Pressable onPress={() => router.replace("/ui/UI-02" as Href)} style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}>
           <Text style={[styles.linkButtonText, { color: colors.muted }]}>返回调整免费测评</Text>
         </Pressable>
@@ -138,6 +157,9 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 17, lineHeight: 24, fontWeight: "900" },
   focusTitle: { fontSize: 22, lineHeight: 29, fontWeight: "900" },
   cardText: { fontSize: 13, lineHeight: 21 },
+  coverageCard: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 6 },
+  coverageTitle: { fontSize: 16, lineHeight: 22, fontWeight: "900" },
+  uncertaintyText: { color: "#8A5A00", fontSize: 12, lineHeight: 18, fontWeight: "700" },
   supportBadge: { borderRadius: 999, backgroundColor: "#EEF6FF", paddingHorizontal: 10, paddingVertical: 5 },
   supportBadgeText: { color: "#1B65C9", fontSize: 11, lineHeight: 15, fontWeight: "900" },
   progressCount: { fontSize: 18, lineHeight: 24, fontWeight: "900" },
@@ -159,5 +181,6 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "900" },
   linkButton: { minHeight: 40, alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
   linkButtonText: { fontSize: 12, lineHeight: 18, textAlign: "center", textDecorationLine: "underline" },
+  nextStepHint: { fontSize: 12, lineHeight: 18, textAlign: "center", marginTop: -6 },
   pressed: { opacity: 0.85 },
 });

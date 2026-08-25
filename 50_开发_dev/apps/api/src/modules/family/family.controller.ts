@@ -36,6 +36,8 @@ import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.s
 import { FamilyHomeService } from './family-home.service';
 import { AssessmentService } from './assessment.service';
 import { GrowthHypothesisService } from './growth-hypothesis.service';
+import { GrowthCamp21Service } from './growth-camp21.service';
+import { validateCheckInGrowthCamp21DayRequest, validateEnrollGrowthCamp21Request, validateReleaseCurriculumDraftRequest, validateReviewCurriculumDraftRequest } from './curriculum.dto';
 
 @Controller('families')
 @UseGuards(FamilyPlatformAuthGuard)   // PLATFORM-IAM-104:统一解析可信 actor;required 模式拒 x-actor-id-only
@@ -56,7 +58,36 @@ export class FamilyController {
     @Inject(FamilyHomeService) private readonly familyHomeService: FamilyHomeService,
     @Inject(AssessmentService) private readonly assessmentService: AssessmentService,
     @Inject(GrowthHypothesisService) private readonly growthHypothesisService: GrowthHypothesisService,
+    @Inject(GrowthCamp21Service) private readonly growthCamp21Service: GrowthCamp21Service,
   ) {}
+
+  @RequireFamilyAction('ReviewCurriculumDraft')
+  @Post(':familyId/curriculum/drafts/:draftId/review')
+  reviewCurriculumDraft(@Param('familyId') familyId: string, @Param('draftId') draftId: string, @Body() body: unknown, @ActorId() actorId: string, @Headers('idempotency-key') idempotencyKey?: string, @Headers('x-correlation-id') correlationId?: string, @Headers('x-source') source?: string) {
+    if (!actorId || !isUuid(familyId)) throw new BadRequestException('Invalid schema');
+    return this.growthCamp21Service.reviewDraft(validateReviewCurriculumDraftRequest(draftId, idempotencyKey, body), buildAuditMeta(actorId, correlationId, source));
+  }
+
+  @RequireFamilyAction('ReleaseCurriculumDraft')
+  @Post(':familyId/curriculum/drafts/:draftId/release')
+  releaseCurriculumDraft(@Param('familyId') familyId: string, @Param('draftId') draftId: string, @Body() body: unknown, @ActorId() actorId: string, @Headers('idempotency-key') idempotencyKey?: string, @Headers('x-correlation-id') correlationId?: string, @Headers('x-source') source?: string) {
+    if (!actorId || !isUuid(familyId)) throw new BadRequestException('Invalid schema');
+    return this.growthCamp21Service.releaseDraft(validateReleaseCurriculumDraftRequest(draftId, idempotencyKey, body), buildAuditMeta(actorId, correlationId, source));
+  }
+
+  @RequireFamilyAction('EnrollGrowthCamp21')
+  @Post(':familyId/curriculum/21day/enroll')
+  enrollGrowthCamp21(@Param('familyId') familyId: string, @Body() body: unknown, @ActorId() actorId: string, @Headers('idempotency-key') idempotencyKey?: string, @Headers('x-correlation-id') correlationId?: string, @Headers('x-source') source?: string) {
+    if (!actorId) throw new UnauthorizedException('actor_is_authenticated');
+    return this.growthCamp21Service.enroll(validateEnrollGrowthCamp21Request(familyId, idempotencyKey, body), buildAuditMeta(actorId, correlationId, source));
+  }
+
+  @RequireFamilyAction('CheckInGrowthCamp21Day')
+  @Post(':familyId/curriculum/21day/enrollments/:enrollmentId/checkins')
+  checkInGrowthCamp21(@Param('familyId') familyId: string, @Param('enrollmentId') enrollmentId: string, @Body() body: unknown, @ActorId() actorId: string, @Headers('idempotency-key') idempotencyKey?: string, @Headers('x-correlation-id') correlationId?: string, @Headers('x-source') source?: string) {
+    if (!actorId) throw new UnauthorizedException('actor_is_authenticated');
+    return this.growthCamp21Service.checkIn(validateCheckInGrowthCamp21DayRequest(familyId, enrollmentId, idempotencyKey, body), buildAuditMeta(actorId, correlationId, source));
+  }
 
   /** UI-01 commercial home: one trusted Tenant/Family projection shared by App and Web. */
   @RequireFamilyAction('ReadFamily')

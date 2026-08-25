@@ -1,0 +1,8 @@
+source_system,source_object,source_field,canonical_object,canonical_field,transform,required,pii_class,notes
+bole-ai,family_edu_sft.jsonl,instruction,CurriculumDesignCandidate,title_hint,trim+truncate(160),yes,unknown,候选标题/主题提示，不是课程事实
+bole-ai,family_edu_sft.jsonl,input,CurriculumDesignCandidate,practice_hint,trim+truncate(600),yes,unknown,候选练习提示，不直接进入Ontology
+bole-ai,family_edu_sft.jsonl,output,CurriculumDesignCandidate,practice_hint,trim+truncate(600),yes,unknown,候选表达素材，E1上限
+bole-ai,family_edu_sft.jsonl,rationale,CurriculumDesignCandidate,reflection_hint,trim+truncate(500),no,unknown,候选反思提示，不证明效果
+bole-ai,family_edu_sft.jsonl,kind,CurriculumDesignCandidate,source_lineage,record-only,no,unknown,保留于原始数据审计范围
+bole-ai,family_edu_sft.jsonl,region,CurriculumDesignCandidate,source_lineage,record-only,no,unknown,保留于原始数据审计范围
+bole-ai,family_edu_sft.jsonl,signals,CurriculumDesignCandidate,source_lineage,record-only,no,unknown,不转为Family事实

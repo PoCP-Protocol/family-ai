@@ -42,6 +42,61 @@ export class OrchestrationController {
     return { prompt: '现在有什么需要 Family 帮忙的吗?', family_id: familyId, actor_role: actor.familyRole };
   }
 
+  @Get('orchestration/provider-foundation')
+  @RequireOrchestrationAction('ReadFamily')
+  async providerFoundation(@Param('familyId') familyId: string) {
+    const tenantId = await this.serviceBookings.tenantForFamily(familyId);
+    return this.serviceBookings.providerFoundation(tenantId);
+  }
+
+  @Post('orchestration/service-relationships')
+  @RequireOrchestrationAction('DecideGrowthService')
+  async establishServiceRelationship(
+    @Param('familyId') familyId: string,
+    @Body() body: { counterparty_party_id?: string; provider_profile_id?: string | null; purpose?: string },
+    @OrchestrationActor() actor: Actor,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    if (!body?.counterparty_party_id || !body?.purpose) throw new BadRequestException('counterparty_party_id, purpose required');
+    return this.svc.establishServiceRelationship(familyId, actor.personId, body.counterparty_party_id, body.provider_profile_id ?? null, body.purpose, corr(correlationId), idempotencyKey?.trim() || undefined);
+  }
+
+  @Post('orchestration/cases/:caseId/access-grants')
+  @RequireOrchestrationAction('DecideGrowthService')
+  async grantCaseAccess(
+    @Param('familyId') familyId: string,
+    @Param('caseId') caseId: string,
+    @Body() body: { relationship_id?: string; grantee_party_id?: string; scope?: Record<string, unknown>; purpose?: string; consent_snapshot_ref?: string; expires_at?: string | null; risk_level?: string; human_gate_ref?: string | null },
+    @OrchestrationActor() actor: Actor,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    if (!body?.relationship_id || !body?.grantee_party_id || !body?.scope || !body?.purpose || !body?.consent_snapshot_ref) {
+      throw new BadRequestException('relationship_id, grantee_party_id, scope, purpose, consent_snapshot_ref required');
+    }
+    return this.svc.grantCaseAccess(familyId, actor.personId, caseId, body.relationship_id, body.grantee_party_id, body.scope, body.purpose, body.consent_snapshot_ref, body.expires_at ?? null, body.risk_level ?? 'STANDARD', body.human_gate_ref ?? null, corr(correlationId), idempotencyKey?.trim() || undefined);
+  }
+
+  @Get('orchestration/cases/:caseId/access-grants')
+  @RequireOrchestrationAction('ReadFamily')
+  async listCaseAccess(@Param('familyId') familyId: string, @Param('caseId') caseId: string) {
+    return this.svc.listCaseAccess(familyId, caseId);
+  }
+
+  @Post('orchestration/cases/:caseId/access-grants/:grantId/revoke')
+  @RequireOrchestrationAction('DecideGrowthService')
+  async revokeCaseAccess(
+    @Param('familyId') familyId: string,
+    @Param('caseId') caseId: string,
+    @Param('grantId') grantId: string,
+    @OrchestrationActor() actor: Actor,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.svc.revokeCaseAccess(familyId, actor.personId, caseId, grantId, corr(correlationId), idempotencyKey?.trim() || undefined);
+  }
+
   @Post('orchestration/needs')
   @RequireOrchestrationAction('RequestGrowthHelp')
   async requestHelp(

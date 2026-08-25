@@ -86,8 +86,11 @@ V4.2 rebaseline defines the Family Education Large Model as the foundation of th
 
 `docs/FAMILY_AI_PLATFORM_V5_ADOPTION_PLAN.md`
 `backlog/tasks/FAMILY-AI-V5-RUNTIME-FOUNDATION-001.md`
+`docs/FAMILY_MEMBERSHIP_OS_V2_BASELINE.md`
 
 V5 adoption raises the target from a family education app to Family Growth Intelligence & Ecosystem OS. It adds nine-plane architecture, Family Trusted Context Capsule, Growth Evidence Graph, FamilyHarnessAdapter boundary, durable service workflow direction, ecosystem interop direction, and a 90-day Patch Line. V5 is adopted as engineering direction and task-entry guidance; it does not by itself rewrite the current authorized sprint or mutate the conceptual SSOT under `10_规格_spec`.
+
+Membership-specific direction: retain exactly three initial relationship-depth tiers (`M0_FREE`, `M1_GROWTH`, `M2_ANNUAL`), while keeping Growth Stage, Loyalty Points, and Community Role independent. Do not equate subscription with `Lv.3`, points with tier, or community role with paid status. The current fixture-only DEV/TEST boundary remains active.
 
 ---
 
@@ -101,7 +104,8 @@ V5 adoption raises the target from a family education app to Family Growth Intel
 6. Family Growth Platform V4.2 docs when planning family education, growth platform, assessment, realtime dialogue, memory, multimodal, human-service, or model-foundation work
 7. Family Education Industry Model docs when planning family assessment, small models, intervention matching, or education-domain intelligence
 8. Family AI Platform V5 adoption docs when planning Agent Harness, Trusted Context, school/provider ecosystem, durable service workflow, professional model stack, or 90-day runtime foundation work
-9. 当前Task Pack
-10. Task引用的数据库/API/Policy/Agent/DTO Spec
+9. Family Membership OS V2 baseline when planning membership tier, period, activation, benefits, points, referral, renewal, or annual companion work
+10. 当前Task Pack
+11. Task引用的数据库/API/Policy/Agent/DTO Spec
 
 AI不应该一次性加载全部文件。

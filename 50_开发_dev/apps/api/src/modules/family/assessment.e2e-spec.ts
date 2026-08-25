@@ -103,6 +103,8 @@ describe('UI-02 versioned family assessment commercial slice', () => {
     await pool.query(`update consents set status='WITHDRAWN',withdrawn_at=now() where family_id=$1 and purpose='ASSESSMENT'`, [familyId]);
     const projection = await (await fetch(`${baseUrl}/families/${familyId}/ui/02/assessment`, { headers: { authorization: `Bearer ${token}` } })).json() as any;
     expect(projection).toMatchObject({ availability: 'CONSENT_REQUIRED', subjects: [{ person_id: childId, availability: 'CONSENT_REQUIRED' }], sessions: [] });
+    const growthProjection = await (await fetch(`${baseUrl}/families/${familyId}/ui/03/growth-hypothesis`, { headers: { authorization: `Bearer ${token}` } })).json() as any;
+    expect(growthProjection).toMatchObject({ availability: 'NO_SUBMITTED_ASSESSMENT', hypothesis: null });
     expect(await post(`/families/${familyId}/assessments/sessions`, { subject_person_id: childId }, 'no-consent')).toMatchObject({ status: 403 });
   });
 
@@ -147,13 +149,14 @@ describe('UI-02 versioned family assessment commercial slice', () => {
     expect(hypothesisProjection.hypothesis.scorecard).toMatchObject({ generated_by: 'FAMILI_PRINCIPAL_FAMILY_EDUCATION_MODEL', score_boundary: 'SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING' });
     expect(hypothesisProjection.hypothesis.scorecard.overall_score).toEqual(expect.any(Number));
     expect(hypothesisProjection.hypothesis.scorecard.dimensions).toHaveLength(5);
-    expect(hypothesisProjection.hypothesis.scorecard.core_issue_tags.length).toBeGreaterThan(0);
-    expect(hypothesisProjection.hypothesis.scorecard.recommendations.length).toBeGreaterThan(0);
+    expect(hypothesisProjection.hypothesis.scorecard.core_issue_tags).toEqual([]);
+    expect(hypothesisProjection.hypothesis.scorecard.recommendations).toEqual([]);
+    expect(hypothesisProjection.hypothesis.evidence_coverage).toMatchObject({ source_response_count: 1, interpreted_response_count: 0, coverage_ratio: 0, mapped_item_refs: [], uninterpreted_item_refs: [] });
     expect(hypothesisProjection.hypothesis.source_refs.assessment_submitted_at).toEqual(expect.any(String));
     expect(hypothesisProjection.hypothesis.model_boundary_labels).toContain('hypothesis_not_fact');
-    expect(hypothesisProjection.hypothesis.need_refs.length).toBeGreaterThan(0);
-    expect(hypothesisProjection.hypothesis.construct_refs.length).toBeGreaterThan(0);
-    expect(hypothesisProjection.hypothesis.action_candidate_refs.length).toBeGreaterThan(0);
+    expect(hypothesisProjection.hypothesis.need_refs).toEqual([]);
+    expect(hypothesisProjection.hypothesis.construct_refs).toEqual([]);
+    expect(hypothesisProjection.hypothesis.action_candidate_refs).toEqual([]);
     expect(hypothesisProjection.hypothesis.model_run_ref).toMatch(/^[0-9a-f-]{36}$/);
     expect((await pool.query(`select count(*)::int n from family_assessment_ai_runs where assessment_session_id=$1`, [sessionId])).rows[0].n).toBe(1);
     expect((await pool.query(`select count(*)::int n from family_growth_hypotheses where assessment_session_id=$1 and fact_boundary='HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS'`, [sessionId])).rows[0].n).toBe(1);
@@ -173,5 +176,8 @@ describe('UI-02 versioned family assessment commercial slice', () => {
     expect(replay).toMatchObject({ replayed: true, intent: { intent_id: confirmed.intent.intent_id } });
     expect((await pool.query(`select count(*)::int n from growth_intents where family_id=$1 and source_type='ASSESSMENT_HYPOTHESIS'`, [familyId])).rows[0].n).toBe(1);
     expect((await pool.query(`select status from family_growth_hypotheses where assessment_session_id=$1`, [sessionId])).rows[0].status).toBe('ACKNOWLEDGED');
+    await pool.query(`update consents set status='WITHDRAWN',withdrawn_at=now() where family_id=$1 and purpose='ASSESSMENT'`, [familyId]);
+    const withdrawnProjection = await (await fetch(`${baseUrl}/families/${familyId}/ui/03/growth-hypothesis`, { headers: { authorization: `Bearer ${token}` } })).json() as any;
+    expect(withdrawnProjection).toMatchObject({ availability: 'CONSENT_WITHDRAWN', hypothesis: null });
   });
 });

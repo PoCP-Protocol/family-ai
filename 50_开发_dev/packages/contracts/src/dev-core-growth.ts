@@ -56,6 +56,88 @@ export interface DevAiCurriculumDraft {
   next_transition: 'GROWTH_PLAN_DRAFT_RECOMMENDATION_ONLY';
 }
 
+export type CurriculumReviewDecision = 'APPROVED' | 'REJECTED';
+export type GrowthCamp21CheckinStatus = 'COMPLETED' | 'PARTIAL' | 'NOT_COMPLETED';
+
+export interface CurriculumSourceLineage {
+  source_system: string;
+  source_id: string;
+  mapping_version: string;
+  evidence_limit: 'E1';
+}
+
+export interface ReviewCurriculumDraftRequest {
+  draft_id: string;
+  decision: CurriculumReviewDecision;
+  review_note?: string;
+  idempotency_key: string;
+}
+
+export interface ReleaseCurriculumDraftRequest {
+  draft_id: string;
+  idempotency_key: string;
+}
+
+export interface CurriculumDraftReleaseReceipt {
+  draft_id: string;
+  status: 'RELEASED';
+  human_gate: 'PASSED';
+  model_gateway_status: 'NOOP_NOT_INVOKED';
+  released_by: string;
+  released_at: string;
+}
+
+export interface CurriculumDraftReviewReceipt {
+  draft_id: string;
+  decision: CurriculumReviewDecision;
+  status: 'APPROVED' | 'REJECTED';
+  human_gate: 'PASSED' | 'REJECTED';
+  model_gateway_status: 'NOOP_NOT_INVOKED';
+  released: false;
+  reviewed_by: string;
+  reviewed_at: string;
+  review_note: string | null;
+}
+
+export interface EnrollGrowthCamp21Request {
+  family_id: string;
+  subject_person_id: string;
+  idempotency_key: string;
+}
+
+export interface GrowthCamp21Enrollment {
+  enrollment_id: string;
+  family_id: string;
+  subject_person_id: string;
+  program_ref: 'communication-21day';
+  program_version: '1.0.0';
+  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+  current_day: number;
+  schedule_percent: number;
+  reached_final_day: boolean;
+  process_boundary: 'PROCESS_PROJECTION_NOT_SCORE_OR_OUTCOME';
+}
+
+export interface CheckInGrowthCamp21DayRequest {
+  family_id: string;
+  enrollment_id: string;
+  day_no: number;
+  completion_status: GrowthCamp21CheckinStatus;
+  reflection?: string;
+  occurred_at?: string;
+  idempotency_key: string;
+}
+
+export interface GrowthCamp21CheckinReceipt {
+  checkin_id: string;
+  enrollment: GrowthCamp21Enrollment;
+  day_no: number;
+  completion_status: GrowthCamp21CheckinStatus;
+  reflection_boundary: 'PARENT_REFLECTION_NOT_CHILD_FACT_OR_OUTCOME';
+  process_boundary: 'ACTION_RECORD_NOT_COMPLETION_TRUTH_OR_OUTCOME';
+  replayed: boolean;
+}
+
 export type DevGrowthFocus =
   | 'PARENT_CHILD_COMMUNICATION'
   | 'LEARNING_HABITS'

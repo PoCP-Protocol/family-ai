@@ -44,6 +44,9 @@ importers:
       '@family/principal-runtime':
         specifier: workspace:*
         version: link:../../packages/principal-runtime
+      '@family/program-runtime':
+        specifier: workspace:*
+        version: link:../../packages/program-runtime
       '@family/waf-contracts':
         specifier: workspace:*
         version: link:../../packages/waf-contracts

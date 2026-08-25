@@ -1,4 +1,4 @@
-export type Ui03HypothesisAvailability = 'READY' | 'NO_SUBMITTED_ASSESSMENT' | 'POLICY_BLOCKED' | 'SUBMITTED' | 'ANALYZING' | 'ACKNOWLEDGED' | 'DISMISSED' | 'ANALYSIS_FAILED';
+export type Ui03HypothesisAvailability = 'READY' | 'NO_SUBMITTED_ASSESSMENT' | 'POLICY_BLOCKED' | 'CONSENT_WITHDRAWN' | 'SUBMITTED' | 'ANALYZING' | 'ACKNOWLEDGED' | 'DISMISSED' | 'ANALYSIS_FAILED';
 export type Ui03GrowthHypothesisGenerator = 'DETERMINISTIC_CATALOG_POLICY_NOT_MODEL' | 'FAMILY_EDUCATION_ASSESSMENT_MODEL_V0_1';
 export type Ui03GrowthHypothesisAiState = 'NOT_INVOKED' | 'MODEL_DRAFT_READY' | 'MODEL_GATEWAY_BLOCKED' | 'READ_ONLY_PERSISTED';
 
@@ -36,8 +36,23 @@ export interface Ui03GrowthHypothesis {
     reason_refs: string[];
     mode: 'HUMAN_REVIEW_REQUIRED';
   };
+  evidence_coverage?: Ui03EvidenceCoverage;
   principal?: Ui03PrincipalInterpretation;
   scorecard?: Ui03GrowthScorecard;
+}
+
+export interface Ui03EvidenceCoverage {
+  source_response_count: number;
+  interpreted_response_count: number;
+  coverage_ratio: number;
+  mapped_item_refs: string[];
+  evidence_summaries: string[];
+  uninterpreted_item_refs: string[];
+  uncertainty_item_refs: string[];
+  uncertainty_reasons: string[];
+  support_direction_refs: string[];
+  support_direction_labels: string[];
+  next_questions?: string[];
 }
 
 export interface Ui03PrincipalInterpretation {

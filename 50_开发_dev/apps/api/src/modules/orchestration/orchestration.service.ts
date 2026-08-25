@@ -594,6 +594,182 @@ export class OrchestrationService {
     return this.familyLlmGateway.replay(familyId, correlationId);
   }
 
+  /** Patch 4: 建立家庭与服务方的关系；关系本身不授予 ServiceCase 读取权。 */
+  async establishServiceRelationship(
+    familyId: string,
+    actorPersonId: string,
+    counterpartyPartyId: string,
+    providerProfileId: string | null,
+    purpose: string,
+    correlationId: string,
+    idempotencyKey?: string,
+  ) {
+    return this.withIdempotency('EstablishServiceRelationship', idempotencyKey, { familyId, counterpartyPartyId, providerProfileId, purpose }, async () => {
+      if (!['SERVICE_DELIVERY', 'EDUCATION_SUPPORT', 'ASSESSMENT_SUPPORT'].includes(purpose)) throw new BadRequestException('invalid_relationship_purpose');
+      const tenant = await this.repo.query<{ tenant_id: string }>(
+        `select tenant_id from tenant_family_bindings where family_id=$1 and status='ACTIVE'
+          and effective_from <= now() and (effective_to is null or effective_to > now()) limit 1`, [familyId]);
+      if (!tenant.rows[0]) throw new ForbiddenException('family_tenant_context_missing');
+      const party = await this.repo.query(
+        `select p.party_id from parties p where p.party_id=$1 and p.status='ACTIVE'`, [counterpartyPartyId]);
+      if (!party.rows[0]) throw new ForbiddenException('counterparty_not_active');
+      if (providerProfileId) {
+        const provider = await this.repo.query(
+          `select pp.provider_profile_id from provider_profiles pp
+             join provider_admissions pa on pa.provider_profile_id=pp.provider_profile_id
+            where pp.provider_profile_id=$1 and pp.owner_party_id=$2 and pp.status='ACTIVE'
+              and pa.tenant_id=$3 and pa.status='ADMITTED'`,
+          [providerProfileId, counterpartyPartyId, tenant.rows[0].tenant_id]);
+        if (!provider.rows[0]) throw new ForbiddenException('provider_not_admitted_for_tenant');
+      }
+      const existing = await this.repo.query<{ service_relationship_id: string }>(
+        `select service_relationship_id from service_relationships
+          where family_id=$1 and tenant_id=$2 and counterparty_party_id=$3
+            and provider_profile_id is not distinct from $4::uuid and purpose=$5 and status='ACTIVE'
+          order by created_at desc limit 1`,
+        [familyId, tenant.rows[0].tenant_id, counterpartyPartyId, providerProfileId, purpose]);
+      if (existing.rows[0]) return { service_relationship_id: existing.rows[0].service_relationship_id, status: 'ACTIVE', replayed: true };
+      const created = await this.repo.query<{ service_relationship_id: string }>(
+        `insert into service_relationships(family_id, tenant_id, counterparty_party_id, provider_profile_id, purpose, created_by_person_id, correlation_id)
+         values ($1,$2,$3,$4,$5,$6,$7) returning service_relationship_id`,
+        [familyId, tenant.rows[0].tenant_id, counterpartyPartyId, providerProfileId, purpose, actorPersonId, correlationId]);
+      await this.repo.query(
+        `insert into audit_logs(family_id,actor_type,actor_id,action_name,resource_type,resource_id,correlation_id,result,metadata)
+         values ($1,'USER',$2,'EstablishServiceRelationship','ServiceRelationship',$3,$4,'SUCCESS',$5::jsonb)`,
+        [familyId, actorPersonId, created.rows[0].service_relationship_id, correlationId, JSON.stringify({ purpose, counterparty_party_id: counterpartyPartyId, provider_profile_id: providerProfileId })],
+      );
+      return { service_relationship_id: created.rows[0].service_relationship_id, status: 'ACTIVE', replayed: false };
+    });
+  }
+
+  /** Patch 4: 针对具体 ServiceCase 签发最小授权；没有关系或 consent 时 fail closed。 */
+  async grantCaseAccess(
+    familyId: string,
+    actorPersonId: string,
+    caseId: string,
+    relationshipId: string,
+    granteePartyId: string,
+    scope: Record<string, unknown>,
+    purpose: string,
+    consentSnapshotRef: string,
+    expiresAt: string | null,
+    riskLevel: string,
+    humanGateRef: string | null,
+    correlationId: string,
+    idempotencyKey?: string,
+  ) {
+    return this.withIdempotency('GrantCaseAccess', idempotencyKey, { familyId, caseId, relationshipId, granteePartyId, scope, purpose, consentSnapshotRef, expiresAt, riskLevel, humanGateRef }, async () => {
+      if (!scope || typeof scope !== 'object' || Array.isArray(scope) || Object.keys(scope).length === 0) throw new BadRequestException('access_scope_required');
+      if (!['SERVICE_DELIVERY', 'EDUCATION_SUPPORT', 'ASSESSMENT_SUPPORT'].includes(purpose)) throw new BadRequestException('invalid_access_purpose');
+      if (!['STANDARD', 'ELEVATED', 'HIGH'].includes(riskLevel)) throw new BadRequestException('invalid_risk_level');
+      if (!consentSnapshotRef?.trim()) throw new BadRequestException('consent_snapshot_ref_required');
+      const own = await this.repo.query<{ subject_person_id: string; tenant_id: string }>(
+        `select sc.subject_person_id, tfb.tenant_id from service_cases sc
+          join tenant_family_bindings tfb on tfb.family_id=sc.family_id and tfb.status='ACTIVE'
+         where sc.case_id=$1 and sc.family_id=$2 limit 1`, [caseId, familyId]);
+      if (!own.rows[0]) throw new ForbiddenException('case_not_in_family');
+      const relation = await this.repo.query(
+        `select service_relationship_id from service_relationships
+          where service_relationship_id=$1 and family_id=$2 and tenant_id=$3
+            and counterparty_party_id=$4 and purpose=$5 and status='ACTIVE'
+            and effective_from <= now() and (effective_to is null or effective_to > now())`,
+        [relationshipId, familyId, own.rows[0].tenant_id, granteePartyId, purpose]);
+      if (!relation.rows[0]) throw new ForbiddenException('active_service_relationship_required');
+      const consent = await this.repo.query(
+        `select consent_id from consents where family_id=$1 and subject_person_id=$2 and purpose='SERVICE'
+          and status='GRANTED' and granted_at <= now() and (withdrawn_at is null or withdrawn_at > now()) limit 1`,
+        [familyId, own.rows[0].subject_person_id]);
+      if (!consent.rows[0]) throw new ForbiddenException('service_consent_required');
+      const created = await this.repo.query<{ case_access_grant_id: string }>(
+        `insert into case_access_grants(family_id, service_case_id, service_relationship_id, grantee_party_id, scope, purpose, consent_snapshot_ref, expires_at, risk_level, human_gate_ref, created_by_person_id, correlation_id)
+         values ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12) returning case_access_grant_id`,
+        [familyId, caseId, relationshipId, granteePartyId, JSON.stringify(scope), purpose, consentSnapshotRef, expiresAt, riskLevel, humanGateRef, actorPersonId, correlationId]);
+      await this.repo.query(
+        `insert into audit_logs(family_id,actor_type,actor_id,action_name,resource_type,resource_id,correlation_id,result,metadata)
+         values ($1,'USER',$2,'GrantCaseAccess','CaseAccessGrant',$3,$4,'SUCCESS',$5::jsonb)`,
+        [familyId, actorPersonId, created.rows[0].case_access_grant_id, correlationId, JSON.stringify({ case_id: caseId, relationship_id: relationshipId, purpose, risk_level: riskLevel })],
+      );
+      return { case_access_grant_id: created.rows[0].case_access_grant_id, status: 'ACTIVE' };
+    });
+  }
+
+  async listCaseAccess(familyId: string, caseId: string) {
+    const result = await this.repo.query(
+            `select g.case_access_grant_id, g.service_relationship_id, g.grantee_party_id, g.scope, g.purpose, g.consent_snapshot_ref,
+              g.effective_from, g.expires_at, g.revoked_at, g.risk_level, g.human_gate_ref
+         from case_access_grants g
+         join service_relationships sr on sr.service_relationship_id=g.service_relationship_id
+         join service_cases sc on sc.case_id=g.service_case_id and sc.family_id=g.family_id
+         where g.family_id=$1 and g.service_case_id=$2
+           and g.revoked_at is null and g.effective_from <= now() and (g.expires_at is null or g.expires_at > now())
+           and sr.status='ACTIVE' and sr.effective_from <= now() and (sr.effective_to is null or sr.effective_to > now())
+           and exists (
+             select 1 from consents c
+              where c.family_id=g.family_id and c.subject_person_id=sc.subject_person_id
+                and c.purpose='SERVICE' and c.status='GRANTED'
+                and c.granted_at <= now() and (c.withdrawn_at is null or c.withdrawn_at > now())
+           )
+         order by g.created_at asc`, [familyId, caseId]);
+    return { family_id: familyId, service_case_id: caseId, grants: result.rows };
+  }
+
+  /** Phase A: Party 侧最小 Case projection；不接受客户端声明 party，必须从 account session 解析。 */
+  async getGrantedCaseProjection(caseId: string, accountId: string) {
+    const party = await this.repo.query<{ party_id: string }>(
+      `select apb.party_id from account_party_bindings apb
+        join parties p on p.party_id=apb.party_id and p.status='ACTIVE'
+       where apb.account_id=$1 and apb.status='ACTIVE'
+         and apb.valid_from <= now() and (apb.valid_to is null or apb.valid_to > now())
+       limit 2`, [accountId]);
+    if (party.rows.length !== 1) throw new ForbiddenException('active_party_context_required');
+    const result = await this.repo.query<{
+      case_id: string; family_id: string; status: string; opened_at: string; next_action_at: string | null;
+      scope: Record<string, unknown>;
+    }>(
+      `select sc.case_id, sc.family_id, sc.status, sc.opened_at, sc.next_action_at, g.scope
+         from case_access_grants g
+         join service_cases sc on sc.case_id=g.service_case_id and sc.family_id=g.family_id
+         join service_relationships sr on sr.service_relationship_id=g.service_relationship_id
+        where g.service_case_id=$1 and g.grantee_party_id=$2
+          and g.revoked_at is null and g.effective_from <= now() and (g.expires_at is null or g.expires_at > now())
+          and sr.status='ACTIVE' and sr.effective_from <= now() and (sr.effective_to is null or sr.effective_to > now())
+          and exists (
+            select 1 from consents c where c.family_id=sc.family_id and c.subject_person_id=sc.subject_person_id
+              and c.purpose='SERVICE' and c.status='GRANTED' and c.granted_at <= now()
+              and (c.withdrawn_at is null or c.withdrawn_at > now())
+          )
+        limit 1`, [caseId, party.rows[0].party_id]);
+    const row = result.rows[0];
+    if (!row) throw new ForbiddenException('case_access_not_granted');
+    const scope = row.scope ?? {};
+    const projection: Record<string, unknown> = {
+      case_id: row.case_id,
+      family_id: row.family_id,
+      status: row.status,
+    };
+    if (scope.service_case === 'summary' || scope.service_case === 'status') {
+      projection.opened_at = row.opened_at;
+      projection.next_action_at = row.next_action_at;
+    }
+    return { projection, granted_scope: scope };
+  }
+
+  async revokeCaseAccess(familyId: string, actorPersonId: string, caseId: string, grantId: string, correlationId: string, idempotencyKey?: string) {
+    return this.withIdempotency('RevokeCaseAccess', idempotencyKey, { familyId, caseId, grantId }, async () => {
+      const result = await this.repo.query(
+        `update case_access_grants set revoked_at=coalesce(revoked_at, now())
+          where case_access_grant_id=$1 and family_id=$2 and service_case_id=$3 returning case_access_grant_id, revoked_at`,
+        [grantId, familyId, caseId]);
+      if (!result.rows[0]) throw new ForbiddenException('case_access_grant_not_in_family');
+      await this.repo.query(
+        `insert into audit_logs(family_id,actor_type,actor_id,action_name,resource_type,resource_id,correlation_id,result,metadata)
+         values ($1,'USER',$2,'RevokeCaseAccess','CaseAccessGrant',$3,$4,'SUCCESS',$5::jsonb)`,
+        [familyId, actorPersonId, grantId, correlationId, JSON.stringify({ case_id: caseId })],
+      );
+      return { ...result.rows[0], status: 'REVOKED' };
+    });
+  }
+
   getSyntheticTestLoopAudit(correlationId: string): TestLoopAuditEntryDto[] {
     requireDevSyntheticTestLoop();
     return [...(this.testLoopAudit.get(correlationId) ?? [])];

@@ -1,0 +1,16 @@
+version: 0.1
+action: EnrollGrowthCamp21
+purpose: Enroll a family subject in the reviewed communication-21day program.
+wave: G1-B
+scenario: CHALLENGE_21_CURRICULUM_DRAFT
+input:
+  required: [family_id, subject_person_id, idempotency_key]
+preconditions: [family_exists, actor_has_family_manage_permission, admitted_program_exists, approved_curriculum_release_exists]
+effects: [create_or_replay_active_enrollment, append_audit_record, emit_GrowthCamp21Enrolled_compat_event]
+boundaries: [parent_process_state_only, no_child_score, no_diagnosis, no_external_effect]
+idempotency: required
+audit: required
+outbox: required
+compatibility:
+  event_name: GrowthCamp21Enrolled
+policy_version: G1B_GROWTH_CAMP_21_V1

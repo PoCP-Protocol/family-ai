@@ -1,0 +1,17 @@
+version: 0.1
+action: CheckInGrowthCamp21Day
+purpose: Record a parent perspective for one enrolled program day and advance process position.
+wave: G1-B
+scenario: CHALLENGE_21_CURRICULUM_DRAFT
+input:
+  required: [family_id, enrollment_id, day_no, completion_status, idempotency_key]
+  decision_values: [COMPLETED, PARTIAL, NOT_COMPLETED]
+preconditions: [family_exists, actor_has_family_manage_permission, enrollment_is_active_or_paused, day_is_current_or_replay]
+effects: [persist_parent_checkin, advance_process_position_only, append_audit_record, emit_GrowthCamp21DayCheckedIn_compat_event]
+boundaries: [reflection_is_perspective_not_child_fact, progress_is_not_completion_truth, no_outcome_claim]
+idempotency: required
+audit: required
+outbox: required
+compatibility:
+  event_name: GrowthCamp21DayCheckedIn
+policy_version: G1B_GROWTH_CAMP_21_V1

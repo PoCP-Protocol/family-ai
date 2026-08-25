@@ -16,6 +16,7 @@ type HypothesisRow = {
   assessment_session_id: string;
   subject_person_id: string;
   subject_display_name: string;
+  child_age_stage: string | null;
   submitted_at: string | null;
   tool_ref: string;
   tool_version: number;
@@ -57,7 +58,11 @@ export class GrowthHypothesisService {
       const policy = await client.query<{ allowed_pages: string[] | null }>(`select allowed_pages from tenant_policy_profiles where tenant_id=$1 and status='ACTIVE' order by created_at desc limit 1`, [tenantId]);
       if (!(policy.rows[0]?.allowed_pages ?? []).includes('UI-03')) return projection(tenantId, familyId, 'POLICY_BLOCKED', null);
       const persisted = await this.loadPersistedHypothesis(client, familyId, tenantId);
-      if (persisted) return projection(tenantId, familyId, availabilityFromStatus(persisted.status), persisted.hypothesis_body, 'READ_ONLY_PERSISTED', persisted.assessment_session_id);
+      if (persisted) {
+        const consent = await this.hasAssessmentConsent(client, familyId, persisted.subject_person_id);
+        if (!consent) return projection(tenantId, familyId, 'CONSENT_WITHDRAWN', null);
+        return projection(tenantId, familyId, availabilityFromStatus(persisted.status), persisted.hypothesis_body, 'READ_ONLY_PERSISTED', persisted.assessment_session_id);
+      }
       const state = await this.loadLatestAssessmentState(client, familyId, tenantId);
       if (state) return projection(tenantId, familyId, state.status, null, 'NOT_INVOKED', state.assessment_session_id);
       return projection(tenantId, familyId, 'NO_SUBMITTED_ASSESSMENT', null);
@@ -184,19 +189,27 @@ export class GrowthHypothesisService {
 
   private async loadHypothesisRow(client: pg.PoolClient, familyId: string, tenantId: string, sessionId?: string, statuses: string[] = ['SUBMITTED']): Promise<HypothesisRow | null> {
     const result = await client.query<HypothesisRow>(
-      `select s.assessment_session_id,s.subject_person_id,p.display_name subject_display_name,s.submitted_at,s.tool_ref,s.tool_version,
+            `select s.assessment_session_id,s.subject_person_id,p.display_name subject_display_name,
+              lsa.life_stage_code::text child_age_stage,
+              s.submitted_at,s.tool_ref,s.tool_version,
               r.assessment_response_id,r.response_value #>> '{}' focus_ref,e.evidence_id assessment_evidence_id,
               nt.need_type_ref,nt.version_no need_type_version,nt.title,nt.description,nt.required_capability_keys,
               jsonb_agg(jsonb_build_object('item_ref',ar.item_ref,'response_type',ar.response_type,'response_value',ar.response_value) order by ar.item_ref) response_set
          from family_assessment_sessions s
          join persons p on p.person_id=s.subject_person_id and p.family_id=s.family_id
+         left join lateral (
+           select life_stage_code from life_stage_assignments
+            where child_id=s.subject_person_id and family_id=s.family_id and effective_from<=now()
+              and (effective_to is null or effective_to>now())
+            order by effective_from desc,created_at desc limit 1
+         ) lsa on true
          join family_assessment_responses r on r.assessment_session_id=s.assessment_session_id and r.item_ref='FOCUS' and r.is_current=true
          join family_assessment_responses ar on ar.assessment_session_id=s.assessment_session_id and ar.is_current=true
          join evidence_records e on e.family_id=s.family_id and e.source_ref=s.assessment_session_id::text and e.evidence_type='ASSESSMENT_RESPONSE_SET'
          join family_need_types nt on nt.source_focus_ref=(r.response_value #>> '{}') and nt.status='ACTIVE' and nt.admission_status='ADMITTED'
               and nt.effective_from<=now() and (nt.effective_to is null or nt.effective_to>now())
         where s.family_id=$1 and s.tenant_id=$2 and s.status=any($4::text[]) and ($3::uuid is null or s.assessment_session_id=$3)
-        group by s.assessment_session_id,s.subject_person_id,p.display_name,s.submitted_at,s.tool_ref,s.tool_version,r.assessment_response_id,r.response_value,e.evidence_id,nt.need_type_ref,nt.version_no,nt.title,nt.description,nt.required_capability_keys
+        group by s.assessment_session_id,s.subject_person_id,p.display_name,lsa.life_stage_code,s.submitted_at,s.tool_ref,s.tool_version,r.assessment_response_id,r.response_value,e.evidence_id,nt.need_type_ref,nt.version_no,nt.title,nt.description,nt.required_capability_keys
         order by s.submitted_at desc,nt.version_no desc,e.created_at desc limit 1`,
       [familyId, tenantId, sessionId ?? null, statuses],
     );
@@ -218,12 +231,26 @@ export class GrowthHypothesisService {
     const result = await client.query<{ status: string; assessment_session_id: string }>(
       `select status,assessment_session_id from family_assessment_sessions
         where tenant_id=$1 and family_id=$2 and status in ('SUBMITTED','ANALYZING','READY','ACKNOWLEDGED','ANALYSIS_FAILED')
+          and exists (
+            select 1 from consents c
+             where c.family_id=family_assessment_sessions.family_id
+               and c.subject_person_id=family_assessment_sessions.subject_person_id
+               and c.purpose='ASSESSMENT' and c.status='GRANTED'
+          )
         order by updated_at desc,assessment_session_id desc limit 1`,
       [tenantId, familyId],
     );
     const status = result.rows[0]?.status;
     if (status === 'SUBMITTED' || status === 'ANALYZING' || status === 'ANALYSIS_FAILED') return { status, assessment_session_id: result.rows[0].assessment_session_id };
     return null;
+  }
+
+  private async hasAssessmentConsent(client: pg.PoolClient, familyId: string, subjectPersonId: string): Promise<boolean> {
+    const result = await client.query(
+      `select 1 from consents where family_id=$1 and subject_person_id=$2 and purpose='ASSESSMENT' and status='GRANTED' limit 1`,
+      [familyId, subjectPersonId],
+    );
+    return (result.rowCount ?? 0) === 1;
   }
 
   private async markAnalysisFailed(tenantId: string, familyId: string, sessionId: string, meta: DecisionMeta, error: unknown) {
@@ -320,7 +347,7 @@ export class GrowthHypothesisService {
       tool_ref: row.tool_ref,
       tool_version: row.tool_version,
       family_context_ref: `FAMILY:${familyId}`,
-      child_age_stage: 'UNKNOWN_OR_NOT_COLLECTED',
+      child_age_stage: row.child_age_stage ?? 'UNKNOWN_OR_NOT_COLLECTED',
       responses: row.response_set,
     };
   }
@@ -413,6 +440,7 @@ function mapHypothesis(row: HypothesisRow, assessmentRun: AssessmentAiRun): Ui03
       reason_refs: modelDraft.draft.human_gate.reason_refs,
       mode: 'HUMAN_REVIEW_REQUIRED',
     },
+    evidence_coverage: assessmentOutput.evidence_coverage,
     principal: mapPrincipalInterpretation(row, modelDraft),
     scorecard: assessmentOutput.scorecard,
   };

@@ -1,0 +1,29 @@
+version: 0.1
+action: ReviewCurriculumDraft
+purpose: Human approval or rejection of a bounded 21-day curriculum draft before release or enrollment.
+wave: G1-B
+scenario: CHALLENGE_21_CURRICULUM_DRAFT
+input:
+  required: [draft_id, decision, idempotency_key]
+  decision_values: [APPROVED, REJECTED]
+preconditions:
+  - draft_exists
+  - reviewer_authorized_when_curriculum_review_flag_is_on
+  - draft_is_not_released
+effects:
+  - persist_human_review_decision
+  - approved_draft_may_be_released_or_assigned
+  - append_audit_record
+  - emit_CurriculumDraftReviewed_compat_event
+boundaries:
+  - no_model_call
+  - no_autonomous_publish_or_assign
+  - source_evidence_maximum_E1
+  - draft_is_not_official_syllabus_or_outcome
+idempotency: required
+audit: required
+outbox: required
+compatibility:
+  event_name: CurriculumDraftReviewed
+  note: Review is a gate; APPROVED is not a learning outcome.
+policy_version: G1B_CURRICULUM_REVIEW_V1

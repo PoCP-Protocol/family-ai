@@ -15,7 +15,7 @@ export type FamilyNamedAction =
   | 'ExecuteTestExperienceAction' | 'ExecuteFamilyPageObjectAction'
   | 'SubmitCommerceIntent' | 'SubmitServiceBooking' | 'ManageMembershipEntitlement'
   | 'CreateJourneyPlan' | 'ConfirmJourneyPlan' | 'PauseJourneyPlan' | 'ReviewJourneyPhase'
-  | 'ManageOperationReceipt';
+  | 'ManageOperationReceipt' | 'ReviewCurriculumDraft' | 'ReleaseCurriculumDraft' | 'EnrollGrowthCamp21' | 'CheckInGrowthCamp21Day';
 type Decision = 'ALLOW' | 'DENY' | 'LIMITED';
 
 // 显式矩阵(裁决 §6):行=NamedAction,列=角色。缺省视为 DENY(fail closed)。
@@ -53,6 +53,10 @@ const MATRIX: Record<FamilyNamedAction, Record<FamilyRole, Decision>> = {
   ReviewJourneyPhase: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
   // 家庭范围的运营回执仅记录人工跟进视角；不修改服务、订单、权益或儿童事实。
   ManageOperationReceipt: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
+  ReviewCurriculumDraft: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
+  ReleaseCurriculumDraft: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
+  EnrollGrowthCamp21: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
+  CheckInGrowthCamp21Day: { OWNER_GUARDIAN: 'ALLOW', GUARDIAN: 'ALLOW', ADULT_MEMBER: 'DENY', CHILD_SUBJECT: 'DENY' },
 };
 
 /** 该角色能否执行该 NamedAction(DENY / 缺省 → 不能;ALLOW/LIMITED → 能过角色门)。 */

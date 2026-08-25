@@ -74,6 +74,12 @@ This task is a planning and contract convergence task. It may create or update a
    - Create follow-up task packs V5-01 through V5-10.
    - Each task must declare scope, non-goals, gates, validation, and rollback posture.
 
+8. Membership OS V2 alignment
+   - Adopt `M0_FREE`, `M1_GROWTH`, and `M2_ANNUAL` as the initial relationship-depth tiers.
+   - Keep Growth Stage, Loyalty Points, and Community Role as independent dimensions.
+   - Define `MembershipPeriod`, `ActivationSource`, tier transition policy, and product-to-tier mapping.
+   - Prohibit UI-derived tier changes, fixed points, fixed level progress, and community-role/tier equivalence.
+
 ## Non-Goals
 
 - No UI-36.
@@ -84,6 +90,8 @@ This task is a planning and contract convergence task. It may create or update a
 - No Kafka, Neo4j, or Kubernetes adoption as a phase target.
 - No school/provider integration implementation before trust-zone contracts are accepted.
 - No database schema migration in this task.
+- No production membership activation or payment integration in this task.
+- No implementation of points redemption, referral qualification, or community-role promotion in this task.
 
 ## Deliverables
 
@@ -100,6 +108,8 @@ This task is a planning and contract convergence task. It may create or update a
 - FamilyHarnessAdapter boundary is documented and forbids direct UI-to-Codex, Codex-to-SQL, and agent canonical-state mutation.
 - Growth Evidence Graph direction explicitly rejects total scoring, ranking, and fixed child labels.
 - 90-day Patch Line exists as task packs with non-goals and validation gates.
+- Membership tier semantics are defined as M0/M1/M2 relationship depth and are explicitly separated from Growth Stage, Loyalty Points, and Community Role.
+- Existing fixture-only membership behavior remains clearly bounded as DEV/TEST and not production activation.
 - Existing validation commands still pass where applicable.
 
 ## Suggested Validation

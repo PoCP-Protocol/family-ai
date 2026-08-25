@@ -42,6 +42,12 @@ export class AssessmentService {
       const sessionRows = await client.query<{ assessment_session_id: string }>(
         `select assessment_session_id from family_assessment_sessions
           where tenant_id=$1 and family_id=$2
+            and exists (
+              select 1 from consents c
+               where c.family_id=family_assessment_sessions.family_id
+                 and c.subject_person_id=family_assessment_sessions.subject_person_id
+                 and c.purpose='ASSESSMENT' and c.status='GRANTED'
+            )
           order by updated_at desc, assessment_session_id desc limit 10`,
         [tenantId, familyId],
       );

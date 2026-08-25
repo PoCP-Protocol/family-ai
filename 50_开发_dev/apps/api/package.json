@@ -17,6 +17,7 @@
     "@family/family-model": "workspace:*",
     "@family/principal-ai": "workspace:*",
     "@family/principal-runtime": "workspace:*",
+    "@family/program-runtime": "workspace:*",
     "@family/waf-contracts": "workspace:*",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",

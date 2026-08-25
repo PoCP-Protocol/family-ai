@@ -6,6 +6,7 @@ import {
   FamilyMemoryDialogueRuntime,
   FamilyModelRuntimeIntegrationRuntime,
   FamilyModelTechnicalArchitectureRuntime,
+  FamilySafetyScreeningService,
   FamilyPlatformCapabilityRuntime,
   assertInterpretationBoundary,
   assertMemoryUpdateCandidateBoundary,
@@ -235,6 +236,35 @@ const runtimeIntegrationContract: FamilyModelRuntimeIntegrationContractAsset = {
 };
 
 describe('FamilyEducationModelRuntime', () => {
+  it('fails closed for independent safety screening signals', () => {
+    const service = new FamilySafetyScreeningService();
+    const items = [
+      { item_ref: 'HEALTH', prompt: 'health', construct_refs: [], need_refs: [], safety_boundary: 'human_gate_if_health_risk' },
+      { item_ref: 'CRISIS', prompt: 'crisis', construct_refs: [], need_refs: [], safety_boundary: 'human_gate_if_parent_crisis' },
+    ];
+
+    expect(service.screen([{ item_ref: 'HEALTH', answer_ref: 'OFTEN' }], items)).toMatchObject({
+      status: 'REVIEW_REQUIRED',
+      requires_human_review: true,
+      reason_refs: expect.arrayContaining(['HEALTH', 'SAFETY_SCREEN_INCOMPLETE_WITH_HIGH_SIGNAL']),
+    });
+    expect(service.screen([
+      { item_ref: 'HEALTH', answer_ref: 'OFTEN' },
+      { item_ref: 'CRISIS', answer_ref: 'YES' },
+    ], items)).toMatchObject({
+      reason_refs: expect.arrayContaining(['SAFETY_COMBINATION_MULTIPLE_HIGH_SIGNALS']),
+    });
+    expect(service.screen([{ item_ref: 'HEALTH', answer_ref: 'NOT_SURE' }], items)).toMatchObject({
+      status: 'REVIEW_REQUIRED',
+      uncertainty_refs: ['HEALTH'],
+    });
+    expect(service.screen([{ item_ref: '', answer_ref: 'OFTEN' }], items)).toMatchObject({
+      status: 'BLOCKED',
+      requires_human_review: true,
+      reason_refs: expect.arrayContaining(['SAFETY_SCREENING_FAILED']),
+    });
+  });
+
   it('turns assessment signals into bounded needs, hypotheses, and action candidates', () => {
     const runtime = new FamilyEducationModelRuntime({ itemBank, interpretationSchema });
     const draft = runtime.interpretDeterministically(input);
@@ -261,6 +291,35 @@ describe('FamilyEducationModelRuntime', () => {
     expect(draft.boundary_labels).toContain('recommendation_not_decision');
     expect(draft.prohibited_outputs).toContain('family_total_score');
     expect(JSON.stringify(draft)).not.toContain('familyTotalScore');
+  });
+
+  it('does not treat rarely or not-sure answers as positive support evidence', () => {
+    const runtime = new FamilyEducationModelRuntime({ itemBank, interpretationSchema });
+    const rarely = runtime.interpretUi02AssessmentResponses({
+      request_id: 'REQ-RARELY', assessment_session_id: 'SESSION-RARELY', tool_ref: 'FAMILY_SUPPORT_NEEDS', tool_version: 2,
+      responses: [{ item_ref: 'FOCUS', response_value: 'DEVICE_USE_CONTEXT' }, { item_ref: 'DEVICE_USE_CONTEXT_Q01', response_value: 'RARELY' }],
+    });
+    const notSure = runtime.interpretUi02AssessmentResponses({
+      request_id: 'REQ-NOT-SURE', assessment_session_id: 'SESSION-NOT-SURE', tool_ref: 'FAMILY_SUPPORT_NEEDS', tool_version: 2,
+      responses: [{ item_ref: 'FOCUS', response_value: 'DEVICE_USE_CONTEXT' }, { item_ref: 'DEVICE_USE_CONTEXT_Q01', response_value: 'NOT_SURE' }],
+    });
+    expect(rarely.draft.construct_signals).toEqual([]);
+    expect(notSure.draft.construct_signals).toEqual([]);
+    expect(notSure.coverage.uninterpreted_item_refs).toEqual([]);
+  });
+
+  it('keeps the same evidence semantics when only the session id changes', () => {
+    const runtime = new FamilyEducationModelRuntime({ itemBank, interpretationSchema });
+    const makeDraft = (sessionId: string) => runtime.interpretUi02AssessmentResponses({
+      request_id: `REQ-${sessionId}`, assessment_session_id: sessionId, tool_ref: 'FAMILY_SUPPORT_NEEDS', tool_version: 2,
+      responses: [{ item_ref: 'FOCUS', response_value: 'PARENT_CHILD_COMMUNICATION' }, { item_ref: 'PARENT_CHILD_COMMUNICATION_Q01', response_value: 'OFTEN' }],
+    });
+    const first = makeDraft('SESSION-A');
+    const second = makeDraft('SESSION-B');
+    expect(second.draft.need_summary).toEqual(first.draft.need_summary);
+    expect(second.draft.construct_signals).toEqual(first.draft.construct_signals);
+    expect(second.draft.action_candidates).toEqual(first.draft.action_candidates);
+    expect(second.coverage).toEqual(first.coverage);
   });
 
   it('falls back to deterministic draft when no gateway is injected', async () => {
@@ -380,8 +439,8 @@ describe('FamilyEducationModelRuntime', () => {
       {
         focus_ref: 'DEVICE_USE_CONTEXT',
         question_ref: 'DEVICE_USE_CONTEXT_Q02',
-        construct_refs: ['DEVICE_USE_CONTEXT', 'AI_LITERACY_FLUENCY'],
-        action_refs: ['FAMILY_DEVICE_AGREEMENT_DRAFT', 'AI_USE_FAMILY_RULES_MINI_PLAN'],
+        construct_refs: ['AI_LITERACY_FLUENCY'],
+        action_refs: ['AI_USE_FAMILY_RULES_MINI_PLAN'],
       },
       {
         focus_ref: 'SELF_REGULATION',
