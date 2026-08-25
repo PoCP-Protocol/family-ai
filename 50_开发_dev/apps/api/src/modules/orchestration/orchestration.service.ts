@@ -329,8 +329,8 @@ export class OrchestrationService {
     // 按【所选 Offer 类型】分派执行(绝不都跑 AI_COACH)。V1:主步取第一顺位。
     const primary = snapshots.get(selectedOfferRefs[0])!;
     const caseId = (await this.repo.query<{ case_id: string }>(
-      `insert into service_cases(family_id, subject_person_id, intent_ref, plan_ref, status, owner)
-       values ($1,$2,$3,$4,'IN_PROGRESS',$5) returning case_id`,
+      `insert into service_cases(family_id, subject_person_id, intent_ref, plan_ref, status, owner, collaboration_blueprint_ref, collaboration_blueprint_version, collaboration_blueprint_snapshot)
+       values ($1,$2,$3,$4,'IN_PROGRESS',$5,'communication-21day-service-collab',1,(select to_jsonb(b) from service_collaboration_blueprints b where b.blueprint_ref='communication-21day-service-collab' and b.version=1)) returning case_id`,
       [familyId, subjectPersonId, intentId, planId, SELF_STEWARD],
     )).rows[0].case_id;
 
@@ -806,9 +806,9 @@ export class OrchestrationService {
       const templates = Array.isArray(blueprint.task_templates) ? blueprint.task_templates as Array<{ task_key?: string }> : [];
       if (!templates.some((template) => template.task_key === params.taskKey.trim())) throw new BadRequestException('task_not_in_collaboration_blueprint');
       const row = await this.repo.query<ServiceTaskDto>(
-        `insert into service_tasks(case_ref, blueprint_ref, task_key, title, description, due_at)
-         values ($1,$2,$3,$4,$5,$6) on conflict (case_ref, task_key) do update set updated_at=service_tasks.updated_at
-         returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, due_at, deliverable, verified_at`,
+        `insert into service_tasks(case_ref, blueprint_ref, task_key, title, description, role_key, required_capability_keys, task_weight, due_at)
+         values ($1,$2,$3,$4,$5,coalesce((select value->>'role_key' from service_collaboration_blueprints b, jsonb_array_elements(b.task_templates) value where b.blueprint_ref=$2 and b.version=1 and value->>'task_key'=$3 limit 1),'DELIVERY_RESOURCE'),coalesce((select required_capability_keys from service_collaboration_blueprints where blueprint_ref=$2 and version=1),'[]'::jsonb),coalesce((select (value->>'weight')::numeric from service_collaboration_blueprints b, jsonb_array_elements(b.task_templates) value where b.blueprint_ref=$2 and b.version=1 and value->>'task_key'=$3 limit 1),1),$6) on conflict (case_ref, task_key) do update set updated_at=service_tasks.updated_at
+         returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, role_key, required_capability_keys, task_weight, due_at, deliverable, verified_at`,
         [params.caseId, params.blueprintRef, params.taskKey.trim(), params.title.trim(), params.description.trim(), params.dueAt ?? null],
       );
       return row.rows[0];
