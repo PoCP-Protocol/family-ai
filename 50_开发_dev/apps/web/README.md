@@ -1,5 +1,7 @@
 # Family AI Web 控制台
 
+> **TRANSITIONAL_VISUAL_PROTOTYPE**：此目录保留用于迁移期视觉回归和历史开发验证，不是正式生产入口。正式产品入口是独立部署的 `apps/consumer-web`（Consumer Web）与 `apps/ops-web`（Operations Web），不依赖 `?product=family` 或 `?product=console`。
+
 ## 目标
 
 这是 Family AI 的桌面优先 Web 前端，用于家庭成长运营、服务供给、内容审核、权益资产和租户管理兼容入口。它与移动 App 共用 Family API、共享契约、家庭范围授权和现有多租户数据结构；Web 不复制业务本体。

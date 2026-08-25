@@ -329,9 +329,12 @@ if (searchParams.get('product') === 'console') {
     ? (/** @type {Record<string, unknown>} */ input) => familyAdapter.createServiceTask(caseId, input)
     : undefined;
   const loadServiceTasks = familyAdapter && caseId ? () => familyAdapter.getServiceTasks(caseId) : undefined;
-  const assignServiceTask = familyAdapter && caseId ? (taskId, input) => familyAdapter.assignServiceTask(caseId, taskId, input) : undefined;
-  const deliverServiceTask = familyAdapter && caseId ? (taskId, input) => familyAdapter.deliverServiceTask(caseId, taskId, input) : undefined;
-  const verifyServiceTask = familyAdapter && caseId ? (taskId, input) => familyAdapter.verifyServiceTask(caseId, taskId, input) : undefined;
+  /** @type {((taskId: string, input: Record<string, unknown>) => Promise<Record<string, unknown>>)|undefined} */
+  const assignServiceTask = familyAdapter && caseId ? (/** @type {string} */ taskId, /** @type {Record<string, unknown>} */ input) => familyAdapter.assignServiceTask(caseId, taskId, input) : undefined;
+  /** @type {((taskId: string, input: Record<string, unknown>) => Promise<Record<string, unknown>>)|undefined} */
+  const deliverServiceTask = familyAdapter && caseId ? (/** @type {string} */ taskId, /** @type {Record<string, unknown>} */ input) => familyAdapter.deliverServiceTask(caseId, taskId, input) : undefined;
+  /** @type {((taskId: string, input: Record<string, unknown>) => Promise<Record<string, unknown>>)|undefined} */
+  const verifyServiceTask = familyAdapter && caseId ? (/** @type {string} */ taskId, /** @type {Record<string, unknown>} */ input) => familyAdapter.verifyServiceTask(caseId, taskId, input) : undefined;
   /** @type {((operationId: string, input: { follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null }) => Promise<{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }>)|undefined} */
   const updateFamilyOperationFollowUp = familyAdapter
     ? async (operationId, input) => /** @type {{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }} */ (await familyAdapter.updateOperationFollowUp(operationId, input))

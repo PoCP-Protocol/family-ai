@@ -1,5 +1,5 @@
 export type ApiErrorCode = 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'UNAVAILABLE' | 'UNKNOWN';
-export type ApiResult<T> = { ok: true; data: T } | { ok: false; status: number; code: ApiErrorCode; message: string };
+export type ApiResult<T> = { ok: true; data: T; headers?: Headers } | { ok: false; status: number; code: ApiErrorCode; message: string };
 export type SessionState = 'loading' | 'authenticated' | 'unauthenticated' | 'expired' | 'unavailable';
 export type FamilyContext = { familyId: string; displayName: string; role: string; tenantId?: string };
 export type ProjectionEnvelope<T> = { projection: T; source: 'family-api'; generatedAt?: string; traceId?: string };
@@ -18,9 +18,9 @@ const errorCodeForStatus = (status: number): ApiErrorCode => status === 401 ? 'U
 export async function requestFamilyApi<T>(path: string, init: RequestInit = {}): Promise<ApiResult<T>> {
 	const baseUrl = process.env.FAMILY_API_URL ?? 'http://localhost:3000';
 	try {
-		const response = await fetch(new URL(path, baseUrl), { ...init, headers: { accept: 'application/json', ...(init.headers ?? {}) }, cache: 'no-store' });
+		const response = await fetch(new URL(path, baseUrl), { ...init, headers: { accept: 'application/json', ...(init.headers ?? {}) }, cache: 'no-store' } as RequestInit);
 		if (!response.ok) return { ok: false, status: response.status, code: errorCodeForStatus(response.status), message: await response.text() || 'family_api_request_failed' };
-		return { ok: true, data: await response.json() as T };
+		return { ok: true, data: await response.json() as T, headers: response.headers };
 	} catch {
 		return { ok: false, status: 503, code: 'UNAVAILABLE', message: 'family_api_unavailable' };
 	}
