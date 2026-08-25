@@ -89,7 +89,8 @@ const requiredLoops = new Set(['GOLDEN_GROWTH_LOOP', 'SERVICE_LOOP', 'COMMERCE_L
 for (const loop of functional.product_loops ?? []) requiredLoops.delete(loop.loop_id);
 assert(requiredLoops.size === 0, `missing product loop(s): ${[...requiredLoops].join(', ')}`);
 
-if (todo.includes('- [x] 接入 UI-13 至 UI-18 商业、权益、积分、邀请和家庭参与循环')) {
+const hasUi35AuditDisposition = todo.includes('UI-35 基线状态说明（供审计追溯，不代表当前代码状态）');
+if (todo.includes('- [x] 接入 UI-13 至 UI-18 商业、权益、积分、邀请和家庭参与循环') && !hasUi35AuditDisposition) {
   warnings.push('todo.md still uses visual/projection completion language; functional rebaseline supersedes it for Family 1.0 readiness');
 }
 
