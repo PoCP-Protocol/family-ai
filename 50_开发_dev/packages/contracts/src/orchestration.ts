@@ -24,6 +24,7 @@ export type ServiceTaskStatus = 'PENDING' | 'OFFERED' | 'ACCEPTED' | 'IN_PROGRES
 export type TaskAssignmentStatus = 'OFFERED' | 'ACCEPTED' | 'DECLINED' | 'REVOKED' | 'COMPLETED';
 export type TaskQualityState = 'PENDING' | 'PASSED' | 'REWORK_REQUIRED' | 'REJECTED';
 export type ServiceAllocationBucket = 'PLATFORM' | 'CONTENT_RESOURCE' | 'STEWARD' | 'DELIVERY_RESOURCE' | 'QUALITY_RESERVE';
+export type CollaborationResourceType = 'INTERNAL_ACTOR' | 'SYSTEM_AGENT' | 'CATALOG_RESOURCE' | 'ADMITTED_PROVIDER';
 export type EligibilityStage = 'T1' | 'T2';
 export type Helpfulness = 'HELPFUL' | 'SOMEWHAT_HELPFUL' | 'NOT_HELPFUL_YET' | 'UNANSWERED';
 export type FollowUpTruthClass = 'PERSPECTIVE' | 'SERVICE_NOTE' | 'OBSERVATION_CANDIDATE';
@@ -185,6 +186,9 @@ export interface ServiceTaskDto {
   due_at: string | null;
   deliverable: Record<string, unknown> | null;
   verified_at: string | null;
+  role_key?: string | null;
+  required_capability_keys?: string[];
+  task_weight?: number;
 }
 
 export interface TaskAssignmentDto {
@@ -194,6 +198,7 @@ export interface TaskAssignmentDto {
   assignee_kind: 'STEWARD' | 'AI' | 'COACH' | 'EXPERT' | 'CONTENT';
   status: TaskAssignmentStatus;
   accepted_at: string | null;
+  role_key?: string;
 }
 
 export interface ServiceContributionAllocationDto {
@@ -204,6 +209,27 @@ export interface ServiceContributionAllocationDto {
   units: number;
   release_state: 'HELD' | 'RELEASED';
   reason: string;
+  beneficiary_ref?: string | null;
+  beneficiary_kind?: string | null;
+  role_key?: string | null;
+  policy_ref?: string | null;
+  policy_version?: number | null;
+  basis_type?: string | null;
+  basis_ref?: string | null;
+}
+
+export interface ServiceCollaborationBlueprintDto {
+  blueprint_ref: string;
+  version: number;
+  applicable_program_ref: string;
+  roles: Array<{ role_key: string; resource_type: CollaborationResourceType }>;
+  task_templates: Array<{ task_key: string; role_key: string; weight: number; conditional?: boolean }>;
+  assignment_rules: Record<string, unknown>;
+  required_capability_keys: string[];
+  allocation_policy: Record<string, unknown>;
+  release_rules: Record<string, unknown>;
+  status: 'DRAFT' | 'ACTIVE' | 'RETIRED';
+  checksum: string;
 }
 
 // ---- 回访真相（服务层只读派生，非 canonical）----
