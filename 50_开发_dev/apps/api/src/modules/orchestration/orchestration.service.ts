@@ -803,6 +803,8 @@ export class OrchestrationService {
         blueprint = blueprintRow.rows[0];
         await this.repo.query(`update service_cases set collaboration_blueprint_ref=$2, collaboration_blueprint_version=$3, collaboration_blueprint_snapshot=$4::jsonb where case_id=$1 and family_id=$5 and collaboration_blueprint_snapshot is null`, [params.caseId, params.blueprintRef, blueprint.version, JSON.stringify(blueprint), params.familyId]);
       }
+      const frozenBlueprintRef = typeof blueprint.blueprint_ref === 'string' ? blueprint.blueprint_ref : null;
+      if (!frozenBlueprintRef || frozenBlueprintRef !== params.blueprintRef) throw new ConflictException('case_blueprint_mismatch');
       const templates = Array.isArray(blueprint.task_templates) ? blueprint.task_templates as Array<{ task_key?: string; role_key?: string; weight?: number }> : [];
       const template = templates.find((candidate) => candidate.task_key === params.taskKey.trim());
       if (!template || !template.role_key) throw new BadRequestException('task_not_in_collaboration_blueprint');
@@ -810,7 +812,7 @@ export class OrchestrationService {
         `insert into service_tasks(case_ref, blueprint_ref, task_key, title, description, role_key, required_capability_keys, task_weight, due_at)
          values ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9) on conflict (case_ref, task_key) do update set updated_at=service_tasks.updated_at
          returning task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, role_key, required_capability_keys, task_weight, due_at, deliverable, verified_at`,
-        [params.caseId, params.blueprintRef, params.taskKey.trim(), params.title.trim(), params.description.trim(), template.role_key, JSON.stringify(Array.isArray(blueprint.required_capability_keys) ? blueprint.required_capability_keys : []), template.weight ?? 1, params.dueAt ?? null],
+        [params.caseId, frozenBlueprintRef, params.taskKey.trim(), params.title.trim(), params.description.trim(), template.role_key, JSON.stringify(Array.isArray(blueprint.required_capability_keys) ? blueprint.required_capability_keys : []), template.weight ?? 1, params.dueAt ?? null],
       );
       return row.rows[0];
     });
@@ -825,8 +827,12 @@ export class OrchestrationService {
       if (['VERIFIED', 'CLOSED', 'CANCELLED'].includes(task.rows[0].status)) throw new ConflictException('task_not_assignable');
       const roleKey = task.rows[0].role_key;
       if (!roleKey) throw new ConflictException('task_blueprint_role_required');
-      const roleCheck = await client.query<{ ok: boolean }>(`select exists (select 1 from service_collaboration_blueprints b join service_cases sc on sc.collaboration_blueprint_ref=b.blueprint_ref and sc.collaboration_blueprint_version=b.version join service_tasks st on st.case_ref=sc.case_id where st.task_id=$1 and b.status='ACTIVE' and b.roles @> jsonb_build_array(jsonb_build_object('role_key',$2))) as ok`, [params.taskId, roleKey]);
+      const roleCheck = await client.query<{ ok: boolean }>(`select exists (select 1 from service_cases sc join service_tasks st on st.case_ref=sc.case_id where st.task_id=$1 and sc.collaboration_blueprint_snapshot @> jsonb_build_object('roles', jsonb_build_array(jsonb_build_object('role_key',$2)))) as ok`, [params.taskId, roleKey]);
       if (!roleCheck.rows[0]?.ok) throw new ForbiddenException('role_not_in_blueprint');
+      if (roleKey === 'CASE_STEWARD') {
+        const steward = await client.query(`select 1 from service_tasks where case_ref=$1 and role_key='CASE_STEWARD' and responsible_ref is not null and task_id <> $2 and status in ('ACCEPTED','IN_PROGRESS','DELIVERED','VERIFIED')`, [params.caseId, params.taskId]);
+        if (steward.rowCount) throw new ConflictException('case_steward_already_assigned');
+      }
       if (['DELIVERY_RESOURCE', 'HUMAN_COACH'].includes(roleKey)) {
         const provider = await client.query(`select pp.provider_profile_id from provider_profiles pp join provider_admissions pa on pa.provider_profile_id=pp.provider_profile_id join service_cases sc on sc.case_id=$2 join tenant_family_bindings tfb on tfb.family_id=sc.family_id and tfb.status='ACTIVE' where pp.provider_ref=$1 and pp.status='ACTIVE' and pa.tenant_id=tfb.tenant_id and pa.status='ADMITTED'`, [params.assigneeRef.trim(), params.caseId]);
         if (!provider.rowCount) throw new ForbiddenException('assignee_provider_not_admitted');
@@ -867,6 +873,7 @@ export class OrchestrationService {
       const task = await client.query<ServiceTaskDto>(`select task_id, case_ref as case_id, blueprint_ref, task_key, title, description, status, responsible_ref, role_key, required_capability_keys, task_weight, due_at, deliverable, verified_at from service_tasks where task_id=$1 and case_ref=$2 and exists (select 1 from service_cases where case_id=$2 and family_id=$3) for update`, [params.taskId, params.caseId, params.familyId]);
       if (!task.rows[0]) throw new ForbiddenException('task_not_in_family_case');
       if (task.rows[0].status !== 'DELIVERED') throw new ConflictException('task_requires_delivered_state');
+      if (task.rows[0].role_key === 'DELIVERY_RESOURCE' && task.rows[0].responsible_ref === params.reviewerRef) throw new ForbiddenException('reviewer_must_differ_from_delivery');
       await client.query(`insert into task_quality_reviews(task_id, reviewer_ref, quality_state, review_note, reviewed_at) values ($1,$2,$3,$4,now())`, [params.taskId, params.reviewerRef, params.qualityState, params.reviewNote ?? null]);
       if (params.qualityState !== 'PASSED') {
         const next = params.qualityState === 'REWORK_REQUIRED' ? 'IN_PROGRESS' : 'CANCELLED';
@@ -887,8 +894,9 @@ export class OrchestrationService {
       if (own.rows[0].shadow_allocation_finalized_at) return { case_id: params.caseId, finalized: true, allocations: [] };
       const contributions = await client.query<{ contribution_id: string; provider_ref: string | null; role: string; task_ref: string; task_weight: number }>(`select c.contribution_id, c.provider_ref, c.role, c.task_ref, st.task_weight from service_contributions c join service_tasks st on st.task_id=c.task_ref where c.case_ref=$1 and c.quality_state='VERIFIED' order by c.completed_at asc`, [params.caseId]);
       if (!contributions.rows.length) throw new ConflictException('verified_contribution_required');
-      const policyRef = own.rows[0].blueprint_ref ?? 'communication-21day-service-collab';
-      const policyVersion = own.rows[0].blueprint_version ?? 1;
+      if (!own.rows[0].blueprint_ref || !own.rows[0].blueprint_version) throw new ConflictException('case_blueprint_snapshot_required');
+      const policyRef = own.rows[0].blueprint_ref;
+      const policyVersion = own.rows[0].blueprint_version;
       const qualityState = params.helpfulness === 'HELPFUL' || params.helpfulness === 'SOMEWHAT_HELPFUL' ? 'RELEASED' : 'HELD';
       const allocations: ServiceContributionAllocationDto[] = [];
       const add = async (contribution: typeof contributions.rows[number], bucket: string, units: number, beneficiaryRef: string, roleKey: string, basisType: string, basisRef: string, releaseState = 'HELD') => {
@@ -908,6 +916,8 @@ export class OrchestrationService {
         await add(item, 'DELIVERY_RESOURCE', units, item.provider_ref ?? item.contribution_id, 'DELIVERY_RESOURCE', 'CONTRIBUTION_WEIGHT', item.contribution_id);
       }
       await add(first, 'QUALITY_RESERVE', 10, 'QUALITY_RESERVE', 'QUALITY_RESERVE', 'CASE', params.caseId, qualityState);
+      const totalUnits = allocations.reduce((sum, allocation) => sum + Number(allocation.units), 0);
+      if (totalUnits > 100.0001) throw new ConflictException('shadow_allocation_total_exceeds_100');
       await client.query(`update service_cases set shadow_allocation_finalized_at=now(), shadow_allocation_policy_ref=$2, shadow_allocation_policy_version=$3 where case_id=$1`, [params.caseId, policyRef, policyVersion]);
       return { case_id: params.caseId, finalized: true, allocations };
     }));
@@ -930,11 +940,15 @@ export class OrchestrationService {
        values ($1,$2,$3,$4,'SERVICE_NOTE') returning followup_id`,
       [caseId, actorPersonId, text, helpfulness],
     );
-    // 家庭给出实质反馈(非 UNANSWERED)且 case 未升级 → 本次服务环完成。
-    if (helpfulness !== 'UNANSWERED' && own.rows[0].status === 'WAITING_FAMILY') {
+    if (helpfulness === 'NOT_HELPFUL_YET') {
+      await this.repo.query(`update service_contribution_allocations set release_state='HELD', released_at=null where case_ref=$1 and allocation_bucket='QUALITY_RESERVE'`, [caseId]);
+      await this.repo.query(`update service_cases set status='OPEN' where case_id=$1 and status='WAITING_FAMILY'`, [caseId]);
+    }
+    // 只有正向回访才释放质量储备并完成服务环。
+    if ((helpfulness === 'HELPFUL' || helpfulness === 'SOMEWHAT_HELPFUL') && own.rows[0].status === 'WAITING_FAMILY') {
       await this.repo.query(`update service_cases set status='COMPLETED', closed_at=now() where case_id=$1`, [caseId]);
       await this.repo.query(`update growth_intents set status='CLOSED', close_reason='SERVICE_DELIVERED' where intent_id=$1 and family_id=$2`, [own.rows[0].intent_ref, familyId]);
-      await this.repo.query(`update service_contribution_allocations set release_state='RELEASED', released_at=now() where case_ref=$1 and release_state='HELD'`, [caseId]);
+      await this.repo.query(`update service_contribution_allocations set release_state='RELEASED', released_at=now() where case_ref=$1 and allocation_bucket='QUALITY_RESERVE' and release_state='HELD'`, [caseId]);
     }
     return { followup_id: r.rows[0].followup_id };
     });
