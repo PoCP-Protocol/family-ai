@@ -56,6 +56,11 @@ export function createFamilyApiAdapter({ baseUrl, bearerToken, familyId }) {
     requestGrowthRecommendation: (intentId, idempotencyKey) => write(`/orchestration/intents/${intentId}/recommendations`, {}, idempotencyKey),
     /** @param {{ intent_id: string, recommendation_id: string, recommendation_version: number, decision_type: 'ACCEPT_RECOMMENDATION'|'DISMISS', selected_offer_refs: string[] }} input @param {string} idempotencyKey */
     decideGrowthService: (input, idempotencyKey) => write('/orchestration/decisions', input, idempotencyKey),
+    getServiceTasks: (caseId) => read(`/orchestration/cases/${encodeURIComponent(caseId)}/tasks`),
+    createServiceTask: (caseId, input, idempotencyKey) => write(`/orchestration/cases/${encodeURIComponent(caseId)}/tasks`, input, idempotencyKey),
+    assignServiceTask: (caseId, taskId, input, idempotencyKey) => write(`/orchestration/cases/${encodeURIComponent(caseId)}/tasks/${encodeURIComponent(taskId)}/assign`, input, idempotencyKey),
+    deliverServiceTask: (caseId, taskId, input, idempotencyKey) => write(`/orchestration/cases/${encodeURIComponent(caseId)}/tasks/${encodeURIComponent(taskId)}/deliver`, input, idempotencyKey),
+    verifyServiceTask: (caseId, taskId, input, idempotencyKey) => write(`/orchestration/cases/${encodeURIComponent(caseId)}/tasks/${encodeURIComponent(taskId)}/verify`, input, idempotencyKey),
     getJourneyPlan: () => read('/growth/journey-plan'),
     getExperienceCustomerProjection: () => read('/orchestration/test-loop/experience/customer-projection'),
     /** @param {string} operationId @param {{ follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null }} input */
@@ -65,5 +70,13 @@ export function createFamilyApiAdapter({ baseUrl, bearerToken, familyId }) {
     getCoreGrowthPreview: () => read('/dev/core-growth'),
     getPlatformSurfacePreview: () => read('/dev/platform-surfaces'),
     getTenantScopedUiProjection: () => read('/tenant-scoped/ui-projection'),
+    /** @param {string} caseId */
+    getGrantedCaseProjection: (caseId) => fetch(`${baseUrl.replace(/\/$/, '')}/orchestration/case-access/${encodeURIComponent(caseId)}/projection`, {
+      headers: bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {},
+      credentials: bearerToken ? 'omit' : 'include',
+    }).then(async (response) => {
+      if (!response.ok) throw new Error(`case_access_read_failed_${response.status}`);
+      return response.json();
+    }),
   };
 }

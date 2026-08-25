@@ -443,6 +443,7 @@ export function createGrowthApp(root, config = defaultConfig) {
           active_priority: {
             priority_id: 'priority-R03',
             family_id: config.familyId,
+            subject_person_id: config.childId,
             onboarding_id: state.onboarding.onboarding_id,
             profile_id: 'profile-R03',
             dimension_id: dimensionId,
@@ -498,6 +499,7 @@ export function createGrowthApp(root, config = defaultConfig) {
           episode: {
             episode_id: 'episode-1',
             family_id: config.familyId,
+            subject_person_id: config.childId,
             onboarding_id: state.onboarding.onboarding_id,
             priority_id: priorityId,
             intervention_id: 'INTERVENTION-001',

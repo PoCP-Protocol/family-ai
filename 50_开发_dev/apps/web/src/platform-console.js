@@ -29,7 +29,7 @@ const roleVisibility = {
   SERVICE_ADVISOR: ['overview', 'families', 'journeys', 'services'],
 };
 
-/** @typedef {{ tenantId?: string, role?: keyof typeof roleVisibility, initialProjection?: TenantScopedUiProjection|null, loadTenantScopedProjection?: () => Promise<TenantScopedUiProjection>, initialOperations?: FamilyOperationsProjection|null, loadFamilyOperations?: () => Promise<FamilyOperationsProjection>, updateFamilyOperationFollowUp?: (operationId: string, input: { follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null }) => Promise<{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }> }} PlatformConsoleOptions */
+/** @typedef {{ tenantId?: string, role?: keyof typeof roleVisibility, initialProjection?: TenantScopedUiProjection|null, loadTenantScopedProjection?: () => Promise<TenantScopedUiProjection>, initialOperations?: FamilyOperationsProjection|null, loadFamilyOperations?: () => Promise<FamilyOperationsProjection>, updateFamilyOperationFollowUp?: (operationId: string, input: { follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null }) => Promise<{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }>, loadGrantedCaseProjection?: () => Promise<{ projection: { case_id: string, family_id: string, status: string, opened_at?: string, next_action_at?: string|null }, granted_scope: Record<string, unknown> }>, caseAccessCaseId?: string, createServiceTask?: (input: { blueprint_ref: string, task_key: string, title: string, description: string, due_at?: string|null }) => Promise<Record<string, unknown>> }} PlatformConsoleOptions */
 
 // Web 仅消费既有 tenant_family_bindings、tenant_policy_profiles 和 Family Scope Guard；不在 Web 端创建平行的 tenant 或 IAM 本体。
 
@@ -79,7 +79,9 @@ const presentationCopy = new Map([
   ['授权范围', '可查看范围'], ['授权状态', '查看范围'],
 ]);
 
+/** @param {HTMLElement} root */
 function sanitizeConsoleCopy(root) {
+  /** @param {Node} node */
   const visit = (node) => {
     if (node.nodeType === Node.TEXT_NODE) {
       let text = node.nodeValue ?? '';
@@ -87,7 +89,7 @@ function sanitizeConsoleCopy(root) {
       node.nodeValue = text;
       return;
     }
-    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    if (!(node instanceof Element)) return;
     for (const attribute of ['placeholder', 'aria-label', 'title']) {
       const value = node.getAttribute(attribute);
       if (!value) continue;
@@ -113,12 +115,16 @@ function families() { return `<section class="panel table-panel"><div class="pan
 
 function journeys() { return `<section class="workspace-grid"><article class="panel"><span class="eyebrow">标准交付包</span><h3>21 天启动 · 90 天陪伴 · 年度会员</h3><div class="program-stack"><div><b>21</b><span><strong>智慧父母成长营</strong><small>每日一件小事 · 每周一次回顾</small></span>${pill('已发布','green')}</div><div><b>90</b><span><strong>家庭成长计划</strong><small>目标、行动、服务与阶段复盘</small></span>${pill('当前版本 v1.4','blue')}</div><div><b>365</b><span><strong>年度家庭成长服务</strong><small>权益、主题季、活动与家庭档案</small></span>${pill('需运营审批','amber')}</div></div></article><article class="panel"><span class="eyebrow">顾问待办</span><h3>交付不是催打卡</h3><div class="task-cards"><div><small>今天</small><b>确认林杉家庭的第二周节奏</b><span>家长已留下反思草稿，等待人工回读。</span></div><div><small>明天</small><b>复核 4 个家庭的阶段回顾</b><span>仅整理家长视角与已完成行动，不下效果结论。</span></div></div></article></section>`; }
 /** @param {TenantScopedUiProjection|null} projection */
-function services(projection) {
+/** @param {TenantScopedUiProjection|null} projection @param {'unavailable'|'loading'|'live'} caseAccessState @param {{ projection: { case_id: string, family_id: string, status: string, opened_at?: string, next_action_at?: string|null }, granted_scope: Record<string, unknown> }|null} [caseAccess] */
+function services(projection, caseAccessState = 'unavailable', caseAccess) {
   const records = safeRows(projection?.service?.booking_records);
   const recordsHtml = projection
     ? (records.length ? records.slice(0, 3).map((record) => `<div><span class="avatar blue">服</span><span><b>${escapeHtml(record.service_offering_ref)}</b><small>${escapeHtml(record.channel)} · ${escapeHtml(record.booking_status)} · 开发/测试受控记录</small></span>${pill(record.external_effect === false ? '未外部预约' : '待核验','amber')}</div>`).join('') : '<p class="muted">当前家庭没有可读取的服务记录。</p>')
     : '<p class="muted">开发预览未绑定真实家庭会话；服务记录将在有效 Bearer 会话建立后由 Family API 读取。</p>';
-  return `<section class="workspace-grid"><article class="panel"><span class="eyebrow">服务记录</span><h3>家庭范围内的受控回读</h3><div class="supply-list">${recordsHtml}</div></article><article class="panel"><span class="eyebrow">服务边界</span><h3>读取不等于真实履约</h3><div class="quality-row"><b>${projection ? records.length : '—'}</b><span>当前家庭服务记录<br/><small>不是效果评估</small></span></div><div class="quality-row"><b>0</b><span>外部预约与通知<br/><small>本环境一律不执行</small></span></div></article></section>`;
+  const casePanel = caseAccessState === 'live' && caseAccess
+    ? `<article class="panel" data-case-access-state="READY"><span class="eyebrow">授权服务 Case</span><h3>教师/服务方最小读取投影</h3><dl class="tenant-kv"><dt>Case</dt><dd>${escapeHtml(caseAccess.projection.case_id)}</dd><dt>状态</dt><dd>${escapeHtml(caseAccess.projection.status)}</dd><dt>开始时间</dt><dd>${escapeHtml(caseAccess.projection.opened_at ?? '未提供')}</dd><dt>下一步时间</dt><dd>${escapeHtml(caseAccess.projection.next_action_at ?? '未提供')}</dd></dl><p class="muted">来源：CASE_ACCESS_GRANT · 未返回 Family 全量资料。</p></article>`
+    : `<article class="panel" data-case-access-state="${caseAccessState === 'loading' ? 'LOADING' : 'BLOCKED'}"><span class="eyebrow">授权服务 Case</span><h3>${caseAccessState === 'loading' ? '正在读取受限投影' : '当前没有可读取的授权 Case'}</h3><p class="muted">${caseAccessState === 'loading' ? '服务端正在校验 Account、Party、关系、授权与同意状态。' : '默认拒绝：需要有效的 AccountPartyBinding 与 CaseAccessGrant。'}</p></article>`;
+  return `<section class="workspace-grid"><article class="panel"><span class="eyebrow">服务记录</span><h3>家庭范围内的受控回读</h3><div class="supply-list">${recordsHtml}</div></article>${casePanel}<article class="panel"><span class="eyebrow">服务边界</span><h3>读取不等于真实履约</h3><div class="quality-row"><b>${projection ? records.length : '—'}</b><span>当前家庭服务记录<br/><small>不是效果评估</small></span></div><div class="quality-row"><b>0</b><span>外部预约与通知<br/><small>本环境一律不执行</small></span></div></article></section>`;
 }
 function content() { return `<section class="workspace-grid"><article class="panel"><span class="eyebrow">内容审核</span><h3>家长经验需要可信和克制</h3><div class="moderation"><div><b>12</b><span>待审核家庭小记</span>${pill('私有草稿','blue')}</div><div><b>3</b><span>需补充可见范围</span>${pill('人工处理','amber')}</div><div><b>28</b><span>已通过经验阅读</span>${pill('仅家长','green')}</div></div></article><article class="panel"><span class="eyebrow">内容资产</span><h3>本周主题</h3><div class="topic-cloud"><span>晚间沟通</span><span>家庭会议</span><span>亲子阅读</span><span>学习日常</span><span>情绪共处</span></div></article></section>`; }
 /** @param {TenantScopedUiProjection|null} projection */
@@ -196,6 +202,9 @@ export function createPlatformConsole(root, options = {}) {
   /** @type {TenantScopedUiProjection|null} */ let projection = options.initialProjection ?? null; let projectionState = projection ? 'live' : options.loadTenantScopedProjection ? 'loading' : 'preview';
   /** @type {FamilyOperationsProjection|null} */
   let receiptProjection = options.initialOperations ?? null;
+  /** @type {'unavailable'|'loading'|'live'} */ let caseAccessState = options.loadGrantedCaseProjection ? 'loading' : 'unavailable';
+  /** @type {{ projection: { case_id: string, family_id: string, status: string, opened_at?: string, next_action_at?: string|null }, granted_scope: Record<string, unknown> }|null} */
+  let caseAccess = null;
   /** @type {'live'|'loading'|'preview'} */
   let receiptState = receiptProjection ? 'live' : options.loadFamilyOperations ? 'loading' : 'preview';
   /** @type {ReceiptFilters} */
@@ -214,13 +223,13 @@ export function createPlatformConsole(root, options = {}) {
     const visibleNav = nav.filter(([id]) => (roleVisibility[role] ?? roleVisibility.TENANT_OPERATOR).includes(id));
     if (!visibleNav.some(([id]) => id === active)) active = 'overview';
     const runtimeNotice = projectionState === 'live' ? '已加载真实 tenant-scoped 读取投影：当前显示内容已同时通过家庭会话、账户成员资格、tenant policy profile 与 tenant/family 双重范围校验；前端不在 Web 端自行裁决高风险策略。' : projectionState === 'loading' ? '正在通过 Family API 读取当前家庭的 tenant-scoped 投影；不会在前端生成或放大任何授权，也不在 Web 端自行裁决高风险策略。' : '开发预览：未建立真实家庭会话，页面不展示伪造的商业、服务或会员数据。真实读取仍由 Family API 的账户成员资格、tenant policy profile 与 Family Scope Guard 校验；前端切换不构成授权，且不在 Web 端自行裁决高风险策略。';
-    const content = active === 'operations' ? operations(receiptProjection, receiptState, receiptFilters, receiptExportAudit, receiptPage, receiptExportState, followUpSavingId, followUpMessage, Boolean(options.updateFamilyOperationFollowUp)) : renderers[active](projection);
+    const content = active === 'operations' ? operations(receiptProjection, receiptState, receiptFilters, receiptExportAudit, receiptPage, receiptExportState, followUpSavingId, followUpMessage, Boolean(options.updateFamilyOperationFollowUp)) : active === 'services' ? services(projection, caseAccessState, caseAccess) : renderers[active](projection);
     root.innerHTML = `<div class="console-shell"><aside class="sidebar"><div class="brand"><span class="brand-mark">F</span><div><b>Family AI</b><small>成长运营平台</small></div></div><div class="tenant-select"><span class="eyebrow">当前租户</span><select id="tenantSelect" ${projection ? 'disabled' : ''}>${projection ? `<option>${escapeHtml(tenant.name)}</option>` : tenants.map((item)=>`<option value="${item.id}" ${item.id===tenantId?'selected':''}>${item.name}</option>`).join('')}</select><small>${escapeHtml(tenant.city)} · ${escapeHtml(tenant.families)} 个家庭</small></div><nav>${visibleNav.map(([id,label,icon])=>`<button class="nav-item ${active===id?'active':''}" data-page="${id}"><span>${icon}</span>${label}</button>`).join('')}</nav><div class="sidebar-foot"><span class="secure-dot"></span><small>${projection ? '真实范围已加载' : '开发预览范围'}</small></div></aside><main class="console-main"><header class="topbar"><div class="crumb"><span>Family AI</span><b>/</b><strong>${escapeHtml(tenant.short)}</strong></div><div class="top-actions"><label class="console-search"><span aria-hidden="true">⌕</span><input id="consoleSearch" type="search" placeholder="搜索家庭、服务或内容" aria-label="搜索家庭、服务或内容" /></label><select id="roleSelect" class="role-select" aria-label="开发预览角色">${Object.entries(roleNames).map(([id,label])=>`<option value="${id}" ${id===role?'selected':''}>${label}</option>`).join('')}</select><button class="help">?</button><button class="user">林</button></div></header><div class="preview-notice">${runtimeNotice}</div><section class="hero"><div><span class="eyebrow">${copy.kicker}</span><h1>${copy.title}</h1><p>${copy.intro}</p></div><div class="hero-actions"><button class="secondary-btn">查看帮助</button><button class="primary-btn" id="quickAction">新建受控任务 <span>+</span></button></div></section><section class="content-area">${content}</section></main></div>`;
     sanitizeConsoleCopy(root);
     root.querySelectorAll('[data-page]').forEach((button)=>button.addEventListener('click',()=>{active=/** @type {keyof typeof renderers} */ (/** @type {HTMLElement} */ (button).dataset.page ?? 'overview');render();}));
     root.querySelector('#tenantSelect')?.addEventListener('change',(event)=>{tenantId=/** @type {HTMLSelectElement} */ (event.target).value;render();});
     root.querySelector('#roleSelect')?.addEventListener('change',(event)=>{role=/** @type {keyof typeof roleVisibility} */ (/** @type {HTMLSelectElement} */ (event.target).value);render();});
-    root.querySelector('#consoleSearch')?.addEventListener('keydown',(event)=>{if (event.key === 'Enter') { const query = /** @type {HTMLInputElement} */ (event.target).value.trim(); if (query) window.alert(`已提交搜索：${query}。结果仍需遵循当前租户与家庭范围授权。`); }});
+    root.querySelector('#consoleSearch')?.addEventListener('keydown',(event)=>{if (/** @type {KeyboardEvent} */ (event).key === 'Enter') { const query = /** @type {HTMLInputElement} */ (event.target).value.trim(); if (query) window.alert(`已提交搜索：${query}。结果仍需遵循当前租户与家庭范围授权。`); }});
     const resetReceiptPage = () => { receiptPage = 1; };
     root.querySelector('#receiptPageFilter')?.addEventListener('change',(event)=>{receiptFilters.page=/** @type {HTMLSelectElement} */ (event.target).value;resetReceiptPage();render();});
     root.querySelector('#receiptStatusFilter')?.addEventListener('change',(event)=>{receiptFilters.status=/** @type {HTMLSelectElement} */ (event.target).value;resetReceiptPage();render();});
@@ -257,7 +266,15 @@ export function createPlatformConsole(root, options = {}) {
         .then((next) => { receiptProjection = next; followUpSavingId = null; followUpMessage = '已记录人工跟进状态与备注。'; render(); })
         .catch(() => { followUpSavingId = null; followUpMessage = '暂时无法保存跟进信息，请检查家庭会话后重试。'; render(); });
     }));
-    root.querySelector('#quickAction')?.addEventListener('click',()=>window.alert('这里用于发起一项家庭支持安排，提交后会经过权限与人工审核。'));
+    root.querySelector('#quickAction')?.addEventListener('click',()=>{
+      if (!options.createServiceTask) {
+        window.alert('这里用于发起一项家庭支持安排，提交后会经过权限与人工审核。');
+        return;
+      }
+      options.createServiceTask({ blueprint_ref: 'DEV_21DAY_SERVICE', task_key: `manual-${Date.now()}`, title: '家庭支持安排', description: '内部 DEV 协作任务：等待责任人交付与质量验收。' })
+        .then(() => window.alert('DEV 任务已创建，尚未产生支付、结算或外部通知。'))
+        .catch(() => window.alert('DEV 任务创建失败，请检查当前家庭会话与权限。'));
+    });
   };
   render();
   if (options.loadTenantScopedProjection) {
@@ -265,5 +282,8 @@ export function createPlatformConsole(root, options = {}) {
   }
   if (options.loadFamilyOperations) {
     options.loadFamilyOperations().then((nextProjection) => { receiptProjection = nextProjection; receiptState = 'live'; render(); }).catch(() => { receiptState = 'preview'; render(); });
+  }
+  if (options.loadGrantedCaseProjection) {
+    options.loadGrantedCaseProjection().then((next) => { caseAccess = next; caseAccessState = 'live'; render(); }).catch(() => { caseAccess = null; caseAccessState = 'unavailable'; render(); });
   }
 }

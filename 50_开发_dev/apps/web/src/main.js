@@ -4,6 +4,8 @@ import { createTestLoopApp, defaultTestLoopConfig } from './test-loop.js';
 import { createPlatformConsole } from './platform-console.js';
 import { createFamilyApiAdapter } from './family-api-adapter.js';
 import { createGrowthApp, defaultConfig } from './app.js';
+import { createConsumerExperience } from './experience/consumer-shell.js';
+import { createOperationsExperience } from './experience/operations-shell.js';
 
 const root = /** @type {HTMLElement | null} */ (document.querySelector('#app'));
 
@@ -310,6 +312,8 @@ function mountFamilyPortal() {
 }
 
 if (searchParams.get('product') === 'console') {
+  createOperationsExperience(root);
+} else if (searchParams.get('product') === 'legacy-console') {
   document.title = 'Family AI · 内部工作台';
   appRoot.dataset.surface = 'internal-operations';
   // 内部工作台与家庭门户使用独立产品入口；权限仍由服务端会话和对象范围决定。
@@ -318,6 +322,8 @@ if (searchParams.get('product') === 'console') {
   const familyAdapter = familyId && bearerToken ? createFamilyApiAdapter({ baseUrl: apiBaseUrl, bearerToken, familyId }) : undefined;
   const loadTenantScopedProjection = familyAdapter ? () => familyAdapter.getTenantScopedUiProjection() : undefined;
   const loadFamilyOperations = familyAdapter ? () => familyAdapter.getExperienceCustomerProjection() : undefined;
+  const caseId = searchParams.get('caseId') ?? undefined;
+  const loadGrantedCaseProjection = familyAdapter && caseId ? () => familyAdapter.getGrantedCaseProjection(caseId) : undefined;
   /** @type {((operationId: string, input: { follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null }) => Promise<{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }>)|undefined} */
   const updateFamilyOperationFollowUp = familyAdapter
     ? async (operationId, input) => /** @type {{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }} */ (await familyAdapter.updateOperationFollowUp(operationId, input))
@@ -330,8 +336,10 @@ if (searchParams.get('product') === 'console') {
     loadTenantScopedProjection,
     loadFamilyOperations,
     updateFamilyOperationFollowUp,
+    loadGrantedCaseProjection,
+    caseAccessCaseId: caseId,
   });
-} else if (searchParams.get('product') === 'test-loop' || window.location.hash === '#test-loop') {
+} else if (searchParams.get('product') === 'test-loop' || searchParams.get('product') === 'legacy-family' || window.location.hash === '#test-loop') {
   // 历史链接仍指向同一家庭门户，避免保留第二套产品入口。
   mountFamilyPortal();
 } else if (searchParams.get('product') === 'principal' || window.location.hash === '#principal') {
@@ -362,7 +370,7 @@ if (searchParams.get('product') === 'console') {
 
   createGrowthApp(root, config);
 } else if (searchParams.get('product') === 'family' || !searchParams.get('product')) {
-  mountFamilyPortal();
+  createConsumerExperience(root);
 } else {
   // 无法识别的入口不降级为其他产品，避免混淆家庭门户与运营控制台的使用语境。
   window.location.replace('?product=family');
