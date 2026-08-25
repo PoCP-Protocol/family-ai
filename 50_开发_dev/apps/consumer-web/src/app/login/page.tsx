@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function LoginPage() { return <main className="main" style={{maxWidth:560,margin:'0 auto'}}><span className="eyebrow">Family · 家庭成长工作台</span><h1>登录</h1><p>正式登录接线将通过 HttpOnly Cookie 会话完成，不在浏览器保存 Bearer Token。</p><section className="card"><label htmlFor="phone">手机号</label><input id="phone" className="search" placeholder="请输入手机号" /><button className="button" style={{marginTop:16}}>获取验证码</button><p>当前页面为生产底座占位，OTP API 接线将在下一纵切完成。</p></section><p><Link href="/">返回首页</Link></p></main>; }

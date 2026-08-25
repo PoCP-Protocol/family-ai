@@ -48,7 +48,7 @@ describe("Family AI UI registry", () => {
       .map((tab) => getScreensForTab(tab as Parameters<typeof getScreensForTab>[0]).length)
       .reduce((sum, count) => sum + count, 0);
 
-    expect(total).toBe(35);
+    expect(total).toBe(34);
   });
 
   it("keeps a named visual baseline and feature set for every baseline screen and the assessment result route", () => {

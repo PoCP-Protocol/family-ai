@@ -1,0 +1,1 @@
+export default function ServicesPage() { return <main className="main"><span className="eyebrow">服务闭环</span><h1>找到服务，查看安排</h1><section className="grid"><article className="card"><h2>服务尚未接入</h2><p>后续接入服务需求、人工确认、服务记录和家庭反馈。不把意向显示为已确认服务。</p></article><article className="card"><h2>家庭范围受保护</h2><p>服务记录只从当前 Family Context 读取。</p></article></section></main>; }

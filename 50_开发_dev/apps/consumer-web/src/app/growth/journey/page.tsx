@@ -1,0 +1,1 @@
+export default function JourneyPage() { return <main className="main"><span className="eyebrow">90 天陪跑 · UI-05</span><h1>家庭成长旅程</h1><section className="card"><p>旅程由阶段、每周任务、今日行动、家庭反思和阶段复盘组成，支持继续、调整或暂停。</p></section></main>; }

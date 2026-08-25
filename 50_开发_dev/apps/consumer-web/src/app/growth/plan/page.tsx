@@ -1,0 +1,1 @@
+export default function PlanPage() { return <main className="main"><span className="eyebrow">90 天成长计划 · UI-04</span><h1>成长方向与阶段计划</h1><section className="card"><p>真实版本将在家庭确认支持方向后读取可恢复的成长计划。确认前不会自动创建计划。</p></section></main>; }

@@ -1,0 +1,1 @@
+export default function FamilyPage() { return <main className="main"><span className="eyebrow">家庭档案 · UI-33</span><h1>家庭成员与同意</h1><section className="card"><p>登录并选择家庭后，这里显示家庭成员、角色、同意范围和可见性。不会用 URL 参数绕过服务端授权。</p></section></main>; }

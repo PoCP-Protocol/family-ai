@@ -1,5 +1,7 @@
 # Project TODO
 
+> **UI-35 基线状态说明（供审计追溯，不代表当前代码状态）**：本文件中标记 `[x]` 且提及 UI-35 的历史条目，记录的是当时的开发过程事实（UI-35 曾作为独立页面存在并被实现）。根据执行 SSOT `governance/FAMILY_UI_CANONICAL_MAP_V1.json`（`numbering_decision.ui35_status = "DELETED_DUPLICATE_PRODUCT_SURFACE"`）与 `governance/FAMILY_CONSUMER_UI_BASELINE_V1.json` 的后续裁决，UI-35 已作为重复产品面被删除；其承载的 21 天成长营业务能力现由 UI-14、UI-09、UI-31、UI-34 承载。当前移动端 UI 范围为 UI-01 至 UI-34（共 34 页），代码与 `apps/mobile/tests/family-mobile-core.test.ts` 已一致确认此状态。以下历史勾选项按原文保留以维持审计记录，不再作为当前范围依据。
+
 - [x] 核对 UI-10 至 UI-12 是否复用现有 family-ai 投影、认证、幂等与审计边界
 - [x] 将移动端新增模型限定为离线草稿和展示适配，禁止形成第二套核心本体或业务服务
 - [x] 识别并消除 Web/API 与移动端之间重复维护的家庭成长业务规则
