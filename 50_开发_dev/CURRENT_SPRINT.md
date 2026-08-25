@@ -12,7 +12,8 @@ GATE               = G1-A ARCHITECTURE_AND_CONTRACT_CONVERGENCE
 BASE_SHA           = f2eeacc69fff78b17f45b78a7ab631543ee8cf2a
 WORK_BRANCH        = architecture/family-ai-v4-1-convergence-001
 TECH_ARCHITECTURE  = FAMILY_AI_PLATFORM_V4_1 TARGET_FROZEN
-35_UI_BASELINE     = KEEP
+CONSUMER_UI_BASELINE     = KEEP
+UI35_DELETED       = YES
 AI_DIAGNOSIS       = KEEP
 G1_A_AUTHORIZED    = YES
 G1_B_PLUS          = NOT_AUTHORIZED
@@ -32,7 +33,7 @@ Authorization scope:
 - Live external model call: allowed only in local/internal explicitly configured environments; default `.env.example` remains mock and fail-closed.
 - Still forbidden: DB schema change, direct provider calls, client-side model calls, pilot exposure, production default enablement, and AI direct canonical Family/Growth state mutation.
 
-Program: `governance/FAMILY_35UI_PROGRAM_V1.yaml`
+Program: 21-Day Program is carried by UI-14/UI-09/UI-31/UI-34; UI-35 is deleted from the product baseline.
 Architecture: `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md`
 
 All older sprint/M2/M3/G0 sections below are historical context, not current execution truth.

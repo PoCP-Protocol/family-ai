@@ -1,10 +1,10 @@
-# 34 UI Wide Research to Development Slice 001
+# consumer UI Wide Research to Development Slice 001
 
 ## 1. Research verdict
 
 ```text
 PHASE=WIDE_RESEARCH_TO_DEV_SLICE
-PATH=reports/m2/frontend/34_UI_WIDE_RESEARCH_TO_DEVELOPMENT_SLICE_001.md
+PATH=reports/m2/frontend/CONSUMER_UI_WIDE_RESEARCH_TO_DEVELOPMENT_SLICE_001.md
 UI_SCOPE=UI-01..UI-34
 WIDE_RESEARCH_DONE=YES
 DEV_SLICE_CANDIDATES=4
@@ -34,7 +34,7 @@ FILES_UPDATED=0
 
 外部研究用于**收紧系统边界**而非替代本地业务决定。FTC 指出，当服务收集儿童信息或支持公开发布时，需重视家长同意、持续撤回/删除权和数据保留/删除安排；这支持 Family 的 Consent scope、fail-closed 和社区/媒体 HOLD 原则。[6] Head Start 的资料指出敏感风险/逆境数据只有在具备相应支持体系时才应收集，支持 Assessment 与 Outcome 页面先使用非诊断、最小化、可追溯的数据模型。[7] OWASP 把对象级和属性级授权列为 API 风险，支持每个 Family/Person/Action 都在服务端复验 scope。[8] NIST 的 Privacy Framework 与 AI RMF 分别强调隐私风险管理和可信 AI 风险管理，支持 Model Gateway、Adapter、Human Gate、Audit 的分层。[9] [10]
 
-## 3. 34 UI product-system layers
+## 3. consumer UI product-system layers
 
 | Product layer | UI IDs | Primary user outcome | System boundary |
 |---|---|---|---|
@@ -253,7 +253,7 @@ This next task is intentionally narrow: it converts the selected recommendation 
 
 ## 11. References
 
-[1] `reports/m2/frontend/PHASE_C_34_UI_COVERAGE_SUMMARY_001.md` (Phase C coverage, commit `7c4489f1a5be779e4fc935328327a9ca5de5a530`).
+[1] `reports/m2/frontend/PHASE_C_CONSUMER_UI_COVERAGE_SUMMARY_001.md` (Phase C coverage, commit `7c4489f1a5be779e4fc935328327a9ca5de5a530`).
 
 [2] `reports/m2/frontend/PHASE_D_API_CONTRACT_ENTRY_CRITERIA_AND_BLOCKERS_001.md` (Phase D admission draft, commit `4ff407cdec1868c600fc7ef9ac2d6dced9652f0d`).
 

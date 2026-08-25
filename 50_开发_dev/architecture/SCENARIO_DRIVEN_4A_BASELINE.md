@@ -25,10 +25,10 @@
 | --- | --- | --- | --- |
 | 上位方法论 | `10_规格_spec/01_实施方法论/Family_FGAIM_实施方法论_V2.0.md` | S-D-A-O-L、A0+8A、三条成长主线、四大闭环 | 概念权威规格，优先级最高 |
 | 业务对象规格 | `10_规格_spec/03_详细方案/Family_详细实施方案_V2.0.md` | Family → LifeStage → GrowthProfile → GrowthPriority → GrowthJourney → Action → Outcome 主链 | 业务架构与 Ontology 基准 |
-| 三份 PPT | `30_素材_materials/榜样教育/*.pptx`，登记见 `30_素材_materials/PROVENANCE.md` 与 `50_开发_dev/governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` | 产品叙事、场景入口、视觉和闭环输入 | E1 内部材料，只能作为场景/假设/视觉来源，不证明效果 |
-| 34 UI 基线 | `50_开发_dev/governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`、`FAMILY_35UI_RUNTIME_MATRIX_V1.json` | 页面范围、闭环归属、运行状态、Route/Projection/Domain 映射；文件名为历史遗留，内容以 34UI 为准 | UI 是体验基线，不拥有业务真相 |
-| 前后端矩阵 | `50_开发_dev/governance/FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` | 每页后端状态、Gate、Named Action 和下一步 | 文档状态不得高于代码实况 |
-| 对象契约 | `50_开发_dev/governance/FAMILY_34_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md` | Family、NeedInput、NeedSignal、Intent、Decision、Plan、ServiceRecord 等对象边界 | 新字段/API 必须先映射对象，不用页面临时字段绕过 |
+| 三份 PPT | `30_素材_materials/榜样教育/*.pptx`，登记见 `30_素材_materials/PROVENANCE.md` 与 `50_开发_dev/governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` | 产品叙事、场景入口、视觉和闭环输入 | E1 内部材料，只能作为场景/假设/视觉来源，不证明效果 |
+| Consumer UI Baseline | `50_开发_dev/governance/FAMILY_CONSUMER_UI_BASELINE_V1.json` | 页面范围、闭环归属、运行状态、Route/Projection/Domain 映射 | UI 是体验基线，不拥有业务真相 |
+| 前后端矩阵 | `50_开发_dev/governance/FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` | 每页后端状态、Gate、Named Action 和下一步 | 文档状态不得高于代码实况 |
+| 对象契约 | `50_开发_dev/governance/FAMILY_CONSUMER_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md` | Family、NeedInput、NeedSignal、Intent、Decision、Plan、ServiceRecord 等对象边界 | 新字段/API 必须先映射对象，不用页面临时字段绕过 |
 | 波波校长/IP 研究 | `25_研究_research/docs/FAMILI_PRINCIPAL_IP_BLUEPRINT.md` | 家长第二成长、21/90 天陪伴、AI IP 语气与禁区 | E1 假设 + 待外部证据绑定 |
 | 场景库 | `25_研究_research/docs/BOLE_DERIVED_SCENARIO_BANK_V0_1.md` | 手机冲突、顶嘴、厌学、拖拉、父母情绪等痛点 taxonomy | E1 场景候选，不作为专业事实 |
 | 技术架构冻结 | `50_开发_dev/architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md` | 六运行平面、七业务域、六业务循环、控制平面 | 当前执行技术架构 SSOT |
@@ -46,7 +46,7 @@
 ### 3.1 场景识别顺序
 
 1. 从 Family 上位主链识别真实业务对象和阶段: Family、LifeStage、Profile、Priority、Journey、Action、Event、Milestone、Outcome。
-2. 从三份 PPT 和 34 UI 提取用户可见入口、页面闭环、视觉基线和服务承诺。
+2. 从三份 PPT 和当前 consumer UI baseline 提取用户可见入口、页面闭环、视觉基线和服务承诺。
 3. 从家庭教育/家庭成长/榜样教育/波波校长资料提取高频家庭语境、家长心态、服务语言和禁区。
 4. 从现有代码、Runtime Matrix、前后端矩阵校验当前可运行能力，不把目标态写成已完成。
 5. 把场景归并到技术架构冻结的六个业务循环: `GROWTH / PLAN / ASSESSMENT / SERVICE / COMMERCE / COMMUNITY`。

@@ -5,11 +5,11 @@
 | 字段 | 值 |
 |---|---|
 | `PHASE` | `M2_TEST_DATA_SIX_LOOP_INTEGRATION` |
-| `SCOPE` | `Dev 测试数据库 + PostgreSQL 集成测试 + 6 循环边界 + 34 UI / UI-35 回归` |
+| `SCOPE` | `Dev 测试数据库 + PostgreSQL 集成测试 + 6 循环边界 + consumer UI / UI-35 回归` |
 | `DATABASE` | `family_test`（仅测试库） |
 | `PPT_BASELINE_USED` | `PPT-01 榜样教育新商业模式对外宣发PPT_原图版(2)`、`PPT-02 榜样教育战略白皮书_30页演讲汇报版`、`PPT-03 家庭教育大模型平台科技公司项目合作方案` |
 | `LOOP_SOURCE` | `governance/BANGYANG_GROWTH_OPTIMIZATION_CLOSED_LOOP_TRANSCRIPTION_001.md` |
-| `UI_SOURCE` | `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` |
+| `UI_SOURCE` | `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` |
 | `BUSINESS_CODE_SCOPE` | `家庭、成长任务、服务预约、服务记录测试数据与集成验证` |
 | `PRODUCTION_DATA_TOUCHED` | `NO` |
 | `EXTERNAL_EFFECT` | `NO` |
@@ -60,9 +60,9 @@ AI 结构上，本轮验证了事实、观点、推荐和行动分层：成长�
 
 ### References
 
-[1]: ../../governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md "34 UI 与 3 份 PPT 总控交付计划"
+[1]: ../../governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md "consumer UI 与 3 份 PPT 总控交付计划"
 [2]: ../../governance/BANGYANG_GROWTH_OPTIMIZATION_CLOSED_LOOP_TRANSCRIPTION_001.md "增长优化六循环转录"
-[3]: ../../governance/FAMILY_34_UI_EVIDENCE_FIRST_DATA_STRUCTURE_REVISION_BLUEPRINT_V1.md "34 UI 证据优先数据结构蓝图"
+[3]: ../../governance/FAMILY_CONSUMER_UI_EVIDENCE_FIRST_DATA_STRUCTURE_REVISION_BLUEPRINT_V1.md "consumer UI 证据优先数据结构蓝图"
 
 ## 8. 本轮运行证据
 

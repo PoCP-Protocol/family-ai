@@ -12,8 +12,8 @@ Family 是以孩子最佳利益与家庭长期成长为中心的 **AI-native Fam
 
 | 证据来源 | 主要用途 | 不得证明 |
 |---|---|---|
-| `BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` | 34 页 page baseline、原图、控件、布局、验收母版 | 真实服务、真实效果、生产授权 |
-| `BANGYANG_34_UI_SCENARIO_FLOWS_AND_RULES_001.md` | 六条闭环、角色、规则、状态、异常、Mock Action | 真实转化、交易、履约或数据处理结果 |
+| `BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` | 34 页 page baseline、原图、控件、布局、验收母版 | 真实服务、真实效果、生产授权 |
+| `BANGYANG_CONSUMER_UI_SCENARIO_FLOWS_AND_RULES_001.md` | 六条闭环、角色、规则、状态、异常、Mock Action | 真实转化、交易、履约或数据处理结果 |
 | 3 份原素材/历史命名：榜样教育（Bangyang）PPT | App-first 产品定位、能力组合、品牌及服务场景 | 教育效果、模型治理、真实商业能力 |
 | `architecture/FAMILY_PLATFORM_V3_BLUEPRINT.md` | Family scope、Named Action、模块化单体等不变量 | 覆盖产品视觉与交互 SSOT |
 | AI Gate/Eval/Gateway 草案 | 真实 LLM 的边界、拒绝、评测与审计基线 | 自动解冻生产或真实家庭数据处理 |

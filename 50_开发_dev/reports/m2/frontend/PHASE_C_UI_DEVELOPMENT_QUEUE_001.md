@@ -10,7 +10,7 @@ Broad Research → Needs Analysis → BA Design → Visual Baseline → Architec
 
 任何 UI 未完成 Broad Research + Needs Analysis，或缺少可定位 visual baseline、对象/状态边界、Consent/Human Gate、Model Gateway/Ontology Adapter、FE/BE consistency 和截图验收准备时，不得进入 API Contract 或代码。`Recommendation != Decision != Action`；核心状态只能通过 Named Action；External Effect 必须 HOLD。
 
-本队列继承 `FAMILY_34_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md` 的研究门禁。`30_素材_materials` 只读，优先逐页提取文本，不使用 `all_materials.txt`；自家/榜样教育/波波校长材料最高 E1，仅作 Hypothesis/Design Input。
+本队列继承 `FAMILY_CONSUMER_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md` 的研究门禁。`30_素材_materials` 只读，优先逐页提取文本，不使用 `all_materials.txt`；自家/榜样教育/波波校长材料最高 E1，仅作 Hypothesis/Design Input。
 
 ## 2. Batch division
 
@@ -24,7 +24,7 @@ Broad Research → Needs Analysis → BA Design → Visual Baseline → Architec
 | Batch 6 | UI-26~UI-30 | Publish/Dynamic/My Community/Growth Outcomes/Membership 研究和 Human Gate/External Effect gate；已完成 pre-API gate。 |
 | Batch 7 | UI-31~UI-34 | Services/Orders/Profile/Records；已完成 pre-API gate，隐私、订单、导出、客服、通知和 External Effect 保持 HOLD。 |
 
-## 3. 34 UI queue
+## 3. consumer UI queue
 
 `API_CONTRACT_ALLOWED` 和 `CODE_ALLOWED` 只允许在对应逐页 Architect Review 明确 GO 后变为 YES；本队列当前不授予任何页面 API/代码许可。
 
@@ -92,7 +92,7 @@ Batch 3 已创建 UI-11~UI-15 pre-API gate 文档；Batch 4 已创建 UI-16~UI-2
 | AI and ontology boundary | CONSISTENT | AI 只能经 Model Gateway 生成建议、摘要、解释或草稿；Ontology Adapter 只接受批准的 Named Action。 |
 | Safety and consent | CONSISTENT | 儿童敏感信息、诊断暗示、社区风险、真人服务和高风险家庭场景进入 Consent/Human Gate；不允许 Family Total Score 或 Ranking。 |
 | Visual and test evidence | CONSISTENT | UI-01~UI-34 均为 `RUNTIME_SCREENSHOT_READY=NO`、`PIXEL_DIFF_READY=NO`；不能声称已完成视觉 diff。 |
-| Development admission | CONSISTENT | 当前 34 UI 的 `API_CONTRACT_ALLOWED=NO`、`CODE_ALLOWED=NO`；Batch 5 不例外。 |
+| Development admission | CONSISTENT | 当前 consumer UI 的 `API_CONTRACT_ALLOWED=NO`、`CODE_ALLOWED=NO`；Batch 5 不例外。 |
 
 ### Normalization findings
 
@@ -120,8 +120,8 @@ Batch 3 已创建 UI-11~UI-15 pre-API gate 文档；Batch 4 已创建 UI-16~UI-2
 
 ## 10. References
 
-- `reports/m2/frontend/FAMILY_34_UI_DEVELOPMENT_LEDGER_001.md`
-- `reports/m2/frontend/34_UI_SHARED_RESEARCH_AND_NEEDS_ANALYSIS_001.md`
-- `reports/m2/frontend/FAMILY_34_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md`
+- `reports/m2/frontend/FAMILY_CONSUMER_UI_DEVELOPMENT_LEDGER_001.md`
+- `reports/m2/frontend/CONSUMER_UI_SHARED_RESEARCH_AND_NEEDS_ANALYSIS_001.md`
+- `reports/m2/frontend/FAMILY_CONSUMER_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md`
 - `reports/m2/frontend/UI-01_ARCHITECT_REVIEW_AND_BLOCKING_QUESTIONS_001.md`
 - `reports/m2/frontend/UI-05_BLOCKING_QUESTIONS_DECISION_PACK_001.md`

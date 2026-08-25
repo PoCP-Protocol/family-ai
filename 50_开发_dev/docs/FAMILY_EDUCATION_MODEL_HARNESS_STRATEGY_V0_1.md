@@ -91,7 +91,7 @@ Model capability layer
   - Model Gateway structured generation
         ↓
 Family Growth Platform
-  - UI-01..UI-35 baseline experiences
+  - UI-01..UI-34 baseline experiences
   - assessment, report, journey, action, service, community, commerce surfaces
 ```
 
@@ -116,7 +116,7 @@ Phase C: Model component composition
 
 - Add item bank registry.
 - Add interpretation schema.
-- Bind UI-01..UI-35 to model components.
+- Bind UI-01..UI-34 to model components.
 - Ensure each UI's visible capability has a model component, data contract, policy boundary, and evaluation route.
 
 Phase D: Small-model and retrieval path
@@ -133,7 +133,7 @@ Phase D: Small-model and retrieval path
 | Fast generation creates low-quality registries | Require schema validation, source refs, review reports, and golden scenarios |
 | Generic LLM output bypasses safety | Model Gateway, structured output, policy, Human Gate, Named Action |
 | Model learns from noisy product behavior | Outcome signals and expert labels are separated from raw behavior |
-| UI expands faster than model foundation | UI-01..UI-35 bind to model components before new product expansion |
+| UI expands faster than model foundation | UI-01..UI-34 bind to model components before new product expansion |
 | Small model overclaims ability | Model card, eval report, bounded use case, rollback strategy |
 
 ## 8. Bottom Line
@@ -147,7 +147,7 @@ Adopt mature harness and tooling
   + self-build Family education domain intelligence
   + validate everything through schemas and evaluation
   + expose capabilities through model components
-  + compose the 35 UI baseline on top of the model foundation
+  + compose the consumer UI baseline on top of the model foundation
 ```
 
 This gives Family speed, quality control, and long-term defensibility.

@@ -114,7 +114,7 @@ export default function FamilyAssessmentResultScreen() {
         </View>
 
         <Pressable onPress={() => router.push("/ui/UI-03" as Href)} style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
-          <IconSymbol name="sparkles" size={18} color="#FFFFFF" />
+          <IconSymbol name="star.fill" size={18} color="#FFFFFF" />
           <Text style={styles.primaryButtonText}>升级到 AI 成长诊断，看更完整的分析</Text>
         </Pressable>
         <Pressable onPress={() => router.replace("/ui/UI-02" as Href)} style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}>

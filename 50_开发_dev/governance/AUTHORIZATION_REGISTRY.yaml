@@ -472,3 +472,44 @@ capabilities:
     authorized_at: "2026-08-16"
     supersedes: []
     notes: "仅输出材料-功能-治理边界-实施顺序映射与 App Gate 草案。两份自家 PPT 证据等级上限 E1，不证明效果或治理结论；不得改业务代码、DTO/API/数据库，不启动 HOME 或移动端 runtime。"
+
+  - capability_id: G1B_21DAY_CURRICULUM_AI_SUBSYSTEM_INTERNAL
+    stage: G1-B
+    status: INTERNAL_LOCAL_ALLOWED
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: family-chief-architect
+    authorization_ref: "Conversation authorization 2026-08-25: 总架构师确认授权新增 21 天挑战营课程体系 AI 子系统受限能力"
+    authorized_at: "2026-08-25"
+    supersedes: []
+    scope:
+      surfaces:
+        - UI-01
+        - UI-09
+        - UI-14
+        - UI-31
+        - UI-34
+      flow_refs:
+        - CHALLENGE_21_CURRICULUM_DRAFT
+      runtime_package: '@family/program-runtime'
+      contracts_extended:
+        - DevAiCurriculumDraft
+        - DevAiCurriculumDayDraft
+      program_ref: communication-21day
+      db_migration_authorized: single-pass-review   # 允许新增一次持久化 migration,须单独走 migration 审批
+      bole_ai_import_authorized: adapter-contract-only  # 仅允许经 integrations/contracts/ADAPTER_CONTRACT.md 的 Raw DTO→Adapter→Canonical DTO→人工审批链路
+    constraints:
+      db_schema_change_authorized: true   # 仅限本 capability 声明的单次课程草稿持久化,不得扩展到其他域
+      direct_provider_call_authorized: false
+      client_direct_model_call_authorized: false
+      canonical_state_mutation_by_model_authorized: false
+      ai_autonomous_publish_or_assign_authorized: false   # AI 不得自主发布/分配课程
+      consumer_ui_baseline_change_authorized: false       # 不得新增/改变 UI-01..UI-34 基线
+      camp21_frozen_surfaces_reactivation_authorized: false  # 不得触及 harness:camp21-ui / factory:camp21(见 FAMILY_SUBTRACTIVE_FREEZE_V1.json)
+      bole_ai_direct_ontology_write_authorized: false
+      real_keys_in_repo_authorized: false
+    notes: 21 天挑战营课程体系 AI 子系统:基于既有 DevAiCurriculumDraft/communication-21day Program 结构扩展本土课程草稿能力;允许一次持久化 migration 审批与经 Adapter 契约正式导入 Bole.AI 蒸馏数据作为课程设计输入(证据等级上限 E1,仅供 scenario/style/topic 候选,不得作为专业事实或效果证明);课程内容保持 SYNTHETIC_RULE_BASED_DRAFT / model_gateway_status=NOOP_NOT_INVOKED,发布/分配/定价前必须 Human Gate 人工评审;不得复活已冻结的 camp21-ui harness 或 factory:camp21;不得改变 UI-01..UI-34 消费端基线。

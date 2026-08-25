@@ -17,7 +17,7 @@ const bearerToken = window.sessionStorage.getItem('family-ui01-ui09-synthetic-be
 const isDevTestRuntime = searchParams.get('runtime') === 'dev-test' && Boolean(bearerToken);
 
 /**
- * 家庭门户复用现有 35 UI Web 流程、Family API 与已注册的 Dev/Test 受控命令。
+ * 家庭门户复用现有 legacy UI Web 流程、Family API 与已注册的 Dev/Test 受控命令。
  * 无会话时只展示页面基线；有会话且显式进入 Dev/Test 时才读取/写入受控测试数据。
  */
 function mountFamilyPortal() {

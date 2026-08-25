@@ -1,5 +1,5 @@
 /**
- * FAMILY 34-UI canonical product/runtime vocabulary.
+ * Family consumer UI baseline canonical product/runtime vocabulary.
  *
  * UI owns presentation/projection needs; Domain owns canonical truth.
  * V4.1 canonical business loops, domains, and scenario-driven 4A mappings are defined here.
@@ -109,7 +109,7 @@ export interface FamilyScenario4AMapping {
   forbidden_shortcuts: string[];
 }
 
-export const FAMILY_34UI_SCENARIO_4A_MAPPING: readonly FamilyScenario4AMapping[] = [
+export const FAMILY_CONSUMER_UI_SCENARIO_4A_MAPPING: readonly FamilyScenario4AMapping[] = [
   {
     scenario_id: 'SCENE-01_FAMILY_ENTRY_NOW',
     title: 'Family entry and FamilyNow',

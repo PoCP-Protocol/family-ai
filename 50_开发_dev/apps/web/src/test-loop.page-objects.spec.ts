@@ -860,7 +860,7 @@ describe('UI-11~UI-34 DEV Platform Surfaces projection', () => {
 });
 
 
-describe('Family 34 UI route coverage', () => {
+describe('Family consumer UI route coverage', () => {
   it('renders every manifest route in baseline mode without implicit API calls', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

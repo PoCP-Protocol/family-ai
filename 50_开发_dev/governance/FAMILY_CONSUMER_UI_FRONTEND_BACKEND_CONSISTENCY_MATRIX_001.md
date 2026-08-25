@@ -62,7 +62,7 @@
 
 ## 对象结构基线
 
-本矩阵的对象、关系、DTO、状态上限、来源/可见性、审计字段和 LLM Context 统一以 [`FAMILY_34_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md`](./FAMILY_34_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md) 为配套契约。任何新增 UI 字段、API 字段或数据库列必须先映射到该对象模型；不能以页面临时字段绕过对象关系与 family scope。
+本矩阵的对象、关系、DTO、状态上限、来源/可见性、审计字段和 LLM Context 统一以 [`FAMILY_CONSUMER_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md`](./FAMILY_CONSUMER_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md) 为配套契约。任何新增 UI 字段、API 字段或数据库列必须先映射到该对象模型；不能以页面临时字段绕过对象关系与 family scope。
 
 ## Phase 2 对象链实现记录（DEV/TEST）
 

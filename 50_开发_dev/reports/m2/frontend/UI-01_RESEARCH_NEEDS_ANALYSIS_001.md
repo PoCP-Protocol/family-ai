@@ -21,15 +21,15 @@ Broad Research → Needs Analysis → BA Design → Visual Baseline → Contract
 | Source | 用途 | 证据边界 |
 |---|---|---|
 | `apps/web/public/bangyang-reference/ui18/core-01-home.png` | UI-01 单图视觉基线，239×664 | 只证明可见画面结构、文案、图像、颜色、间距意图和热点，不证明后台能力。 |
-| `FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md` | global_ui_id、业务域、PPT/单图映射 | 只证明页面映射与当前校准状态，不证明代码已实现。 |
+| `FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md` | global_ui_id、业务域、PPT/单图映射 | 只证明页面映射与当前校准状态，不证明代码已实现。 |
 | `UI01_FULL_EXPOSURE_SUBSYSTEM_DECOMPOSITION_001.md` | UI-01 46 个 Exposure Point、首页血缘和共享子系统方法 | 作为 UI-01 研究模板与既有血缘来源；不把内部分析当外部事实。 |
-| `FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md` | UI-01 上下游、对象、API/Agent/Adapter 候选 | 作为研究候选和边界输入，不等于已实现能力。 |
+| `FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md` | UI-01 上下游、对象、API/Agent/Adapter 候选 | 作为研究候选和边界输入，不等于已实现能力。 |
 | `30_素材_materials/_extracted/逐页文本_含页码/01_新商业模式对外宣发.txt` | 家庭成长平台、父母第二成长、AI/顾问/社群/活动等业务假设 | 自家材料最高 E1，只能形成假设和设计素材，不能自证效果、诊断、资质或因果。 |
 | `30_素材_materials/_extracted/逐页文本_含页码/02_战略白皮书30页.txt` | 家庭关系、陪伴缺口、从课程到家庭成长和行为记录的业务假设 | 自家材料最高 E1；不能证明市场事实、教育效果或生产事实。 |
 | `30_素材_materials/_extracted/逐页文本_含页码/03_家庭教育大模型平台合作方案.txt` | 家庭教育对象、AI 边界和平台设计假设 | 自家材料最高 E1；只能作为需求假设和设计输入。 |
-| `governance/FAMILY_34_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md` | Family、Person、Need、Evidence、Consent、Decision、Plan 等对象边界 | 工程治理 SSOT；仍需与实际代码/契约核对。 |
-| `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` | UI-01 projection、Named Action 和动态等级候选 | 只作为治理映射，不代表已批准 API。 |
-| `governance/FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` | 前后端一致性和验收门禁 | 只作为准入规则，不代表当前页面已经一致。 |
+| `governance/FAMILY_CONSUMER_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md` | Family、Person、Need、Evidence、Consent、Decision、Plan 等对象边界 | 工程治理 SSOT；仍需与实际代码/契约核对。 |
+| `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` | UI-01 projection、Named Action 和动态等级候选 | 只作为治理映射，不代表已批准 API。 |
+| `governance/FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` | 前后端一致性和验收门禁 | 只作为准入规则，不代表当前页面已经一致。 |
 
 严格遵守：`30_素材_materials` 只读；优先使用 `_extracted/逐页文本_含页码/`；不使用 `all_materials.txt`。
 
@@ -137,13 +137,13 @@ Architect Review
 ## References
 
 [1]: `apps/web/public/bangyang-reference/ui18/core-01-home.png`
-[2]: `reports/m2/frontend/FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
+[2]: `reports/m2/frontend/FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
 [3]: `reports/m2/frontend/UI01_FULL_EXPOSURE_SUBSYSTEM_DECOMPOSITION_001.md`
-[4]: `reports/m2/frontend/FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md`
+[4]: `reports/m2/frontend/FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md`
 [5]: `30_素材_materials/_extracted/逐页文本_含页码/01_新商业模式对外宣发.txt`
 [6]: `30_素材_materials/_extracted/逐页文本_含页码/02_战略白皮书30页.txt`
 [7]: `30_素材_materials/_extracted/逐页文本_含页码/03_家庭教育大模型平台合作方案.txt`
-[8]: `governance/FAMILY_34_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md`
-[9]: `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
+[8]: `governance/FAMILY_CONSUMER_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md`
+[9]: `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
 
 **UI01_RESEARCH_NEEDS_ANALYSIS_READY** `reports/m2/frontend/UI-01_RESEARCH_NEEDS_ANALYSIS_001.md`

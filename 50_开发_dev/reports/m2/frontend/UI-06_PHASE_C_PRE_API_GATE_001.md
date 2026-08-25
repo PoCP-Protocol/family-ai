@@ -6,7 +6,7 @@ UI-06 是 UI-05 90 天计划之后的陪跑服务/社群承接页。本文件只
 
 ## Research/Needs Summary
 
-研究范围包括家庭教育中的持续陪伴、家长查看过程记录和安全暂停场景；家长、孩子、老师/教练、顾问、运营和 AI 的职责边界；UI-06 原图与 34 UI baseline；Family SSOT、ServiceJourneyProjection、ServiceOffering、TaskProgress、Community/LiveSession；Consent、Human Gate、Model Gateway、Ontology Adapter、审计和前后端一致性。家庭陪伴有效、完成率代表成长效果、真人服务已承诺等只能作为待验证假设。
+研究范围包括家庭教育中的持续陪伴、家长查看过程记录和安全暂停场景；家长、孩子、老师/教练、顾问、运营和 AI 的职责边界；UI-06 原图与 consumer UI baseline；Family SSOT、ServiceJourneyProjection、ServiceOffering、TaskProgress、Community/LiveSession；Consent、Human Gate、Model Gateway、Ontology Adapter、审计和前后端一致性。家庭陪伴有效、完成率代表成长效果、真人服务已承诺等只能作为待验证假设。
 
 Needs Analysis 必须拆分 User Need（查看家庭私有陪跑过程和下一步）、Business Need（承接成长服务而非制造效果承诺）、Operational Need（投影来源、版本、可见范围、暂停/回顾）、Compliance Need（儿童数据、Consent、真人服务和外发边界）、Data Need（Family/Person/Journey/Task/Service/Reflection/Evidence 来源）、AI Need（仅解释、提醒草稿和安全停止，经 Model Gateway）。Fact、Perspective、Hypothesis、Recommendation、Decision、Action 不得混用。
 

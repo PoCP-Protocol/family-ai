@@ -26,6 +26,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-family}:${POSTGRES_PASSWORD:-family_dev_only}@postgres:5432/${POSTGRES_DB:-family_dev}
       MODEL_GATEWAY_MODE: ${MODEL_GATEWAY_MODE:-NOOP}
       EXTERNAL_EFFECTS_ENABLED: ${EXTERNAL_EFFECTS_ENABLED:-false}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8081,http://localhost:5173,http://127.0.0.1:8081}
     volumes:
       - ./50_开发_dev:/workspace
       - family_ai_dev_node_modules:/workspace/node_modules

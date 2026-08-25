@@ -442,7 +442,7 @@ G4   Assessment + AI诊断       ← first real AI business vertical slice
 G5   Growth Journey
 G6   Resource Network + Service OS + Commerce/Entitlement
 G7   Content + Community
-G8   34UI cross-loop full E2E
+G8   Consumer UI baseline cross-loop full E2E
 ```
 
 No G2+ business/runtime capability is authorized by this document alone.

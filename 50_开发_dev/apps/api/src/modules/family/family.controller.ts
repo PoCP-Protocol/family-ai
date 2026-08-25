@@ -145,6 +145,23 @@ export class FamilyController {
   }
 
   @RequireFamilyAction('ReadFamily')
+  @Post(':familyId/assessments/:sessionId/growth-hypothesis')
+  async generateGrowthHypothesis(
+    @Param('familyId') familyId: string,
+    @Param('sessionId') sessionId: string,
+    @ActorId() actorId: string,
+    @FamilyContext() familyContext: { tenantId: string; familyId: string; personId: string } | undefined,
+    @Headers('x-correlation-id') correlationId?: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-source') source?: string,
+  ) {
+    if (!isUuid(familyId)) throw new BadRequestException('Invalid family_id');
+    if (!isUuid(sessionId)) throw new BadRequestException('Invalid assessment_session_id');
+    if (!actorId || !familyContext || familyContext.familyId !== familyId) throw new UnauthorizedException('real_family_session_required');
+    return this.growthHypothesisService.generate(familyId, familyContext.tenantId, familyContext.personId, sessionId, mutationMeta(correlationId, idempotencyKey, source));
+  }
+
+  @RequireFamilyAction('ReadFamily')
   @Get(':familyId/ui/03/growth-hypothesis')
   async growthHypothesis(
     @Param('familyId') familyId: string,

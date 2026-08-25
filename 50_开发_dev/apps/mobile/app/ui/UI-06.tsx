@@ -79,7 +79,7 @@ export default function MyMembershipScreen() {
 
             <View style={styles.memberCard}>
               <View style={styles.memberHead}>
-                <View style={styles.avatar}><IconSymbol name="person.crop.circle.fill" size={58} color="#FFFFFF" /></View>
+                <View style={styles.avatar}><IconSymbol name="person.crop.circle.fill" size={58} color="#09295A" /></View>
                 <View style={styles.memberIdentity}>
                   <View style={styles.nameRow}><Text style={styles.memberName}>乐乐妈妈</Text><Text style={styles.memberBadge}>{summary.memberLabel}</Text></View>
                   <Text style={styles.memberDays}>{summary.companionDays}</Text>
@@ -140,18 +140,18 @@ const styles = StyleSheet.create({
   topActions: { width: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   more: { color: "#20242A", fontSize: 17, lineHeight: 20, fontWeight: "900", letterSpacing: 1 },
   topCircle: { color: "#20242A", fontSize: 25, lineHeight: 25 },
-  memberCard: { marginHorizontal: 17, minHeight: 211, borderRadius: 17, padding: 20, backgroundColor: "#092F76" },
+  memberCard: { marginHorizontal: 17, minHeight: 211, borderRadius: 17, padding: 20, backgroundColor: "#E8F2FF" },
   memberHead: { flexDirection: "row", alignItems: "center" },
-  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#FFFFFF22", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   memberIdentity: { flex: 1, marginLeft: 12, gap: 4 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 7 },
-  memberName: { color: "#FFFFFF", fontSize: 21, lineHeight: 28, fontWeight: "900" },
+  memberName: { color: "#09295A", fontSize: 21, lineHeight: 28, fontWeight: "900" },
   memberBadge: { color: "#8C5410", backgroundColor: "#F5D78D", borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2, fontSize: 11, lineHeight: 16, fontWeight: "900" },
-  memberDays: { color: "#D5E2FA", fontSize: 13, lineHeight: 19, fontWeight: "700" },
+  memberDays: { color: "#5B7091", fontSize: 13, lineHeight: 19, fontWeight: "700" },
   memberStats: { marginTop: 35, flexDirection: "row", justifyContent: "space-between" },
   memberStat: { minWidth: 76, alignItems: "center", gap: 3 },
-  memberStatLabel: { color: "#9FBAE9", fontSize: 12, lineHeight: 17 },
-  memberStatValue: { color: "#FFFFFF", fontSize: 23, lineHeight: 29, fontWeight: "900" },
+  memberStatLabel: { color: "#536A8B", fontSize: 12, lineHeight: 17 },
+  memberStatValue: { color: "#09295A", fontSize: 23, lineHeight: 29, fontWeight: "900" },
   inviteCard: { minHeight: 100, marginHorizontal: 17, marginTop: 16, borderRadius: 12, paddingHorizontal: 17, paddingVertical: 15, backgroundColor: "#FFF1D5", flexDirection: "row", alignItems: "center", gap: 10 },
   inviteCopy: { flex: 1, gap: 5 },
   inviteTitle: { color: "#4B3A24", fontSize: 16, lineHeight: 22, fontWeight: "900" },
@@ -163,10 +163,10 @@ const styles = StyleSheet.create({
   menuRow: { minHeight: 57, marginHorizontal: 17, paddingHorizontal: 11, flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "#F0F2F4" },
   menuIcon: { width: 31, alignItems: "center" },
   menuLabel: { flex: 1, marginLeft: 9, color: "#3B4149", fontSize: 15, lineHeight: 21, fontWeight: "700" },
-  annualCard: { minHeight: 171, marginHorizontal: 17, marginTop: 21, borderRadius: 16, overflow: "hidden", paddingLeft: 27, paddingRight: 16, paddingVertical: 23, backgroundColor: "#202738", flexDirection: "row", alignItems: "center" },
+  annualCard: { minHeight: 171, marginHorizontal: 17, marginTop: 21, borderRadius: 16, overflow: "hidden", paddingLeft: 27, paddingRight: 16, paddingVertical: 23, backgroundColor: "#FFF6DF", flexDirection: "row", alignItems: "center" },
   annualCopy: { flex: 1, gap: 8 },
-  annualTitle: { color: "#F8D778", fontSize: 23, lineHeight: 31, fontWeight: "900" },
-  annualDate: { color: "#E5E7EB", fontSize: 13, lineHeight: 19, fontWeight: "700" },
+  annualTitle: { color: "#6C4B00", fontSize: 23, lineHeight: 31, fontWeight: "900" },
+  annualDate: { color: "#7B6848", fontSize: 13, lineHeight: 19, fontWeight: "700" },
   benefitButton: { alignSelf: "flex-start", minWidth: 86, minHeight: 35, marginTop: 4, borderRadius: 18, backgroundColor: "#F6DB8B", alignItems: "center", justifyContent: "center" },
   benefitButtonText: { color: "#2D2730", fontSize: 13, lineHeight: 18, fontWeight: "900" },
   crownPanel: { width: 105, alignItems: "center", justifyContent: "center" },

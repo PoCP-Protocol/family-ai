@@ -5,7 +5,7 @@ import process from 'node:process';
 
 const root = process.cwd();
 const strictRuntime = process.argv.includes('--strict-runtime');
-const matrixPath = path.join(root, 'governance', 'FAMILY_35UI_RUNTIME_MATRIX_V1.json');
+const matrixPath = path.join(root, 'governance', 'FAMILY_CONSUMER_UI_BASELINE_V1.json');
 const invariantsPath = path.join(root, 'governance', 'FAMILY_ARCHITECTURE_INVARIANTS_V4_1.json');
 const mobileRuntimeBoundaryPath = path.join(root, 'governance', 'FAMILY_MOBILE_RUNTIME_BOUNDARY_V1.json');
 const mobileRegistryPath = path.join(root, 'apps', 'mobile', 'lib', 'family', 'ui-registry.ts');
@@ -172,7 +172,7 @@ if (strictRuntime) assertMobileRuntimeBoundary();
 
 const domainCounts = {};
 for (const s of matrix.screens) domainCounts[s.primary_domain] = (domainCounts[s.primary_domain] || 0) + 1;
-console.log('FAMILY_34UI_BASELINE_GATE_V1');
+console.log('FAMILY_CONSUMER_UI_BASELINE_GATE_V1');
 console.log(`screens=${ids.length}`);
 console.log(`strict_runtime=${strictRuntime ? 'YES' : 'NO'}`);
 console.log(`domains=${JSON.stringify(domainCounts)}`);
@@ -186,5 +186,5 @@ function finish() {
     for (const error of errors) console.error(`- ${error}`);
     process.exit(1);
   }
-  console.log('PASS: structural 34-UI baseline alignment');
+  console.log('PASS: structural consumer UI baseline alignment');
 }

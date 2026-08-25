@@ -1,6 +1,6 @@
-# Family 34 UI × 功能点拆解全面复核
+# Family consumer UI × 功能点拆解全面复核
 
-> **复核性质：** 只读复核报告。依据 `FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md`、`FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md`、`UI01_FULL_EXPOSURE_SUBSYSTEM_DECOMPOSITION_001.md`、`UI04_UI10_PPT06_PPT08_VISUAL_GAP_ANALYSIS_001.md` 与 `F06_F09_UI_NOTES.md` 进行，不代表新增代码实现。
+> **复核性质：** 只读复核报告。依据 `FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md`、`FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md`、`UI01_FULL_EXPOSURE_SUBSYSTEM_DECOMPOSITION_001.md`、`UI04_UI10_PPT06_PPT08_VISUAL_GAP_ANALYSIS_001.md` 与 `F06_F09_UI_NOTES.md` 进行，不代表新增代码实现。
 >
 > **总 verdict：** `CONDITIONALLY_READY_FOR_NEXT_SLICE`。34 页 A 层覆盖和关键字段完整，可以进入后续开发排期；但不能把全量台账直接视为“34 页都已动态实现”。UI-02/UI-03 仍有基线裁定项；Page Lineage Graph 存在少量表格与图形不完全对称的关系；UI-11、UI-21、UI-26、UI-28、UI-32 等页面的外部 effect 必须继续停在 HOLD；UI-05、UI-09、UI-19 是最适合率先进入纵切开发的页面。
 
@@ -23,7 +23,7 @@
 | UI-05 状态机 | 存在 | 通过；需保持 plan_draft 上限 |
 | plan_draft → FamilyDecision → Named Action | 存在 | 通过；后续实现仍需契约和审计证据 |
 
-## 3. 34 UI 逐页复核表
+## 3. consumer UI 逐页复核表
 
 `Completeness` 关注字段是否齐全；`Feature quality` 关注摘要是否足以拆开发任务；`Lineage review` 关注上下游是否能进入统一链路；`Boundary review` 关注写入上限与动作候选是否匹配。`PASS` 代表当前台账足够进入排期，`REVIEW` 代表需要补证据、关系或安全契约后再进入实现。
 
@@ -174,8 +174,8 @@ A 层 34 行字段没有发现空字段、过短摘要或只写标题的页面�
 
 ## References
 
-[1]: `FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md` — 34 UI 全量功能与血缘台账。
-[2]: `FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md` — global UI、单图和 PPT crosswalk。
+[1]: `FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md` — consumer UI 全量功能与血缘台账。
+[2]: `FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md` — global UI、单图和 PPT crosswalk。
 [3]: `UI01_FULL_EXPOSURE_SUBSYSTEM_DECOMPOSITION_001.md` — UI-01 方法、首页暴露点和既有血缘。
 [4]: `UI04_UI10_PPT06_PPT08_VISUAL_GAP_ANALYSIS_001.md` — UI-04~UI-10 PPT6/PPT8 视觉与业务边界。
 [5]: `F06_F09_UI_NOTES.md` — F06~F09 API、Named Action 和状态边界记录。
@@ -243,4 +243,4 @@ A 层 34 行字段没有发现空字段、过短摘要或只写标题的页面�
 
 因此本报告的开发门禁从原来的 `CONDITIONALLY_READY_FOR_NEXT_SLICE` 收紧为：`READY_FOR_EVIDENCE_GATED_SLICING`。允许继续做证据明确、L1/L2 受控的 UI-19/UI-05/UI-09 纵切；不允许因为本表存在就打开 Ranking、支付、预约、发布、分享、通知、视频或真人服务。
 
-**FAMILY_34_UI_FEATURE_REVIEW_READY** `reports/m2/frontend/FAMILY_34_UI_FEATURE_REVIEW_001.md`
+**FAMILY_CONSUMER_UI_FEATURE_REVIEW_READY** `reports/m2/frontend/FAMILY_CONSUMER_UI_FEATURE_REVIEW_001.md`

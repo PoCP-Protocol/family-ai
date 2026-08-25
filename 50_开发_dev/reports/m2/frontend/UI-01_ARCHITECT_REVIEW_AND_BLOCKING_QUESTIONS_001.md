@@ -13,11 +13,11 @@
 | `reports/m2/frontend/UI-01_RESEARCH_NEEDS_ANALYSIS_001.md` | 研究证据、需求分类、对象候选和当前准入结论。 |
 | `reports/m2/frontend/UI-01_BA_DESIGN_AND_VISUAL_FIDELITY_BRIEF_001.md` | BA 对象、状态机、只读投影、候选动作和视觉验收。 |
 | `apps/web/public/bangyang-reference/ui18/core-01-home.png` | UI-01 visual baseline；只证明可见画面和交互热点。 |
-| `FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md` | global UI 映射和基线校准状态。 |
+| `FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md` | global UI 映射和基线校准状态。 |
 | `UI01_FULL_EXPOSURE_SUBSYSTEM_DECOMPOSITION_001.md` | UI-01 46 个暴露点及共享子系统拆解。 |
-| `FAMILY_34_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md` | Family、Person、Need、Evidence、Decision、Plan 等对象边界。 |
-| `FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` | UI-01 投影和动作候选的治理映射。 |
-| `FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` | DTO、fixture、policy、audit、browser 验收门禁。 |
+| `FAMILY_CONSUMER_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md` | Family、Person、Need、Evidence、Decision、Plan 等对象边界。 |
+| `FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` | UI-01 投影和动作候选的治理映射。 |
+| `FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` | DTO、fixture、policy、audit、browser 验收门禁。 |
 | `30_素材_materials/_extracted/逐页文本_含页码/` | 家庭教育和业务假设研究输入；只读、优先逐页文本，不使用 `all_materials.txt`。 |
 
 自家、榜样教育、波波校长和内部战略材料最高按 E1 使用，只能形成假设和设计素材，不能自证效果、诊断、资质、市场事实或因果关系。
@@ -239,9 +239,9 @@ CODE_ALLOWED=NO
 [2]: `reports/m2/frontend/UI-01_BA_DESIGN_AND_VISUAL_FIDELITY_BRIEF_001.md`
 [3]: `apps/web/public/bangyang-reference/ui18/core-01-home.png`
 [4]: `reports/m2/frontend/UI01_FULL_EXPOSURE_SUBSYSTEM_DECOMPOSITION_001.md`
-[5]: `reports/m2/frontend/FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
-[6]: `governance/FAMILY_34_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md`
-[7]: `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
-[8]: `governance/FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md`
+[5]: `reports/m2/frontend/FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
+[6]: `governance/FAMILY_CONSUMER_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md`
+[7]: `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
+[8]: `governance/FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md`
 
 **UI01_ARCHITECT_REVIEW_AND_BLOCKING_QUESTIONS_READY** `reports/m2/frontend/UI-01_ARCHITECT_REVIEW_AND_BLOCKING_QUESTIONS_001.md`

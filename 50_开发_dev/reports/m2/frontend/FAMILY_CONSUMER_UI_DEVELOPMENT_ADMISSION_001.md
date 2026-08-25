@@ -1,18 +1,18 @@
-# Family 34 UI Development Admission Package
+# Family consumer UI Development Admission Package
 
-> **范围：** 本包只做开发准入判断，不启动 34 UI 全量开发，不修改业务代码，不创建 API/DB/Agent 实现。
+> **范围：** 本包只做开发准入判断，不启动 consumer UI 全量开发，不修改业务代码，不创建 API/DB/Agent 实现。
 >
-> **总 verdict：** `NOT_READY_FOR_34_UI_FULL_DEVELOPMENT / READY_FOR_SINGLE_VERTICAL_SLICE`
+> **总 verdict：** `NOT_READY_FOR_CONSUMER_UI_FULL_DEVELOPMENT / READY_FOR_SINGLE_VERTICAL_SLICE`
 >
 > **核心判断：** 34 页已经形成覆盖台账，但 UI-01~UI-12 的 image-to-UI 映射闭包仍需人工确认，多个页面的视觉暴露点尚未转化为完整状态机和契约。因此不准入 34 页并行开发；只批准 **UI-05 90 天成长方案的单一受控纵切任务草案**进入下一阶段设计/实现准备。
 
 ## 1. 准入依据与禁止事项
 
-本包引用 `FAMILY_34_UI_FEATURE_REVIEW_001.md` 的逐页纠偏表。该表已对每页列出可见暴露点、旧台账遗漏、血缘影响、工程边界影响和下一步动作。`READY_FOR_DEV` 只表示该页面具备进入单独 L1/L2 slice 设计的条件，不表示页面已有代码或可以启动外部 effect。
+本包引用 `FAMILY_CONSUMER_UI_FEATURE_REVIEW_001.md` 的逐页纠偏表。该表已对每页列出可见暴露点、旧台账遗漏、血缘影响、工程边界影响和下一步动作。`READY_FOR_DEV` 只表示该页面具备进入单独 L1/L2 slice 设计的条件，不表示页面已有代码或可以启动外部 effect。
 
 以下能力在所有分组中继续禁止：AI 直接写核心 Ontology；Recommendation 直接变成 Decision 或 Action；页面点击直接创建 Journey/Task/Intervention；无 Consent、Tenant/Family scope 或 Human Gate 时继续执行；排名、家庭 Total Score、支付、真实预约、通知、外发分享、直播、视频、提现和真人联系。
 
-## 2. 34 UI 主要准入分组
+## 2. consumer UI 主要准入分组
 
 | admission_group | UI 数量 | UI IDs | 说明 |
 |---|---:|---|---|
@@ -88,17 +88,17 @@ UI-05 比 UI-09 和 UI-19 更适合作为首个纵切，不是因为它风险更
 | UI-09 | 有既有 action/API 经验，可验证任务完成。 | 容易把“完成今日任务”误做 Outcome；依赖 UI-05 计划版本和 Task runtime。 |
 | UI-19 | 已有独立 staged L1 供给切片，风险边界清楚。 | 更偏只读 projection，不能验证从 AI recommendation 到家庭 decision 的核心控制链。 |
 
-### 5.2 34 UI 全量开发门禁
+### 5.2 consumer UI 全量开发门禁
 
-当前结论不是 `READY_FOR_34_UI_FULL_DEVELOPMENT`。只有在 UI-01~UI-12 image-to-UI 人工确认、UI-03 粒度冲突裁定、UI-05 纵切通过 API/DB/Web/负向权限/状态机测试后，才重新评估是否开放第二个纵切。其余页面必须按本准入分组逐步放行，不能因为已有一行台账就进入全量开发。
+当前结论不是 `READY_FOR_CONSUMER_UI_FULL_DEVELOPMENT`。只有在 UI-01~UI-12 image-to-UI 人工确认、UI-03 粒度冲突裁定、UI-05 纵切通过 API/DB/Web/负向权限/状态机测试后，才重新评估是否开放第二个纵切。其余页面必须按本准入分组逐步放行，不能因为已有一行台账就进入全量开发。
 
-**FAMILY_34_UI_DEVELOPMENT_ADMISSION_READY** `reports/m2/frontend/FAMILY_34_UI_DEVELOPMENT_ADMISSION_001.md`
+**FAMILY_CONSUMER_UI_DEVELOPMENT_ADMISSION_READY** `reports/m2/frontend/FAMILY_CONSUMER_UI_DEVELOPMENT_ADMISSION_001.md`
 
 ## References
 
-[1]: `FAMILY_34_UI_FEATURE_REVIEW_001.md` — 34 UI 逐页视觉暴露点复核、遗漏、血缘和工程边界。
-[2]: `FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md` — 34 UI 全量功能与血缘总台账。
-[3]: `FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md` — global UI、单图和 PPT crosswalk。
+[1]: `FAMILY_CONSUMER_UI_FEATURE_REVIEW_001.md` — consumer UI 逐页视觉暴露点复核、遗漏、血缘和工程边界。
+[2]: `FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md` — consumer UI 全量功能与血缘总台账。
+[3]: `FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md` — global UI、单图和 PPT crosswalk。
 
 
 ## Visual Fidelity Gate（硬门禁）
@@ -120,4 +120,4 @@ Manus 后续开发任何 UI，必须完整复刻用户提供的 UI 画面。这�
 
 动态化必须在不破坏原画面可见结构的前提下接入数据、加载态、状态机、Named Action、审计、Consent 和 Human Gate。数据投影、草稿、受控动作和错误处理可以增加实现能力，但不能借此改变原画面的主结构、文案意图、入口位置和可见层级。任何视觉 baseline comparison 未通过的 UI，不得声明为 runtime 完成。
 
-本门禁是 34 UI 后续开发的前置条件，优先级高于 API 接入速度和组件复用速度。
+本门禁是 consumer UI 后续开发的前置条件，优先级高于 API 接入速度和组件复用速度。

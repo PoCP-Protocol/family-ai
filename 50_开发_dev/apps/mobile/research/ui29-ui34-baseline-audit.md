@@ -2,7 +2,7 @@
 
 ## 来源与实施原则
 
-本轮页面严格沿用 `platform-family-growth-vertical-slice-001` 分支中 35 UI 的原始参考图，并以 `design.md`、`lib/family/ui-registry.ts` 和现有 Family API 投影为共同来源。移动端只能做导航、展示、可编辑家庭私有草稿与离线回读适配；不得新建第二套会员、资产、档案或服务业务规则。
+本轮页面严格沿用 `platform-family-growth-vertical-slice-001` 分支中 legacy UI 的原始参考图，并以 `design.md`、`lib/family/ui-registry.ts` 和现有 Family API 投影为共同来源。移动端只能做导航、展示、可编辑家庭私有草稿与离线回读适配；不得新建第二套会员、资产、档案或服务业务规则。
 
 ## UI-29 成长成果
 

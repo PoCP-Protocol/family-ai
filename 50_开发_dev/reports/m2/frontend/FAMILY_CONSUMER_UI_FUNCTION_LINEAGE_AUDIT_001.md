@@ -1,8 +1,8 @@
-# Family 34 UI Function Lineage Audit
+# Family consumer UI Function Lineage Audit
 
 > **交付类型：** 文档级、证据约束的全量功能与血缘台账；不代表 34 页已经完成代码实现。
 >
-> **范围：** UI-01~UI-34。UI-01~UI-04 复用既有递归拆解成果并做来源复核；UI-05~UI-34 以 `FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md` 的 global baseline、PPT/截图 crosswalk 和各页单图可见线索为页面证据。UI-01 拆解报告只作为方法模板与 UI-01 已有血缘来源，不替代 UI-11~UI-34 的页面证据。
+> **范围：** UI-01~UI-34。UI-01~UI-04 复用既有递归拆解成果并做来源复核；UI-05~UI-34 以 `FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md` 的 global baseline、PPT/截图 crosswalk 和各页单图可见线索为页面证据。UI-01 拆解报告只作为方法模板与 UI-01 已有血缘来源，不替代 UI-11~UI-34 的页面证据。
 >
 > **边界：** 视觉线索 ≠ 已实现能力；业务关联 ≠ 视觉复用；Recommendation ≠ Decision ≠ Action；DEV/TEST 可使用 synthetic/mock/stub，但不能把其写成真实 Fact，也不能触发真实预约、通知、支付、外发、直播或其他外部 effect。
 
@@ -24,13 +24,13 @@
 
 | Source ID | 证据文件/来源 | 允许证明的内容 | 不允许证明的内容 |
 |---|---|---|---|
-| E-BASELINE | `FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md` | global_ui_id、canonical title、单图文件名、PPT 场景/局部序号、visual signals、映射状态 | 未实现代码、生产数据、教育效果或真实外部能力 |
+| E-BASELINE | `FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md` | global_ui_id、canonical title、单图文件名、PPT 场景/局部序号、visual signals、映射状态 | 未实现代码、生产数据、教育效果或真实外部能力 |
 | E-UI01 | `UI01_FULL_EXPOSURE_SUBSYSTEM_DECOMPOSITION_001.md` | UI-01 暴露点方法、首页血缘和既有 UI-01~UI-04 拆解摘要 | UI-11~UI-34 的页面证据 |
 | E-PPT68 | `UI04_UI10_PPT06_PPT08_VISUAL_GAP_ANALYSIS_001.md` | UI-04~UI-10 与 PPT 第6/8页的 exact/partial/semantic 关系及差距 | 商城商品转成长事实、报告分数转商业决策 |
 | E-WAVE2 | `F06_F09_UI_NOTES.md` | F06~F09 已有 API/Named Action/状态边界与验证笔记 | 不能替代 UI-11~UI-34 单图视觉证据 |
 | E-REF | `apps/web/public/bangyang-reference/` | 对应单页原图的可见文字和视觉结构 | 页面背后的生产能力或数据事实 |
 
-## 3. A层：34 UI 全量覆盖表
+## 3. A层：consumer UI 全量覆盖表
 
 字段说明：`state_write_upper_bound` 表示本页在当前阶段最多允许写入的状态；`named_action_candidate` 只表示未来需要受控定义的动作候选，不表示已实现或允许执行；`verification_status` 只表示当前证据完整度。
 
@@ -173,13 +173,13 @@ flowchart LR
 
 ## 8. 当前工作区与隔离声明
 
-本轮只创建/更新本报告；没有修改业务代码、数据库、运行时能力，也没有对 UI-19 staged candidate 执行 add、commit 或 push。UI-19 仍作为独立 11 文件候选，不与本报告混合。最终核验应限定在 `reports/m2/frontend`，并检查 `FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_READY`、UI-01/UI-34 行存在、global UI 行数为 34，以及 reports 文档是否进入 staged。
+本轮只创建/更新本报告；没有修改业务代码、数据库、运行时能力，也没有对 UI-19 staged candidate 执行 add、commit 或 push。UI-19 仍作为独立 11 文件候选，不与本报告混合。最终核验应限定在 `reports/m2/frontend`，并检查 `FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_READY`、UI-01/UI-34 行存在、global UI 行数为 34，以及 reports 文档是否进入 staged。
 
 ## References
 
-[1]: `FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md` — 34 global UI canonical baseline、PPT/单图 crosswalk 与视觉信号。
+[1]: `FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md` — 34 global UI canonical baseline、PPT/单图 crosswalk 与视觉信号。
 [2]: `UI01_FULL_EXPOSURE_SUBSYSTEM_DECOMPOSITION_001.md` — UI-01 暴露点、方法模板与既有首页血缘。
 [3]: `UI04_UI10_PPT06_PPT08_VISUAL_GAP_ANALYSIS_001.md` — UI-04~UI-10 与 PPT 第6/8页的视觉复用与差距。
 [4]: `F06_F09_UI_NOTES.md` — F06~F09 API、Named Action、状态与验证笔记。
 
-**FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_READY** `50_开发_dev/reports/m2/frontend/FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md`
+**FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_READY** `50_开发_dev/reports/m2/frontend/FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md`

@@ -127,5 +127,5 @@ UI-01 至 UI-34 是本轮移动端 App 截图、布局、视觉和功能一致�
 - `research/family-education-and-growth-evidence.md`
 - `research/bobo-principal-research-and-mobile-design.md`
 - `research/bobo-principal-source-ledger.md`
-- `/home/ubuntu/family-ai/50_开发_dev/reports/m2/frontend/FAMILY_34_UI_DEVELOPMENT_LEDGER_001.md`
+- `/home/ubuntu/family-ai/50_开发_dev/reports/m2/frontend/FAMILY_CONSUMER_UI_DEVELOPMENT_LEDGER_001.md`
 - `/home/ubuntu/family-ai/50_开发_dev/reports/m2/frontend/UI-35_AI_ASSISTED_21_DAY_GROWTH_CAMP_RESEARCH_AND_DESIGN_001.md`

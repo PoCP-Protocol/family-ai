@@ -10,7 +10,7 @@ VALIDATOR = pnpm run validate:business-runtime
 
 ## 1. 目标与裁决
 
-本蓝图把已有 3 份 PPT、35 UI、历史六闭环、V4.1 六循环、主数据目录、数据库与代码资产统一为一条实施链：
+本蓝图把已有 3 份 PPT、当前 consumer UI baseline、历史六闭环、V4.1 六循环、主数据目录、数据库与代码资产统一为一条实施链：
 
 ```text
 业务场景
@@ -28,17 +28,17 @@ VALIDATOR = pnpm run validate:business-runtime
 
 1. PPT 是产品和商业场景输入，证据等级上限 E1，不证明真实效果或运行能力。
 2. `GROWTH / PLAN / ASSESSMENT / SERVICE / COMMERCE / COMMUNITY` 是唯一业务循环词汇。
-3. 35 UI 是体验投影，不拥有业务真相；业务必须先落成状态机和对象，再由 App/Web 消费。
+3. Consumer UI baseline 是体验投影，不拥有业务真相；业务必须先落成状态机和对象，再由 App/Web 消费。
 4. NestJS + PostgreSQL 是唯一业务真相；AI、客户端、投影和工作流不得越权写事实。
 5. 先让系统可运行，再让业务可运营；先完成真实纵切，不以页面数量判断完成度。
-6. 3 份 PPT 与 35 UI 是联合基线：PPT 目标必须落实到 UI、场景、对象、Named Action 与测试；UI 实现也必须回溯到 PPT 目标。机器追踪门禁见 `FAMILY_PPT_UI_DELIVERY_TRACEABILITY_V1.yaml`。
+6. 3 份 PPT 与 consumer UI baseline 是联合基线：PPT 目标必须落实到 UI、场景、对象、Named Action 与测试；UI 实现也必须回溯到 PPT 目标。机器追踪门禁见 `FAMILY_PPT_UI_DELIVERY_TRACEABILITY_V1.yaml`。
 
 ## 2. 材料收敛关系
 
 | 已有材料 | 保留内容 | 统一处理 |
 |---|---|---|
 | 3 份 PPT | 家庭长期经营、21/90 天产品、会员、专家、活动、社区、裂变和数据平台愿景 | 转为业务场景与假设，不直接转为事实表或生产承诺 |
-| 35 UI | 页面、用户语言、入口、主动作和投影 | 映射到 11 个业务场景、6 个循环、7 个领域 |
+| Consumer UI Baseline | 页面、用户语言、入口、主动作和投影 | 映射到 11 个业务场景、6 个循环、7 个领域 |
 | 历史六闭环 | 核心服务、增长、商城、名师沙龙、社区、客户后台 | 只作为场景来源，归并到 V4.1 的 6 个 canonical loops |
 | 主数据/对象目录 | 目录、家庭、过程、交易、权益、AI 与审计对象 | 统一为 46 个运行模型对象，区分 Master/Fact/Ledger/Projection/AI/Audit |
 | V4.1 架构 | 六平面、七领域、控制面、Outbox、Temporal、AI Control Plane | 作为 IT/AI 架构边界 |
@@ -366,7 +366,7 @@ AI 的实现对象必须包含 `AiUseCase`、`ContextSnapshot` 和 `AiRun`。每
 10 application/architecture components
 16 global rules
 6 runtime slices
-35 UI fully mapped
+Consumer UI baseline fully mapped
 ```
 
 运行：
@@ -375,7 +375,7 @@ AI 的实现对象必须包含 `AiUseCase`、`ContextSnapshot` 和 `AiRun`。每
 cd 50_开发_dev
 pnpm run validate:business-runtime
 pnpm run validate:arch:v4.1
-pnpm run validate:35ui
+pnpm run validate:consumer-ui
 ```
 
 下一阶段只进入 VS-00 与 VS-01 的差距分析：把现有数据库表、API、App/Web 页面、测试和本模型逐项对照，输出 `EXISTS / PARTIAL / MISSING / CONFLICT`，随后形成第一批实施任务与迁移脚本。服务、商业、社区继续保持设计态，不提前打开生产副作用。

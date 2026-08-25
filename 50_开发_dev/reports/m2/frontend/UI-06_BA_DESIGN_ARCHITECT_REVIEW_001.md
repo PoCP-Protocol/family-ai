@@ -20,7 +20,7 @@
 |---|---|---|
 | UI-06 BA Design | `[READY / GAP / NOT_READ]` | 需核对对象、状态、字段和证据边界。 |
 | UI-06 visual baseline | `[CONFIRMED / NEEDS_CONFIRMATION]` | 需核对 2×2 服务卡、完成度、tab、动态、打卡 CTA 和底部导航。 |
-| 34 UI master mapping | `[READ / GAP]` | UI-06 应为 `ServiceJourneyProjection` / `SERVICE_RECORD_ONLY`。 |
+| consumer UI master mapping | `[READ / GAP]` | UI-06 应为 `ServiceJourneyProjection` / `SERVICE_RECORD_ONLY`。 |
 | FE/BE consistency matrix | `[READ / GAP]` | 当前 UI-06 是 `UI_READY_BACKEND_GAP`，需专属只读 DTO。 |
 | Object/API/Named Action mapping | `[READ / GAP]` | 不得把服务说明、打卡草稿和真实履约混为一谈。 |
 | Consent/Human Gate/Policy/Audit | `[READ / GAP]` | 需验证 guardian scope、儿童资料、真人服务、通知和外发边界。 |

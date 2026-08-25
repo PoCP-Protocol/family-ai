@@ -1,13 +1,15 @@
-schema_version: FAMILY_35UI_PROGRAM_V1_1
+schema_version: FAMILY_CONSUMER_UI_PROGRAM_V1_1
 task_id: FAMILY-AI-ARCHITECTURE-V4-1-CONVERGENCE-001
 base:
   repository: PoCP-Protocol/family-ai
   branch: main
   sha: f2eeacc69fff78b17f45b78a7ab631543ee8cf2a
 product_baseline:
+  name: CONSUMER_UI_BASELINE
   ui_start: UI-01
-  ui_end: UI-35
-  count: 35
+  ui_end: UI-34
+  count: 34
+  ui35_deleted: YES
   ai_diagnosis: KEEP
 tech_architecture:
   ssot: architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md
@@ -92,7 +94,7 @@ gates:
 
   - id: G5
     name: GROWTH_JOURNEY
-    ui: [UI-04, UI-05, UI-09, UI-10, UI-11, UI-12, UI-29, UI-35]
+    ui: [UI-04, UI-05, UI-09, UI-10, UI-11, UI-12, UI-29, UI-31, UI-34]
     authorized: NO
 
   - id: G6
@@ -109,4 +111,4 @@ gates:
     name: CROSS_LOOP_FULL_E2E
     authorized: NO
 
-final_gate: FAMILY_35UI_FULLSTACK_V1_READY
+final_gate: FAMILY_CONSUMER_UI_FULLSTACK_V1_READY

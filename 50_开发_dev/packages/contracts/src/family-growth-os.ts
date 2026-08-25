@@ -1,4 +1,4 @@
-import type { FamilyUiId } from './family-34ui';
+import type { FamilyUiId } from './consumer-ui-baseline';
 
 /**
  * Legacy Family Growth OS surface architecture map.
@@ -77,7 +77,7 @@ export function getLegacyFamilyUiArchitectureBinding(uiId: FamilyUiId): FamilyUi
   return binding;
 }
 
-/** Resolves supplied 34-UI baseline bindings. */
+/** Resolves supplied consumer UI baseline bindings. */
 export function getLegacyFamilyGrowthSurfaceArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
   const binding = LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId);
   if (!binding) throw new Error(`unknown_family_growth_surface_binding:${uiId}`);

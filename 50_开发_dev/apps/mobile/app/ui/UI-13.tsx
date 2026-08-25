@@ -57,7 +57,7 @@ export default function FamilyGrowthMallScreen() {
                 </View>
               </View>
               <View style={styles.familyMark}>
-                <IconSymbol name="person.2.fill" size={42} color="#FFFFFF" />
+                <IconSymbol name="person.2.fill" size={42} color="#2563EB" />
               </View>
             </Pressable>
 
@@ -121,13 +121,13 @@ const styles = StyleSheet.create({
   more: { width: 42, textAlign: "right", color: "#20242A", fontSize: 18, lineHeight: 20, fontWeight: "900", letterSpacing: 1 },
   greeting: { fontSize: 24, lineHeight: 32, fontWeight: "900" },
   subtitle: { fontSize: 14, lineHeight: 21 },
-  inviteBanner: { minHeight: 151, borderRadius: 18, backgroundColor: "#187AF2", padding: 18, flexDirection: "row", alignItems: "center", gap: 12 },
+  inviteBanner: { minHeight: 151, borderRadius: 18, backgroundColor: "#E8F2FF", padding: 18, flexDirection: "row", alignItems: "center", gap: 12 },
   inviteCopy: { flex: 1, gap: 7 },
-  inviteLabel: { color: "#D9ECFF", fontSize: 14, lineHeight: 20, fontWeight: "800" },
-  inviteTitle: { color: "#FFFFFF", fontSize: 23, lineHeight: 30, fontWeight: "900" },
+  inviteLabel: { color: "#5B7091", fontSize: 14, lineHeight: 20, fontWeight: "800" },
+  inviteTitle: { color: "#09295A", fontSize: 23, lineHeight: 30, fontWeight: "900" },
   inviteAction: { alignSelf: "flex-start", minHeight: 34, borderRadius: 17, paddingHorizontal: 11, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", gap: 2 },
   inviteActionText: { color: "#2563EB", fontSize: 12, lineHeight: 17, fontWeight: "800" },
-  familyMark: { width: 68, height: 68, borderRadius: 34, backgroundColor: "#FFFFFF20", alignItems: "center", justifyContent: "center" },
+  familyMark: { width: 68, height: 68, borderRadius: 34, backgroundColor: "#FFFFFF80", alignItems: "center", justifyContent: "center" },
   categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   categoryTile: { width: "31%", minHeight: 98, borderWidth: 1, borderRadius: 13, padding: 8, alignItems: "center", justifyContent: "center", gap: 3 },
   categoryIcon: { width: 42, height: 42, borderRadius: 15, alignItems: "center", justifyContent: "center" },

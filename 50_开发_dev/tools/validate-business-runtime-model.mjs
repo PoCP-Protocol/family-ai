@@ -5,7 +5,7 @@ import * as yaml from 'js-yaml';
 
 const root = process.cwd();
 const modelPath = path.join(root, 'governance', 'FAMILY_BUSINESS_RUNTIME_MODEL_V1.yaml');
-const uiMatrixPath = path.join(root, 'governance', 'FAMILY_35UI_RUNTIME_MATRIX_V1.json');
+const uiMatrixPath = path.join(root, 'governance', 'FAMILY_CONSUMER_UI_BASELINE_V1.json');
 
 const model = yaml.load(fs.readFileSync(modelPath, 'utf8'));
 const uiMatrix = JSON.parse(fs.readFileSync(uiMatrixPath, 'utf8'));

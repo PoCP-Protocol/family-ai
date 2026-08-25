@@ -5,7 +5,7 @@ import * as yaml from 'js-yaml';
 
 const root = process.cwd();
 const trace = yaml.load(fs.readFileSync(path.join(root, 'governance', 'FAMILY_PPT_UI_DELIVERY_TRACEABILITY_V1.yaml'), 'utf8'));
-const runtime = JSON.parse(fs.readFileSync(path.join(root, 'governance', 'FAMILY_35UI_RUNTIME_MATRIX_V1.json'), 'utf8'));
+const runtime = JSON.parse(fs.readFileSync(path.join(root, 'governance', 'FAMILY_CONSUMER_UI_BASELINE_V1.json'), 'utf8'));
 const business = yaml.load(fs.readFileSync(path.join(root, 'governance', 'FAMILY_BUSINESS_RUNTIME_MODEL_V1.yaml'), 'utf8'));
 const errors = [];
 
@@ -17,7 +17,7 @@ const objectiveIds = new Set();
 const testIds = new Set();
 
 if (deckIds.size !== 3) errors.push(`expected exactly 3 baseline decks, found ${deckIds.size}`);
-if (uiIds.size !== 35) errors.push(`expected exactly 35 baseline UI screens, found ${uiIds.size}`);
+if (uiIds.size !== 34) errors.push(`expected exactly 34 baseline UI screens, found ${uiIds.size}`);
 
 for (const deck of trace.decks ?? []) {
   if (!deck.id || !deck.title || !deck.path || !Number.isInteger(deck.slides) || deck.slides < 1) errors.push(`invalid deck entry: ${deck?.id ?? 'unknown'}`);
@@ -70,5 +70,5 @@ if (errors.length) {
   for (const error of errors) console.error(`- ${error}`);
   process.exitCode = 1;
 } else {
-  console.log('PASS: all 3 PPT baselines and 35 UI screens are traceable to delivery objectives and tests');
+  console.log('PASS: all 3 PPT baselines and current consumer UI screens are traceable to delivery objectives and tests');
 }

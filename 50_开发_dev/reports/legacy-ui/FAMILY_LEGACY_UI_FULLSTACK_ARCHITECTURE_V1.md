@@ -1,10 +1,12 @@
-> **EXECUTION NOTICE** — `SUPERSEDED_FOR_EXECUTION_BY = FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md + FAMILY_35UI_RUNTIME_MATRIX_V1.json`. This file remains historical architecture context; do not use it as current execution SSOT.
+> **EXECUTION NOTICE** — `SUPERSEDED_FOR_EXECUTION_BY = FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md + FAMILY_CONSUMER_UI_BASELINE_V1.json`. This file remains historical legacy UI architecture context; UI-35 is deleted and this file must not be used as current execution SSOT.
 
-# FAMILY 35 UI Full-Stack Architecture V1
+# FAMILY legacy UI Full-Stack Architecture V1
+
+> Historical evidence only. Current execution SSOT is `governance/FAMILY_CONSUMER_UI_BASELINE_V1.json` plus `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md`.
 
 ```text
 DOC_KIND       = FULLSTACK_ARCHITECTURE
-PRODUCT_BASE   = UI-01..UI-35
+PRODUCT_BASE   = HISTORICAL UI-01..UI-35 (CURRENT_EXECUTION_BASE = UI-01..UI-34)
 BASE_REPO      = PoCP-Protocol/family-ai
 BASE_BRANCH    = main
 BASE_SHA       = 708cf542ab130642f2248bbebecc997930d10a49
@@ -26,7 +28,7 @@ AI_DIAGNOSIS   = KEEP
 - `Recommendation != Decision != Action`
 - `ServiceCompletion != GrowthOutcome`
 
-机器可读的 35 页契约唯一来源：`governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json`。
+本历史文件原引用的 35 页契约已废弃；当前机器可读执行基线为 `governance/FAMILY_CONSUMER_UI_BASELINE_V1.json`。
 
 ## 2. 七个后端领域
 
@@ -147,7 +149,7 @@ UI-25 -> UI-26 -> Private Draft -> Moderation -> UI-27 / UI-28 -> context readba
 
 ## 7. 开发顺序
 
-- G0 Alignment Foundation：35UI matrix、contracts、validator、治理。
+- G0 Alignment Foundation：legacy UI matrix、contracts、validator、治理。
 - G1 Family Core + Context：UI-01/UI-33 + 全局 auth/consent/context。
 - G2 Assessment + AI诊断：UI-02/03/07/08。
 - G3 Growth Journey：UI-04/05/09/10/11/12/29/35。
@@ -157,4 +159,4 @@ UI-25 -> UI-26 -> Private Draft -> Moderation -> UI-27 / UI-28 -> context readba
 - G7 Cross-loop E2E：六循环真实 PostgreSQL、真实 API、Mobile runtime，清零 synthetic capability gaps。
 
 最终 Gate：
-`FAMILY_35UI_FULLSTACK_V1_READY`
+`FAMILY_LEGACY_UI_FULLSTACK_V1_READY`

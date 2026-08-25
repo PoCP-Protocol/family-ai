@@ -31,9 +31,9 @@
 
 ## 参考证据
 
-[1]: `../../governance/BANGYANG_34_UI_SCENARIO_FLOWS_AND_RULES_001.md` — UI-19 名师专区的角色、流程与边界。
+[1]: `../../governance/BANGYANG_CONSUMER_UI_SCENARIO_FLOWS_AND_RULES_001.md` — UI-19 名师专区的角色、流程与边界。
 
-[2]: `../../governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` — 34 页对象、API、Named Action 映射。
+[2]: `../../governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` — 34 页对象、API、Named Action 映射。
 
 [3]: `../../database/migrations/0032_family_service_booking_objects.sql` — Provider、Offering、Slot、Booking 与 ServiceRecord 数据结构及 no-op 边界。
 

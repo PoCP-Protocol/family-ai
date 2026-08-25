@@ -4,7 +4,7 @@
 >
 > **当前阶段：** 代码实况审计与第一轮实施计划
 >
-> **计划性质：** 本文件是 UI-05 单一纵切的实施计划，不代表代码已经完成，也不授权 34 UI 全量开发。
+> **计划性质：** 本文件是 UI-05 单一纵切的实施计划，不代表代码已经完成，也不授权 consumer UI 全量开发。
 >
 > **审计结论：** `UI-05 视觉基线已具备，但代码实现必须等待 UI-05_BA_DESIGN_90_DAY_GROWTH_001.md 完成，并通过架构/业务确认。`
 >
@@ -18,9 +18,9 @@
 |---|---|---|
 | UI ID / route | UI-05 映射为 `core-plan` | `apps/web/src/test-loop.js` 中 `FAMILY_UI_34_ROUTE_MANIFEST`。 |
 | 原始视觉基线 | 90 天成长方案单图存在，尺寸 434×1130 | `apps/web/public/bangyang-reference/growth-plan-90day-reference-434x1130.png`。 |
-| 可见结构 | 顶部返回/标题/右侧菜单；橙色当前阶段卡；3/12/36/90 统计；纵向第1~4周计划卡；底部橙色“开始执行计划”按钮。 | UI-05 reference image；与 `FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md` 和 `FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md` 对照。 |
-| 视觉映射状态 | 当前仓库已有 UI-05 reference 及 route 映射；不把 UI-01~UI-12 的整体映射缺口误用于 UI-05。 | `FAMILY_34_UI_DEVELOPMENT_ADMISSION_001.md` 的 UI-05 准入行。 |
-| 视觉门禁 | 必须先复刻原画面，再接动态数据；未通过截图对标不得声明 runtime 完成。 | `FAMILY_34_UI_DEVELOPMENT_ADMISSION_001.md` 的 `Visual Fidelity Gate`。 |
+| 可见结构 | 顶部返回/标题/右侧菜单；橙色当前阶段卡；3/12/36/90 统计；纵向第1~4周计划卡；底部橙色“开始执行计划”按钮。 | UI-05 reference image；与 `FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md` 和 `FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md` 对照。 |
+| 视觉映射状态 | 当前仓库已有 UI-05 reference 及 route 映射；不把 UI-01~UI-12 的整体映射缺口误用于 UI-05。 | `FAMILY_CONSUMER_UI_DEVELOPMENT_ADMISSION_001.md` 的 UI-05 准入行。 |
+| 视觉门禁 | 必须先复刻原画面，再接动态数据；未通过截图对标不得声明 runtime 完成。 | `FAMILY_CONSUMER_UI_DEVELOPMENT_ADMISSION_001.md` 的 `Visual Fidelity Gate`。 |
 
 ### 1.2 Current frontend implementation
 
@@ -231,4 +231,4 @@ pnpm --filter @family/api exec vitest run --config vitest.unit.config.ts
 [3]: `apps/api/src/modules/orchestration/orchestration.controller.ts` — 现有 orchestration、decision、LLM、Page Objects API 入口。
 [4]: `apps/api/src/modules/orchestration/llm-gateway/family-llm-page-policy.ts` — UI-05 LLM state ceiling。
 [5]: `database/migrations/0020_growth_orchestration_v1.sql` — GrowthIntent、Recommendation、FamilyServiceDecision、OrchestrationPlan 和 ServiceCase 定义。
-[6]: `FAMILY_34_UI_DEVELOPMENT_ADMISSION_001.md` — UI-05 准入与 Visual Fidelity Gate。
+[6]: `FAMILY_CONSUMER_UI_DEVELOPMENT_ADMISSION_001.md` — UI-05 准入与 Visual Fidelity Gate。

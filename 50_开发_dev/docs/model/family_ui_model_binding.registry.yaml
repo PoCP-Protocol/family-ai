@@ -3,13 +3,13 @@ asset_ref: FAMILY_UI_MODEL_BINDING_REGISTRY
 status: draft
 owner: Family Education Industry Model
 purpose: >
-  Binds UI-01..UI-35 product display baseline to Family Education Large Model
+  Binds UI-01..UI-34 product display baseline to Family Education Large Model
   components. This registry does not authorize UI visual change, runtime expansion,
   database schema change, or live external AI. It defines the first model support
   baseline behind the existing UI surfaces.
 
 source_of_truth:
-  ui_baseline: ../governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json
+  ui_baseline: ../governance/FAMILY_CONSUMER_UI_BASELINE_V1.json
   surface_contract: ../packages/contracts/src/family-growth-os.ts
   model_component_registry: family_model_component.registry.yaml
 
@@ -19,7 +19,7 @@ binding_rules:
   - All writes remain Named Actions owned by domains.
   - Model outputs are hypotheses, recommendations, action candidates, or projections until confirmed through authorized flows.
   - No Family Total Score, family ranking, medical diagnosis, or psychiatric diagnosis is introduced.
-  - Existing 35 UI visual baseline remains unchanged during G1-A.
+  - Existing consumer UI visual baseline remains unchanged during G1-A.
 
 registered_ui_bindings:
   - ui_id: UI-01
@@ -259,10 +259,3 @@ registered_ui_bindings:
     support_mode: service_and_growth_record_projection
     model_output_boundary: fact_or_review_candidate
     authorization_boundary: READ_ONLY_PROJECTION
-
-  - ui_id: UI-35
-    product_surface: 21 天成长营
-    primary_model_components: [FAMILY_ACTION_OUTCOME_COMPONENT, FAMILY_MEMORY_DIALOGUE_COMPONENT]
-    support_mode: growth_camp_daily_practice
-    model_output_boundary: recommendation_and_reflection_boundary
-    authorization_boundary: CONTROLLED_DRAFT

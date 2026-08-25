@@ -1,4 +1,4 @@
-# Family 34 UI BA Design Queue
+# Family consumer UI BA Design Queue
 
 > **队列原则：** 34 页不是 34 套独立系统。每一页必须先完成 BA Research 与 BA Design，再锁定用户原图 Visual Baseline，随后才进入 Contract Plan、FE/BE Implementation、Consistency Tests、Playwright Screenshot Diff、Fix Loop 和 Git Commit/Push。
 >
@@ -69,11 +69,11 @@
 
 ## References
 
-[1]: `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`
-[2]: `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
-[3]: `governance/FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md`
+[1]: `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`
+[2]: `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
+[3]: `governance/FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md`
 [4]: `30_素材_materials/_extracted/逐页文本_含页码/01_新商业模式对外宣发.txt`
 [5]: `30_素材_materials/_extracted/逐页文本_含页码/02_战略白皮书30页.txt`
 [6]: `30_素材_materials/_extracted/逐页文本_含页码/03_家庭教育大模型平台合作方案.txt`
 
-**BA_QUEUE_READY** `reports/m2/frontend/FAMILY_34_UI_BA_DESIGN_QUEUE_001.md`
+**BA_QUEUE_READY** `reports/m2/frontend/FAMILY_CONSUMER_UI_BA_DESIGN_QUEUE_001.md`

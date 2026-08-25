@@ -1,15 +1,15 @@
 schema_version: FAMILY_BUSINESS_RUNTIME_MODEL_V1
 status: EXECUTION_BASELINE_DRAFT
 as_of: 2026-08-23
-purpose: 将现有3份PPT、35UI、六循环、主数据、数据库与V4.1架构收敛为可实施、可校验的业务运行模型
+purpose: 将现有3份PPT、consumer UI baseline、六循环、主数据、数据库与V4.1架构收敛为可实施、可校验的业务运行模型
 
 source_authority:
   - id: SRC-ARCH
     path: architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md
     role: 技术与AI架构边界
   - id: SRC-UI
-    path: governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json
-    role: 35UI、循环、领域、动作与运行状态
+    path: governance/FAMILY_CONSUMER_UI_BASELINE_V1.json
+    role: Consumer UI baseline、循环、领域、动作与运行状态
   - id: SRC-DATA
     path: governance/FAMILY_MASTER_DATA_CATALOG_V2.md
     role: 主数据对象与关系
@@ -17,14 +17,14 @@ source_authority:
     path: governance/FAMILY_GLOBAL_DATA_OBJECT_EXECUTION_MATRIX_V1.md
     role: 事实、投影、审计与接口对象
   - id: SRC-SCENE
-    path: governance/BANGYANG_34_UI_SCENARIO_FLOWS_AND_RULES_001.md
+    path: governance/BANGYANG_CONSUMER_UI_SCENARIO_FLOWS_AND_RULES_001.md
     role: 历史场景、异常路径与规则输入
   - id: SRC-PPT
     path: apps/mobile/research/three-ppt-mobile-baseline.md
     role: 产品、服务、商业与视觉叙事，证据等级上限E1
   - id: SRC-PPT-UI-TRACE
     path: governance/FAMILY_PPT_UI_DELIVERY_TRACEABILITY_V1.yaml
-    role: 3份PPT目标到35UI、场景、纵切与验收测试的强制追踪基线
+    role: 3份PPT目标到 consumer UI baseline、场景、纵切与验收测试的强制追踪基线
 
 canonical_loops:
   - GROWTH
@@ -590,7 +590,7 @@ scenarios:
     trigger: 家庭已有确认的GrowthIntent与适配的JourneyTemplate
     state_flow: PLAN_DRAFTED -> FAMILY_CONFIRMED -> IN_PROGRESS -> STAGE_REVIEW -> CONTINUE_OR_ADJUST_OR_PAUSE -> COMPLETED
     success_outcome: 计划可暂停、恢复、调整并完成阶段复盘
-    ui: [UI-04, UI-05, UI-35]
+    ui: [UI-04, UI-05, UI-09, UI-31, UI-34]
     named_actions: [ACCEPT_GROWTH_PLAN, START_PROGRAM, RECORD_STAGE_REVIEW, PAUSE_PROGRAM, RESUME_PROGRAM]
     rules: [BR-002, BR-003, BR-004, BR-006, BR-007, BR-011, BR-012, BR-013]
     objects: [OBJ-106, OBJ-201, OBJ-202, OBJ-203, OBJ-204, OBJ-205, OBJ-206, OBJ-701, OBJ-702]
@@ -750,7 +750,7 @@ architecture:
     - PLATFORM_MARGIN_RANKING_SIGNAL_ZERO
 
 execution_order:
-  - 统一本文件、35UI矩阵、主数据目录与V4.1术语
+  - 统一本文件、consumer UI baseline、主数据目录与V4.1术语
   - 先实现VS-00可信根
   - 再实现VS-01真实首闭环
   - 通过真实数据库、API、App/Web、审计和恢复测试后进入VS-02

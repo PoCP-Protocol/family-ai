@@ -15,7 +15,7 @@
 
 ## 1. Research Purpose and Evidence Boundary
 
-The original 34 UI set does not supply a dedicated 21-day camp screen. UI-01 nevertheless exposes a visible “21天成长营” entry. Treating that entry as UI-05’s 90-day plan would collapse two distinct product layers and would contradict the supplied product narrative. UI-35 is therefore registered as a support surface while preserving the 34-screen coverage invariant.
+The original consumer UI set does not supply a dedicated 21-day camp screen. UI-01 nevertheless exposes a visible “21天成长营” entry. Treating that entry as UI-05’s 90-day plan would collapse two distinct product layers and would contradict the supplied product narrative. UI-35 is therefore registered as a support surface while preserving the 34-screen coverage invariant.
 
 The supplied Bangyang strategic material describes **“21天行动、90天陪跑、年度会员”** as layers of long-term accompaniment, and places **“21天挑战、每日任务”** in the action stage before 90-day plan, advisor, and community accompaniment.[1] It provides the product relationship, but it does **not** provide an official day-by-day 21-lesson syllabus. The external articles found during research describe a “21天智慧父母训练营” using live sessions, homework check-ins, community accompaniment, and one-to-one guidance; one article groups the subject matter into communication, emotion management, habit building, and learning motivation.[2] [3] These articles are third-party/republished sources, so their price, efficacy, service level, schedules, audience and curriculum details remain unverified.
 
@@ -101,7 +101,7 @@ The UI still requires an authenticated synthetic DEV context to read/write actua
 | Action boundary | Check-in records an action/Perspective receipt only |
 | 90-day handoff | Recommendation-only; no automatic plan creation |
 | UI-01 lineage | `challenge_21 → UI-35 / growth-camp-21` |
-| Existing 34 UIs | Remain unchanged as the immutable supplied-baseline set |
+| Existing consumer UIs | Remain unchanged as the immutable supplied-baseline set |
 | External effects | No payment, notification, sharing, booking, or service outreach |
 
 ## References

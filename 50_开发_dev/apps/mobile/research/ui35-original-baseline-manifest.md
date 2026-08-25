@@ -1,4 +1,4 @@
-# Family AI 原始 35 UI 基线清单
+# Family AI 原始 legacy UI 基线清单
 
 ## 恢复来源
 

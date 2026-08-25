@@ -237,8 +237,8 @@
 
 | 文件 | 作用 |
 |---|---|
-| `governance/BANGYANG_34_UI_SCENARIO_FLOWS_AND_RULES_001.md` | 本文；六条闭环的角色、状态、规则、异常和 mock action 拆解。 |
-| `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` | A 阶段证据清单和 34 页基线；C 阶段将把本规则文件纳入主计划。 |
+| `governance/BANGYANG_CONSUMER_UI_SCENARIO_FLOWS_AND_RULES_001.md` | 本文；六条闭环的角色、状态、规则、异常和 mock action 拆解。 |
+| `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` | A 阶段证据清单和 34 页基线；C 阶段将把本规则文件纳入主计划。 |
 | `architecture/FAMILY_PLATFORM_V3_BLUEPRINT.md` | D 阶段只在引用 A/B 证据后更新相关架构章节。 |
 
 > **B 阶段结论：** DEV 要实现完整的真实可运行闭环：每个业务语义均需落到显式的 `Test Action（兼容 mock.action 名称）+ 测试数据 + 数据库/测试存储 + API + 审计回执 + 受控外部 adapter`，而非静态图、固定回执或自由文本。生产外部副作用仍通过 test/sandbox adapter 隔离。

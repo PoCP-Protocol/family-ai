@@ -1,4 +1,4 @@
-# Family 34 UI Research Needs Analysis Queue
+# Family consumer UI Research Needs Analysis Queue
 
 ## 1. Purpose and Hard Gate
 
@@ -12,7 +12,7 @@ Broad Research → Needs Analysis → BA Design → Visual Baseline → Contract
 
 在当前队列中，任何页面都不得标记为 API Contract ready 或 Code ready。`Allowed Next Stage` 只能表示下一步可以继续研究、补证据或准备 BA Design，不能表示已经获准开发。
 
-研究必须覆盖家庭教育真实场景、家长/孩子/教师/服务者等角色、榜样教育/波波校长及现有素材中的业务假设、34 UI 视觉线索、Family SSOT、数据对象、Named Action、Consent/Human Gate、Model Gateway、前后端一致性、测试和截图对标。
+研究必须覆盖家庭教育真实场景、家长/孩子/教师/服务者等角色、榜样教育/波波校长及现有素材中的业务假设、consumer UI 视觉线索、Family SSOT、数据对象、Named Action、Consent/Human Gate、Model Gateway、前后端一致性、测试和截图对标。
 
 需求分析必须分开记录：
 
@@ -28,7 +28,7 @@ Read Projection / Controlled Draft / Named Action / External Effect
 
 `30_素材_materials` 只读。研究时优先使用 `30_素材_materials/_extracted/逐页文本_含页码/` 的逐页文本和页码锚点，不得使用 `all_materials.txt` 作为研究主证据。榜样教育、波波校长和其他自家材料最高按 E1 处理，只能形成假设、实践素材或设计输入，不能自证效果、诊断、资质、因果关系或生产事实。
 
-34 UI baseline、用户提供的单页原图、PPT 局部画面和现有治理/契约文件只能证明各自允许证明的内容。视觉线索不等于已实现能力；业务关联不等于视觉复用；内部报告不互相自证。证据不足必须标记 `NEEDS_RESEARCH_REVIEW`，不得补写为事实。
+consumer UI baseline、用户提供的单页原图、PPT 局部画面和现有治理/契约文件只能证明各自允许证明的内容。视觉线索不等于已实现能力；业务关联不等于视觉复用；内部报告不互相自证。证据不足必须标记 `NEEDS_RESEARCH_REVIEW`，不得补写为事实。
 
 ## 3. Queue Status Vocabulary
 
@@ -110,12 +110,12 @@ UI05_SCOPE=RESEARCH_AND_HUMAN_DECISION_ONLY
 
 ## 7. References
 
-[1]: `reports/m2/frontend/FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md`
-[2]: `reports/m2/frontend/FAMILY_34_UI_FEATURE_REVIEW_001.md`
+[1]: `reports/m2/frontend/FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md`
+[2]: `reports/m2/frontend/FAMILY_CONSUMER_UI_FEATURE_REVIEW_001.md`
 [3]: `reports/m2/frontend/UI-05_BLOCKING_QUESTIONS_DECISION_PACK_001.md`
 [4]: `reports/m2/frontend/UI-05_HUMAN_DECISION_REQUEST_001.md`
-[5]: `reports/m2/frontend/FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
-[6]: `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`
-[7]: `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
+[5]: `reports/m2/frontend/FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
+[6]: `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`
+[7]: `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
 
-**FAMILY_34_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_READY** `reports/m2/frontend/FAMILY_34_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md`
+**FAMILY_CONSUMER_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_READY** `reports/m2/frontend/FAMILY_CONSUMER_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md`

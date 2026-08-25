@@ -37,7 +37,7 @@ PPT、UI 与闭环图是产品需求、场景、视觉和流程的**证据来源
 | GOV-01 | 授权登记册 | governance/AUTHORIZATION_REGISTRY.yaml | 能力授权和 HOLD 状态证据。 |
 | GOV-02 | 可变执行状态 | governance/PROGRAM_STATUS_PLATFORM_V1.md | 执行状态来源；如不存在须显式标记。 |
 | GOV-03 | 34 页原图输入清单 | reports/l1/bangyang_all_visual_inputs_manifest.txt | 逐页 UI 来源清单。 |
-| GOV-04 | 34 页逐图转录结果 | /home/ubuntu/transcribe_bangyang_34_ui.json | 逐字基线的机器辅助转录；人工复核仍必需。 |
+| GOV-04 | 34 页逐图转录结果 | /home/ubuntu/transcribe_BANGYANG_CONSUMER_UI.json | 逐字基线的机器辅助转录；人工复核仍必需。 |
 | GOV-05 | 六条闭环转录 | governance/BANGYANG_18_UI_CLOSED_LOOP_MASTER_TRANSCRIPTION_001.md | 历史命名保留；正文按 34 页口径使用。 |
 | GOV-06 | 页面状态与闭环映射 | governance/BANGYANG_18_UI_STATE_AND_CLOSED_LOOP_MAPPING_001.md | 历史命名保留；正文按 34 页口径使用。 |
 
@@ -709,10 +709,10 @@ PPT、UI 与闭环图是产品需求、场景、视觉和流程的**证据来源
 
 ## 8. A 阶段修改文件清单
 
-- `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`：总控 evidence inventory 与 34 页 page baseline index。
+- `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`：总控 evidence inventory 与 34 页 page baseline index。
 - `reports/l1/bangyang_all_visual_inputs_manifest.txt`：原图与 PPT 视觉输入清单。
-- `/home/ubuntu/transcribe_bangyang_34_ui.json`：逐图转录原始结果；仅为研究辅助，不替代人工复核。
+- `/home/ubuntu/transcribe_BANGYANG_CONSUMER_UI.json`：逐图转录原始结果；仅为研究辅助，不替代人工复核。
 
 ## 9. 历史命名更正
 
-所有已存在的 `BANGYANG_18_UI_*` 文件名仅为历史路径，不能改变当前“34 页 UI 基线”的事实口径。后续新增文档和正文应使用 `34_UI` 或明确写出 `34 页`。
+所有已存在的 `BANGYANG_18_UI_*` 文件名仅为历史路径，不能改变当前“34 页 UI 基线”的事实口径。后续新增文档和正文应使用 `CONSUMER_UI` 或明确写出 `34 页`。

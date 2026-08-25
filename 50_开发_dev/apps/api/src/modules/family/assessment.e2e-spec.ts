@@ -108,26 +108,39 @@ describe('UI-02 versioned family assessment commercial slice', () => {
 
   it('projects an evidence-bound hypothesis and creates GrowthIntent only after family confirmation', async () => {
     const empty = await (await fetch(`${baseUrl}/families/${familyId}/ui/03/growth-hypothesis`, { headers: { authorization: `Bearer ${token}` } })).json() as any;
-    expect(empty).toMatchObject({ projection_version: 'UI03_GROWTH_HYPOTHESIS_V1', availability: 'NO_SUBMITTED_ASSESSMENT', hypothesis: null, ai_state: 'NOT_INVOKED' });
+    expect(empty).toMatchObject({ projection_version: 'UI03_GROWTH_HYPOTHESIS_V1', availability: 'NO_SUBMITTED_ASSESSMENT', hypothesis: null, ai_state: 'NOT_INVOKED', latest_assessment_session_id: null });
+    expect(empty.named_actions).toMatchObject({ generate: 'GENERATE_GROWTH_HYPOTHESIS', confirm: 'CONFIRM_GROWTH_HYPOTHESIS', dismiss: 'DISMISS_GROWTH_HYPOTHESIS' });
 
     const started = await (await post(`/families/${familyId}/assessments/sessions`, { subject_person_id: childId }, 'ui03-start')).json() as any;
     const sessionId = started.session.assessment_session_id;
-    await post(`/families/${familyId}/assessments/sessions/${sessionId}/responses`, { item_ref: 'FOCUS', response_type: 'SINGLE_CHOICE', response_value: 'EMOTION_REGULATION' }, 'ui03-focus');
+    await post(`/families/${familyId}/assessments/sessions/${sessionId}/responses`, { item_ref: 'FOCUS', response_type: 'SINGLE_CHOICE', response_value: 'PARENT_CHILD_COMMUNICATION' }, 'ui03-focus');
     await post(`/families/${familyId}/assessments/sessions/${sessionId}/submit`, {}, 'ui03-submit');
+
+    const afterSubmitProjection = await (await fetch(`${baseUrl}/families/${familyId}/ui/03/growth-hypothesis`, { headers: { authorization: `Bearer ${token}` } })).json() as any;
+    expect(afterSubmitProjection).toMatchObject({ availability: 'SUBMITTED', hypothesis: null, ai_state: 'NOT_INVOKED', latest_assessment_session_id: sessionId });
+    expect((await pool.query(`select count(*)::int n from family_assessment_ai_runs where assessment_session_id=$1`, [sessionId])).rows[0].n).toBe(0);
+
+    const generateResponse = await post(`/families/${familyId}/assessments/${sessionId}/growth-hypothesis`, {}, 'ui03-generate');
+    expect(generateResponse.status).toBe(201);
+    const generated = await generateResponse.json() as any;
+    expect(generated).toMatchObject({ action: 'GENERATE_GROWTH_HYPOTHESIS', outcome: 'HYPOTHESIS_CREATED', status: 'PROPOSED', fact_boundary: 'HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS', replayed: false });
+    const generateReplay = await (await post(`/families/${familyId}/assessments/${sessionId}/growth-hypothesis`, {}, 'ui03-generate')).json() as any;
+    expect(generateReplay).toMatchObject({ replayed: true, hypothesis_ref: generated.hypothesis_ref });
 
     const hypothesisResponse = await fetch(`${baseUrl}/families/${familyId}/ui/03/growth-hypothesis`, { headers: { authorization: `Bearer ${token}` } });
     expect(hypothesisResponse.status).toBe(200);
     const hypothesisProjection = await hypothesisResponse.json() as any;
-    expect(hypothesisProjection).toMatchObject({ availability: 'READY', ai_state: 'MODEL_DRAFT_READY', hypothesis: {
+    expect(hypothesisProjection).toMatchObject({ availability: 'READY', ai_state: 'READ_ONLY_PERSISTED', latest_assessment_session_id: sessionId, hypothesis: {
       subject_person_id: childId,
-      focus_ref: 'EMOTION_REGULATION',
-      need_type_ref: 'EMOTION_REGULATION_SUPPORT',
+      focus_ref: 'PARENT_CHILD_COMMUNICATION',
+      need_type_ref: 'PARENT_CHILD_COMMUNICATION_CONFLICT',
       generator: 'FAMILY_EDUCATION_ASSESSMENT_MODEL_V0_1',
       model_generator: 'FAMILY_EDUCATION_MODEL_RUNTIME_DETERMINISTIC',
       model_component_ref: 'FAMILY_ASSESSMENT_V0_COMPONENT',
       fact_boundary: 'HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS',
       source_refs: { assessment_session_id: sessionId, tool_ref: 'FAMILY_SUPPORT_NEEDS', tool_version: 2 },
     } });
+    expect(hypothesisProjection.hypothesis.safety_gate).toEqual({ required: false, reason_refs: [], mode: 'HUMAN_REVIEW_REQUIRED' });
     expect(hypothesisProjection.hypothesis.limitations).toHaveLength(3);
     expect(hypothesisProjection.hypothesis.principal).toMatchObject({ public_role: '法咪莉校长', codename: 'FAMILI_PRINCIPAL_SISTERLY_MENTOR' });
     expect(hypothesisProjection.hypothesis.principal.boundary_labels).toContain('hypothesis_not_fact');
@@ -141,16 +154,24 @@ describe('UI-02 versioned family assessment commercial slice', () => {
     expect(hypothesisProjection.hypothesis.need_refs.length).toBeGreaterThan(0);
     expect(hypothesisProjection.hypothesis.construct_refs.length).toBeGreaterThan(0);
     expect(hypothesisProjection.hypothesis.action_candidate_refs.length).toBeGreaterThan(0);
+    expect(hypothesisProjection.hypothesis.model_run_ref).toMatch(/^[0-9a-f-]{36}$/);
+    expect((await pool.query(`select count(*)::int n from family_assessment_ai_runs where assessment_session_id=$1`, [sessionId])).rows[0].n).toBe(1);
+    expect((await pool.query(`select count(*)::int n from family_growth_hypotheses where assessment_session_id=$1 and fact_boundary='HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS'`, [sessionId])).rows[0].n).toBe(1);
+    const repeatedProjection = await (await fetch(`${baseUrl}/families/${familyId}/ui/03/growth-hypothesis`, { headers: { authorization: `Bearer ${token}` } })).json() as any;
+    expect(repeatedProjection.hypothesis.model_run_ref).toBe(hypothesisProjection.hypothesis.model_run_ref);
+    expect((await pool.query(`select count(*)::int n from family_assessment_ai_runs where assessment_session_id=$1`, [sessionId])).rows[0].n).toBe(1);
+    expect((await pool.query(`select count(*)::int n from family_growth_hypotheses where assessment_session_id=$1`, [sessionId])).rows[0].n).toBe(1);
     expect((await pool.query(`select count(*)::int n from growth_intents where family_id=$1`, [familyId])).rows[0].n).toBe(0);
 
     const decisionBody = { assessment_session_id: sessionId, hypothesis_ref: hypothesisProjection.hypothesis.hypothesis_ref, decision_type: 'CONFIRM' };
     const confirmedResponse = await post(`/families/${familyId}/growth-hypotheses/decisions`, decisionBody, 'ui03-confirm');
     expect(confirmedResponse.status).toBe(201);
     const confirmed = await confirmedResponse.json() as any;
-    expect(confirmed).toMatchObject({ action: 'CONFIRM_GROWTH_HYPOTHESIS', outcome: 'INTENT_CREATED', replayed: false, intent: { need_type: 'EMOTION_REGULATION_SUPPORT', status: 'OPEN', boundary: 'HUMAN_CONFIRMED_INTENT_NOT_OUTCOME' } });
+    expect(confirmed).toMatchObject({ action: 'CONFIRM_GROWTH_HYPOTHESIS', outcome: 'INTENT_CREATED', replayed: false, intent: { need_type: 'PARENT_CHILD_COMMUNICATION_CONFLICT', status: 'OPEN', boundary: 'HUMAN_CONFIRMED_INTENT_NOT_OUTCOME' } });
     expect(confirmed.intent.evidence_refs).toEqual([hypothesisProjection.hypothesis.source_refs.assessment_evidence_id]);
     const replay = await (await post(`/families/${familyId}/growth-hypotheses/decisions`, decisionBody, 'ui03-confirm')).json() as any;
     expect(replay).toMatchObject({ replayed: true, intent: { intent_id: confirmed.intent.intent_id } });
     expect((await pool.query(`select count(*)::int n from growth_intents where family_id=$1 and source_type='ASSESSMENT_HYPOTHESIS'`, [familyId])).rows[0].n).toBe(1);
+    expect((await pool.query(`select status from family_growth_hypotheses where assessment_session_id=$1`, [sessionId])).rows[0].status).toBe('ACKNOWLEDGED');
   });
 });

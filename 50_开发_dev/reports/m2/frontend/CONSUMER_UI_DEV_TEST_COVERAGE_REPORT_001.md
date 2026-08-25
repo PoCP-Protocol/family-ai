@@ -1,4 +1,4 @@
-# 34 UI DEV Test and Coverage Report 001
+# consumer UI DEV Test and Coverage Report 001
 
 | Field | Value |
 |---|---|
@@ -18,7 +18,7 @@ The isolated `family_test` database passed the complete API suite in single-thre
 | API focused UI family checks | Today, GrowthAction, DEV Core Growth, DEV Platform Surfaces, controller facade | **13 tests passed** |
 | Web type safety | `tsc -p tsconfig.json --noEmit` | PASS |
 | Web integration / route / no-op contracts | `vitest run` | **14 files / 85 tests passed** |
-| 34 UI baseline route run | Chromium local runtime capture | **34 / 34 screenshots created** outside the repository |
+| consumer UI baseline route run | Chromium local runtime capture | **34 / 34 screenshots created** outside the repository |
 
 > The full API suite is run serially because database-backed integration tests deliberately truncate/reseed shared tables. Parallel execution can introduce non-deterministic interference and is not treated as the authoritative PostgreSQL result.
 
@@ -40,7 +40,7 @@ Raw V8 JSON summaries remain outside the repository under `/home/ubuntu/family_a
 | UI-11~UI-34: Platform surfaces | Shared `DEV_PLATFORM_SURFACES_V1`; catalog/read projection, controlled draft or no-op receipt | Platform surface unit tests, UI-21 no-op action test, 24-route Web projection checks, 34-route test | `dev-platform-surfaces.service.ts`: 100% lines/functions/branches |
 | 34 default visual shells | Original route/baseline shell in default mode; no implicit DEV overlay | 34-route render test and 34 Chromium screenshots | `test-loop.js`: 90.67% lines, 70.00% functions, 75.26% branches |
 
-The Family controller is a broad shared controller, so its 32.95% line coverage is reported transparently rather than used to claim complete controller coverage. The new DEV surface facade is covered by focused success and invalid-surface negative tests; remaining untested controller routes belong to prior modules outside this 34 UI increment.
+The Family controller is a broad shared controller, so its 32.95% line coverage is reported transparently rather than used to claim complete controller coverage. The new DEV surface facade is covered by focused success and invalid-surface negative tests; remaining untested controller routes belong to prior modules outside this consumer UI increment.
 
 ## 4. Correctness improvements completed in this cycle
 
@@ -56,8 +56,8 @@ The current local runtime screenshot set contains 34 files in `/home/ubuntu/ui34
 
 The immediate high-value improvement is an authenticated browser harness that mints a local synthetic test token, starts the API against `family_test`, and captures successful read/check-in/no-op screens. That would increase `apps/web/src/main.js` coverage, currently 0% because browser URL/session bootstrap is not exercised by jsdom unit tests, and it would support normalized visual pixel-diff automation.
 
-A second opportunity is to split the large `FamilyController` into focused surface controllers or expand integration cases for existing unrelated routes; this would improve its current 32.95% line coverage without changing the 34 UI domain boundaries.
+A second opportunity is to split the large `FamilyController` into focused surface controllers or expand integration cases for existing unrelated routes; this would improve its current 32.95% line coverage without changing the consumer UI domain boundaries.
 
 ## 7. Conclusion
 
-The 34 UI DEV platform now has a real PostgreSQL API regression baseline, shared projection coverage for every page, 34 default runtime route captures, and an explicit module-level coverage baseline. The implementation remains intentionally bounded: synthetic data is labelled, Reflection is not treated as Fact, and no external effects or direct model calls occur.
+The consumer UI DEV platform now has a real PostgreSQL API regression baseline, shared projection coverage for every page, 34 default runtime route captures, and an explicit module-level coverage baseline. The implementation remains intentionally bounded: synthetic data is labelled, Reflection is not treated as Fact, and no external effects or direct model calls occur.

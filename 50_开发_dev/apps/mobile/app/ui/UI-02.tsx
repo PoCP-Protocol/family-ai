@@ -70,7 +70,7 @@ const SERVICE_PREFERENCE_OPTIONS: readonly ServicePreference[] = ["看文字建�
 export default function FamilyAssessmentScreen() {
   const colors = useColors();
   const session = useFamilyApiSession();
-  const { selectedGrowthFocus, assessmentSyncState, selectGrowthFocus, answerAssessment, setAssessmentSyncState } = useFamilyMobile();
+  const { selectedGrowthFocus, assessmentSyncState, selectGrowthFocus, setAssessmentSyncState } = useFamilyMobile();
   const [familyStructure, setFamilyStructure] = useState<FamilyStructure>("双亲家庭");
   const [childGender, setChildGender] = useState<ChildGender>("男孩");
   const [servicePreference, setServicePreference] = useState<ServicePreference>("看文字建议");
@@ -256,7 +256,7 @@ export default function FamilyAssessmentScreen() {
                       key={option.id}
                       accessibilityRole="radio"
                       accessibilityState={{ selected }}
-                      onPress={() => { setDeepAnswers((current) => ({ ...current, [question.itemRef]: option.id })); answerAssessment(question.itemRef, option.id); haptic.selection(); }}
+                      onPress={() => { setDeepAnswers((current) => ({ ...current, [question.itemRef]: option.id })); haptic.selection(); }}
                       style={({ pressed }) => [
                         styles.answerChip,
                         { borderColor: selected ? "#1B7CF2" : colors.border, backgroundColor: selected ? "#EDF4FF" : "#FFFFFF" },

@@ -1,4 +1,4 @@
-# Family 34UI Scenario Mapping V1
+# Family Consumer UI Scenario Mapping V1
 
 状态: `EXECUTION_BASELINE`
 日期: 2026-08-24
@@ -40,4 +40,4 @@
 | UI-33 | SCENE-08 | 家庭档案 |
 | UI-34 | SCENE-03 / SCENE-06 | 服务记录与 Program 记录 |
 
-UI-35 已删除。任何 21-Day 相关能力必须映射到 UI-14、UI-09、UI-31、UI-34 或上述 34UI 中的既有页面。
+UI-35 已删除。任何 21-Day 相关能力必须映射到 UI-14、UI-09、UI-31、UI-34 或当前 consumer UI baseline 中的既有页面。

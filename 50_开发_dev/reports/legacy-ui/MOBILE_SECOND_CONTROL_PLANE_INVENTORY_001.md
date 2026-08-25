@@ -2,7 +2,7 @@
 
 ```text
 DOC_KIND   = G0 EVIDENCE / STRUCTURAL DEBT INVENTORY
-TASK       = FAMILY-35UI-FULLSTACK-REBASELINE-001 / G0
+TASK       = FAMILY-LEGACY-UI-FULLSTACK-REBASELINE-001 / G0
 DATE       = 2026-08-22
 BASE_SHA   = 708cf542ab130642f2248bbebecc997930d10a49
 METHOD     = 只读取证(grep + import 图),不修改/不删除任何文件
@@ -14,7 +14,7 @@ G0 DISPOSITION = CONTAIN + INVENTORY + BLOCK_NEW_DEPENDENCIES(物理迁移/删�
 ## 1. 结论(诚实)
 
 - **第二 AI 控制面存在**:`apps/mobile/server/_core/*` 是 Manus/vibecode 脚手架,出站统一 `forge.manus.im`(OpenAI 兼容),用 `ENV.forgeApiKey`。
-- **但不在 35 UI 渲染路径上**:`app/` 与 `lib/` 下 **0 处**直接 import `invokeLLM`/生成能力。唯一活路径是 `server/private-note-tags.ts → invokeLLM → forge`(经 tRPC `privateNoteTags.suggest` 暴露)。多数 `_core` 能力(voiceTranscription/notification/dataApi)**无任何 import**,是脚手架残留。
+- **但不在 legacy UI 渲染路径上**:`app/` 与 `lib/` 下 **0 处**直接 import `invokeLLM`/生成能力。唯一活路径是 `server/private-note-tags.ts → invokeLLM → forge`(经 tRPC `privateNoteTags.suggest` 暴露)。多数 `_core` 能力(voiceTranscription/notification/dataApi)**无任何 import**,是脚手架残留。
 - **第二身份/DB 存在**:`server/db.ts` 用 `drizzle-orm/mysql2` + `DATABASE_URL`,`users(openId/role)`,`ownerOpenId → admin`;是会话/身份存储,非业务真相。
 - **canonical owner = `apps/api` + PostgreSQL**(不变)。
 
@@ -52,12 +52,12 @@ G0 DISPOSITION = CONTAIN + INVENTORY + BLOCK_NEW_DEPENDENCIES(物理迁移/删�
 - `app/` 目录:0 匹配 `invokeLLM/generateImage/transcribeAudio/notifyOwner/callDataApi`。
 - `lib/` 目录:0 匹配同上;`lib/_core/*` 仅 OAuth(Api/Auth),不含 forge 调用。
 - 唯一通道:`server/private-note-tags.ts`(服务端,经 tRPC mutation),**非 UI 直接 import**。
-- 判定:35 UI 实际渲染路径**不触及**第二 AI 网关;`private-note-tags` 是唯一需在 G1 迁移到 FamilyLlmGateway 的活路径。
+- 判定:legacy UI 实际渲染路径**不触及**第二 AI 网关;`private-note-tags` 是唯一需在 G1 迁移到 FamilyLlmGateway 的活路径。
 
 ## 5. G0 校验器约束(已落地)
 
-- `validate:35ui:strict` 检测:`forge.manus.im`/`/v1/chat/completions`(→ `MOBILE_DIRECT_MODEL_PROVIDER=FAIL`)、`mysql2`(→ 第二 DB 警告)。
-- 该 FAIL 是**已记录的 G0 strict 已知阻塞项**,不阻止 G0 结构对齐(`validate:35ui` 正常门须 PASS)。
+- `validate:legacy UI:strict` 检测:`forge.manus.im`/`/v1/chat/completions`(→ `MOBILE_DIRECT_MODEL_PROVIDER=FAIL`)、`mysql2`(→ 第二 DB 警告)。
+- 该 FAIL 是**已记录的 G0 strict 已知阻塞项**,不阻止 G0 结构对齐(`validate:legacy UI` 正常门须 PASS)。
 - 新增依赖红线:`MOBILE_NEW_DIRECT_MODEL_DEPENDENCY = FORBIDDEN`。
 
 ## 6. G1 迁移次序建议(仅建议,决策在架构师)

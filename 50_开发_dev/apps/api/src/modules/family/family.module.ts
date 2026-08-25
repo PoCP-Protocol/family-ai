@@ -20,6 +20,8 @@ import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.s
 import { FamilyHomeService } from './family-home.service';
 import { AssessmentService } from './assessment.service';
 import { GrowthHypothesisService } from './growth-hypothesis.service';
+import { FamilyAssessmentModelProvider } from '../model/family-assessment-model.provider';
+import { FamilyModelGatewayProvider, FamilyModelLiveGatewayEnabledProvider } from './family-model-gateway.provider';
 
 /**
  * Family 模块占位(TASK-001)。
@@ -49,7 +51,10 @@ import { GrowthHypothesisService } from './growth-hypothesis.service';
 	    TenantScopedUiProjectionService,
 	    FamilyHomeService,
 	    AssessmentService,
+	    FamilyAssessmentModelProvider,
 	    GrowthHypothesisService,
+	    FamilyModelGatewayProvider,
+	    FamilyModelLiveGatewayEnabledProvider,
 
 		],
 	// M3-101A-C:导出 InterventionService,供 Principal Action Bridge 调用既有 StartIntervention Named Action(不复制其 canonical 门)。

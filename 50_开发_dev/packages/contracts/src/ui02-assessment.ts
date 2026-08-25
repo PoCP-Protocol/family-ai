@@ -2,6 +2,19 @@ export type Ui02AssessmentAvailability = 'AVAILABLE' | 'CONSENT_REQUIRED' | 'NO_
 export type AssessmentSessionStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'EXITED';
 export type AssessmentResponseType = 'SINGLE_CHOICE' | 'TEXT' | 'BOOLEAN';
 
+export interface Ui02FamilyAssessmentAiSystem {
+  subsystem_ref: 'FAMILY_ASSESSMENT_AI_SUBSYSTEM';
+  capability_ref: string;
+  ai_use_case: 'ASSESSMENT_INTERPRETATION';
+  service_depths: readonly ['BASIC_SELF_CHECK', 'DEEP_AI_INTERPRETATION'];
+  handoff_surface_refs: readonly ['UI-02', 'UI-03'];
+  boundaries: readonly [
+    'PERSPECTIVE_NOT_FACT',
+    'SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING',
+    'RECOMMENDATION_NOT_DECISION_REQUIRES_NAMED_ACTION',
+  ];
+}
+
 export interface Ui02AssessmentTool {
   tool_ref: string;
   version_no: number;
@@ -17,12 +30,16 @@ export interface Ui02AssessmentTool {
   }[];
   boundary: {
     truth_class: 'FAMILY_PERSPECTIVE';
+    capability_ref?: string;
+    ai_use_case?: 'ASSESSMENT_INTERPRETATION';
+    memory_kinds?: string[];
     not_a_score: true;
     not_a_diagnosis: true;
     no_eligibility_effect: true;
     withdrawable: true;
     training_use: false;
   };
+  ai_system?: Ui02FamilyAssessmentAiSystem;
 }
 
 export interface Ui02AssessmentSubject {

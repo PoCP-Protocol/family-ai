@@ -1,4 +1,4 @@
-# Wide Research Pattern for 34 UI Decomposition
+# Wide Research Pattern for consumer UI Decomposition
 
 > **用途：** 将 34 页静态 UI、规格、数据库、API、治理规则与外部证据，转化为可验证的平台能力、跨页血缘和实施纵切。
 >
@@ -242,4 +242,4 @@ Wide Research 不应取代专业能力；它负责识别何时需要升级到专
 | UI-19 staged candidate 隔离检查 | 研究报告未进入 11 文件 UI-19 staged candidate。 |
 | UI-02 子系统归并 | 未新建重复“页面系统”；更新既有 Assessment、Evidence、Consent、Gateway、Safeguarding 功能项。 |
 
-**完成标记：** `WIDE_RESEARCH_PATTERN_READY 50_开发_dev/reports/m2/frontend/WIDE_RESEARCH_PATTERN_FOR_34_UI_DECOMPOSITION_001.md`
+**完成标记：** `WIDE_RESEARCH_PATTERN_READY 50_开发_dev/reports/m2/frontend/WIDE_RESEARCH_PATTERN_FOR_CONSUMER_UI_DECOMPOSITION_001.md`

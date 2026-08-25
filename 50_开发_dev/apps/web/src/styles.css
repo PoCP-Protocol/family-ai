@@ -3322,7 +3322,7 @@ h3 {
 .by-expert-live-session > div { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 .by-expert-live-session .by-btn { flex: 1 1 160px; }
 
-/* Web 家庭门户：只提供桌面导航与家庭上下文，中心 35 UI 继续使用同一页面实例与状态机。 */
+/* Web 家庭门户：只提供桌面导航与家庭上下文，consumer UI 继续使用同一页面实例与状态机。 */
 .family-portal-layout { width: min(1480px, calc(100% - 32px)); margin: 24px auto 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .family-portal-rail, .family-portal-context { display: none; }
 .family-portal-stage { min-width: 0; }

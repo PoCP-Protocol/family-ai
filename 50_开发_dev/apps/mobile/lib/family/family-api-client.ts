@@ -403,6 +403,13 @@ export class FamilyApiClient {
     return this.request<T>(`/families/${familyId}/ui/03/growth-hypothesis`, { token });
   }
 
+  generateGrowthHypothesis<T>(token: string, familyId: string, sessionId: string, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/assessments/${sessionId}/growth-hypothesis`, {
+      method: "POST", token, body: {},
+      headers: { "idempotency-key": idempotencyKey, "x-correlation-id": createMobileRequestId("ui03-generate-hypothesis"), "x-source": "family-ai-mobile" },
+    });
+  }
+
   decideGrowthHypothesis<T>(token: string, familyId: string, body: { assessment_session_id: string; hypothesis_ref: string; decision_type: "CONFIRM" | "DISMISS" }, idempotencyKey: string) {
     return this.request<T>(`/families/${familyId}/growth-hypotheses/decisions`, {
       method: "POST", token, body,

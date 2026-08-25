@@ -26,7 +26,7 @@
 | 今日成长任务 | UI09 → UI08/UI11 | GrowthAction / ExecutionLifecycle / Checkin / Review | 已实现开始、暂停、继续、取消、打卡 | 多来源任务编排与冲突规则 |
 | 推荐内容/服务 | UI13 → UI14 或 UI19 | Admitted Catalog / Recommendation / Interest | 首页只读已准入目录；目标按后端 target_ui | 详情、权益、订单意向与无支付边界 |
 | 家庭上下文/更多 | UI33/UI34 | Family / Membership / Consent / ServiceRecord | 当前聚合到 UI34 | 拆分家庭资料、权限、同意与服务记录 |
-| 提醒 | 待确定（35 UI 基线没有独立提醒页） | ReminderPreference / NotificationAttempt / DeliveryReceipt | 明确显示 NOT_CONFIGURED，不伪装可用 | 确认目标 UI 与通知渠道合规后实现 |
+| 提醒 | 待确定（当前 consumer UI baseline 没有独立提醒页） | ReminderPreference / NotificationAttempt / DeliveryReceipt | 明确显示 NOT_CONFIGURED，不伪装可用 | 确认目标 UI 与通知渠道合规后实现 |
 | 底部计划/社群/我的 | UI05 / UI25 / UI30 | Journey / PrivateCommunity / CustomerAccount | 页面已存在 | 逐入口完成商业状态与权限复验 |
 
 ## 3. 三份 PPT 追踪

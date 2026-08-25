@@ -216,7 +216,7 @@ HOLD(除非直挡 Phase 当前纵切):marketplace/佣金/payment/分账 · provi
 
 ## 11. DEV 真实能力与 AI Control Plane（34 页 UI / 3 PPT 证据派生）
 
-> 本章只固化架构不变量，不记录 PR、环境具体状态、模型版本或验收结果。产品证据、逐页基线、六条闭环、实现映射与实时交付状态分别见 `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`、`governance/BANGYANG_34_UI_SCENARIO_FLOWS_AND_RULES_001.md`、`governance/BANGYANG_34_UI_REAL_LLM_GATEWAY_IMPLEMENTATION_MAPPING_001.md` 与 `governance/FAMILY_PLATFORM_MASTER_REQUIREMENTS_DESIGN_DELIVERY_TEST_PLAN_V1.md`。
+> 本章只固化架构不变量，不记录 PR、环境具体状态、模型版本或验收结果。产品证据、逐页基线、六条闭环、实现映射与实时交付状态分别见 `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`、`governance/BANGYANG_CONSUMER_UI_SCENARIO_FLOWS_AND_RULES_001.md`、`governance/BANGYANG_CONSUMER_UI_REAL_LLM_GATEWAY_IMPLEMENTATION_MAPPING_001.md` 与 `governance/FAMILY_PLATFORM_MASTER_REQUIREMENTS_DESIGN_DELIVERY_TEST_PLAN_V1.md`。
 
 ### 11.1 不变量：DEV 应实现真实能力，不是静态 mock
 

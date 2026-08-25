@@ -1,4 +1,4 @@
-# 34 UI Shared Research and Needs Analysis 001
+# consumer UI Shared Research and Needs Analysis 001
 
 ## 1. Executive verdict
 
@@ -133,7 +133,7 @@ AI 只允许生成解释、摘要、候选建议、结构化草稿和风险提�
 | Family Review | Day14/35/60/90 形成阶段复盘和 Milestone 候选，不直接证明因果效果 | 规格 E0；业务材料 E1 | 复盘完成率、Evidence 引用率、家庭理解度、错误/争议修正。 |
 | Report Milestone | 报告展示 evidence-linked explanation 和下一步候选，不显示 Family Total Score/Ranking | 规格 E0 | 解释可理解性、来源可追溯性、误解率、Human Gate 命中率。 |
 
-## 9. 34 UI grouping needs matrix
+## 9. consumer UI grouping needs matrix
 
 | 分组 | UI | 目标 | 数据需求 | 动作需求 | 风险 | 后端依赖 |
 |---|---|---|---|---|---|---|
@@ -145,7 +145,7 @@ AI 只允许生成解释、摘要、候选建议、结构化草稿和风险提�
 | Community / Evidence | UI-25–UI-29 | 家长社区、发布、动态、成果 | CommunityThread、PostDraft、Evidence、OutcomeCase | Publish/Comment/Share Named Action | 未成年、公开外发、审核、因果暗示 | Community、Moderation、Media/Share Adapter。 |
 | Family / Admin | UI-33 | 家庭档案和授权上下文 | Family、Person、Relationship、ConsentGrant、Audit | Update profile/consent candidate | 敏感家庭数据、越权成员读取 | Family Core、Consent、Authorization、Audit。 |
 
-## 10. 34 UI coverage matrix
+## 10. consumer UI coverage matrix
 
 | UI | 共享需求主题 | 主要对象/证据 | 当前 Needs Status | Phase C 前置项 |
 |---|---|---|---|---|
@@ -200,7 +200,7 @@ AI 只允许生成解释、摘要、候选建议、结构化草稿和风险提�
 
 ## 12. Blockers
 
-当前不得进入 34 UI API/代码开发的共享阻塞项为：
+当前不得进入 consumer UI API/代码开发的共享阻塞项为：
 
 1. 34 页仍没有完整、可归属、可复核的运行后截图和 pixel diff artifact。
 2. 部分单页图像与 global UI ID 的映射仍需人工确认，缺失或冲突页面不能猜测。
@@ -236,8 +236,8 @@ CODE_ALLOWED=NO
 6. `30_素材_materials/_extracted/逐页文本_含页码/01_新商业模式对外宣发.txt`：E1 业务假设和设计素材，未作为成立证据。
 7. `30_素材_materials/_extracted/逐页文本_含页码/02_战略白皮书30页.txt`：E1 战略/产品设计素材，未作为效果或因果证据。
 8. `30_素材_materials/_extracted/逐页文本_含页码/03_家庭教育大模型平台合作方案.txt`：E1 平台构想素材，未作为业务有效性证据。
-9. `reports/m2/frontend/FAMILY_34_UI_DEVELOPMENT_LEDGER_001.md`：Phase A 34 UI baseline、route、实现和截图台账。
-10. `reports/m2/frontend/FAMILY_34_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md`：34 UI 逐页研究需求前置队列。
+9. `reports/m2/frontend/FAMILY_CONSUMER_UI_DEVELOPMENT_LEDGER_001.md`：Phase A consumer UI baseline、route、实现和截图台账。
+10. `reports/m2/frontend/FAMILY_CONSUMER_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md`：consumer UI 逐页研究需求前置队列。
 
 [1]: ../../10_规格_spec/01_实施方法论/Family_FGAIM_实施方法论_V2.0.md
 [2]: ../../10_规格_spec/02_总体蓝图/Family_总体蓝图方案_V2.0.md
@@ -247,5 +247,5 @@ CODE_ALLOWED=NO
 [6]: ../../../30_素材_materials/_extracted/逐页文本_含页码/01_新商业模式对外宣发.txt
 [7]: ../../../30_素材_materials/_extracted/逐页文本_含页码/02_战略白皮书30页.txt
 [8]: ../../../30_素材_materials/_extracted/逐页文本_含页码/03_家庭教育大模型平台合作方案.txt
-[9]: ./FAMILY_34_UI_DEVELOPMENT_LEDGER_001.md
-[10]: ./FAMILY_34_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md
+[9]: ./FAMILY_CONSUMER_UI_DEVELOPMENT_LEDGER_001.md
+[10]: ./FAMILY_CONSUMER_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md

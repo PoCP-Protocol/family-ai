@@ -21,9 +21,9 @@ UI-05 承载的是家庭在阅读 UI-04 报告解释后，对一份**90 天家�
 1. `30_素材_materials/_extracted/逐页文本_含页码/01_新商业模式对外宣发.txt`；
 2. `30_素材_materials/_extracted/逐页文本_含页码/02_战略白皮书30页.txt`；
 3. `30_素材_materials/_extracted/逐页文本_含页码/03_家庭教育大模型平台合作方案.txt`；
-4. `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` 的 UI-05 canonical baseline；
-5. `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` 的对象/API/Named Action 映射；
-6. `governance/FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` 的前后端一致性准入规则；
+4. `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` 的 UI-05 canonical baseline；
+5. `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` 的对象/API/Named Action 映射；
+6. `governance/FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` 的前后端一致性准入规则；
 7. `apps/web/public/bangyang-reference/growth-plan-90day-reference-434x1130.png` 的视觉基线。
 
 `30_素材_materials` 只读。优先使用 `_extracted/逐页文本_含页码/` 逐页文本；本轮不使用 `all_materials.txt`，也不把原始 PPT、用户讨论或本项目自己的设计文档当作外部事实证明。
@@ -177,9 +177,9 @@ UI-05 BA Design 只有在以下条件满足后才能进入 Contract Plan 和 FE/
 [1]: `30_素材_materials/_extracted/逐页文本_含页码/01_新商业模式对外宣发.txt`，第 1、4、7、17 页等。
 [2]: `30_素材_materials/_extracted/逐页文本_含页码/02_战略白皮书30页.txt`，第 4、6、9、11、12、14、15、17、18、19、28、29 页等。
 [3]: `30_素材_materials/_extracted/逐页文本_含页码/03_家庭教育大模型平台合作方案.txt`，第 5、6、8、9 页等。
-[4]: `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`，UI-05 canonical baseline。
-[5]: `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`，UI-05 对象/API/Action 映射。
-[6]: `governance/FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md`，页面一致性准入规则。
+[4]: `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`，UI-05 canonical baseline。
+[5]: `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`，UI-05 对象/API/Action 映射。
+[6]: `governance/FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md`，页面一致性准入规则。
 [7]: `apps/web/public/bangyang-reference/growth-plan-90day-reference-434x1130.png`，UI-05 visual baseline。
 
 **BA_DESIGN_READY** `reports/m2/frontend/UI-05_BA_DESIGN_90_DAY_GROWTH_001.md`

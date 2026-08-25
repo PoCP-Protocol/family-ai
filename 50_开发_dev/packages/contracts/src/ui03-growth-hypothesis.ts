@@ -1,6 +1,6 @@
-export type Ui03HypothesisAvailability = 'READY' | 'NO_SUBMITTED_ASSESSMENT' | 'POLICY_BLOCKED';
+export type Ui03HypothesisAvailability = 'READY' | 'NO_SUBMITTED_ASSESSMENT' | 'POLICY_BLOCKED' | 'SUBMITTED' | 'ANALYZING' | 'ACKNOWLEDGED' | 'DISMISSED' | 'ANALYSIS_FAILED';
 export type Ui03GrowthHypothesisGenerator = 'DETERMINISTIC_CATALOG_POLICY_NOT_MODEL' | 'FAMILY_EDUCATION_ASSESSMENT_MODEL_V0_1';
-export type Ui03GrowthHypothesisAiState = 'NOT_INVOKED' | 'MODEL_DRAFT_READY' | 'MODEL_GATEWAY_BLOCKED';
+export type Ui03GrowthHypothesisAiState = 'NOT_INVOKED' | 'MODEL_DRAFT_READY' | 'MODEL_GATEWAY_BLOCKED' | 'READ_ONLY_PERSISTED';
 
 export interface Ui03GrowthHypothesis {
   hypothesis_ref: string;
@@ -22,6 +22,7 @@ export interface Ui03GrowthHypothesis {
   };
   limitations: string[];
   generator: Ui03GrowthHypothesisGenerator;
+  model_run_ref?: string;
   model_draft_ref?: string;
   model_generator?: 'FAMILY_EDUCATION_MODEL_RUNTIME_DETERMINISTIC' | 'FAMILY_EDUCATION_MODEL_RUNTIME_GATEWAY';
   model_component_ref?: string;
@@ -30,6 +31,11 @@ export interface Ui03GrowthHypothesis {
   construct_refs?: string[];
   action_candidate_refs?: string[];
   fact_boundary: 'HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS';
+  safety_gate?: {
+    required: boolean;
+    reason_refs: string[];
+    mode: 'HUMAN_REVIEW_REQUIRED';
+  };
   principal?: Ui03PrincipalInterpretation;
   scorecard?: Ui03GrowthScorecard;
 }
@@ -66,7 +72,9 @@ export interface Ui03GrowthHypothesisProjection {
   family_id: string;
   availability: Ui03HypothesisAvailability;
   hypothesis: Ui03GrowthHypothesis | null;
+  latest_assessment_session_id?: string | null;
   named_actions: {
+    generate: 'GENERATE_GROWTH_HYPOTHESIS';
     confirm: 'CONFIRM_GROWTH_HYPOTHESIS';
     dismiss: 'DISMISS_GROWTH_HYPOTHESIS';
   };
@@ -85,5 +93,15 @@ export interface GrowthHypothesisDecisionReceipt {
     evidence_refs: string[];
     boundary: 'HUMAN_CONFIRMED_INTENT_NOT_OUTCOME';
   };
+  replayed: boolean;
+}
+
+export interface GrowthHypothesisGenerationReceipt {
+  action: 'GENERATE_GROWTH_HYPOTHESIS';
+  outcome: 'HYPOTHESIS_CREATED' | 'HYPOTHESIS_REUSED';
+  assessment_session_id: string;
+  hypothesis_ref: string;
+  status: 'PROPOSED';
+  fact_boundary: 'HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS';
   replayed: boolean;
 }

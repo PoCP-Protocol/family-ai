@@ -12,7 +12,7 @@
   → [局部 screen 识别]
   → [OCR / 可见文案]
   → [视觉信号抽取]
-  → [34 UI baseline crosswalk]
+  → [consumer UI baseline crosswalk]
   → [冲突 / Human Gate]
   → [审计报告 / READY marker]
   → [Git 与证据隔离自检]
@@ -29,7 +29,7 @@
 | `ScreenSegmentationService` | PPT 页面图、布局候选。 | 局部 screen boxes、`ppt_scene_id`、`local_sequence`、置信度。 | 识别一张 PPT 中的多个手机 screen。 | 不据此生成 global UI ID。 |
 | `VisibleTextExtractor` | 单图/PPT screen、OCR/VLM result。 | 标题、CTA、步骤、状态、标签与置信度。 | 提供可见文案候选和证据坐标。 | 不把低置信 OCR 补写成事实。 |
 | `VisualSignalExtractor` | 画面、文本、产品上下文。 | 结构、文案、用户动作、对象/能力边界四类信号。 | 生成可审阅的视觉特征。 | 不自动推断医疗/教育诊断、能力标签或排名。 |
-| `UiBaselineCrosswalkService` | 34 UI baseline、PPT local screen、视觉信号。 | `EXACT / REUSE / OVERLAP / NO_GLOBAL_SCREEN / CONFLICT` 映射。 | 维护“证据 → 页面身份”的交叉表。 | 不自动顺延/重排 global UI 编号。 |
+| `UiBaselineCrosswalkService` | consumer UI baseline、PPT local screen、视觉信号。 | `EXACT / REUSE / OVERLAP / NO_GLOBAL_SCREEN / CONFLICT` 映射。 | 维护“证据 → 页面身份”的交叉表。 | 不自动顺延/重排 global UI 编号。 |
 | `ConflictAndHumanGateService` | 冲突、缺图、低置信、敏感内容、业务边界。 | gap register、correction proposal、人工确认任务、NO_ACTION。 | 把不确定性显式化并阻止错误自动化。 | 不绕过 consent/Human Gate，不执行真实外部 effect。 |
 | `AuditReportService` | crosswalk、缺口、确认决策。 | Markdown 审计报告、统计、READY marker。 | 输出可复核证据包。 | READY 不代表裁决完成、功能已开发或可生产。 |
 | `AuditValidationRunner` | 报告路径、Git 状态、staged candidate。 | marker 校验、路径状态、staged leak、差异检查结果。 | 证明研究文档与功能切片隔离。 | 不修改 index、不做自动提交或推送。 |
@@ -72,7 +72,7 @@ visual_audit_request:
 | 6. Crosswalk | 生成候选 global UI 与映射类型。 | `crosswalk_row`。 | 相似但对象不同写 `SEMANTIC_ONLY/OVERLAP`。 |
 | 7. 冲突门 | 检查缺图、重复、全局/局部编号冲突、敏感页面。 | `conflict/gap`。 | 转人工确认或 `NO_ACTION`。 |
 
-## 5. 34 UI Baseline Crosswalk 规则
+## 5. consumer UI Baseline Crosswalk 规则
 
 | 字段 | 含义 | 规则 |
 |---|---|---|
@@ -126,6 +126,6 @@ git status --short -- 50_开发_dev/apps 50_开发_dev/database
 
 ## 9. 技能框架候选
 
-该方法可在未来包装为内部技能 `family-visual-evidence-crosswalk`。触发条件包括：34 UI 基线建立、PPT 与单图视觉核对、跨版本页面冲突、UI 开发前证据门禁以及交付前 UI/规格一致性检查。正式创建技能前应先冻结：source registry schema、mapping type 枚举、human confirmation workflow、DEV/TEST rendering adapter 及其审计保留策略。
+该方法可在未来包装为内部技能 `family-visual-evidence-crosswalk`。触发条件包括：consumer UI 基线建立、PPT 与单图视觉核对、跨版本页面冲突、UI 开发前证据门禁以及交付前 UI/规格一致性检查。正式创建技能前应先冻结：source registry schema、mapping type 枚举、human confirmation workflow、DEV/TEST rendering adapter 及其审计保留策略。
 
 **FAMILY_MANUS_VISUAL_CAPABILITY_TRANSFER_FRAMEWORK_READY** `50_开发_dev/reports/m2/frontend/FAMILY_MANUS_VISUAL_CAPABILITY_TRANSFER_FRAMEWORK_001.md`

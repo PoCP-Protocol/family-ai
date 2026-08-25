@@ -1,4 +1,4 @@
-# Phase C 34 UI Coverage Summary 001
+# Phase C consumer UI Coverage Summary 001
 
 ## 1. Executive verdict
 
@@ -82,8 +82,8 @@ NEXT_REQUIRED_DECISION=Architect/Human decision to close blocking questions befo
 
 本摘要基于以下已提交文档与 Git 状态交叉核对：
 
-1. `reports/m2/frontend/FAMILY_34_UI_DEVELOPMENT_LEDGER_001.md`
-2. `reports/m2/frontend/34_UI_SHARED_RESEARCH_AND_NEEDS_ANALYSIS_001.md`
+1. `reports/m2/frontend/FAMILY_CONSUMER_UI_DEVELOPMENT_LEDGER_001.md`
+2. `reports/m2/frontend/CONSUMER_UI_SHARED_RESEARCH_AND_NEEDS_ANALYSIS_001.md`
 3. `reports/m2/frontend/PHASE_C_UI_DEVELOPMENT_QUEUE_001.md`
 4. UI-01 的 Research/BA/Architect Review 文件
 5. UI-02~UI-34 的 `PHASE_C_PRE_API_GATE_001.md` 文件

@@ -34,6 +34,16 @@ describe("UI-03 family growth explanation baseline contract", () => {
     expect(source).not.toMatch(/同龄平均|孩子得分|总分排名|能力排名|智力测验/);
   });
 
+  it("keeps backend model capability embedded in the baseline report hierarchy", () => {
+    expect(source).toContain("ai_state");
+    expect(source).toContain("formatAiState");
+    expect(source).toContain("const aiState = remote.ai_state");
+    expect(source).toContain("named_actions.confirm");
+    expect(source).toContain("CONFIRM_GROWTH_HYPOTHESIS");
+    expect(source).not.toContain("AI解读摘要");
+    expect(source).not.toContain("来源与边界");
+  });
+
   it("uses scorecard-backed issue tags and numbered recommendations", () => {
     expect(source).toContain("scorecard.core_issue_tags.slice(0, 3).map");
     expect(source).toContain("scorecard.recommendations.slice(0, 3).map");

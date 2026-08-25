@@ -114,7 +114,7 @@ export async function seedAiConsentSubject(
 export async function cleanOrchestrationTablesIfPresent(pool: pg.Pool): Promise<void> {
   const tables = [
     'family_growth_camp_operations', 'family_growth_camp_day_checkins', 'family_growth_camp_enrollments',
-    'family_growth_hypothesis_decisions', 'family_assessment_operations', 'family_assessment_responses', 'family_assessment_sessions',
+    'family_growth_hypothesis_decisions', 'family_growth_hypotheses', 'family_assessment_ai_runs', 'family_assessment_operations', 'family_assessment_responses', 'family_assessment_sessions',
     // Event and membership/booking/commerce facts must clear before Tenant/Family bases; supply masters remain fixture-only.
     'family_membership_benefit_ledger', 'family_membership_benefit_grants', 'family_membership_subscriptions',
     'family_membership_benefit_definitions', 'family_membership_plans',

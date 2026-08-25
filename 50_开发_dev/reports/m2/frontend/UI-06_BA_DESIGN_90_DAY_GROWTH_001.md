@@ -18,11 +18,11 @@ UI-06 读取 UI-05/服务旅程相关 projection，允许在明确授权后通�
 
 | 来源 | 用途 | 证据边界 |
 |---|---|---|
-| `BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` UI-06 条目 | 页面名称、入口/出口、可见文案、控件、布局和不确定文案 | 视觉/页面线索；不能证明后台能力已实现。 |
+| `BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` UI-06 条目 | 页面名称、入口/出口、可见文案、控件、布局和不确定文案 | 视觉/页面线索；不能证明后台能力已实现。 |
 | `delivery-community-reference-458x1128.png` | 单页视觉 baseline | 视觉证据；不可辨认文字不猜测。 |
-| `FAMILY_34_UI_EVIDENCE_OBJECT_INVENTORY_V1.md` | UI-06/UI-10 对象候选：ServiceOffering、AssistantSession、Reminder、CommunityPost、LiveSession、ServiceJourneyProjection | 对象设计线索；需契约验证。 |
-| `FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` | UI-06 `ServiceJourneyProjection`、ServiceCase、ServiceRecord 和状态上限 | 治理/对象 SSOT；当前实现仍为 backend gap。 |
-| `FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` | UI-06 为 `UI_READY_BACKEND_GAP`，仅允许受控说明和服务旅程只读 DTO | 一致性门禁；不能用路由通过替代 DTO/测试通过。 |
+| `FAMILY_CONSUMER_UI_EVIDENCE_OBJECT_INVENTORY_V1.md` | UI-06/UI-10 对象候选：ServiceOffering、AssistantSession、Reminder、CommunityPost、LiveSession、ServiceJourneyProjection | 对象设计线索；需契约验证。 |
+| `FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` | UI-06 `ServiceJourneyProjection`、ServiceCase、ServiceRecord 和状态上限 | 治理/对象 SSOT；当前实现仍为 backend gap。 |
+| `FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` | UI-06 为 `UI_READY_BACKEND_GAP`，仅允许受控说明和服务旅程只读 DTO | 一致性门禁；不能用路由通过替代 DTO/测试通过。 |
 | Family UI BA Design Gate | 研究→设计→视觉→契约→实现→截图差异闭环 | 方法规则，不是业务事实。 |
 
 ### 需求来源链
@@ -160,10 +160,10 @@ EXTERNAL_EFFECT=HOLD
 
 ## References
 
-[1]: `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` UI-06 canonical baseline
-[2]: `governance/FAMILY_34_UI_EVIDENCE_OBJECT_INVENTORY_V1.md` UI-06 object candidates
-[3]: `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` UI-06 mapping
-[4]: `governance/FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` UI-06 readiness
-[5]: `governance/FAMILY_34_UI_EVIDENCE_OBJECT_RELATIONSHIP_MODEL_V1.md` UI-06 relationship model
+[1]: `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` UI-06 canonical baseline
+[2]: `governance/FAMILY_CONSUMER_UI_EVIDENCE_OBJECT_INVENTORY_V1.md` UI-06 object candidates
+[3]: `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` UI-06 mapping
+[4]: `governance/FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` UI-06 readiness
+[5]: `governance/FAMILY_CONSUMER_UI_EVIDENCE_OBJECT_RELATIONSHIP_MODEL_V1.md` UI-06 relationship model
 [6]: `apps/web/public/bangyang-reference/delivery-community-reference-458x1128.png` visual baseline
 [7]: `skills/family-ui-ba-design-gate/SKILL.md` reusable gate workflow

@@ -1,11 +1,11 @@
 schema_version: FAMILY_PPT_UI_DELIVERY_TRACEABILITY_V1
 status: EXECUTION_BASELINE
 as_of: 2026-08-23
-purpose: 以3份PPT的业务目标与方案、UI-01到UI-35的体验定义共同约束开发与测试
+purpose: 以3份PPT的业务目标与方案、UI-01到UI-34的体验定义共同约束开发与测试
 
 baseline_rules:
   - PPT定义业务目标、产品阶梯、服务方案、经营假设与阶段路线，不直接证明系统已实现或业务效果成立
-  - UI-01到UI-35定义用户可见能力、主动作、状态与跨端验收，不允许为后端方便删改基线能力
+  - UI-01到UI-34定义用户可见能力、主动作、状态与跨端验收，不允许为后端方便删改基线能力
   - 每项开发必须同时引用至少一个PPT目标和一个UI；纯平台底座必须说明其支撑的UI集合
   - PPT中的收入、转化、完成率、家庭数量与估值数字均为待审批经营目标，不作为代码事实
   - 自动获客、自动成交、公开发布、真人服务、支付与儿童参与均受Consent、Human Gate和External Adapter约束
@@ -56,7 +56,7 @@ delivery_objectives:
   - id: BL-03
     name: 每日行动与21天首次可见改变
     source_slides: [PPT-BUSINESS:S7, PPT-BUSINESS:S17, PPT-STRATEGY:S12, PPT-STRATEGY:S15, PPT-STRATEGY:S28]
-    ui: [UI-01, UI-09, UI-10, UI-11, UI-12, UI-29, UI-35]
+    ui: [UI-01, UI-09, UI-10, UI-11, UI-12, UI-29, UI-31, UI-34]
     scenarios: [SCN-201, SCN-301, SCN-601]
     slices: [VS-01, VS-02, VS-05]
     capability: 家庭每天只看到清晰行动，完成、部分完成、跳过和反思均可记录且不伪造成长结果
@@ -68,7 +68,7 @@ delivery_objectives:
   - id: BL-04
     name: 21天与90天可暂停恢复的陪伴计划
     source_slides: [PPT-BUSINESS:S7, PPT-BUSINESS:S17, PPT-STRATEGY:S8, PPT-STRATEGY:S11, PPT-STRATEGY:S27]
-    ui: [UI-04, UI-05, UI-11, UI-29, UI-35]
+    ui: [UI-04, UI-05, UI-09, UI-11, UI-29, UI-31, UI-34]
     scenarios: [SCN-301]
     slices: [VS-02]
     capability: 模板版本化后实例化计划与任务，支持定时、复盘、暂停、恢复、调整和完成
@@ -140,7 +140,7 @@ delivery_objectives:
   - id: BL-10
     name: 分阶段商业化与跨端同源运行
     source_slides: [PPT-BUSINESS:S18, PPT-STRATEGY:S6, PPT-STRATEGY:S27, PPT-STRATEGY:S28, PPT-PLATFORM:S4, PPT-PLATFORM:S6]
-    ui: [UI-01, UI-02, UI-03, UI-04, UI-05, UI-06, UI-07, UI-08, UI-09, UI-10, UI-11, UI-12, UI-13, UI-14, UI-15, UI-16, UI-17, UI-18, UI-19, UI-20, UI-21, UI-22, UI-23, UI-24, UI-25, UI-26, UI-27, UI-28, UI-29, UI-30, UI-31, UI-32, UI-33, UI-34, UI-35]
+    ui: [UI-01, UI-02, UI-03, UI-04, UI-05, UI-06, UI-07, UI-08, UI-09, UI-10, UI-11, UI-12, UI-13, UI-14, UI-15, UI-16, UI-17, UI-18, UI-19, UI-20, UI-21, UI-22, UI-23, UI-24, UI-25, UI-26, UI-27, UI-28, UI-29, UI-30, UI-31, UI-32, UI-33, UI-34]
     scenarios: [SCN-001, SCN-101, SCN-102, SCN-201, SCN-301, SCN-401, SCN-402, SCN-501, SCN-502, SCN-601, SCN-602]
     slices: [VS-00, VS-01, VS-02, VS-03, VS-04, VS-05]
     capability: App与Web共用Family API和PostgreSQL真相，按纵切逐步从TEST/SANDBOX升级到商业运行

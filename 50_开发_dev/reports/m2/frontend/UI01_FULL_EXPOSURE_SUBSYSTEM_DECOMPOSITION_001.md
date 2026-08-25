@@ -215,9 +215,9 @@ flowchart LR
 
 [1]: `../../../governance/BANGYANG_18_UI_TRANSCRIPTION_REVIEW_AND_UNCERTAINTY_001.md` — 首页清晰图确认范围、低清小字与素材待确认项、语义冲突处理。
 
-[2]: `../../../governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` — UI-01 以及关联页面的对象、API、Named Action、投影与禁止边界。
+[2]: `../../../governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` — UI-01 以及关联页面的对象、API、Named Action、投影与禁止边界。
 
-[3]: `../../../governance/BANGYANG_34_UI_SCENARIO_FLOWS_AND_RULES_001.md` — DEV/TEST 受控闭环、Consent、Gateway、NO_ACTION 与外部副作用限制。
+[3]: `../../../governance/BANGYANG_CONSUMER_UI_SCENARIO_FLOWS_AND_RULES_001.md` — DEV/TEST 受控闭环、Consent、Gateway、NO_ACTION 与外部副作用限制。
 
 [4]: https://www.aap.org/en/practice-management/providing-patient--and-family-centered-care/shared-decision-making/ — American Academy of Pediatrics, *Shared Decision Making*；家庭价值、偏好与证据有限时的谨慎原则。
 
@@ -228,7 +228,7 @@ flowchart LR
 
 ---
 
-## 9. 34 UI Linkage Map
+## 9. consumer UI Linkage Map
 
 ### 9.1 Iterative Page Lineage Analysis
 
@@ -919,7 +919,7 @@ stateDiagram-v2
 
 | ui_exposure | visible_state | projection_source | allowed_dynamic_level | forbidden_upgrade | evidence_or_file_reference |
 |---|---|---|---|---|---|
-| `90天成长方案`标题与阶段卡 | 当前阶段、目标、90天、难度 | `PlanDraftProjection`；synthetic fixture / approved template metadata | L1 read；L2 controlled draft | 不得升级为真实 `Journey.phase`、家庭目标事实、效果承诺。 | UI-05 原图；`BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` UI-05；UI-05 page policy。 |
+| `90天成长方案`标题与阶段卡 | 当前阶段、目标、90天、难度 | `PlanDraftProjection`；synthetic fixture / approved template metadata | L1 read；L2 controlled draft | 不得升级为真实 `Journey.phase`、家庭目标事实、效果承诺。 | UI-05 原图；`BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` UI-05；UI-05 page policy。 |
 | `3/12/36/90`统计 | 3大阶段、12周计划、36个任务、90天陪伴 | `PlanDraftProjection.structure`；template-derived synthetic count | L1 read | 不得创建 3/12/36 个真实实例，不得作为家庭进度/承诺。 | UI-05 原图；JourneyTemplate/TaskTemplate 治理映射。 |
 | 第1周 `关系破冰` | 显示已完成 `2/4`、两条任务样例 | synthetic `WeekPlanDraft.display_status` | L1 read | 不得写 `TaskInstance=COMPLETED`，不得产生 Outcome 或提醒。 | UI-05 原图；Task projection 设计原则。 |
 | 第2周 `行为训练` | 显示进行中 `1/4` | synthetic `WeekPlanDraft.display_status` | L1 read | 不得写 `Journey=ACTIVE` 或真实任务进度。 | UI-05 原图；`plan_draft/read_projection` 边界。 |

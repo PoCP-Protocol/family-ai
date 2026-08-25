@@ -25,7 +25,7 @@ Broad Research
 → Git Commit/Push
 ```
 
-研究和需求分析必须覆盖家庭教育真实场景、用户角色、榜样教育/波波校长及现有素材中的业务假设、34 UI 视觉线索、Family SSOT、数据对象、Named Action、Consent/Human Gate、Model Gateway、前后端一致性、测试和截图对标。
+研究和需求分析必须覆盖家庭教育真实场景、用户角色、榜样教育/波波校长及现有素材中的业务假设、consumer UI 视觉线索、Family SSOT、数据对象、Named Action、Consent/Human Gate、Model Gateway、前后端一致性、测试和截图对标。
 
 需求分析必须分别识别 `User Need`、`Business Need`、`Operational Need`、`Compliance Need`、`Data Need` 和 `AI Need`，并严格区分 `Fact`、`Perspective`、`Hypothesis`、`Recommendation`、`Decision`、`Action`，以及 `Read Projection`、`Controlled Draft`、`Named Action`、`External Effect`。
 
@@ -417,8 +417,8 @@ UI-05 必须完整复刻用户提供的原始画面，动态接线不能变成�
 [1]: `reports/m2/frontend/UI-05_BLOCKING_QUESTIONS_DECISION_PACK_001.md`
 [2]: `reports/m2/frontend/UI-05_BA_DESIGN_90_DAY_GROWTH_001.md`
 [3]: `reports/m2/frontend/UI-05_BA_DESIGN_ARCHITECT_REVIEW_001.md`
-[4]: `governance/FAMILY_34_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md`
-[5]: `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
+[4]: `governance/FAMILY_CONSUMER_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md`
+[5]: `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
 [6]: `database/migrations/0020_growth_orchestration_v1.sql`
 
 **UI05_HUMAN_DECISION_REQUEST_READY** `reports/m2/frontend/UI-05_HUMAN_DECISION_REQUEST_001.md`

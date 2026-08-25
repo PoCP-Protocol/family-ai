@@ -1,7 +1,7 @@
-# FAMILY 35UI — G0 ALIGNMENT EVIDENCE 001
+# FAMILY legacy UI — G0 ALIGNMENT EVIDENCE 001
 
 ```text
-TASK     = FAMILY-35UI-FULLSTACK-REBASELINE-001 / G0
+TASK     = FAMILY-LEGACY-UI-FULLSTACK-REBASELINE-001 / G0
 DATE     = 2026-08-22
 BASE_SHA = 708cf542ab130642f2248bbebecc997930d10a49
 SINGLE_WRITER = 本 Claude Code 会话(D:\Family-ai)
@@ -16,24 +16,24 @@ SINGLE_WRITER = 本 Claude Code 会话(D:\Family-ai)
 | fetch 后 origin/main | 708cf542 ✅(架构师核实一致:964c845→23ddbfe→708cf54) |
 | reset --hard origin/main | HEAD=708cf542,cat-file=commit ✅ |
 | LOCAL_RECONCILIATION | PASS |
-| rescue 分支 | `rescue/35ui-pre-g0-20260822`(本地,未推送,保存 4 个 pre-G0 文件) |
-| 工作分支 | `platform/35ui-fullstack-rebaseline-001`(merge-base=main=708cf542) |
+| rescue 分支 | `rescue/legacy UI-pre-g0-20260822`(本地,未推送,保存 4 个 pre-G0 文件) |
+| 工作分支 | `platform/legacy UI-fullstack-rebaseline-001`(merge-base=main=708cf542) |
 
 ## 2. rescue 既有产出定性(Section 6)
 
 | 文件 | 来源 | 定性 |
 |---|---|---|
-| governance/ARCHITECTURE_DRIVER_35UI_REBASELINE_001.md | 前会话(untracked) | EVIDENCE_ONLY(方法论已被本轮 V4+PROGRAM 吸收;不再单独作为 SSOT) |
-| backlog/tasks/FAMILY-35UI-ARCHITECTURE-REBASELINE-001.md | 前会话 | SUPERSEDED(ABSORBED_INTO_G0;由 FAMILY_35UI_FULLSTACK_REBASELINE_001 取代) |
-| reports/rebaseline-35ui/UI_CAPABILITY_MATRIX_V1.md | **并发会话**(非本会话所写) | EVIDENCE_ONLY(信息被 RUNTIME_MATRIX 机器化取代;保留可追溯,未采纳为 canonical) |
+| governance/ARCHITECTURE_DRIVER_legacy UI_REBASELINE_001.md | 前会话(untracked) | EVIDENCE_ONLY(方法论已被本轮 V4+PROGRAM 吸收;不再单独作为 SSOT) |
+| backlog/tasks/FAMILY-LEGACY-UI-ARCHITECTURE-REBASELINE-001.md | 前会话 | SUPERSEDED(ABSORBED_INTO_G0;由 legacy-ui/FAMILY_LEGACY_UI_FULLSTACK_REBASELINE_001 取代) |
+| reports/legacy-ui/UI_CAPABILITY_MATRIX_V1.md | **并发会话**(非本会话所写) | EVIDENCE_ONLY(信息被 RUNTIME_MATRIX 机器化取代;保留可追溯,未采纳为 canonical) |
 | PROJECT_STATUS.md(改动) | 前会话 | MERGE(状态并入 CURRENT_SPRINT/PROGRAM_STATUS,不整体 cherry-pick) |
 
-> canonical 机器契约 = `governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json`,**不是**最先出现的任何 markdown。
+> historical canonical 机器契约已废弃；current execution SSOT = `governance/FAMILY_CONSUMER_UI_BASELINE_V1.json`,**不是**最先出现的任何 markdown。
 
 ## 3. runtime_status 逐页据实分类(Section 13)
 
 分类枚举:REAL_PERSISTED / REAL_INTERNAL_RUNTIME / TEST_LOOP_FIXTURE / LOCAL_DRAFT / READ_ONLY_PROJECTION / GATE_BOUNDARY / NOT_IMPLEMENTED。
-证据源:`governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`"当前实现"列 + `apps/mobile/lib/family/family-api-client.ts` 真实端点 + 第二控制面盘点。
+证据源:`governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`"当前实现"列 + `apps/mobile/lib/family/family-api-client.ts` 真实端点 + 第二控制面盘点。
 
 分布:**REAL_PERSISTED=0** · READ_ONLY_PROJECTION=18 · TEST_LOOP_FIXTURE=8 · GATE_BOUNDARY=6 · LOCAL_DRAFT=2 · NOT_IMPLEMENTED=1。
 
@@ -47,7 +47,7 @@ SINGLE_WRITER = 本 Claude Code 会话(D:\Family-ai)
 | UI-06 | READ_ONLY_PROJECTION | membership customer-projection;真实权益 Gate |
 | UI-07 | READ_ONLY_PROJECTION | 测评目录只读 |
 | UI-08 | READ_ONLY_PROJECTION | report-explanation 只读 |
-| UI-09 | TEST_LOOP_FIXTURE | page-objects test-loop(34UI 称 API+DB+集成过,但 namespace=test-loop) |
+| UI-09 | TEST_LOOP_FIXTURE | page-objects test-loop(consumer UI baseline 曾称 API+DB+集成过,但 namespace=test-loop) |
 | UI-10 | GATE_BOUNDARY | 儿童直接作答 HOLD |
 | UI-11 | READ_ONLY_PROJECTION | 私有进度,禁跨家庭排名 |
 | UI-12 | LOCAL_DRAFT | 私有故事 + 分享草稿,公开 HOLD |
@@ -77,8 +77,8 @@ SINGLE_WRITER = 本 Claude Code 会话(D:\Family-ai)
 
 ## 4. 覆盖与验收(Section 12 摘要)
 
-- 35/35 UI 全部有 primary_domain / projection / named_actions / runtime_status。
+- 35/legacy UI 全部有 primary_domain / projection / named_actions / runtime_status。
 - AI use case 页均 ai_control_plane=FAMILY_LLM_GATEWAY;无 AI 页=NONE。
 - UI-03 保留 AI_DIAGNOSIS。
-- 诚实声明:`35_UI_FRONTEND_BASELINE=KEEP` · `35_UI_BACKEND_COMPLETE=NO` · `G0=ALIGNMENT_FOUNDATION`。
+- 诚实声明:`LEGACY_UI_FRONTEND_BASELINE=KEEP` · `LEGACY_UI_BACKEND_COMPLETE=NO` · `G0=ALIGNMENT_FOUNDATION`。
 - 已知 strict blocker:MOBILE_DIRECT_MODEL_PROVIDER(private-note-tags→forge)、MOBILE_SECOND_DB(mysql2)——见 inventory,G1 迁移。

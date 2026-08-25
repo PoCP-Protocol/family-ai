@@ -4,7 +4,7 @@
 
 ```text
 PHASE=FIRST_SLICE_ADMISSION_API_CONTRACT_CANDIDATE
-SOURCE_RESEARCH=reports/m2/frontend/34_UI_WIDE_RESEARCH_TO_DEVELOPMENT_SLICE_001.md
+SOURCE_RESEARCH=reports/m2/frontend/CONSUMER_UI_WIDE_RESEARCH_TO_DEVELOPMENT_SLICE_001.md
 UI_SCOPE=UI-01,UI-09
 SLICE_NAME=Family Today and Daily Task Check-in
 IMPLEMENTATION_ALLOWED=NO_UNTIL_ARCHITECT_HUMAN_APPROVAL
@@ -253,7 +253,7 @@ The exact next step is not implementation. First, the named Architect/Human owne
 
 ## 14. References
 
-[1] `reports/m2/frontend/34_UI_WIDE_RESEARCH_TO_DEVELOPMENT_SLICE_001.md` (commit `d055c703c56eb2e79543990230dd83214b4f5e70`).
+[1] `reports/m2/frontend/CONSUMER_UI_WIDE_RESEARCH_TO_DEVELOPMENT_SLICE_001.md` (commit `d055c703c56eb2e79543990230dd83214b4f5e70`).
 
 [2] `reports/m2/frontend/UI-01_ARCHITECT_REVIEW_AND_BLOCKING_QUESTIONS_001.md` (existing UI-01 NO_GO and baseline/consent/action blockers).
 

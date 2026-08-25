@@ -1,4 +1,4 @@
-# Family 34 UI Development Ledger 001
+# Family consumer UI Development Ledger 001
 
 > **Phase A scope:** 只读盘点 34 个 global UI 的视觉基线、当前 Web 实现入口、路由、运行截图证据、API/后端依赖与门禁状态。本台账不是完成声明，不把静态壳、参考图或文档中的 screenshot 计划误认为动态实现或 pixel diff 证据。
 
@@ -16,11 +16,11 @@
 
 ## 2. 证据与计数口径
 
-`apps/web/public/bangyang-reference/ui18/manifest.csv` 提供 18 个局部场景基线，分别为 core、growth、commerce 三组，每组 6 张；其余 16 个业务参考图位于 `apps/web/public/bangyang-reference/`，通过文件名和既有 34 UI baseline/crosswalk 进行映射。`home-screen-ui-crop.png`、`src/assets/bangyang-reference/*`、PPT sheets、报告图和历史 artifacts 只作为参考/分析候选，不计入运行截图。
+`apps/web/public/bangyang-reference/ui18/manifest.csv` 提供 18 个局部场景基线，分别为 core、growth、commerce 三组，每组 6 张；其余 16 个业务参考图位于 `apps/web/public/bangyang-reference/`，通过文件名和既有 consumer UI baseline/crosswalk 进行映射。`home-screen-ui-crop.png`、`src/assets/bangyang-reference/*`、PPT sheets、报告图和历史 artifacts 只作为参考/分析候选，不计入运行截图。
 
 现有 `apps/web/src/test-loop.js` 明确存在 34 个 UI ID 到页面 key 的映射；这证明路由/视图壳存在，不证明每页已接通真实 API、DB projection、Named Action、Consent 或前后端一致性。UI-19 的 `teacher-supply-view.js`/`teacher-supply-client.js` 是当前最明确的 admitted read projection slice；UI-09 的 Page Objects test 覆盖受控 task action。其余页面大多仍是参考图/静态 view 或有限的受控测试入口。
 
-## 3. 34 UI Development Ledger
+## 3. consumer UI Development Ledger
 
 | UI ID | Page / Scenario | Baseline path | Current implementation path / route | Runtime screenshot | API / backend dependency | Gate status | Development status |
 |---|---|---|---|---|---|---|---|
@@ -82,7 +82,7 @@ TOTAL_UI_IMPLEMENTATIONS_FOUND=34  # route/view shell entries; not 34 completed 
 TOTAL_UI_ROUTES_FOUND=34
 TOTAL_RUNTIME_SCREENSHOTS_FOUND=0  # confirmed repo-mapped runtime artifacts
 TOTAL_PIXEL_DIFF_READY=0
-LEDGER_PATH=reports/m2/frontend/FAMILY_34_UI_DEVELOPMENT_LEDGER_001.md
+LEDGER_PATH=reports/m2/frontend/FAMILY_CONSUMER_UI_DEVELOPMENT_LEDGER_001.md
 BLOCKERS=NO_RUNTIME_SCREENSHOTS;NO_PIXEL_DIFF;STATIC_SHELL_NOT_DYNAMIC_RUNTIME;RESEARCH_AND_GATE_GAPS;SOME_BASELINE_MAPPING_NEEDS_CONFIRMATION
 NEXT_PHASE_READY=YES  # Phase B research only; API/Code remain NO_GO
 ```
@@ -91,29 +91,29 @@ NEXT_PHASE_READY=YES  # Phase B research only; API/Code remain NO_GO
 
 本台账完成只读盘点，不声明任何 UI 已完成开发。`NEXT_PHASE_READY=YES` 仅表示可以继续 Phase B 的共享 Broad Research + Needs Analysis；在相应 UI 的 BA Design、Visual Baseline、Architect Review、API Contract 和一致性测试闭合前，不得进入业务代码实现。任何运行截图必须注明 viewport、route、source baseline 和状态，并在有成对文件时才可进行 pixel diff。
 
-> **Phase A marker:** `FAMILY_34_UI_DEVELOPMENT_LEDGER_READY`
+> **Phase A marker:** `FAMILY_CONSUMER_UI_DEVELOPMENT_LEDGER_READY`
 
 ## References
 
-1. `apps/web/src/test-loop.js`：34 UI route/view 映射与现有静态 shell 入口。
+1. `apps/web/src/test-loop.js`：consumer UI route/view 映射与现有静态 shell 入口。
 2. `apps/web/public/bangyang-reference/ui18/manifest.csv`：core/growth/commerce 18 张局部场景基线。
 3. `apps/web/public/bangyang-reference/`：16 张业务参考基线图。
-4. `reports/m2/frontend/FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md`：global UI baseline/crosswalk。
-5. `reports/m2/frontend/FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md`：功能与页面血缘台账。
-6. `reports/m2/frontend/FAMILY_34_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md`：34 UI 研究需求前置队列。
+4. `reports/m2/frontend/FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md`：global UI baseline/crosswalk。
+5. `reports/m2/frontend/FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md`：功能与页面血缘台账。
+6. `reports/m2/frontend/FAMILY_CONSUMER_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md`：consumer UI 研究需求前置队列。
 7. `apps/web/src/teacher-supply-view.js`、`apps/web/src/teacher-supply-client.js`：UI-19 只读供给 projection 样例。
 8. `apps/web/src/test-loop.page-objects.spec.ts`：UI-09 受控任务动作测试入口。
 
 [1]: ../../apps/web/src/test-loop.js
 [2]: ../../apps/web/public/bangyang-reference/ui18/manifest.csv
 [3]: ../../apps/web/public/bangyang-reference/
-[4]: ./FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md
-[5]: ./FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md
-[6]: ./FAMILY_34_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md
+[4]: ./FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md
+[5]: ./FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md
+[6]: ./FAMILY_CONSUMER_UI_RESEARCH_NEEDS_ANALYSIS_QUEUE_001.md
 [7]: ../../apps/web/src/teacher-supply-view.js
 [8]: ../../apps/web/src/test-loop.page-objects.spec.ts
 
-FAMILY_34_UI_DEVELOPMENT_LEDGER_READY
+FAMILY_CONSUMER_UI_DEVELOPMENT_LEDGER_READY
 
 ## Visual audit record
 

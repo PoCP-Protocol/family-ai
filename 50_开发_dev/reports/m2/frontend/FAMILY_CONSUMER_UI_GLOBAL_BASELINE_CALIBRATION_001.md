@@ -1,4 +1,4 @@
-# 34 UI Canonical Baseline Calibration
+# consumer UI Canonical Baseline Calibration
 
 > **门禁定位。** 本文档是继续任何页面动态化、路由绑定、API 契约或数据对象拆解之前的 global UI 基线。它不是 UI-05 的替代工作；UI-05 仅作为本门禁通过后的 `next_recursive_target`。
 >
@@ -15,7 +15,7 @@
 | `P0_PPT_COMMERCE_REFERRAL` | 用户提供 / 同源商业模式 PPT 第8页“分享裂变商城方案构思” | 商城闭环局部 1–6：商城、商品、邀请、拼团、积分、合伙人资产。 | 独立局部编号域。 |
 | `P0_PPT_EXPERT_SALON` | 商业模式 PPT 第10页“名师咨询 & 线下沙龙场景设计” | 服务闭环局部 1–6：名师、详情、咨询预约、沙龙、活动、我的预约/活动。 | 用户口径“五 UI”指前五个服务旅程屏；第六列为资产回流屏。 |
 | `P0_PPT_COMMUNITY_CHECKIN` | 商业模式 PPT 第12页“用户社区 & 打卡分享场景补充” | 社区闭环局部 1–5：社区、发帖、成果、互动、我的社区。 | 独立局部编号域。 |
-| `P1_MASTER_PLAN` | `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` | 34 个 global UI 条目、页面名、源图和闭环。 | global ID 主要锚点。 |
+| `P1_MASTER_PLAN` | `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` | 34 个 global UI 条目、页面名、源图和闭环。 | global ID 主要锚点。 |
 | `P2_REFERENCE_ASSET` | `apps/web/public/bangyang-reference/` | 33 个可核对原图。 | UI-01 的首版图未在该目录中。 |
 
 ## 2. 逐页 Canonical Baseline
@@ -82,11 +82,11 @@
 >
 > **UI-05 规则。** UI-05 仍是已暂停、待本门禁通过后恢复的下一主线：仅可先实现 `plan_draft/read_projection`；FamilyDecision 与后续 Named Action 必须分层；不能自动创建真实 Journey、Task 或 Intervention。
 
-**34_UI_BASELINE_CALIBRATION_READY** `50_开发_dev/reports/m2/frontend/FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
+**CONSUMER_UI_BASELINE_CALIBRATION_READY** `50_开发_dev/reports/m2/frontend/FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
 
 ## References
 
-[1]: ../../governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md "34 页 UI 与 3 份 PPT 总交付计划"
+[1]: ../../governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md "34 页 UI 与 3 份 PPT 总交付计划"
 [2]: ../../apps/web/public/bangyang-reference/ "34 页 UI 视觉参考资产目录"
 [3]: /tmp/PPT_PAGE5_PAGE6_SIX_UI_VERIFICATION_NOTES.md "PPT 第5、6页六屏 UI 核验笔记"
 [4]: /tmp/PPT_PAGE10_PAGE12_FIVE_UI_VERIFICATION_NOTES.md "PPT 第10、12页五屏 UI 核验笔记"
@@ -183,7 +183,7 @@
 | category | items | 审计结论 |
 |---|---|---|
 | Global UI 有、PPT 未获单图 visual confirmation | UI-01 | 预期源图缺失；核心首页 PPT L1 与 UI-02 exact，不能据名称推定 UI-01。 |
-| PPT local screen 有、34 UI 无对应 global screen | 无 | 六页 PPT 的 34 个局部 screen 均能映射到一个 global UI；其中增长 L2 为 UI-04 的 `REUSE`。 |
+| PPT local screen 有、consumer UI 无对应 global screen | 无 | 六页 PPT 的 34 个局部 screen 均能映射到一个 global UI；其中增长 L2 为 UI-04 的 `REUSE`。 |
 | 名称相似但业务域/能力边界不同 | UI-06 vs UI-25–29；UI-07 vs UI-18 vs UI-30；UI-24 vs UI-34 | UI-06 是陪跑交付/社群服务；UI-25–29 是社区内容闭环。UI-07 是核心会员我的，UI-18 是裂变合伙人资产，UI-30 是客户后台总览。UI-24 是个人咨询/活动回流，UI-34 是服务记录/客服支持。不得因为“社区/我的/服务”同名而复用错误对象或路由。 |
 
 ## D. Mapping Correction Proposals
@@ -213,7 +213,7 @@
 
 > **门禁结论。** 本图像审计不是“名称相似”映射：UI-02 至 UI-34 已有单图视觉证据；第 5、6、8、10、12、14 页 PPT 的 34 个局部 screen 均与 global UI 形成 image-level crosswalk。唯一阻断缺口是 UI-01 源图和 UI-01/UI-02 首页版本关系；在人工确认前，不对 UI-01/02 新开动态化切片。UI-05 仍暂停，直到本审计 marker、隔离核验和架构师确认一并输出。
 
-**34_SINGLE_UI_IMAGE_PPT_VISUAL_AUDIT_READY** `50_开发_dev/reports/m2/frontend/FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
+**34_SINGLE_UI_IMAGE_PPT_VISUAL_AUDIT_READY** `50_开发_dev/reports/m2/frontend/FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
 
 
 ---
@@ -285,7 +285,7 @@
 | HC-UI03 | `UI-03` 是否保留为独立 global screen，还是归并为 `UI-02` 的测评第2/5步？ | 决定测评流程的 route、事件名、证据行和后续 lineage。 | 不把 UI-03 单独作为动态化起点。 |
 | HC-UI05-RESUME | 在已确认 UI-01/02、UI-03 粒度并冻结 global map 后，是否授权恢复 UI-05 的 `plan_draft/read_projection → FamilyDecision → Named Action` 研究主线？ | 允许恢复 UI-05 文档级状态机/边界分析；仍不等于代码实施。 | UI-05 保持暂停。 |
 
-**34_UI_VISUAL_AUDIT_METHOD_LEARNINGS_READY** `50_开发_dev/reports/m2/frontend/FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
+**CONSUMER_UI_VISUAL_AUDIT_METHOD_LEARNINGS_READY** `50_开发_dev/reports/m2/frontend/FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
 
 
 ---
@@ -314,7 +314,7 @@
 
 `34_SINGLE_UI_IMAGE_PPT_VISUAL_AUDIT_READY` 仍然表示图像级审计产物已完成；本 overlay 将 UI-01 和 UI-02 的首页/测评映射裁决为 confirmed。它**不自动确认**旧主计划中 UI-03 至 UI-34 的编号没有被此前“将测评第2/5步列为 UI-03”影响。为了避免重新引入以局部 PPT 顺序替代 global ID 的错误，后续页面继续采用“单图 P0 + PPT visual signals + 用户/架构师确认”的逐页复核方式。
 
-**34_UI01_UI02_USER_CONFIRMATION_OVERLAY_READY** `50_开发_dev/reports/m2/frontend/FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
+**CONSUMER_UI01_UI02_USER_CONFIRMATION_OVERLAY_READY** `50_开发_dev/reports/m2/frontend/FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
 
 
 ---
@@ -353,6 +353,6 @@
 
 恢复某个后续页面的动态化研究前，必须满足：该页面的 global ID 具有用户 P0 原图、或经架构师确认的 source anchor；其 PPT local sequence、可见动作和对象边界能够与该 global ID 对照；任何与既有 global ID 的不一致都要新增 correction proposal，而不能在全表做连锁替换。
 
-**34_UI01_UI02_UI03_USER_DEDUP_READY** `50_开发_dev/reports/m2/frontend/FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
+**CONSUMER_UI01_UI02_UI03_USER_DEDUP_READY** `50_开发_dev/reports/m2/frontend/FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md`
 
 **NO_CASCADE_RENUMBER_UI04_TO_UI34**：已执行；UI-04 至 UI-34 未在本 overlay 中重排或修改。

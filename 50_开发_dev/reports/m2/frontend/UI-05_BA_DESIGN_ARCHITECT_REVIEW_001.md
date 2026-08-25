@@ -4,13 +4,13 @@
 >
 > **Architecture verdict:** `NO_GO_FOR_CODE_IMPLEMENTATION`
 >
-> **审查对象：** UI-05 / 90 天成长方案 BA Design、实施计划和 34 UI BA Design Queue。
+> **审查对象：** UI-05 / 90 天成长方案 BA Design、实施计划和 consumer UI BA Design Queue。
 >
 > **结论摘要：** UI-05 的业务设计和视觉基线已经具备进入架构确认的材料，但 `FamilyDecision` 正式语义、PlanDraft provenance、GROWTH_PLAN Consent purpose、Named Action ceiling 和未成年人 subject visibility 尚未闭合。因此本轮不准进入 API Contract、DB migration、FE/BE 业务代码或 runtime 状态写入。
 
 ## Review Scope
 
-本次评审不重新设计 UI-05，不开发业务代码，不改变 34 UI 的范围。评审目标是判断 UI-05 BA Design 是否足以进入 API Contract，以及其是否遵守 Family 的证据、对象、权限、AI、Named Action、视觉复刻和外部 effect 规则。
+本次评审不重新设计 UI-05，不开发业务代码，不改变 consumer UI 的范围。评审目标是判断 UI-05 BA Design 是否足以进入 API Contract，以及其是否遵守 Family 的证据、对象、权限、AI、Named Action、视觉复刻和外部 effect 规则。
 
 评审重点包括：业务设计完整性、证据等级与 provenance、Family/Person/Consent/Plan/Decision/Action 对象边界、状态机的可逆性、Recommendation/Decision/Action 分层、儿童与敏感数据保护、前后端一致性、原图视觉保真和进入代码实现前的阻塞条件。
 
@@ -20,11 +20,11 @@
 |---|---|---|
 | `UI-05_BA_DESIGN_90_DAY_GROWTH_001.md` | BA Scope、90 天设计、对象和状态机 | 已读取；核心边界完整，但存在需架构确认的契约歧义。 |
 | `UI-05_IMPLEMENTATION_PLAN_001.md` | Web/API/DB/Policy/Audit 现实和实施门禁 | 已读取；明确 `BA_DESIGN_REQUIRED_BEFORE_IMPLEMENTATION`。 |
-| `FAMILY_34_UI_BA_DESIGN_QUEUE_001.md` | UI-05 在 34 页队列中的共享能力与准入 | 已读取；UI-05 被限定为单一纵切，需 BA/架构确认。 |
+| `FAMILY_CONSUMER_UI_BA_DESIGN_QUEUE_001.md` | UI-05 在 34 页队列中的共享能力与准入 | 已读取；UI-05 被限定为单一纵切，需 BA/架构确认。 |
 | `growth-plan-90day-reference-434x1130.png` | UI-05 visual baseline | 已查看；尺寸 434×1130，结构和文案与 BA 映射一致。 |
-| `FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` | 对象、API、Named Action、状态上限 | 已读取；UI-05 状态上限为 `PLAN_ONLY`，计划使用共享 GrowthJourneyProjection。 |
-| `FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` | 页面匹配和开发准入 | 已读取；UI-05 当前为 `UI_READY_BACKEND_GAP`。 |
-| `BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` | canonical page baseline 和证据纪律 | 作为 UI-05 页面、控件、入口/出口和 DEV/PROD 边界依据。 |
+| `FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md` | 对象、API、Named Action、状态上限 | 已读取；UI-05 状态上限为 `PLAN_ONLY`，计划使用共享 GrowthJourneyProjection。 |
+| `FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` | 页面匹配和开发准入 | 已读取；UI-05 当前为 `UI_READY_BACKEND_GAP`。 |
+| `BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md` | canonical page baseline 和证据纪律 | 作为 UI-05 页面、控件、入口/出口和 DEV/PROD 边界依据。 |
 | `30_素材_materials/_extracted/逐页文本_含页码/` | BA source research | 仅按逐页文本使用；不使用 `all_materials.txt`。 |
 
 ## Architecture Verdict
@@ -246,10 +246,10 @@ BA Design 已要求儿童资料、敏感情绪/风险建议、真人服务、通
 
 [1]: `reports/m2/frontend/UI-05_BA_DESIGN_90_DAY_GROWTH_001.md`
 [2]: `reports/m2/frontend/UI-05_IMPLEMENTATION_PLAN_001.md`
-[3]: `reports/m2/frontend/FAMILY_34_UI_BA_DESIGN_QUEUE_001.md`
-[4]: `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
-[5]: `governance/FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md`
-[6]: `governance/BANGYANG_34_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`
+[3]: `reports/m2/frontend/FAMILY_CONSUMER_UI_BA_DESIGN_QUEUE_001.md`
+[4]: `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
+[5]: `governance/FAMILY_CONSUMER_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md`
+[6]: `governance/BANGYANG_CONSUMER_UI_AND_3_PPT_MASTER_DELIVERY_PLAN_001.md`
 [7]: `30_素材_materials/_extracted/逐页文本_含页码/01_新商业模式对外宣发.txt`
 [8]: `30_素材_materials/_extracted/逐页文本_含页码/02_战略白皮书30页.txt`
 [9]: `30_素材_materials/_extracted/逐页文本_含页码/03_家庭教育大模型平台合作方案.txt`

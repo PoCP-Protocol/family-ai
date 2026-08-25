@@ -1,10 +1,10 @@
-> **EXECUTION NOTICE** — `SUPERSEDED_FOR_EXECUTION_BY = FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md`. This file remains historical architecture context; do not use it as current execution SSOT.
+> **EXECUTION NOTICE** — `SUPERSEDED_FOR_EXECUTION_BY = FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md + FAMILY_CONSUMER_UI_BASELINE_V1.json`. This file remains historical architecture context; UI-35 is deleted and this file must not be used as current execution SSOT.
 
 # FAMILY AI PLATFORM — TECH ARCHITECTURE V4.0
 
 ```text
 DOC_KIND       = GOVERNANCE_SSOT / TECHNICAL_ARCHITECTURE_FREEZE
-RULING_ID      = FAMILY-35UI-FULLSTACK-REBASELINE-001 / G0
+RULING_ID      = FAMILY-legacy UI-FULLSTACK-REBASELINE-001 / G0
 AUTHORIZED_BY  = Family Chief Architect (owner ruling)
 DATE           = 2026-08-22
 BASE_REPO      = PoCP-Protocol/family-ai
@@ -12,9 +12,8 @@ BASE_BRANCH    = main
 BASE_SHA       = 708cf542ab130642f2248bbebecc997930d10a49
 SUPERSEDES     = V3.2 的技术判断(不推翻,升级为 AI-native)
 STATUS         = FROZEN (最高技术架构;G1/G2 编码须以本文件为施工依据)
-RELATION       = 与 FAMILY_35UI_FULLSTACK_ARCHITECTURE_V1.md 并列:
-                 后者=产品/领域视角(35UI→7域→循环);本文件=技术/平台视角(语言/运行时/边界/演进)。
-                 机器可读 35 页契约唯一来源仍是 governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json。
+RELATION       = 历史上与 reports/legacy-legacy UI/FAMILY_LEGACY_UI_FULLSTACK_ARCHITECTURE_V1.md 并列。
+                 当前执行口径以 V4.1 + governance/FAMILY_CONSUMER_UI_BASELINE_V1.json 为准。
 ```
 
 > 本文件冻结一版能支撑 5–10 年演进的目标技术架构。核心不是"选了哪些技术",而是**确立稳定边界**:
@@ -38,7 +37,7 @@ Model / Cloud / Vector / Deploy = 全部可替换的实现细节
 ## 二、四个 Plane(所有架构讨论必须落在这四层内)
 
 ```text
-EXPERIENCE PLANE      Mobile(RN+Expo) · Consumer Web(Next.js) · Ops/Advisor Web(Next.js) · UI-01..UI-35
+EXPERIENCE PLANE      Mobile(RN+Expo) · Consumer Web(Next.js) · Ops/Advisor Web(Next.js) · historical UI-01..UI-35; current UI-01..UI-34
         ▼
 BUSINESS / TRUTH PLANE   NestJS + TypeScript
         · Family Core · Growth Intelligence · Growth Journey · Resource&Commerce
@@ -126,7 +125,7 @@ Mobile/Web → NestJS API → Identity → Family Authorization → Consent
   → Draft/Hypothesis → Family/Human Confirmation → Named Action → PostgreSQL
 ```
 
-`Mobile → OpenAI/Claude/DeepSeek/Manus` 等一律 **CI FAIL**(校验器 `validate:35ui:strict` 检测 `MOBILE_DIRECT_MODEL_PROVIDER`)。
+`Mobile → OpenAI/Claude/DeepSeek/Manus` 等一律 **CI FAIL**(当前校验器 `validate:consumer-ui:strict` 检测 `MOBILE_DIRECT_MODEL_PROVIDER`)。
 
 ---
 
@@ -228,7 +227,7 @@ CLIENT_DIRECT_LLM       = FORBIDDEN
 
 - 本文件是**目标态冻结**,不代表现状已实现。现状(base 708cf542)与目标差距:
   - Temporal / pgvector / OpenTelemetry / AI Data Lake / Python `apps/ai-runtime` / OpenAPI→Python 生成:**尚未落地**,属 G1+ 工程。
-  - Mobile 第二后端(Express/tRPC/Drizzle/MySQL/forge.manus 直连):**存在**,G0 封锁盘点、G1 迁移移除(见 `reports/rebaseline-35ui/MOBILE_SECOND_CONTROL_PLANE_INVENTORY_001.md`)。
+  - Mobile 第二后端(Express/tRPC/Drizzle/MySQL/forge.manus 直连):**存在**,G0 封锁盘点、G1 迁移移除(见 `reports/legacy-legacy UI/MOBILE_SECOND_CONTROL_PLANE_INVENTORY_001.md`)。
   - PostgreSQL 现为 16,升级 18 属 G1 基础设施任务。
 - G0 只冻结**架构与边界**,不做业务运行时改造、不删除 Mobile 运行时、不改 DB schema。
 - 演进规则:换模型/云/向量/部署/Agent 框架 = 允许且不改核心;新增第二业务后端/第二身份库/第二 canonical DB/客户端直连模型 = 永久禁止。

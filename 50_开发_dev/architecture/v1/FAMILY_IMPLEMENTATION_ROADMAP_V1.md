@@ -7,8 +7,8 @@
 
 1. 删除 active UI-35 页面/路由/contract/export 口径。
 2. 冻结 UI-01..UI-34 产品基线和场景映射。
-3. 让 validator、registry、docs、contracts 同步表达 34UI。
-4. 运行 `validate:34ui` 和 contracts typecheck。
+3. 让 validator、registry、docs、contracts 同步表达 consumer UI baseline。
+4. 运行 `validate:consumer-ui` 和 contracts typecheck。
 
 ## Phase 2: Scenario Contracts
 

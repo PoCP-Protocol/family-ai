@@ -2,7 +2,7 @@
 
 > **状态：** `APPROVED_TASK_DRAFT_FOR_ARCHITECT_REVIEW`
 >
-> **性质：** 任务草案，不是代码变更，不是开发完成声明。该草案只允许 UI-05 单一纵切进入下一步设计和实现评审；不得同时启动 34 UI 全量开发。
+> **性质：** 任务草案，不是代码变更，不是开发完成声明。该草案只允许 UI-05 单一纵切进入下一步设计和实现评审；不得同时启动 consumer UI 全量开发。
 
 ## 1. Task Title
 
@@ -68,7 +68,7 @@ RevokeGrowthPlanDecision
 | 层 | 预测文件/目录 | 预计职责 | 当前任务状态 |
 |---|---|---|---|
 | API contract | `apps/api/src/.../growth-plan*.contract.ts` 或现有 contracts 目录 | PlanDraft DTO、FamilyDecision DTO、Named Action request/result、错误码 | 待架构师确认实际入口 |
-| Web client/view | `apps/web/src/...` 或现有 34 UI shell/route 文件 | UI-05 route、projection render、decision intent、blocked/empty/version-conflict 状态 | 不在本草案中直接修改 |
+| Web client/view | `apps/web/src/...` 或现有 consumer UI shell/route 文件 | UI-05 route、projection render、decision intent、blocked/empty/version-conflict 状态 | 不在本草案中直接修改 |
 | Service | `apps/api/src/.../growth-plan*.service.ts` | tenant/family scope、projection、Decision candidate、policy调用 | 仅设计边界 |
 | DB/migration | `migrations/` 或 PostgreSQL migration 目录 | 如现有表不足，补 PlanDraft/PlanVersion/FamilyDecision/AuditEvent 最小结构 | 先查现有对象，禁止重复建表 |
 | Policy | `.../policy`、Consent/Model Gateway policy 目录 | scope、purpose、risk、evidence、Human Gate、external_effect=false | 复用共享规则，不按页面复制 |
@@ -148,9 +148,9 @@ rg -n "external_effect|HUMAN_REVIEW_REQUIRED|CONSENT_REQUIRED|PLAN_VERSION_CONFL
 
 ## References
 
-[1]: `FAMILY_34_UI_FEATURE_REVIEW_001.md` — UI-05 暴露点、遗漏、血缘和工程边界复核。
-[2]: `FAMILY_34_UI_FUNCTION_LINEAGE_AUDIT_001.md` — PlanDraft、FamilyDecision、Named Action 与全局血缘台账。
-[3]: `FAMILY_34_UI_GLOBAL_BASELINE_CALIBRATION_001.md` — UI-05 单图/PPT L4 视觉锚点。
+[1]: `FAMILY_CONSUMER_UI_FEATURE_REVIEW_001.md` — UI-05 暴露点、遗漏、血缘和工程边界复核。
+[2]: `FAMILY_CONSUMER_UI_FUNCTION_LINEAGE_AUDIT_001.md` — PlanDraft、FamilyDecision、Named Action 与全局血缘台账。
+[3]: `FAMILY_CONSUMER_UI_GLOBAL_BASELINE_CALIBRATION_001.md` — UI-05 单图/PPT L4 视觉锚点。
 
 
 ## UI-05 Visual Replication Acceptance Criteria

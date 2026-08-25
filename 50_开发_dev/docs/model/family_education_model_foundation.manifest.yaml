@@ -12,7 +12,7 @@ model_position:
   public_name_zh: 法咪莉校长
   public_name_usage: external-facing name for the Family Education Large Model
   foundation_for: Family Growth Platform
-  first_ui_baseline: UI-01..UI-35
+  first_ui_baseline: UI-01..UI-34
   first_runtime_rule: product surfaces compose model components; product surfaces do not own domain logic
   current_authorization_boundary:
     business_runtime: AUTHORIZED
@@ -103,7 +103,7 @@ foundation_assets:
 
   - asset_ref: FAMILY_UI_MODEL_BINDING_REGISTRY
     path: family_ui_model_binding.registry.yaml
-    role: UI-01..UI-35 product baseline to Family Education Large Model component binding
+    role: UI-01..UI-34 product baseline to Family Education Large Model component binding
     phase: P0
 
 next_foundation_assets:
@@ -146,7 +146,7 @@ first_build_sequence:
   - V4.2-002_COMPONENT_REGISTRY_FREEZE
   - V4.2-003_ITEM_BANK_AND_INTERPRETATION_SCHEMA
   - V4.2-004_SCENARIO_EVAL_SEED
-  - V4.2-005_UI01_UI35_MODEL_BINDING_BASELINE
+  - V4.2-005_UI01_UI34_MODEL_BINDING_BASELINE
   - V4.2-006_UI02_UI03_CONTRACT_COMPOSITION
   - V4.2-007_MEMORY_DIALOGUE_MULTIMODAL_MOCK
   - V4.2-008_ACTION_OUTCOME_LOOP
@@ -157,6 +157,6 @@ acceptance:
   - component registry declares required fields and registered components
   - every registered component contains the required component contract fields
   - every component dependency points to a registered component or an approved external boundary
-  - UI model binding registry covers exactly UI-01..UI-35 once
+  - UI model binding registry covers exactly UI-01..UI-34 once
   - every UI model binding points to registered model components
   - model work remains inside current gate until runtime authorization changes

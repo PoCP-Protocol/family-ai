@@ -11,7 +11,7 @@ PPT/图片输入
 → 局部屏幕识别
 → OCR/可见文案读取
 → 视觉信号抽取
-→ 34 UI baseline crosswalk
+→ consumer UI baseline crosswalk
 → 冲突与人工确认门
 → 报告/READY marker
 → Git 与证据隔离自检
@@ -23,7 +23,7 @@ PPT/图片输入
 | 2. 局部屏幕识别 | PPT 场景页。 | 标识每一个局部屏的标题、局部序号、入口/出口和所属场景。 | `ppt_scene_id`、`ppt_local_sequence`、屏幕清单。 | 同一 PPT 页中的 L1–L6 只描述局部叙事。 |
 | 3. OCR / 可见文案 | 清晰单图和 PPT screen。 | 读取标题、CTA、步骤、状态、任务、服务、资产和风险提示。 | 可追溯文本信号。 | OCR 不清或文字模糊时标 `NEEDS_CONFIRMATION`，不补写。 |
 | 4. 视觉信号抽取 | 图片、文案、页面上下文。 | 同时抽取：**结构**（顶栏/卡片/tab/导航）、**文案**、**动作**、**对象/能力边界**。 | `visual_signals`、`action_signals`、`object_boundary`。 | 颜色或名称相似不能单独构成 exact 映射。 |
-| 5. 34 UI baseline crosswalk | global UI 表、PPT 局部屏、视觉信号。 | 对照四类信号，登记 `EXACT / REUSE / OVERLAP / NO_GLOBAL_SCREEN / CONFLICT`。 | 一行一个 local screen 的交叉表。 | 不自动顺延或重排 global UI ID；只对直接确认的 UI 做单点校正。 |
+| 5. consumer UI baseline crosswalk | global UI 表、PPT 局部屏、视觉信号。 | 对照四类信号，登记 `EXACT / REUSE / OVERLAP / NO_GLOBAL_SCREEN / CONFLICT`。 | 一行一个 local screen 的交叉表。 | 不自动顺延或重排 global UI ID；只对直接确认的 UI 做单点校正。 |
 | 6. 冲突 / 人工确认门 | Crosswalk 差异、缺图、版本重叠、对象边界冲突。 | 建立 `conflict_id`、受影响 UI、来源、候选处理与最小人工确认问题。 | `CONFLICT`、`MISSING_IMAGE`、`PPT-only gap` register。 | `Perspective != Fact`；视觉证据不能授权数据写入、排名、诊断或外部 action。 |
 | 7. 报告 / READY marker | 完整 crosswalk 和 gap register。 | 输出基线、视觉审计、差距分析或裁决包；写入明确 marker。 | Markdown 报告和 `*_READY` marker。 | READY 只表示审计产物完成，不表示冲突已裁决或页面已开发。 |
 | 8. 自检命令 | 报告路径、Git 状态、staged candidate。 | marker grep、路径状态、cached name-only、staged leak、diff check。 | 可复核的 PASS/FAIL。 | 未通过隔离自检不得将研究文档混入功能切片。 |
@@ -60,6 +60,6 @@ git diff --cached --name-only | wc -l
 git diff --cached --check
 ```
 
-> **当前实例。** Family 的 34 UI × PPT 视觉审计使用该链路处理同一份商业模式 PPT 的第 5、6、8、10、12、14 页。`UI-01`、`UI-02`、`UI-03` 的用户直接原图作为 P0 证据，只做三项单点映射校正；UI-04 至 UI-34 未自动重排。
+> **当前实例。** Family 的 consumer UI × PPT 视觉审计使用该链路处理同一份商业模式 PPT 的第 5、6、8、10、12、14 页。`UI-01`、`UI-02`、`UI-03` 的用户直接原图作为 P0 证据，只做三项单点映射校正；UI-04 至 UI-34 未自动重排。
 
 **FAMILY_VISUAL_EVIDENCE_CROSSWALK_MODULES_READY** `50_开发_dev/reports/m2/frontend/FAMILY_VISUAL_EVIDENCE_CROSSWALK_MODULES_001.md`

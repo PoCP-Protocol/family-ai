@@ -14,7 +14,7 @@
 
 ## 页面基线
 
-UI-01..UI-34 是唯一 consumer UI baseline。所有页面必须登记在 `apps/mobile/lib/family/ui-registry.ts`，并由 `tools/validate-35ui-alignment.mjs` 的 34UI gate 验证。
+UI-01..UI-34 是当前 consumer UI baseline。所有页面必须登记在 `apps/mobile/lib/family/ui-registry.ts`，并由 `tools/validate-consumer-ui-baseline.mjs` 的 consumer UI gate 验证。
 
 ## 路由与场景
 
@@ -27,4 +27,4 @@ UI-01..UI-34 是唯一 consumer UI baseline。所有页面必须登记在 `apps/
 
 ## 测试要求
 
-移动端和 Web parity 测试必须覆盖：UI-35 不可达、34UI 注册完整、21-Day 入口不写 UI-35 flow event、核心写入走 Named Action。
+移动端和 Web parity 测试必须覆盖：UI-35 不可达、当前 consumer UI baseline 注册完整、21-Day 入口不写 UI-35 flow event、核心写入走 Named Action。

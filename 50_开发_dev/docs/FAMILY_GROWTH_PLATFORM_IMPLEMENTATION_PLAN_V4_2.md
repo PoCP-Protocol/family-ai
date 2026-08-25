@@ -229,8 +229,8 @@ After V4.2 design rebaseline is accepted, execute in this order:
 4. `V4.2-004_SCENARIO_EVAL_SEED`
    - Create 30 expert scenario cards and safety gates.
 
-5. `V4.2-005_UI01_UI35_MODEL_BINDING_BASELINE`
-   - Bind the existing UI-01..UI-35 product baseline to Family Education Large Model components without changing visual UI.
+5. `V4.2-005_UI01_UI34_MODEL_BINDING_BASELINE`
+   - Bind the existing UI-01..UI-34 product baseline to Family Education Large Model components without changing visual UI.
 
 6. `V4.2-006_UI02_UI03_CONTRACT_COMPOSITION`
    - Refactor assessment flow to consume model contracts.

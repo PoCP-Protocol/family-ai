@@ -25,7 +25,7 @@
 
 当前已串起的核心路径包括：**UI-01 → UI-02 → UI-03 → UI-04 → UI-05 → UI-09**，以及 UI-35 成长营到今日任务的共享行动路径。UI-13 至 UI-18 使用商业与权益投影；UI-19 至 UI-24 使用服务供给、时段和服务记录投影；UI-25 至 UI-28 以私有小记草稿和已审核经验目录为边界；UI-29 至 UI-34 回读成果、会员、服务、资产和家庭档案。[1] [4]
 
-### 2.2 35 UI 与原图工作：从“存在页面”走向“逐页对齐”
+### 2.2 legacy UI 与原图工作：从“存在页面”走向“逐页对齐”
 
 所有页面均有注册、可解析主要目标和至少四个功能点定义。UI-01 至 UI-05 已进入“先看原图、列差异、再修复”的严格对齐模式：UI-01 重建平台首页热区，UI-02 复原第 2/5 步测评，UI-03 重建成长解读，UI-04 恢复暖橙摘要与四周时间线，UI-05 重建陪跑服务卡、完成度、内容区和打卡出口。UI-05 还加入了不改变路线和内容结构的轻量点击反馈与服务卡加载过渡。[5] [6]
 
@@ -43,7 +43,7 @@ API 客户端已经统一了 8 秒超时、Bearer 认证、`credentials: omit`�
 
 ### 2.5 测试与用户体验基础
 
-测试覆盖了 35 UI 注册和主要路由存在性、跨循环状态回读、21 天营三阶段与幂等完成、测评/计划、API Bearer 与幂等请求、商业/服务/社区 no-op 边界、私有内容边界、投影加载/空/失败状态、下拉刷新并发抑制，以及 UI-01 至 UI-05 的原图结构契约。[3] 27 个列表、目录和记录型页面复用原生下拉刷新；加载、刷新、失败、空投影和本机草稿回退已用家长语言表示，而不是暴露工程术语。[11]
+测试覆盖了 legacy UI 注册和主要路由存在性、跨循环状态回读、21 天营三阶段与幂等完成、测评/计划、API Bearer 与幂等请求、商业/服务/社区 no-op 边界、私有内容边界、投影加载/空/失败状态、下拉刷新并发抑制，以及 UI-01 至 UI-05 的原图结构契约。[3] 27 个列表、目录和记录型页面复用原生下拉刷新；加载、刷新、失败、空投影和本机草稿回退已用家长语言表示，而不是暴露工程术语。[11]
 
 ## 3. 当前架构判断
 
@@ -51,7 +51,7 @@ API 客户端已经统一了 8 秒超时、Bearer 认证、`credentials: omit`�
 
 | 层次 | 当前实现 | 价值 |
 |---|---|---|
-| 用户界面 | Expo Router + 五标签 + 35 UI 注册表 + Warm Intelligence 视觉。 | 页面不会各自长成孤岛，主出口能统一核验。 |
+| 用户界面 | Expo Router + 五标签 + legacy UI 注册表 + Warm Intelligence 视觉。 | 页面不会各自长成孤岛，主出口能统一核验。 |
 | 移动领域层 | Context + reducer + AsyncStorage，统一行动、草稿和回读。 | 离线可演示、可恢复，能支撑多页连续旅程。 |
 | API 会话层 | Bearer-only、家庭范围上下文、SecureStore、超时、请求快照。 | 为真实家庭会话准备了明确边界。 |
 | 投影层 | Core Growth、Platform Surfaces、Commerce、Membership、Service、Plan、Report 等读取适配。 | 避免移动端重建第二套家庭本体。 |
@@ -136,10 +136,10 @@ API 客户端已经统一了 8 秒超时、Bearer 认证、`credentials: omit`�
 
 ## Evidence References
 
-[1]: ../design.md "产品定位、35 UI、六循环、数据边界与验收要求"
-[2]: baselines/ui35-original/ "已恢复的 35 UI 原图资料目录"
-[3]: ../tests/family-mobile-core.test.ts "35 UI、状态、API 与业务边界契约；本次本机 Vitest/TypeScript/Lint 验证输出"
-[4]: ../lib/family/ui-registry.ts "35 UI 注册表、五标签分组、循环与主路由"
+[1]: ../design.md "产品定位、legacy UI、六循环、数据边界与验收要求"
+[2]: baselines/ui35-original/ "已恢复的 legacy UI 原图资料目录"
+[3]: ../tests/family-mobile-core.test.ts "legacy UI、状态、API 与业务边界契约；本次本机 Vitest/TypeScript/Lint 验证输出"
+[4]: ../lib/family/ui-registry.ts "legacy UI 注册表、五标签分组、循环与主路由"
 [5]: ../app/ui/UI-01.tsx "UI-01 首页原图对齐实现"
 [6]: ../app/ui/UI-05.tsx "UI-05 原图对齐与交互反馈实现"
 [7]: ../lib/family/family-state-core.ts "移动端共享 reducer、私有草稿、行动回执与 Fact/Perspective 边界"

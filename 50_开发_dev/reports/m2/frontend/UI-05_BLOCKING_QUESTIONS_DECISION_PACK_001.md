@@ -10,7 +10,7 @@
 
 ## Decision Method
 
-本决策包使用对象级契约、34 UI master mapping、0020 migration、orchestration service、LLM page policy、家庭授权策略、Web route/page-object 测试和 UI-05 BA/Architect Review 作为 SSOT/工程来源。对原 SSOT 未能唯一决定的对象语义、Consent purpose、Named Action 和视觉替换边界，不得用设计建议冒充已决策；只有获得明确的逐条人工裁决后才能补足，本轮未获得该裁决。
+本决策包使用对象级契约、consumer UI master mapping、0020 migration、orchestration service、LLM page policy、家庭授权策略、Web route/page-object 测试和 UI-05 BA/Architect Review 作为 SSOT/工程来源。对原 SSOT 未能唯一决定的对象语义、Consent purpose、Named Action 和视觉替换边界，不得用设计建议冒充已决策；只有获得明确的逐条人工裁决后才能补足，本轮未获得该裁决。
 
 `30_素材_materials` 及自家材料继续按 E1 使用，只作为业务假设和设计来源，不自证效果、诊断、资质或生产事实。所有裁决继续遵守：`Perspective != Fact`、`Hypothesis != Fact`、`Recommendation != Decision != Action`。
 
@@ -363,8 +363,8 @@ Stage A 未闭合。现有 SSOT 仅能关闭 BQ-09；BQ-01~BQ-08、BQ-10 仍需�
 [1]: `reports/m2/frontend/UI-05_BA_DESIGN_ARCHITECT_REVIEW_001.md`
 [2]: `reports/m2/frontend/UI-05_BA_DESIGN_90_DAY_GROWTH_001.md`
 [3]: `reports/m2/frontend/UI-05_IMPLEMENTATION_PLAN_001.md`
-[4]: `governance/FAMILY_34_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md`
-[5]: `governance/FAMILY_34_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
+[4]: `governance/FAMILY_CONSUMER_UI_OBJECT_MODEL_AND_CONTRACT_DESIGN_001.md`
+[5]: `governance/FAMILY_CONSUMER_UI_MASTER_DATA_API_NAMED_ACTION_MAPPING_V1.md`
 [6]: `database/migrations/0020_growth_orchestration_v1.sql`
 [7]: `apps/api/src/modules/orchestration/orchestration.service.ts`
 [8]: `apps/api/src/modules/orchestration/llm-gateway/family-llm-page-policy.ts`
@@ -403,7 +403,7 @@ UI-05 的研究包必须覆盖并逐项记录来源、证据等级和未决项�
 | 家庭教育真实场景 | 家长、儿童、家庭在 90 天陪跑中面对的真实场景、困难和可观察行为是什么？ | 现有家庭教育/白皮书材料有摘要，但尚未形成 UI-05 场景—需求—验收矩阵。 | `INCOMPLETE` |
 | 用户角色 | OWNER_GUARDIAN、GUARDIAN、ADULT_MEMBER、CHILD_SUBJECT、教师/服务者各自的目标、权限和不可做事项是什么？ | 授权策略和对象文档已有部分边界。 | `PARTIAL` |
 | 榜样教育/波波校长/现有素材 | 哪些是业务假设、实践素材、宣传表达，哪些不能作为效果或资质事实？ | 已声明 E1 边界，但尚未逐项映射到 UI-05 需求。 | `PARTIAL` |
-| 34 UI 视觉线索 | UI-04 → UI-05 → UI-09/UI-31 的入口、返回、状态和内容承接是什么？ | UI-05 原图和全局 baseline 已定位。 | `PARTIAL` |
+| consumer UI 视觉线索 | UI-04 → UI-05 → UI-09/UI-31 的入口、返回、状态和内容承接是什么？ | UI-05 原图和全局 baseline 已定位。 | `PARTIAL` |
 | Family SSOT | Family、Person、Need、Capability、Journey、Task、ServiceProvider、Evidence、Outcome 的关系是什么？ | 对象/契约文档已有候选映射。 | `PARTIAL` |
 | 数据对象 | 哪些是 master/process fact、read projection、controlled draft、FamilyDecision 和 Action？ | BQ 已定义边界，但尚未形成完整 UI-05 data lineage matrix。 | `PARTIAL` |
 | Named Action | 哪个 action 可以产生什么状态，谁能执行，如何撤回/暂停/幂等？ | BQ-04/BQ-05 已给出 decision-only 建议。 | `PARTIAL` |
