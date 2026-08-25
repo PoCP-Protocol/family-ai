@@ -490,7 +490,14 @@ export class AnthropicAiGateway implements AiGateway {
           },
           body: JSON.stringify({
             model: this.config.model,
-            max_tokens: 1024,
+            // Anthropic reasoning models (e.g. opus) may spend a large, variable share of
+            // max_tokens on extended thinking before emitting the actual JSON text — thinking
+            // and output tokens share this single budget. 1024 was verified (2026-08-26 AI
+            // gateway comparison, reports/ai-verify) to truncate real responses ~100% of the
+            // time (thinking alone consumed 400-750+ tokens), always yielding invalid JSON and
+            // a fail-closed INVALID_JSON error. 4096 leaves enough room for both on this
+            // schema's size; revisit if larger interpretation schemas are added.
+            max_tokens: 4096,
             system: [
               `use_case=${request.use_case}`,
               `prompt_version=${request.prompt_version}`,
