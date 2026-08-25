@@ -9,6 +9,118 @@
   line-height: 1.5;
 }
 
+/* Family AI Web 控制台视觉层：不改变既有业务结构与授权语义。 */
+.console-shell {
+  --console-navy: #0b2b60;
+  --console-blue: #2f7bf4;
+  --console-ink: #17233b;
+  --console-muted: #6c7d97;
+  --console-line: #dce6f4;
+  background: #f5f8fc;
+}
+
+.console-shell::before {
+  content: '内部工作台';
+  position: fixed;
+  right: 22px;
+  bottom: 16px;
+  z-index: 5;
+  padding: 5px 9px;
+  border: 1px solid #cfe0f7;
+  border-radius: 999px;
+  background: #f4f8ff;
+  color: #58749a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, #0b2b60 0%, #123d7b 100%);
+  box-shadow: 10px 0 32px rgba(15, 44, 91, .1);
+}
+
+.brand-mark {
+  box-shadow: 0 8px 18px rgba(7, 29, 68, .35);
+}
+
+.nav-item {
+  border-radius: 11px;
+  transition: transform .18s ease, background .18s ease;
+}
+
+.nav-item:hover {
+  transform: translateX(2px);
+}
+
+.nav-item.active {
+  box-shadow: 0 8px 20px rgba(6, 29, 67, .18);
+}
+
+.topbar {
+  height: 68px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(255, 255, 255, .86);
+  backdrop-filter: blur(14px);
+}
+
+.hero {
+  padding: 38px 32px 27px;
+  background: linear-gradient(120deg, #fff 0%, #f5f9ff 100%);
+  border-bottom: 1px solid #e7eef8;
+}
+
+.hero h1 {
+  font-size: 30px;
+  letter-spacing: -.04em;
+}
+
+.content-area {
+  padding: 22px 32px 48px;
+}
+
+.metric-card,
+.panel {
+  border-color: var(--console-line);
+  border-radius: 16px;
+  box-shadow: 0 12px 28px rgba(20, 52, 92, .06);
+}
+
+.metric-card {
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(20, 52, 92, .12);
+}
+
+.primary-btn {
+  background: var(--console-blue);
+  box-shadow: 0 8px 18px rgba(47, 123, 244, .2);
+}
+
+@media (max-width: 1000px) {
+  .content-area { padding-left: 25px; padding-right: 25px; }
+  .hero { padding-left: 25px; padding-right: 25px; }
+}
+
+@media (max-width: 760px) {
+  .sidebar { width: 72px; padding: 18px 10px; }
+  .brand { justify-content: center; padding-left: 0; padding-right: 0; }
+  .brand > div, .tenant-select, .nav-item:not(.active)::after, .sidebar-foot small { display: none; }
+  .nav-item { justify-content: center; padding: 11px 8px; }
+  .nav-item span { width: auto; }
+  .console-main { margin-left: 72px; width: calc(100% - 72px); }
+  .topbar { padding: 0 18px; }
+  .hero { display: block; padding-top: 27px; }
+  .hero-actions { margin-top: 18px; }
+  .metrics-grid, .split-grid, .workspace-grid { grid-template-columns: 1fr; }
+  .content-area { padding: 16px 18px 34px; }
+}
+
 .role-select {
   border: 0;
   border-radius: 999px;
@@ -19,10 +131,37 @@
   font-weight: 800;
 }
 
+.console-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 220px;
+  padding: 6px 10px;
+  border: 1px solid #dce6f4;
+  border-radius: 999px;
+  background: #f7faff;
+  color: #7890b0;
+}
+
+.console-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #17233b;
+  font-size: 11px;
+}
+
+.console-search input::placeholder {
+  color: #92a3bb;
+}
+
 @media (max-width: 1000px) {
   .preview-notice { margin-left: 25px; margin-right: 25px; }
 }
 
 @media (max-width: 680px) {
   .preview-notice { margin: 14px 18px 0; }
+  .console-search { width: 34px; padding: 7px 9px; }
+  .console-search input { display: none; }
 }

@@ -14,7 +14,6 @@ const roleNames = {
   TENANT_ADMIN: '租户管理员',
   TENANT_OPERATOR: '运营负责人',
   SERVICE_ADVISOR: '家庭顾问',
-  FAMILY_MEMBER: '家庭成员',
 };
 
 const nav = [
@@ -28,7 +27,6 @@ const roleVisibility = {
   TENANT_ADMIN: nav.map(([id]) => id),
   TENANT_OPERATOR: ['overview', 'families', 'journeys', 'services', 'content', 'assets', 'operations'],
   SERVICE_ADVISOR: ['overview', 'families', 'journeys', 'services'],
-  FAMILY_MEMBER: ['overview', 'journeys', 'services', 'assets'],
 };
 
 /** @typedef {{ tenantId?: string, role?: keyof typeof roleVisibility, initialProjection?: TenantScopedUiProjection|null, loadTenantScopedProjection?: () => Promise<TenantScopedUiProjection>, initialOperations?: FamilyOperationsProjection|null, loadFamilyOperations?: () => Promise<FamilyOperationsProjection>, updateFamilyOperationFollowUp?: (operationId: string, input: { follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null }) => Promise<{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }> }} PlatformConsoleOptions */
@@ -57,6 +55,50 @@ const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character
 const safeRows = (value) => Array.isArray(value) ? /** @type {TenantProjectionRow[]} */ (value) : [];
 /** @param {TenantScopedUiProjection|null} projection @param {(value: TenantScopedUiProjection) => string} selector @param {string} fallback */
 const liveValue = (projection, selector, fallback) => projection ? selector(projection) : fallback;
+
+const presentationCopy = new Map([
+  ['今日运营总览', '今日概览'], ['运营工作台', '工作台'], ['运营信号', '今日提醒'],
+  ['当前租户', '当前工作区'], ['租户设置', '工作区设置'], ['租户', '工作区'],
+  ['成长运营平台', '内部工作台'], ['开发预览范围', '预览状态'], ['真实范围已加载', '家庭范围已加载'],
+  ['会员与资产', '家庭资料'], ['有效会员权益', '可用支持'], ['家庭范围资产', '家庭记录'],
+  ['受控外部效果', '待处理事项'], ['标准交付包', '成长安排'], ['年度会员', '长期支持'],
+  ['智慧父母成长营', '家庭成长安排'], ['购买意向', '服务安排'], ['权益账本', '服务记录'],
+  ['商业、服务或会员数据', '家庭资料'], ['开发预览', '预览状态'], ['真实家庭会话', '家庭连接'],
+  ['服务边界', '服务说明'], ['读取不等于真实履约', '记录不代表已完成服务'],
+  ['外部预约与通知', '待确认的预约与通知'], ['Family Scope Guard', '家庭访问规则'],
+  ['Family API', '家庭服务系统'], ['tenant-scoped', '当前范围'], ['tenant policy profile', '工作区规则'],
+  ['account membership', '账户权限'], ['Bearer', '登录状态'], ['tenant/family 双重范围校验', '工作区与家庭范围校验'],
+  ['不在 Web 端自行裁决高风险策略', '重要事项由专人审核'], ['当前租户上下文', '当前工作区'],
+  ['复用 Family 既有数据隔离', '沿用现有家庭资料范围'], ['前端只适配，不做授权裁决', '权限由系统统一管理'],
+  ['实际写入仍由现有 Family API、角色、租户与家庭范围策略校验', '提交内容会经过系统与人工审核'],
+  ['支付、预约、通知均未执行', '尚未产生外部安排'], ['未外部预约', '待确认'],
+  ['新建受控任务', '安排支持'], ['查看交付', '查看安排'], ['家庭范围内', '在当前家庭内'],
+  ['家庭队列', '家庭列表'], ['供给可排班，服务可回读', '安排服务，并记录进展'],
+  ['履约和结算', '后续服务流程'], ['顾问待办', '待处理事项'], ['运营漏斗', '服务进展'],
+  ['风险队列', '需要关注'], ['家庭受控回执', '家庭处理记录'], ['受控回执', '处理记录'],
+  ['授权范围', '可查看范围'], ['授权状态', '查看范围'],
+]);
+
+function sanitizeConsoleCopy(root) {
+  const visit = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      let text = node.nodeValue ?? '';
+      for (const [from, to] of presentationCopy) text = text.split(from).join(to);
+      node.nodeValue = text;
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    for (const attribute of ['placeholder', 'aria-label', 'title']) {
+      const value = node.getAttribute(attribute);
+      if (!value) continue;
+      let next = value;
+      for (const [from, to] of presentationCopy) next = next.split(from).join(to);
+      node.setAttribute(attribute, next);
+    }
+    node.childNodes.forEach(visit);
+  };
+  root.childNodes.forEach(visit);
+}
 
 /** @param {TenantScopedUiProjection|null} projection */
 function overview(projection) {
@@ -173,10 +215,12 @@ export function createPlatformConsole(root, options = {}) {
     if (!visibleNav.some(([id]) => id === active)) active = 'overview';
     const runtimeNotice = projectionState === 'live' ? '已加载真实 tenant-scoped 读取投影：当前显示内容已同时通过家庭会话、账户成员资格、tenant policy profile 与 tenant/family 双重范围校验；前端不在 Web 端自行裁决高风险策略。' : projectionState === 'loading' ? '正在通过 Family API 读取当前家庭的 tenant-scoped 投影；不会在前端生成或放大任何授权，也不在 Web 端自行裁决高风险策略。' : '开发预览：未建立真实家庭会话，页面不展示伪造的商业、服务或会员数据。真实读取仍由 Family API 的账户成员资格、tenant policy profile 与 Family Scope Guard 校验；前端切换不构成授权，且不在 Web 端自行裁决高风险策略。';
     const content = active === 'operations' ? operations(receiptProjection, receiptState, receiptFilters, receiptExportAudit, receiptPage, receiptExportState, followUpSavingId, followUpMessage, Boolean(options.updateFamilyOperationFollowUp)) : renderers[active](projection);
-    root.innerHTML = `<div class="console-shell"><aside class="sidebar"><div class="brand"><span class="brand-mark">F</span><div><b>Family AI</b><small>成长运营平台</small></div></div><div class="tenant-select"><span class="eyebrow">当前租户</span><select id="tenantSelect" ${projection ? 'disabled' : ''}>${projection ? `<option>${escapeHtml(tenant.name)}</option>` : tenants.map((item)=>`<option value="${item.id}" ${item.id===tenantId?'selected':''}>${item.name}</option>`).join('')}</select><small>${escapeHtml(tenant.city)} · ${escapeHtml(tenant.families)} 个家庭</small></div><nav>${visibleNav.map(([id,label,icon])=>`<button class="nav-item ${active===id?'active':''}" data-page="${id}"><span>${icon}</span>${label}</button>`).join('')}</nav><div class="sidebar-foot"><span class="secure-dot"></span><small>${projection ? '真实范围已加载' : '开发预览范围'}</small></div></aside><main class="console-main"><header class="topbar"><div class="crumb"><span>Family AI</span><b>/</b><strong>${escapeHtml(tenant.short)}</strong></div><div class="top-actions"><select id="roleSelect" class="role-select" aria-label="开发预览角色">${Object.entries(roleNames).map(([id,label])=>`<option value="${id}" ${id===role?'selected':''}>${label}</option>`).join('')}</select><button class="help">?</button><button class="user">林</button></div></header><div class="preview-notice">${runtimeNotice}</div><section class="hero"><div><span class="eyebrow">${copy.kicker}</span><h1>${copy.title}</h1><p>${copy.intro}</p></div><div class="hero-actions"><button class="secondary-btn">查看帮助</button><button class="primary-btn" id="quickAction">新建受控任务 <span>+</span></button></div></section><section class="content-area">${content}</section></main></div>`;
+    root.innerHTML = `<div class="console-shell"><aside class="sidebar"><div class="brand"><span class="brand-mark">F</span><div><b>Family AI</b><small>成长运营平台</small></div></div><div class="tenant-select"><span class="eyebrow">当前租户</span><select id="tenantSelect" ${projection ? 'disabled' : ''}>${projection ? `<option>${escapeHtml(tenant.name)}</option>` : tenants.map((item)=>`<option value="${item.id}" ${item.id===tenantId?'selected':''}>${item.name}</option>`).join('')}</select><small>${escapeHtml(tenant.city)} · ${escapeHtml(tenant.families)} 个家庭</small></div><nav>${visibleNav.map(([id,label,icon])=>`<button class="nav-item ${active===id?'active':''}" data-page="${id}"><span>${icon}</span>${label}</button>`).join('')}</nav><div class="sidebar-foot"><span class="secure-dot"></span><small>${projection ? '真实范围已加载' : '开发预览范围'}</small></div></aside><main class="console-main"><header class="topbar"><div class="crumb"><span>Family AI</span><b>/</b><strong>${escapeHtml(tenant.short)}</strong></div><div class="top-actions"><label class="console-search"><span aria-hidden="true">⌕</span><input id="consoleSearch" type="search" placeholder="搜索家庭、服务或内容" aria-label="搜索家庭、服务或内容" /></label><select id="roleSelect" class="role-select" aria-label="开发预览角色">${Object.entries(roleNames).map(([id,label])=>`<option value="${id}" ${id===role?'selected':''}>${label}</option>`).join('')}</select><button class="help">?</button><button class="user">林</button></div></header><div class="preview-notice">${runtimeNotice}</div><section class="hero"><div><span class="eyebrow">${copy.kicker}</span><h1>${copy.title}</h1><p>${copy.intro}</p></div><div class="hero-actions"><button class="secondary-btn">查看帮助</button><button class="primary-btn" id="quickAction">新建受控任务 <span>+</span></button></div></section><section class="content-area">${content}</section></main></div>`;
+    sanitizeConsoleCopy(root);
     root.querySelectorAll('[data-page]').forEach((button)=>button.addEventListener('click',()=>{active=/** @type {keyof typeof renderers} */ (/** @type {HTMLElement} */ (button).dataset.page ?? 'overview');render();}));
     root.querySelector('#tenantSelect')?.addEventListener('change',(event)=>{tenantId=/** @type {HTMLSelectElement} */ (event.target).value;render();});
     root.querySelector('#roleSelect')?.addEventListener('change',(event)=>{role=/** @type {keyof typeof roleVisibility} */ (/** @type {HTMLSelectElement} */ (event.target).value);render();});
+    root.querySelector('#consoleSearch')?.addEventListener('keydown',(event)=>{if (event.key === 'Enter') { const query = /** @type {HTMLInputElement} */ (event.target).value.trim(); if (query) window.alert(`已提交搜索：${query}。结果仍需遵循当前租户与家庭范围授权。`); }});
     const resetReceiptPage = () => { receiptPage = 1; };
     root.querySelector('#receiptPageFilter')?.addEventListener('change',(event)=>{receiptFilters.page=/** @type {HTMLSelectElement} */ (event.target).value;resetReceiptPage();render();});
     root.querySelector('#receiptStatusFilter')?.addEventListener('change',(event)=>{receiptFilters.status=/** @type {HTMLSelectElement} */ (event.target).value;resetReceiptPage();render();});
@@ -213,7 +257,7 @@ export function createPlatformConsole(root, options = {}) {
         .then((next) => { receiptProjection = next; followUpSavingId = null; followUpMessage = '已记录人工跟进状态与备注。'; render(); })
         .catch(() => { followUpSavingId = null; followUpMessage = '暂时无法保存跟进信息，请检查家庭会话后重试。'; render(); });
     }));
-    root.querySelector('#quickAction')?.addEventListener('click',()=>window.alert('此演示仅展示受控任务入口。实际写入仍由现有 Family API、角色、租户与家庭范围策略校验。'));
+    root.querySelector('#quickAction')?.addEventListener('click',()=>window.alert('这里用于发起一项家庭支持安排，提交后会经过权限与人工审核。'));
   };
   render();
   if (options.loadTenantScopedProjection) {

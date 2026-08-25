@@ -21,6 +21,8 @@ const isDevTestRuntime = searchParams.get('runtime') === 'dev-test' && Boolean(b
  * 无会话时只展示页面基线；有会话且显式进入 Dev/Test 时才读取/写入受控测试数据。
  */
 function mountFamilyPortal() {
+  document.title = 'Family AI · 家庭成长空间';
+  appRoot.dataset.surface = 'external-family';
   appRoot.innerHTML = `<div class="family-portal-layout">
     <aside class="family-portal-rail" aria-label="家庭成长导航">
       <a class="family-portal-brand" href="?product=family"><span>F</span><strong>Family AI</strong><small>家庭成长空间</small></a>
@@ -33,7 +35,7 @@ function mountFamilyPortal() {
         <button data-family-route="parent-community"><span>◍</span>家长社区</button>
         <button data-family-route="family-profile"><span>□</span>家庭档案</button>
       </nav>
-      <div class="family-portal-rail-foot"><a href="?product=growth-onboarding">开始一段成长旅程</a><a href="?product=console">进入运营工作台</a></div>
+      <div class="family-portal-rail-foot"><a href="?product=growth-onboarding">开始一段成长旅程</a></div>
     </aside>
     <section class="family-portal-stage" aria-label="家庭成长页面"><div id="family-portal-experience"></div></section>
     <aside class="family-portal-context" aria-label="家庭成长提示">
@@ -41,7 +43,7 @@ function mountFamilyPortal() {
       <section><span>本周建议</span><strong>先完成今晚的一件小事</strong><p>完成后再回看下一步，不需要一次做完所有改变。</p></section>
       <section data-family-portal-card="home"><span>今晚一件事</span><strong data-family-portal-home>连接家庭会话后显示</strong><p data-family-portal-home-detail>由 UI-01 统一家庭首页投影读取。</p></section>
       <section data-family-portal-card="journey"><span>计划阶段</span><strong data-family-portal-plan>连接家庭会话后显示</strong><p data-family-portal-plan-detail>计划阶段由同一 90 天成长计划读取。</p></section>
-      <section data-family-portal-card="operations"><span>运营回执</span><strong data-family-portal-operations>连接家庭会话后显示</strong><p data-family-portal-operations-detail>课程、服务和权益操作均以家庭私有回执回读。</p></section>
+      <section data-family-portal-card="support"><span>家庭支持</span><strong data-family-portal-operations>连接家庭会话后显示</strong><p data-family-portal-operations-detail>这里显示家庭自己的成长安排和服务记录。</p></section>
       <section data-family-portal-card="assessment"><span>家庭支持需要确认</span><strong data-family-assessment-title>连接家庭会话后可用</strong><p data-family-assessment-detail>回答是家庭视角，不生成孩子分数或医学诊断。</p><form data-family-assessment-form hidden><label>本次关注谁<select data-family-assessment-subject required></select></label><label>当前最希望改善的场景<select data-family-assessment-focus required><option value="">请选择关注场景</option><option value="LEARNING_HABITS">学习习惯</option><option value="EMOTION_REGULATION">情绪管理</option><option value="PARENT_CHILD_COMMUNICATION">亲子沟通</option><option value="DEVICE_USE_CONTEXT">手机与边界</option><option value="SELF_REGULATION">自律能力</option></select></label><label>家庭情况<select data-family-assessment-structure><option value="TWO_PARENT">双亲家庭</option><option value="SINGLE_PARENT">单亲家庭</option><option value="BLENDED">重组家庭</option><option value="PREFER_NOT_TO_SAY">暂不说明</option></select></label><button type="submit">提交家庭支持需要</button></form><p data-family-assessment-result role="status" aria-live="polite"></p></section>
       <section data-family-portal-card="hypothesis"><span>成长解读假设</span><strong data-family-hypothesis-title>完成家庭支持需要后显示</strong><p data-family-hypothesis-detail>确认前不会创建成长意图。</p><div data-family-hypothesis-actions></div><p data-family-hypothesis-result role="status" aria-live="polite"></p></section>
       <section data-family-portal-card="growth-help"><span>法咪莉校长</span><strong data-family-growth-help-title>连接家庭会话后可用</strong><p data-family-growth-help-detail>首页不会自动分析家庭文字，只有显式提交后才会发送。</p><form data-family-growth-help-form hidden><label>为哪位孩子<select data-family-growth-help-subject required></select></label><label>现在发生了什么？<textarea data-family-growth-help-text maxlength="500" required placeholder="例如：孩子刚摔门，我今晚不知道怎么重新开口……"></textarea></label><button type="submit">提交并获取下一步</button></form><p data-family-growth-help-result role="status" aria-live="polite"></p><div data-family-growth-help-actions></div></section>
@@ -308,8 +310,9 @@ function mountFamilyPortal() {
 }
 
 if (searchParams.get('product') === 'console') {
-  // 正式 Web 默认入口：仅展示现有 tenant_family_bindings、account membership 与 Family API
-  // 的租户/家庭范围语义，不在 Web 端创建平行的 tenant 或 IAM 本体。
+  document.title = 'Family AI · 内部工作台';
+  appRoot.dataset.surface = 'internal-operations';
+  // 内部工作台与家庭门户使用独立产品入口；权限仍由服务端会话和对象范围决定。
   const familyId = searchParams.get('familyId') ?? undefined;
   const apiBaseUrl = searchParams.get('apiBaseUrl') ?? 'http://localhost:3000';
   const familyAdapter = familyId && bearerToken ? createFamilyApiAdapter({ baseUrl: apiBaseUrl, bearerToken, familyId }) : undefined;
@@ -319,9 +322,11 @@ if (searchParams.get('product') === 'console') {
   const updateFamilyOperationFollowUp = familyAdapter
     ? async (operationId, input) => /** @type {{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }} */ (await familyAdapter.updateOperationFollowUp(operationId, input))
     : undefined;
+  const requestedRole = searchParams.get('role') ?? 'TENANT_OPERATOR';
+  const internalRoles = new Set(['PLATFORM_ADMIN', 'TENANT_ADMIN', 'TENANT_OPERATOR', 'SERVICE_ADVISOR']);
   createPlatformConsole(root, {
     tenantId: searchParams.get('tenantId') ?? 'tenant_bangyang',
-    role: /** @type {'PLATFORM_ADMIN'|'TENANT_ADMIN'|'TENANT_OPERATOR'|'SERVICE_ADVISOR'|'FAMILY_MEMBER'} */ (searchParams.get('role') ?? 'TENANT_OPERATOR'),
+    role: /** @type {'PLATFORM_ADMIN'|'TENANT_ADMIN'|'TENANT_OPERATOR'|'SERVICE_ADVISOR'} */ (internalRoles.has(requestedRole) ? requestedRole : 'TENANT_OPERATOR'),
     loadTenantScopedProjection,
     loadFamilyOperations,
     updateFamilyOperationFollowUp,
