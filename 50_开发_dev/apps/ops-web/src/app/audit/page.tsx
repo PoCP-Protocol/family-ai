@@ -1,0 +1,1 @@
+export default function AuditPage(){return <main className="ops-main"><span className="ops-badge">审计与回执</span><h1>Named Action 与模型运行</h1><section className="ops-card"><p>本页面只读审计和回执，正式 API 接线将在 Ops 纵切实现。</p></section></main>}

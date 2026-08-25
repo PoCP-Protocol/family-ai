@@ -1,0 +1,1 @@
+export default function AssessmentSessionPage(){return <main className="main"><span className="eyebrow">家庭测评会话</span><h1>继续回答家庭场景</h1><section className="card"><p>会话由服务端恢复，提交后生成版本化证据。当前生产底座尚未接入真实会话。</p></section></main>}

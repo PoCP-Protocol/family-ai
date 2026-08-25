@@ -1,0 +1,1 @@
+export default function SafetyPage(){return <main className="ops-main"><span className="ops-badge">安全与人工介入</span><h1>人工复核队列</h1><section className="ops-card"><p>高风险表达、同意撤回和 AI 阻断队列尚未接入正式 projection。</p></section></main>}

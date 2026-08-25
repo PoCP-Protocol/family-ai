@@ -1,0 +1,1 @@
+export default function SettingsPage(){return <main className="ops-main"><span className="ops-badge">组织与权限</span><h1>租户、角色与范围</h1><section className="ops-card"><p>不在浏览器生成授权；权限页面将仅显示服务端返回的角色和范围。</p></section></main>}

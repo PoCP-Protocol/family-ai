@@ -1,0 +1,1 @@
+export default function AssessmentsPage(){return <main className="ops-main"><span className="ops-badge">测评与 AI 质量</span><h1>证据与假设复核</h1><section className="ops-card"><p>测评证据、Hypothesis、Schema 和模型运行只读能力尚未接入正式页面。</p></section></main>}

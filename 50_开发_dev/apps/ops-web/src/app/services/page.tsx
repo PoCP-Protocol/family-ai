@@ -1,0 +1,1 @@
+export default function ServicesPage(){return <main className="ops-main"><span className="ops-badge">服务交付</span><h1>服务需求与 SLA</h1><section className="ops-card"><p>教师/机构准入、派单、确认、服务记录和反馈将在服务纵切接入。</p></section></main>}

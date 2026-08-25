@@ -1,0 +1,1 @@
+export default function InterpretationPage(){return <main className="main"><span className="eyebrow">成长解读 · UI-03</span><h1>查看支持假设</h1><section className="card"><p>展示家长视角、证据来源、局限和未知。家庭确认前不会形成成长方向。</p></section></main>}

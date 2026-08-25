@@ -1,0 +1,1 @@
+export default function JourneysPage(){return <main className="ops-main"><span className="ops-badge">成长旅程</span><h1>90 天旅程队列</h1><section className="ops-card"><p>旅程阶段、暂停、恢复和待回顾能力尚未接入正式 Ops projection。</p></section></main>}

@@ -1,0 +1,1 @@
+export default function FamiliesPage(){return <main className="ops-main"><span className="ops-badge">家庭运营</span><h1>家庭列表</h1><section className="ops-card"><p>尚未接入真实家庭列表投影。角色和范围由服务端会话确定。</p></section></main>}

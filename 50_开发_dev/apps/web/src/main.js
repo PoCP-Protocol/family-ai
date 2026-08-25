@@ -328,6 +328,7 @@ if (searchParams.get('product') === 'console') {
   const createServiceTask = familyAdapter && caseId
     ? (/** @type {Record<string, unknown>} */ input) => familyAdapter.createServiceTask(caseId, input)
     : undefined;
+  const loadServiceTasks = familyAdapter && caseId ? () => familyAdapter.getServiceTasks(caseId) : undefined;
   /** @type {((operationId: string, input: { follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null }) => Promise<{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }>)|undefined} */
   const updateFamilyOperationFollowUp = familyAdapter
     ? async (operationId, input) => /** @type {{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }} */ (await familyAdapter.updateOperationFollowUp(operationId, input))
@@ -343,6 +344,7 @@ if (searchParams.get('product') === 'console') {
     loadGrantedCaseProjection,
     caseAccessCaseId: caseId,
     createServiceTask,
+    loadServiceTasks,
   });
 } else if (searchParams.get('product') === 'test-loop' || searchParams.get('product') === 'legacy-family' || window.location.hash === '#test-loop') {
   // 历史链接仍指向同一家庭门户，避免保留第二套产品入口。
