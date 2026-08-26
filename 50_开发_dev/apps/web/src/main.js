@@ -324,7 +324,7 @@ if (searchParams.get('product') === 'console') {
   const loadFamilyOperations = familyAdapter ? () => familyAdapter.getExperienceCustomerProjection() : undefined;
   const caseId = searchParams.get('caseId') ?? undefined;
   const loadGrantedCaseProjection = familyAdapter && caseId ? () => familyAdapter.getGrantedCaseProjection(caseId) : undefined;
-  /** @param {Record<string, unknown>} input */
+  /** @type {((input: { blueprint_ref: string, task_key: string, title: string, description: string, due_at?: string|null }) => Promise<Record<string, unknown>>)|undefined} */
   const createServiceTask = familyAdapter && caseId
     ? (input) => familyAdapter.createServiceTask(caseId, input)
     : undefined;
