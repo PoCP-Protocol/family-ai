@@ -971,16 +971,33 @@ export class OrchestrationService {
   }
 
   /** ⑤ 回访 + helpfulness(actor provenance;非 Observation)。有效反馈→完成服务环:Case COMPLETED + Intent CLOSED/SERVICE_DELIVERED。 */
-  async submitFollowUp(familyId: string, actorPersonId: string, caseId: string, helpfulness: string, text: string | null, idempotencyKey?: string): Promise<{ followup_id: string }> {
-    return this.withIdempotency('SubmitServiceFollowUp', idempotencyKey, { familyId, actorPersonId, caseId, helpfulness, text }, async () => {
+  /**
+   * ⑤ 回访 + helpfulness — 提交的是 truth_class 三态之一, 不是笼统的 SERVICE_NOTE:
+   * - PERSPECTIVE:家长对这次服务的满意度陈述本身(helpfulness 字段的原始含义)。
+   *   migration 0020 表注释原文:"helpfulness 是某人的服务价值陈述,需 provenance" ——
+   *   这就是 Perspective,过去被硬编码成 SERVICE_NOTE 是一处既有的标注错误,这里修正。
+   * - OBSERVATION_CANDIDATE:如果调用方额外提供了一条具体、可核实的约定事项陈述
+   *   (observationCandidate),则标记为"观察候选"——比泛泛的满意度更具体、更可能被人工
+   *   核实,但仍不是结果本身(不写 growth_reviews/outcome_observations,那是 Family Growth
+   *   Loop 侧的权威范式,场景不同不合并)。是否真的"达成"仍需要人工审核,这里只负责标注
+   * "这条信息值得被审核",不由系统自动断言为事实。
+   */
+  async submitFollowUp(familyId: string, actorPersonId: string, caseId: string, helpfulness: string, text: string | null, idempotencyKey?: string, observationCandidate?: { agreed_item: string; achieved: boolean } | null): Promise<{ followup_id: string }> {
+    return this.withIdempotency('SubmitServiceFollowUp', idempotencyKey, { familyId, actorPersonId, caseId, helpfulness, text, observationCandidate }, async () => {
     const allowed = ['HELPFUL', 'SOMEWHAT_HELPFUL', 'NOT_HELPFUL_YET', 'UNANSWERED'];
     if (!allowed.includes(helpfulness)) throw new BadRequestException('invalid_helpfulness');
+    if (observationCandidate !== undefined && observationCandidate !== null) {
+      if (!observationCandidate.agreed_item?.trim()) throw new BadRequestException('observation_candidate_agreed_item_required');
+      if (typeof observationCandidate.achieved !== 'boolean') throw new BadRequestException('observation_candidate_achieved_required');
+    }
     const own = await this.repo.query<{ intent_ref: string; status: string }>(`select intent_ref, status from service_cases where case_id=$1 and family_id=$2`, [caseId, familyId]);
     if ((own.rowCount ?? 0) === 0) throw new ForbiddenException('case_not_in_family');
+    const truthClass = observationCandidate ? 'OBSERVATION_CANDIDATE' : 'PERSPECTIVE';
+    const responseText = observationCandidate ? JSON.stringify({ note: text, agreed_item: observationCandidate.agreed_item, achieved: observationCandidate.achieved }) : text;
     const r = await this.repo.query<{ followup_id: string }>(
       `insert into service_followup_responses(case_ref, actor_person_id, response_ref, helpfulness, truth_class)
-       values ($1,$2,$3,$4,'SERVICE_NOTE') returning followup_id`,
-      [caseId, actorPersonId, text, helpfulness],
+       values ($1,$2,$3,$4,$5) returning followup_id`,
+      [caseId, actorPersonId, responseText, helpfulness, truthClass],
     );
     if (helpfulness === 'NOT_HELPFUL_YET') {
       await this.repo.query(`update service_contribution_allocations set release_state='HELD', released_at=null where case_ref=$1 and allocation_bucket='QUALITY_RESERVE'`, [caseId]);
@@ -994,6 +1011,50 @@ export class OrchestrationService {
     }
     return { followup_id: r.rows[0].followup_id };
     });
+  }
+
+  /**
+   * 结果三分类只读投影 — 呼应商业方案"行为结果/主观感受/可验证结果不能混为一谈"的要求,
+   * 对齐本项目在 Family Growth Loop 侧(growth_reviews/outcome_observations)已经确立的分层
+   * 范式,而不是把三者揉进同一段自由文本或同一个满意度枚举里:
+   * - behavioral:行为完成计数,来自 service_tasks.status/task_quality_reviews,回答"做了多少"。
+   * - subjective:truth_class='PERSPECTIVE' 的回访,回答"感觉怎样",是陈述不是事实。
+   * - verifiable_candidates:truth_class='OBSERVATION_CANDIDATE' 的回访 —— 更具体、更可能被
+   *   核实,但明确带 boundary 声明:candidate 不等于已验证结果,是否真的达成仍需要人工确认,
+   *   这里不做也不能做自动判定(呼应 growth_reviews 表的 boundary CHECK 约束写法)。
+   */
+  async getCaseResultSummary(familyId: string, caseId: string): Promise<{
+    case_id: string;
+    behavioral: { total_tasks: number; verified_tasks: number; delivered_tasks: number };
+    subjective: Array<{ followup_id: string; helpfulness: string; response_ref: string | null; captured_at: string }>;
+    verifiable_candidates: Array<{ followup_id: string; agreed_item: string; achieved: boolean; captured_at: string; boundary: 'OBSERVATION_CANDIDATE_NOT_VERIFIED_RESULT' }>;
+  }> {
+    const own = await this.repo.query<{ case_id: string }>(`select case_id from service_cases where case_id=$1 and family_id=$2`, [caseId, familyId]);
+    if (!own.rows[0]) throw new ForbiddenException('case_not_in_family');
+    const taskCounts = await this.repo.query<{ total_tasks: string; verified_tasks: string; delivered_tasks: string }>(
+      `select count(*)::text as total_tasks,
+              count(*) filter (where status='VERIFIED')::text as verified_tasks,
+              count(*) filter (where status='DELIVERED')::text as delivered_tasks
+         from service_tasks where case_ref=$1`,
+      [caseId],
+    );
+    const followups = await this.repo.query<{ followup_id: string; helpfulness: string; response_ref: string | null; truth_class: string; captured_at: string }>(
+      `select followup_id, helpfulness, response_ref, truth_class, captured_at from service_followup_responses where case_ref=$1 order by captured_at asc`,
+      [caseId],
+    );
+    const subjective = followups.rows.filter((f) => f.truth_class === 'PERSPECTIVE').map((f) => ({ followup_id: f.followup_id, helpfulness: f.helpfulness, response_ref: f.response_ref, captured_at: f.captured_at }));
+    const verifiable_candidates = followups.rows
+      .filter((f) => f.truth_class === 'OBSERVATION_CANDIDATE')
+      .map((f) => {
+        const parsed = f.response_ref ? (JSON.parse(f.response_ref) as { agreed_item?: string; achieved?: boolean }) : {};
+        return { followup_id: f.followup_id, agreed_item: parsed.agreed_item ?? '', achieved: parsed.achieved ?? false, captured_at: f.captured_at, boundary: 'OBSERVATION_CANDIDATE_NOT_VERIFIED_RESULT' as const };
+      });
+    return {
+      case_id: caseId,
+      behavioral: { total_tasks: Number(taskCounts.rows[0].total_tasks), verified_tasks: Number(taskCounts.rows[0].verified_tasks), delivered_tasks: Number(taskCounts.rows[0].delivered_tasks) },
+      subjective,
+      verifiable_candidates,
+    };
   }
 
   /** ⑥ Context Reuse(只读;按 need_type 过滤,同类才复用;禁因果)。 */

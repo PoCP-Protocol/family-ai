@@ -218,12 +218,21 @@ export class OrchestrationController {
   async followUp(
     @Param('familyId') familyId: string,
     @Param('caseId') caseId: string,
-    @Body() body: { helpfulness?: string; text?: string },
+    @Body() body: { helpfulness?: string; text?: string; observation_candidate?: { agreed_item: string; achieved: boolean } },
     @OrchestrationActor() actor: Actor,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     if (!body?.helpfulness) throw new BadRequestException('helpfulness required');
-    return this.svc.submitFollowUp(familyId, actor.personId, caseId, body.helpfulness, body.text ?? null, idempotencyKey && idempotencyKey.trim() ? idempotencyKey.trim() : undefined);
+    return this.svc.submitFollowUp(familyId, actor.personId, caseId, body.helpfulness, body.text ?? null, idempotencyKey && idempotencyKey.trim() ? idempotencyKey.trim() : undefined, body.observation_candidate ?? null);
+  }
+
+  @Get('orchestration/cases/:caseId/result-summary')
+  @RequireOrchestrationAction('ReadFamily')
+  async caseResultSummary(
+    @Param('familyId') familyId: string,
+    @Param('caseId') caseId: string,
+  ) {
+    return this.svc.getCaseResultSummary(familyId, caseId);
   }
 
   @Post('orchestration/cases/:caseId/shadow-allocation/finalize')

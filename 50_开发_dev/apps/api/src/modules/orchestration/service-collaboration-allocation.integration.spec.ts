@@ -53,6 +53,7 @@ beforeEach(async () => {
 // createServiceTask), so clean it here in FK-safe order — otherwise a failed/aborted test
 // leaves rows that break the next test's cleanFamilyCoreTables delete on service_cases.
 afterEach(async () => {
+  await pool.query('delete from service_followup_responses');
   await pool.query('delete from service_contribution_allocations');
   await pool.query('delete from service_contributions');
   await pool.query('delete from task_quality_reviews');
@@ -205,5 +206,94 @@ describe('DEV service collaboration allocation — policy-driven buckets and rev
     });
     expect(verify.status).toBe(403);
     expect(verify.body.message).toBe('reviewer_not_assigned_quality_reviewer_role');
+  });
+});
+
+/**
+ * Verifies the result three-way classification (behavioral / subjective /
+ * verifiable_candidates), activating service_followup_responses.truth_class (migration
+ * 0020's PERSPECTIVE/SERVICE_NOTE/OBSERVATION_CANDIDATE enum) instead of the previous
+ * hardcoded 'SERVICE_NOTE' literal on every submitFollowUp call.
+ */
+describe('DEV service collaboration result triage — behavioral/subjective/verifiable_candidates', () => {
+  it('纯满意度回访归类为 PERSPECTIVE，且不影响既有 release_state 分配副作用', async () => {
+    const s = await seed();
+    const caseId = await createCase(s);
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks`, s.token, 'POST', {
+      blueprint_ref: BLUEPRINT_REF, task_key: 'CASE_OPEN_AND_STEWARD', title: '开案与管家', description: '开案与管家',
+    });
+    await pool.query(`update service_cases set status='WAITING_FAMILY' where case_id=$1`, [caseId]);
+
+    const followUp = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/followups`, s.token, 'POST', { helpfulness: 'HELPFUL', text: '感觉这周好一些了' });
+    expect(followUp.status).toBe(201);
+
+    const caseRow = await pool.query(`select status from service_cases where case_id=$1`, [caseId]);
+    expect(caseRow.rows[0].status).toBe('COMPLETED');
+
+    const truthClassRow = await pool.query(`select truth_class from service_followup_responses where followup_id=$1`, [followUp.body.followup_id]);
+    expect(truthClassRow.rows[0].truth_class).toBe('PERSPECTIVE');
+
+    const summary = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/result-summary`, s.token, 'GET');
+    expect(summary.status).toBe(200);
+    expect(summary.body.subjective).toHaveLength(1);
+    expect(summary.body.subjective[0].helpfulness).toBe('HELPFUL');
+    expect(summary.body.verifiable_candidates).toHaveLength(0);
+  });
+
+  it('带 observation_candidate 的回访归类为 OBSERVATION_CANDIDATE，且带边界声明不被误当作已验证结果', async () => {
+    const s = await seed();
+    const caseId = await createCase(s);
+    const task = (await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks`, s.token, 'POST', {
+      blueprint_ref: BLUEPRINT_REF, task_key: 'CASE_OPEN_AND_STEWARD', title: '开案与管家', description: '开案与管家',
+    })).body;
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task.task_id}/assign`, s.token, 'POST', { assignee_ref: 'steward-4' });
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task.task_id}/deliver`, s.token, 'POST', { deliverable: { note: 'done' } });
+
+    const followUp = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/followups`, s.token, 'POST', {
+      helpfulness: 'SOMEWHAT_HELPFUL',
+      text: '孩子这周主动说了一次心事',
+      observation_candidate: { agreed_item: '孩子每周至少主动和家长说一次心事', achieved: true },
+    });
+    expect(followUp.status).toBe(201);
+
+    const truthClassRow = await pool.query(`select truth_class from service_followup_responses where followup_id=$1`, [followUp.body.followup_id]);
+    expect(truthClassRow.rows[0].truth_class).toBe('OBSERVATION_CANDIDATE');
+
+    const summary = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/result-summary`, s.token, 'GET');
+    expect(summary.status).toBe(200);
+    expect(summary.body.verifiable_candidates).toHaveLength(1);
+    expect(summary.body.verifiable_candidates[0].agreed_item).toBe('孩子每周至少主动和家长说一次心事');
+    expect(summary.body.verifiable_candidates[0].achieved).toBe(true);
+    // The boundary field is what stops this from being read as an already-verified
+    // outcome — a candidate observation still requires human review to count, matching
+    // the growth_reviews table's boundary CHECK constraint pattern (0009 migration).
+    expect(summary.body.verifiable_candidates[0].boundary).toBe('OBSERVATION_CANDIDATE_NOT_VERIFIED_RESULT');
+    // subjective should still carry the same followup's helpfulness reading separately —
+    // no, actually: a single followup is classified into exactly one truth_class, so this
+    // one should NOT also appear in subjective (that would double-count one submission
+    // across two categories).
+    expect(summary.body.subjective).toHaveLength(0);
+  });
+
+  it('behavioral 计数来自 service_tasks 状态，不依赖任何回访提交', async () => {
+    const s = await seed();
+    const caseId = await createCase(s);
+    const task1 = (await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks`, s.token, 'POST', {
+      blueprint_ref: BLUEPRINT_REF, task_key: 'CASE_OPEN_AND_STEWARD', title: '开案与管家', description: '开案与管家',
+    })).body;
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task1.task_id}/assign`, s.token, 'POST', { assignee_ref: 'steward-5' });
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task1.task_id}/deliver`, s.token, 'POST', { deliverable: { note: 'done' } });
+
+    const summaryBeforeVerify = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/result-summary`, s.token, 'GET');
+    expect(summaryBeforeVerify.body.behavioral).toEqual({ total_tasks: 1, verified_tasks: 0, delivered_tasks: 1 });
+
+    const reviewerTask = (await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks`, s.token, 'POST', {
+      blueprint_ref: BLUEPRINT_REF, task_key: 'CLOSURE_QUALITY_REVIEW', title: '结案质量审核', description: '结案质量审核',
+    })).body;
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${reviewerTask.task_id}/assign`, s.token, 'POST', { assignee_ref: 'reviewer-5' });
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task1.task_id}/verify`, s.token, 'POST', { reviewer_ref: 'reviewer-5', quality_state: 'PASSED' });
+
+    const summaryAfterVerify = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/result-summary`, s.token, 'GET');
+    expect(summaryAfterVerify.body.behavioral).toEqual({ total_tasks: 2, verified_tasks: 1, delivered_tasks: 0 });
   });
 });
