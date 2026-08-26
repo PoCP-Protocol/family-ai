@@ -427,8 +427,8 @@ describe('FamilyEducationModelRuntime', () => {
       {
         focus_ref: 'EMOTION_REGULATION',
         question_ref: 'EMOTION_REGULATION_Q01',
-        construct_refs: ['PHYSICAL_HEALTH_RHYTHM', 'PSYCHOSOMATIC_STRESS_SIGNAL'],
-        action_refs: ['SLEEP_AND_ENERGY_RHYTHM_CHECK', 'HUMAN_SERVICE_CONTEXT_PACKAGE'],
+        construct_refs: ['EMOTION_REGULATION_SUPPORT'],
+        action_refs: ['COMMUNICATION_REPAIR_CONVERSATION', 'HUMAN_SERVICE_CONTEXT_PACKAGE'],
       },
       {
         focus_ref: 'PARENT_CHILD_COMMUNICATION',
@@ -439,13 +439,13 @@ describe('FamilyEducationModelRuntime', () => {
       {
         focus_ref: 'DEVICE_USE_CONTEXT',
         question_ref: 'DEVICE_USE_CONTEXT_Q02',
-        construct_refs: ['AI_LITERACY_FLUENCY'],
-        action_refs: ['AI_USE_FAMILY_RULES_MINI_PLAN'],
+        construct_refs: ['DEVICE_USE_CONTEXT', 'PARENT_CHILD_COMMUNICATION'],
+        action_refs: ['FAMILY_DEVICE_AGREEMENT_DRAFT', 'COMMUNICATION_REPAIR_CONVERSATION'],
       },
       {
         focus_ref: 'SELF_REGULATION',
         question_ref: 'SELF_REGULATION_Q01',
-        construct_refs: ['HOMEWORK_PROCESS', 'FAMILY_ROUTINE'],
+        construct_refs: ['SELF_REGULATION_SUPPORT', 'FAMILY_ROUTINE'],
         action_refs: ['SEVEN_DAY_HOMEWORK_START_RITUAL'],
       },
     ] as const;

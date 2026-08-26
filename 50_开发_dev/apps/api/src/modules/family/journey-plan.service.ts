@@ -166,7 +166,7 @@ export class JourneyPlanService {
          where plan_id = $1`,
         [request.plan_id, meta.occurredAt],
       );
-      await createJourneyPlanActions(client, plan, meta.occurredAt);
+      await createJourneyPlanActions(client, plan, meta.occurredAt, subject.childPersonId);
       const updated = await getPlanForUpdate(client, request.family_id, request.plan_id);
       const response: ConfirmJourneyPlanResponse = { plan: await hydratePlan(client, updated) };
       await insertAuditAndOutbox(client, CONFIRM_ACTION, 'JourneyPlanConfirmed', request.family_id, request.plan_id, request.idempotency_key, meta, response);
@@ -366,7 +366,7 @@ function phaseForDay(dayIndex: number): JourneyPlanPhase {
   return PHASE_DEFINITIONS.find((phase) => dayIndex >= phase.start_day && dayIndex <= phase.end_day)?.phase ?? 'STABILIZE';
 }
 
-async function createJourneyPlanActions(client: pg.PoolClient, plan: JourneyPlanRow, occurredAt: string): Promise<void> {
+async function createJourneyPlanActions(client: pg.PoolClient, plan: JourneyPlanRow, occurredAt: string, subjectPersonId: string): Promise<void> {
   const existing = await client.query<{ count: string }>(
     `select count(*)::text as count from growth_actions where journey_plan_id = $1`,
     [plan.plan_id],
@@ -382,13 +382,13 @@ async function createJourneyPlanActions(client: pg.PoolClient, plan: JourneyPlan
       `insert into growth_actions(
          family_id, journey_id, intervention_id, dimension_id, action_type, instruction, status,
          assigned_at, onboarding_id, priority_id, journey_plan_id, journey_phase, day_index,
-         assignment_text, due_date, completion_status, reflection, reflection_boundary, boundary
+         assignment_text, due_date, completion_status, reflection, reflection_boundary, boundary, subject_person_id
        ) values (
          $1, $2, null, $3, 'JOURNEY_90_DAY_PRACTICE', $4, 'PENDING',
          $5, $2, $6, $7, $8, $9::smallint, $4,
-         ($5::timestamptz)::date + ($9::integer - 1), null, null, null, 'ACTION_IS_NOT_OUTCOME'
+         ($5::timestamptz)::date + ($9::integer - 1), null, null, null, 'ACTION_IS_NOT_OUTCOME', $10
        )`,
-      [plan.family_id, plan.onboarding_id, priority.dimension_id, assignment, occurredAt, plan.priority_id, plan.plan_id, phase, dayIndex],
+      [plan.family_id, plan.onboarding_id, priority.dimension_id, assignment, occurredAt, plan.priority_id, plan.plan_id, phase, dayIndex, subjectPersonId],
     );
   }
 }
