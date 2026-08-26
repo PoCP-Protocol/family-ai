@@ -175,7 +175,55 @@ export interface FamilyNeedSummary {
 export interface FamilyConstructSignal {
   construct_ref: string;
   basis_item_refs: string[];
+  theory_refs: FamilyTheoryRef[];  // 从 FAMILY_THEORY_REGISTRY 反查得到,可为空数组(不是所有construct都有理论支撑)
   boundary: 'signal_not_diagnosis';
+}
+
+// V1 确定性,封闭集(同 need-classification.policy.ts 的既有设计原则)——
+// 新增理论必须先加进这个联合类型,不是运行时可扩展列表。只收录可验证的真实理论/公共卫生指南来源,
+// 不收录产品自造的"知识库编号"(如前端历史文案里的"Family 知识库 MD-001/CN-001")。
+export type FamilyTheoryRef =
+  | 'HARVARD_EXECUTIVE_FUNCTION'
+  | 'CASEL_SEL_FRAMEWORK'
+  | 'CDC_POSITIVE_PARENTING'
+  | 'AAP_HEALTHY_CHILDREN_MEDIA';
+
+export interface FamilyTheoryRegistryEntry {
+  theory_ref: FamilyTheoryRef;
+  display_label: string;
+  source_class: 'ACADEMIC_FRAMEWORK' | 'PUBLIC_HEALTH_GUIDANCE';
+  construct_refs: string[];  // 这个理论支撑哪些construct(供反查/前端展示用)
+}
+
+export const FAMILY_THEORY_REGISTRY: FamilyTheoryRegistryEntry[] = [
+  {
+    theory_ref: 'HARVARD_EXECUTIVE_FUNCTION',
+    display_label: 'Harvard Center on the Developing Child · Executive Function & Self-Regulation',
+    source_class: 'ACADEMIC_FRAMEWORK',
+    construct_refs: ['HOMEWORK_PROCESS', 'LEARNING_STRATEGY_METACOGNITION', 'FAMILY_ROUTINE'],
+  },
+  {
+    theory_ref: 'CASEL_SEL_FRAMEWORK',
+    display_label: 'CASEL · Social and Emotional Learning Framework',
+    source_class: 'ACADEMIC_FRAMEWORK',
+    construct_refs: ['PARENT_CHILD_COMMUNICATION', 'PSYCHOSOMATIC_STRESS_SIGNAL'],
+  },
+  {
+    theory_ref: 'CDC_POSITIVE_PARENTING',
+    display_label: 'CDC · Positive Parenting Tips',
+    source_class: 'PUBLIC_HEALTH_GUIDANCE',
+    construct_refs: ['PARENT_CAPACITY', 'SCHOOL_FAMILY_COLLABORATION'],
+  },
+  {
+    theory_ref: 'AAP_HEALTHY_CHILDREN_MEDIA',
+    display_label: 'AAP HealthyChildren.org · Media Use Guidance',
+    source_class: 'PUBLIC_HEALTH_GUIDANCE',
+    construct_refs: ['DEVICE_USE_CONTEXT', 'AI_LITERACY_FLUENCY'],
+  },
+];
+
+function theoryRefsForConstruct(constructRef: string): FamilyTheoryRef[] {
+  return FAMILY_THEORY_REGISTRY.filter((entry) => entry.construct_refs.includes(constructRef)).map((entry) => entry.theory_ref);
 }
 
 export interface FamilySupportHypothesis {
@@ -713,6 +761,7 @@ export class FamilyEducationModelRuntime {
       construct_signals: constructRefs.map((construct_ref) => ({
         construct_ref,
         basis_item_refs: basisItemRefsByConstruct.get(construct_ref) ?? [],
+        theory_refs: theoryRefsForConstruct(construct_ref),
         boundary: 'signal_not_diagnosis',
       })),
       hypotheses: constructRefs.map((construct_ref, index) => ({
@@ -1020,6 +1069,7 @@ export class FamilyMemoryDialogueRuntime {
       construct_mapping: constructRefs.map((construct_ref) => ({
         construct_ref,
         basis_item_refs: basisByConstruct.get(construct_ref) ?? [],
+        theory_refs: theoryRefsForConstruct(construct_ref),
         boundary: 'signal_not_diagnosis',
       })),
       action_candidate_refs: actionCandidateRefs,
@@ -1217,6 +1267,7 @@ export function assertInterpretationBoundary(output: FamilyModelInterpretationDr
   assertNoForbiddenOutputFields(output);
   if (!output.boundary_labels.includes('hypothesis_not_fact')) throw new Error('Missing hypothesis_not_fact boundary');
   if (!output.boundary_labels.includes('recommendation_not_decision')) throw new Error('Missing recommendation_not_decision boundary');
+  assertTheoryRefsAreWhitelisted(output.construct_signals);
   for (const signal of output.construct_signals) {
     if (signal.boundary !== 'signal_not_diagnosis') throw new Error(`Invalid construct signal boundary: ${signal.construct_ref}`);
   }
@@ -1229,12 +1280,28 @@ export function assertInterpretationBoundary(output: FamilyModelInterpretationDr
   return output;
 }
 
+/**
+ * 拦截AI自创理论的唯一真正校验点。确定性路径(interpretDeterministically)天然安全,
+ * 因为 theory_refs 是从 FAMILY_THEORY_REGISTRY 反查得到,不会产生白名单外的值;
+ * 风险只在 LLM 路径(generateGatewayDraft)——模型可能在结构化输出里编出一个不存在的
+ * theory_ref 字符串,TypeScript 编译期挡不住(LLM 输出是运行时 JSON),这里挡住。
+ */
+function assertTheoryRefsAreWhitelisted(signals: FamilyConstructSignal[]): void {
+  const validRefs = new Set(FAMILY_THEORY_REGISTRY.map((entry) => entry.theory_ref));
+  for (const signal of signals) {
+    for (const ref of signal.theory_refs ?? []) {
+      if (!validRefs.has(ref)) throw new Error(`theory_ref_not_whitelisted:${ref}`);
+    }
+  }
+}
+
 export function assertMemoryUpdateCandidateBoundary(output: FamilyMemoryUpdateCandidate): FamilyMemoryUpdateCandidate {
   assertNoForbiddenOutputFields(output);
   if (output.may_mutate_business_state !== false) throw new Error('Memory update candidate must not mutate business state');
   if (output.requires_named_action !== 'ConfirmMemoryUpdateCandidate') throw new Error('Memory update candidate requires named action confirmation');
   if (!output.boundary_labels.includes('consent_required')) throw new Error('Missing consent_required boundary');
   if (!output.boundary_labels.includes('memory_update_candidate_not_fact')) throw new Error('Missing memory_update_candidate_not_fact boundary');
+  assertTheoryRefsAreWhitelisted(output.construct_mapping);
   for (const signal of output.construct_mapping) {
     if (signal.boundary !== 'signal_not_diagnosis') throw new Error(`Invalid memory construct boundary: ${signal.construct_ref}`);
   }
