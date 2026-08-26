@@ -134,6 +134,7 @@ export async function cleanOrchestrationTablesIfPresent(pool: pg.Pool): Promise<
     'service_followup_responses', 'service_contributions', 'service_cases',
     'orchestration_plans', 'family_service_decisions', 'resource_recommendations',
     'eligibility_evaluations', 'growth_intents', 'growth_need_signals', 'growth_need_inputs',
+    'family_invitations',
   ];
   for (const t of tables) {
     const exists = await pool.query('select to_regclass($1) as reg', [t]);

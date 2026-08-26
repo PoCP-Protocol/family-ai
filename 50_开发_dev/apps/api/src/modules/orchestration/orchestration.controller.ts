@@ -13,6 +13,7 @@ import { FamilyPageObjectsService } from './family-page-objects.service';
 import { FamilyCommerceIntentService } from './family-commerce-intent.service';
 import { FamilyServiceBookingService } from './family-service-booking.service';
 import { FamilyMembershipEntitlementService } from './family-membership-entitlement.service';
+import { FamilyInvitationService } from './family-invitation.service';
 import type { ExecuteTestExperienceDto, UpdateOperationFollowUpDto } from './test-experience.contract';
 import type { FamilyPageObjectActionDto } from './family-page-objects.contract';
 import type { CancelOrderIntentDto, SubmitOrderIntentDto } from './family-commerce-intent.contract';
@@ -34,6 +35,7 @@ export class OrchestrationController {
     @Inject(FamilyCommerceIntentService) private readonly commerceIntents: FamilyCommerceIntentService,
     @Inject(FamilyServiceBookingService) private readonly serviceBookings: FamilyServiceBookingService,
     @Inject(FamilyMembershipEntitlementService) private readonly membershipEntitlements: FamilyMembershipEntitlementService,
+    @Inject(FamilyInvitationService) private readonly invitations: FamilyInvitationService,
   ) {}
 
   @Get('home')
@@ -233,6 +235,32 @@ export class OrchestrationController {
     @Param('caseId') caseId: string,
   ) {
     return this.svc.getCaseResultSummary(familyId, caseId);
+  }
+
+  @Post('orchestration/invitations')
+  @RequireOrchestrationAction('ReadFamily')
+  async createInvitation(
+    @Param('familyId') familyId: string,
+    @Body() body: { campaign_ref?: string; channel?: string },
+    @OrchestrationActor() actor: Actor,
+  ) {
+    return this.invitations.createInvitation(familyId, actor.personId, body?.campaign_ref ?? null, body?.channel ?? null);
+  }
+
+  @Get('orchestration/invitations')
+  @RequireOrchestrationAction('ReadFamily')
+  async listInvitations(@Param('familyId') familyId: string) {
+    return { invitations: await this.invitations.listMyInvitations(familyId) };
+  }
+
+  @Post('orchestration/invitations/accept')
+  @RequireOrchestrationAction('ReadFamily')
+  async acceptInvitation(
+    @Param('familyId') familyId: string,
+    @Body() body: { invitation_code?: string },
+  ) {
+    if (!body?.invitation_code) throw new BadRequestException('invitation_code required');
+    return this.invitations.acceptInvitation(familyId, body.invitation_code);
   }
 
   @Post('orchestration/cases/:caseId/shadow-allocation/finalize')

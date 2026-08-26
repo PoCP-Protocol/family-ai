@@ -21,6 +21,7 @@ import { FamilyProductEventService } from './family-product-event.service';
 import { FamilyCommerceIntentService } from './family-commerce-intent.service';
 import { FamilyServiceBookingService } from './family-service-booking.service';
 import { FamilyMembershipEntitlementService } from './family-membership-entitlement.service';
+import { FamilyInvitationService } from './family-invitation.service';
 
 @Module({
   imports: [AuthModule, PrincipalModule],
@@ -39,6 +40,7 @@ import { FamilyMembershipEntitlementService } from './family-membership-entitlem
     FamilyCommerceIntentService,
     FamilyServiceBookingService,
     FamilyMembershipEntitlementService,
+    FamilyInvitationService,
   ],
 })
 export class OrchestrationModule {}
