@@ -328,10 +328,20 @@ export class OrchestrationService {
 
     // 按【所选 Offer 类型】分派执行(绝不都跑 AI_COACH)。V1:主步取第一顺位。
     const primary = snapshots.get(selectedOfferRefs[0])!;
+    // Freeze onto the latest ACTIVE version of the blueprint, not a hardcoded version=1 —
+    // the previous literal here meant any newer blueprint version (e.g. an adjusted
+    // allocation_policy) would never take effect for newly-opened cases, defeating the
+    // whole point of blueprint versioning (see finalizeShadowAllocation's allocation_policy
+    // fix above, which reads the frozen snapshot this insert produces).
+    const activeBlueprint = await this.repo.query<{ version: number }>(
+      `select version from service_collaboration_blueprints where blueprint_ref='communication-21day-service-collab' and status='ACTIVE' order by version desc limit 1`,
+      [],
+    );
+    if (!activeBlueprint.rows[0]) throw new ConflictException('active_collaboration_blueprint_required');
     const caseId = (await this.repo.query<{ case_id: string }>(
       `insert into service_cases(family_id, subject_person_id, intent_ref, plan_ref, status, owner, collaboration_blueprint_ref, collaboration_blueprint_version, collaboration_blueprint_snapshot)
-       values ($1,$2,$3,$4,'IN_PROGRESS',$5,'communication-21day-service-collab',1,(select to_jsonb(b) from service_collaboration_blueprints b where b.blueprint_ref='communication-21day-service-collab' and b.version=1)) returning case_id`,
-      [familyId, subjectPersonId, intentId, planId, SELF_STEWARD],
+       values ($1,$2,$3,$4,'IN_PROGRESS',$5,'communication-21day-service-collab',$6,(select to_jsonb(b) from service_collaboration_blueprints b where b.blueprint_ref='communication-21day-service-collab' and b.version=$6)) returning case_id`,
+      [familyId, subjectPersonId, intentId, planId, SELF_STEWARD, activeBlueprint.rows[0].version],
     )).rows[0].case_id;
 
     let aiCoachResult: DecideResult['ai_coach'] = null;
@@ -827,7 +837,10 @@ export class OrchestrationService {
       if (['VERIFIED', 'CLOSED', 'CANCELLED'].includes(task.rows[0].status)) throw new ConflictException('task_not_assignable');
       const roleKey = task.rows[0].role_key;
       if (!roleKey) throw new ConflictException('task_blueprint_role_required');
-      const roleCheck = await client.query<{ ok: boolean }>(`select exists (select 1 from service_cases sc join service_tasks st on st.case_ref=sc.case_id where st.task_id=$1 and sc.collaboration_blueprint_snapshot @> jsonb_build_object('roles', jsonb_build_array(jsonb_build_object('role_key',$2)))) as ok`, [params.taskId, roleKey]);
+      // $2::text cast is required — jsonb_build_object's variadic value args are untyped
+      // `any`, so the pg driver cannot infer a type for a bare string parameter here and
+      // raises "could not determine data type of parameter" (42P18) without it.
+      const roleCheck = await client.query<{ ok: boolean }>(`select exists (select 1 from service_cases sc join service_tasks st on st.case_ref=sc.case_id where st.task_id=$1 and sc.collaboration_blueprint_snapshot @> jsonb_build_object('roles', jsonb_build_array(jsonb_build_object('role_key',$2::text)))) as ok`, [params.taskId, roleKey]);
       if (!roleCheck.rows[0]?.ok) throw new ForbiddenException('role_not_in_blueprint');
       if (roleKey === 'CASE_STEWARD') {
         const steward = await client.query(`select 1 from service_tasks where case_ref=$1 and role_key='CASE_STEWARD' and responsible_ref is not null and task_id <> $2 and status in ('ACCEPTED','IN_PROGRESS','DELIVERED','VERIFIED')`, [params.caseId, params.taskId]);
@@ -874,6 +887,15 @@ export class OrchestrationService {
       if (!task.rows[0]) throw new ForbiddenException('task_not_in_family_case');
       if (task.rows[0].status !== 'DELIVERED') throw new ConflictException('task_requires_delivered_state');
       if (task.rows[0].role_key === 'DELIVERY_RESOURCE' && task.rows[0].responsible_ref === params.reviewerRef) throw new ForbiddenException('reviewer_must_differ_from_delivery');
+      // Blueprint declares a QUALITY_REVIEWER role (see 0055's seeded
+      // communication-21day-service-collab blueprint), but until now nothing checked that
+      // the reviewer_ref passed here was ever actually assigned that role for this case —
+      // any caller could pass any reviewerRef (as long as it wasn't the delivery person)
+      // and it would be accepted. This closes that gap: the reviewer must hold an
+      // ACCEPTED/IN_PROGRESS/DELIVERED/VERIFIED task_assignment on a QUALITY_REVIEWER-role
+      // task within this same case.
+      const reviewerRole = await client.query(`select 1 from service_tasks st join task_assignments ta on ta.task_id=st.task_id where st.case_ref=$1 and st.role_key='QUALITY_REVIEWER' and ta.assignee_ref=$2 and ta.status in ('ACCEPTED')`, [params.caseId, params.reviewerRef]);
+      if (!reviewerRole.rowCount) throw new ForbiddenException('reviewer_not_assigned_quality_reviewer_role');
       await client.query(`insert into task_quality_reviews(task_id, reviewer_ref, quality_state, review_note, reviewed_at) values ($1,$2,$3,$4,now())`, [params.taskId, params.reviewerRef, params.qualityState, params.reviewNote ?? null]);
       if (params.qualityState !== 'PASSED') {
         const next = params.qualityState === 'REWORK_REQUIRED' ? 'IN_PROGRESS' : 'CANCELLED';
@@ -886,17 +908,37 @@ export class OrchestrationService {
     }));
   }
 
-  /** 案件级影子分配：同一案件只计算一次，严格封顶 100，不产生支付或结算副作用。 */
+  /**
+   * 案件级影子分配：同一案件只计算一次，严格封顶 100，不产生支付或结算副作用。
+   *
+   * 分配比例来自 case 冻存的 collaboration_blueprint_snapshot.allocation_policy.buckets
+   * （见 database/migrations/0055_service_collaboration_allocation_policy.sql 里预置的
+   * communication-21day-service-collab v1 蓝图），不是写死在这段代码里的常量——之前的实现
+   * 把 20/15/15/40/10 这几个数字直接写进 TypeScript，与 blueprint 表里存的 allocation_policy
+   * 字段成了两份互不联动的"平行真相"：要调整分配比例本该只需要发一个新版本 blueprint，实际却
+   * 必须改代码才生效。这里改为真正读取 policy，让 blueprint 版本化机制名副其实。
+   */
   async finalizeShadowAllocation(params: { familyId: string; caseId: string; helpfulness?: 'HELPFUL' | 'SOMEWHAT_HELPFUL' | 'NOT_HELPFUL_YET' | 'UNANSWERED'; idempotencyKey?: string }): Promise<{ case_id: string; finalized: boolean; allocations: ServiceContributionAllocationDto[] }> {
     return this.withIdempotency('FinalizeShadowAllocation', params.idempotencyKey, params, async () => this.repo.withTransaction(async (client) => {
-      const own = await client.query<{ case_id: string; blueprint_ref: string | null; blueprint_version: number | null; shadow_allocation_finalized_at: string | null }>(`select case_id, collaboration_blueprint_ref as blueprint_ref, collaboration_blueprint_version as blueprint_version, shadow_allocation_finalized_at from service_cases where case_id=$1 and family_id=$2 for update`, [params.caseId, params.familyId]);
+      const own = await client.query<{ case_id: string; blueprint_ref: string | null; blueprint_version: number | null; blueprint_snapshot: Record<string, unknown> | null; shadow_allocation_finalized_at: string | null }>(`select case_id, collaboration_blueprint_ref as blueprint_ref, collaboration_blueprint_version as blueprint_version, collaboration_blueprint_snapshot as blueprint_snapshot, shadow_allocation_finalized_at from service_cases where case_id=$1 and family_id=$2 for update`, [params.caseId, params.familyId]);
       if (!own.rows[0]) throw new ForbiddenException('case_not_in_family');
       if (own.rows[0].shadow_allocation_finalized_at) return { case_id: params.caseId, finalized: true, allocations: [] };
-      const contributions = await client.query<{ contribution_id: string; provider_ref: string | null; role: string; task_ref: string; task_weight: number }>(`select c.contribution_id, c.provider_ref, c.role, c.task_ref, st.task_weight from service_contributions c join service_tasks st on st.task_id=c.task_ref where c.case_ref=$1 and c.quality_state='VERIFIED' order by c.completed_at asc`, [params.caseId]);
+      // service_contributions.task_ref is varchar(96) (it stores task ids from other
+      // sources too) while service_tasks.task_id is uuid, so the join needs an explicit
+      // cast — without it Postgres raises "operator does not exist: uuid = character
+      // varying" (42883). $1::uuid on case_ref is likewise required since nothing else in
+      // this query anchors that parameter's type.
+      const contributions = await client.query<{ contribution_id: string; provider_ref: string | null; role: string; task_ref: string; task_weight: number }>(`select c.contribution_id, c.provider_ref, c.role, c.task_ref, st.task_weight from service_contributions c join service_tasks st on st.task_id=c.task_ref::uuid where c.case_ref=$1::uuid and c.quality_state='VERIFIED' order by c.completed_at asc`, [params.caseId]);
       if (!contributions.rows.length) throw new ConflictException('verified_contribution_required');
-      if (!own.rows[0].blueprint_ref || !own.rows[0].blueprint_version) throw new ConflictException('case_blueprint_snapshot_required');
+      if (!own.rows[0].blueprint_ref || !own.rows[0].blueprint_version || !own.rows[0].blueprint_snapshot) throw new ConflictException('case_blueprint_snapshot_required');
       const policyRef = own.rows[0].blueprint_ref;
       const policyVersion = own.rows[0].blueprint_version;
+      const allocationPolicy = own.rows[0].blueprint_snapshot.allocation_policy as { buckets?: Record<string, number> } | undefined;
+      const buckets = allocationPolicy?.buckets;
+      if (!buckets || typeof buckets !== 'object') throw new ConflictException('case_blueprint_allocation_policy_missing');
+      for (const key of ['PLATFORM', 'CONTENT_RESOURCE', 'CASE_STEWARD', 'DELIVERY_RESOURCE', 'QUALITY_RESERVE']) {
+        if (typeof buckets[key] !== 'number') throw new ConflictException(`case_blueprint_allocation_bucket_missing_${key.toLowerCase()}`);
+      }
       const qualityState = params.helpfulness === 'HELPFUL' || params.helpfulness === 'SOMEWHAT_HELPFUL' ? 'RELEASED' : 'HELD';
       const allocations: ServiceContributionAllocationDto[] = [];
       const add = async (contribution: typeof contributions.rows[number], bucket: string, units: number, beneficiaryRef: string, roleKey: string, basisType: string, basisRef: string, releaseState = 'HELD') => {
@@ -904,18 +946,18 @@ export class OrchestrationService {
         allocations.push(row.rows[0]);
       };
       const first = contributions.rows[0];
-      await add(first, 'PLATFORM', 20, 'PLATFORM', 'PLATFORM', 'CASE', params.caseId);
+      await add(first, 'PLATFORM', buckets.PLATFORM, 'PLATFORM', 'PLATFORM', 'CASE', params.caseId);
       const content = contributions.rows.find((item) => item.role === 'CONTENT_RESOURCE');
-      if (content) await add(content, 'CONTENT_RESOURCE', 15, content.provider_ref ?? 'CONTENT_RESOURCE', 'CONTENT_RESOURCE', 'CONTRIBUTION', content.contribution_id);
+      if (content) await add(content, 'CONTENT_RESOURCE', buckets.CONTENT_RESOURCE, content.provider_ref ?? 'CONTENT_RESOURCE', 'CONTENT_RESOURCE', 'CONTRIBUTION', content.contribution_id);
       const steward = contributions.rows.find((item) => item.role === 'CASE_STEWARD' || item.role === 'STEWARD');
-      if (steward) await add(steward, 'CASE_STEWARD', 15, steward.provider_ref ?? 'CASE_STEWARD', 'CASE_STEWARD', 'CONTRIBUTION', steward.contribution_id);
+      if (steward) await add(steward, 'CASE_STEWARD', buckets.CASE_STEWARD, steward.provider_ref ?? 'CASE_STEWARD', 'CASE_STEWARD', 'CONTRIBUTION', steward.contribution_id);
       const delivery = contributions.rows.filter((item) => item.role === 'DELIVERY_RESOURCE' || item.role === 'DELIVERY');
       const totalWeight = delivery.reduce((sum, item) => sum + Number(item.task_weight || 1), 0);
       for (const item of delivery) {
-        const units = totalWeight ? 40 * Number(item.task_weight || 1) / totalWeight : 0;
+        const units = totalWeight ? buckets.DELIVERY_RESOURCE * Number(item.task_weight || 1) / totalWeight : 0;
         await add(item, 'DELIVERY_RESOURCE', units, item.provider_ref ?? item.contribution_id, 'DELIVERY_RESOURCE', 'CONTRIBUTION_WEIGHT', item.contribution_id);
       }
-      await add(first, 'QUALITY_RESERVE', 10, 'QUALITY_RESERVE', 'QUALITY_RESERVE', 'CASE', params.caseId, qualityState);
+      await add(first, 'QUALITY_RESERVE', buckets.QUALITY_RESERVE, 'QUALITY_RESERVE', 'QUALITY_RESERVE', 'CASE', params.caseId, qualityState);
       const totalUnits = allocations.reduce((sum, allocation) => sum + Number(allocation.units), 0);
       if (totalUnits > 100.0001) throw new ConflictException('shadow_allocation_total_exceeds_100');
       await client.query(`update service_cases set shadow_allocation_finalized_at=now(), shadow_allocation_policy_ref=$2, shadow_allocation_policy_version=$3 where case_id=$1`, [params.caseId, policyRef, policyVersion]);

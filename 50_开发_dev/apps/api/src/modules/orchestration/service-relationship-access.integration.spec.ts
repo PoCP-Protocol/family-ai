@@ -161,7 +161,11 @@ describe('Patch 4 ServiceRelationship / CaseAccessGrant', () => {
       expires_at: new Date(Date.now() + 60_000).toISOString(),
     });
     expect(grant.status).toBe(201);
-    await pool.query(`update case_access_grants set expires_at=now()-interval '1 second' where case_access_grant_id=$1`, [grant.body.case_access_grant_id]);
+    // expires_at must stay > effective_from (case_access_grant_time CHECK), so anchor the
+    // expiry just past effective_from rather than "now() - 1s" (which can be earlier than
+    // effective_from and always violate the constraint). By the time this UPDATE runs it is
+    // already past that point, so the grant reads as expired without racing the constraint.
+    await pool.query(`update case_access_grants set expires_at=effective_from + interval '1 millisecond' where case_access_grant_id=$1`, [grant.body.case_access_grant_id]);
     expect((await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET')).status).toBe(403);
   });
 
