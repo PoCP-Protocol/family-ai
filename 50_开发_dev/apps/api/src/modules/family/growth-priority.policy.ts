@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import type {
   AgreementLevel,
+  GrowthDimensionTheoryBasis,
   GrowthPriorityCandidateDto,
   GrowthPriorityDecision,
   GrowthPriorityDraftDto,
@@ -17,6 +18,54 @@ export const GROWTH_PRIORITY_POLICY_VERSION = 'M2_104_DETERMINISTIC_V2' as const
 export const GROWTH_PRIORITY_BOUNDARY = 'PRIORITY_IS_HUMAN_CONFIRMED_PRACTICE_FOCUS' as const;
 export const GROWTH_PRIORITY_DIMENSIONS: M2GrowthDimensionId[] = ['P03', 'R03', 'R04', 'R05'];
 const PRIMARY_GROWTH_PRIORITY_DIMENSION: M2GrowthDimensionId = 'R03';
+
+/**
+ * docs/GROWTH_MODEL_24D_REVERSE_VALIDATION.md(2026-08-26)反向核验决策的工程落地。
+ * P03/R03被核验列为"维度必要性待重新考虑"(未下最终结论,THEORY_UNRESOLVED如实反映这个未决状态,
+ * 不是回避)；R04/R05的Gottman构念(四骑士/修复尝试)有描述性研究支持,但2023年一篇论文判定作为
+ * 干预疗法证据不足,因此评级为INTERVENTION_EFFICACY_INSUFFICIENT而非CONSTRUCT_SUPPORTED。
+ */
+export const GROWTH_PRIORITY_DIMENSION_THEORY_BASIS: Record<M2GrowthDimensionId, GrowthDimensionTheoryBasis> = {
+  P03: {
+    dimension_id: 'P03',
+    theory_label: 'Rogers主动倾听(人本主义传统,来访者中心疗法三条件)',
+    evidence_grade: 'INTERVENTION_EFFICACY_INSUFFICIENT',
+    citation_boundary: '冲突场景下的因果效力证据薄弱(Hahlweg 1984/Gottman本人质疑)，仅可用于观察性描述，不得暗示掌握此技巧能解决冲突。',
+  },
+  R03: {
+    dimension_id: 'R03',
+    theory_label: '暂无单一权威构念(多个通用人际沟通理论综合,尚待核验确认)',
+    evidence_grade: 'THEORY_UNRESOLVED',
+    citation_boundary: '维度理论根基未决，AI输出不得援引任何具体理论出处，只能用中性、不含理论背书的描述。',
+  },
+  R04: {
+    dimension_id: 'R04',
+    theory_label: 'Gottman Four Horsemen(批评/防御/蔑视/筑墙，描述性构念)',
+    evidence_grade: 'INTERVENTION_EFFICACY_INSUFFICIENT',
+    citation_boundary: '不得暗示"练习这个方法能修复关系"，只能用于观察性描述（如"观察到高频批评/蔑视模式"）。',
+  },
+  R05: {
+    dimension_id: 'R05',
+    theory_label: 'Gottman Repair Attempts(修复尝试，与冲突调节水平分开讨论的独立构念)',
+    evidence_grade: 'INTERVENTION_EFFICACY_INSUFFICIENT',
+    citation_boundary: '构念定义清楚，但受R04同样的干预有效性证据限制，不得暗示这套方法本身已被证明有效。',
+  },
+};
+
+const CAUSAL_PROMISE_PHRASES = ['能改善', '会修复', '有效解决', '保证'];
+
+/**
+ * 唯一真正的拦截点：任何生成的why文案如果暗示因果/疗效承诺，而该维度的evidence_grade不支持
+ * (即不是CONSTRUCT_SUPPORTED)，直接拒绝而非静默放行。当前buildWhy()是硬编码文案，本身不会
+ * 触发；这个校验点是为未来LLM生成/文案迭代设的安全网——同assertTheoryRefsAreWhitelisted
+ * "确定性路径天然安全，风险在未来变动"的设计哲学。
+ */
+export function assertGrowthPriorityCitationBoundary(dimensionId: M2GrowthDimensionId, whyText: string): void {
+  const basis = GROWTH_PRIORITY_DIMENSION_THEORY_BASIS[dimensionId];
+  if (basis.evidence_grade !== 'CONSTRUCT_SUPPORTED' && CAUSAL_PROMISE_PHRASES.some((phrase) => whyText.includes(phrase))) {
+    throw new Error(`growth_priority_citation_boundary_violated:${dimensionId}`);
+  }
+}
 
 export interface ConfirmedProfileForPriority {
   profile_id: string;
@@ -98,6 +147,8 @@ function buildCandidate(profile: ConfirmedProfileForPriority, createdAt: string)
   const limitations = mapLimitations(profile);
   const reasonCodes = mapReasonCodes(profile, evidenceIds.length);
   const eligibility = determineEligibility(profile, evidenceIds.length);
+  const why = buildWhy(profile.dimension_id, profile.state, eligibility);
+  assertGrowthPriorityCitationBoundary(profile.dimension_id, why);
 
   return {
     dimension_id: profile.dimension_id,
@@ -113,9 +164,10 @@ function buildCandidate(profile: ConfirmedProfileForPriority, createdAt: string)
     },
     eligibility,
     boundary: GROWTH_PRIORITY_BOUNDARY,
-    why: buildWhy(profile.dimension_id, profile.state, eligibility),
+    why,
     expected_change: '未来七天只作为练习焦点观察沟通过程变化，不承诺结果改善。',
     limitations,
+    theory_basis: GROWTH_PRIORITY_DIMENSION_THEORY_BASIS[profile.dimension_id],
     policy_version: GROWTH_PRIORITY_POLICY_VERSION,
     created_at: createdAt,
   };

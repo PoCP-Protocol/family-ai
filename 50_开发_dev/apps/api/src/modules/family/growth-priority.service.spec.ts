@@ -1,7 +1,12 @@
 import type { AuditMeta, GrowthPriorityDecision } from '@family/contracts';
 import { describe, expect, it } from 'vitest';
 import type { FamilyRepository } from './family.repository';
-import { buildGrowthPriorityDraft, type ConfirmedProfileForPriority } from './growth-priority.policy';
+import {
+  assertGrowthPriorityCitationBoundary,
+  buildGrowthPriorityDraft,
+  GROWTH_PRIORITY_DIMENSION_THEORY_BASIS,
+  type ConfirmedProfileForPriority,
+} from './growth-priority.policy';
 import { GrowthPriorityService } from './growth-priority.service';
 import type { GrowthSubjectResolver } from './growth-subject.resolver';
 
@@ -76,6 +81,51 @@ describe('GrowthPriority policy', () => {
     expect(draft.decision).toBe('NO_PRIORITY_YET');
     expect(draft.candidate).toBeNull();
     expect(draft.profile_snapshot).toMatchObject({ eligible_candidate_count: 0 });
+  });
+
+  it('attaches the docs/GROWTH_MODEL_24D_REVERSE_VALIDATION.md theory_basis to the eligible candidate', () => {
+    const draft = buildGrowthPriorityDraft({
+      familyId,
+      onboardingId,
+      createdAt: meta.occurredAt,
+      profiles: [createProfile({ profileId: '55555555-5555-4555-8555-555555555555', dimensionId: 'R03', state: 'DEVELOPING' })],
+    });
+
+    expect(draft.candidate?.theory_basis).toEqual({
+      dimension_id: 'R03',
+      theory_label: '暂无单一权威构念(多个通用人际沟通理论综合,尚待核验确认)',
+      evidence_grade: 'THEORY_UNRESOLVED',
+      citation_boundary: '维度理论根基未决，AI输出不得援引任何具体理论出处，只能用中性、不含理论背书的描述。',
+    });
+  });
+
+  it('gives R04/R05 an INTERVENTION_EFFICACY_INSUFFICIENT grade (Gottman construct usable, therapy efficacy claim is not)', () => {
+    expect(GROWTH_PRIORITY_DIMENSION_THEORY_BASIS.R04.evidence_grade).toBe('INTERVENTION_EFFICACY_INSUFFICIENT');
+    expect(GROWTH_PRIORITY_DIMENSION_THEORY_BASIS.R05.evidence_grade).toBe('INTERVENTION_EFFICACY_INSUFFICIENT');
+    expect(GROWTH_PRIORITY_DIMENSION_THEORY_BASIS.R04.theory_label).toContain('Four Horsemen');
+    expect(GROWTH_PRIORITY_DIMENSION_THEORY_BASIS.R05.theory_label).toContain('Repair Attempts');
+  });
+
+  it('gives P03 an INTERVENTION_EFFICACY_INSUFFICIENT grade (Rogers active listening, conflict-scene efficacy contested)', () => {
+    expect(GROWTH_PRIORITY_DIMENSION_THEORY_BASIS.P03.evidence_grade).toBe('INTERVENTION_EFFICACY_INSUFFICIENT');
+  });
+});
+
+describe('assertGrowthPriorityCitationBoundary — the one real interception point for causal/efficacy overclaims', () => {
+  it('rejects a causal-promise phrase for a dimension whose evidence_grade is not CONSTRUCT_SUPPORTED', () => {
+    expect(() => assertGrowthPriorityCitationBoundary('R04', '照这个方法练习就能改善关系'))
+      .toThrow('growth_priority_citation_boundary_violated:R04');
+    expect(() => assertGrowthPriorityCitationBoundary('R05', '坚持练习会修复你们的关系'))
+      .toThrow('growth_priority_citation_boundary_violated:R05');
+    expect(() => assertGrowthPriorityCitationBoundary('P03', '这个方法能有效解决冲突'))
+      .toThrow('growth_priority_citation_boundary_violated:P03');
+    expect(() => assertGrowthPriorityCitationBoundary('R03', '我们保证这样做会有帮助'))
+      .toThrow('growth_priority_citation_boundary_violated:R03');
+  });
+
+  it('allows purely observational phrasing for the same dimensions', () => {
+    expect(() => assertGrowthPriorityCitationBoundary('R04', '观察到高频批评与蔑视模式')).not.toThrow();
+    expect(() => assertGrowthPriorityCitationBoundary('R03', '亲子沟通先确认理解，再进入建议。')).not.toThrow();
   });
 });
 
