@@ -5,6 +5,7 @@ import { AuthRepository } from './auth.repository';
 import { FamilyScopeGuard } from './family-scope.guard';
 import { FamilyPlatformAuthGuard } from './family-platform-auth.guard';
 import { OtpService, StubOtpSender, OTP_SENDER } from './otp.service';
+import { ProfessionalWorkContextGuard } from './professional-work-context.guard';
 
 /**
  * M3-W2 IAM 身份模块。IAM-101 令牌机制 + 服务端 actor 解析;IAM-102 OTP 验证流程(stub sender)。
@@ -17,9 +18,10 @@ import { OtpService, StubOtpSender, OTP_SENDER } from './otp.service';
     AuthRepository,
     FamilyScopeGuard,
     FamilyPlatformAuthGuard,
+    ProfessionalWorkContextGuard,
     OtpService,
     { provide: OTP_SENDER, useClass: StubOtpSender }, // 真实厂商 adapter 在此替换(env-gated,需凭证)
   ],
-  exports: [AuthService, FamilyScopeGuard, FamilyPlatformAuthGuard],
+  exports: [AuthService, FamilyScopeGuard, FamilyPlatformAuthGuard, ProfessionalWorkContextGuard],
 })
 export class AuthModule {}

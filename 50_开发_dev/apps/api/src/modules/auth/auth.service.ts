@@ -35,6 +35,17 @@ export interface FamilyContextSummary {
   role: string;
 }
 
+export interface ProfessionalWorkContext {
+  type: 'TEACHER' | 'ORGANIZATION';
+  context_ref: string;
+  tenant_id: string;
+  party_id: string;
+  teacher_profile_id?: string;
+  provider_profile_id?: string;
+  organization_id?: string;
+  organization_role?: string;
+}
+
 /**
  * IAM-101 身份会话:签发不透明 Bearer 令牌(绑定 person∈family)+ 服务端解析 actor。
  * 真实 OTP/微信验证器 = IAM-102;消费路径强制令牌 + x-actor-id 降级 = IAM-103。
@@ -143,6 +154,25 @@ export class AuthService {
     if (rows.length > 1) return { status: 'AMBIGUOUS' };
     const r = rows[0];
     return { status: 'OK', ctx: { accountId: account.accountId, sessionId: account.sessionId, tenantId: r.tenant_id, familyId: r.family_id, personId: r.person_id, membershipId: r.membership_id, familyRole: r.role } };
+  }
+
+  /** Account session -> explicit professional work context. No context is inferred from the account. */
+  async resolveProfessionalContext(token: string | undefined, contextRef: string): Promise<ProfessionalWorkContext | null> {
+    const account = await this.resolveAccount(token);
+    if (!account || !contextRef?.trim()) return null;
+    const rows = await this.repo.resolveProfessionalContextRows(account.accountId, contextRef.trim());
+    if (rows.length !== 1) return null;
+    const row = rows[0];
+    return {
+      type: row.context_type,
+      context_ref: row.context_ref,
+      tenant_id: row.tenant_id,
+      party_id: row.party_id,
+      ...(row.teacher_profile_id ? { teacher_profile_id: row.teacher_profile_id } : {}),
+      ...(row.provider_profile_id ? { provider_profile_id: row.provider_profile_id } : {}),
+      ...(row.organization_id ? { organization_id: row.organization_id } : {}),
+      ...(row.organization_role ? { organization_role: row.organization_role } : {}),
+    };
   }
 }
 

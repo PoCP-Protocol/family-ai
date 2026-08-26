@@ -21,6 +21,17 @@ export interface TrustedFamilyContextRow {
   role: string;
 }
 
+export interface ProfessionalWorkContextRow {
+  context_type: 'TEACHER' | 'ORGANIZATION';
+  context_ref: string;
+  tenant_id: string;
+  party_id: string;
+  teacher_profile_id: string | null;
+  provider_profile_id: string | null;
+  organization_id: string | null;
+  organization_role: string | null;
+}
+
 const DIRECT_TENANT_REF = 'FAMILY_DIRECT';
 
 export class AccountAlreadyHasFamilyError extends Error {}
@@ -330,5 +341,45 @@ export class AuthRepository {
   async resolveFamilyContext(accountId: string, familyId: string): Promise<TrustedFamilyContextRow | null> {
     const rows = await this.resolveFamilyContextRows(accountId, familyId);
     return rows[0] ?? null;
+  }
+
+  /** Resolve only an explicitly selected, currently admitted professional context. */
+  async resolveProfessionalContextRows(accountId: string, contextRef: string): Promise<ProfessionalWorkContextRow[]> {
+    const r = await this.pool.query<ProfessionalWorkContextRow>(
+      `select 'TEACHER'::text as context_type, pp.provider_profile_id::text as context_ref,
+              tam.tenant_id, apb.party_id, tp.teacher_profile_id, pp.provider_profile_id,
+              null::uuid as organization_id, null::text as organization_role
+         from account_party_bindings apb
+         join parties p on p.party_id=apb.party_id and p.status='ACTIVE'
+         join teacher_profiles tp on tp.party_id=apb.party_id and tp.status='ADMITTED'
+         join provider_profiles pp on pp.owner_party_id=apb.party_id and pp.status='ACTIVE'
+         join provider_admissions pa on pa.provider_profile_id=pp.provider_profile_id
+           and pa.status='ADMITTED' and (pa.expires_at is null or pa.expires_at > now())
+         join tenants t on t.tenant_id=pa.tenant_id and t.status='ACTIVE'
+         join tenant_account_memberships tam on tam.tenant_id=pa.tenant_id and tam.account_id=apb.account_id
+           and tam.status='ACTIVE' and tam.valid_from <= now() and (tam.valid_to is null or tam.valid_to > now())
+        where apb.account_id=$1 and apb.status='ACTIVE'
+          and apb.valid_from <= now() and (apb.valid_to is null or apb.valid_to > now())
+          and pp.provider_profile_id::text=$2
+       union all
+       select 'ORGANIZATION'::text as context_type, o.organization_id::text as context_ref,
+              tam.tenant_id, apb.party_id, null::uuid, null::uuid,
+              o.organization_id, om.role
+         from account_party_bindings apb
+         join parties p on p.party_id=apb.party_id and p.status='ACTIVE'
+         join organizations o on o.party_id=apb.party_id and o.status='ACTIVE'
+         join organization_memberships om on om.organization_id=o.organization_id and om.party_id=apb.party_id
+           and om.status='ACTIVE' and om.valid_from <= now() and (om.valid_to is null or om.valid_to > now())
+         join organization_tenant_bindings otb on otb.organization_id=o.organization_id
+           and otb.status='ACTIVE' and otb.valid_from <= now() and (otb.valid_to is null or otb.valid_to > now())
+         join tenants t on t.tenant_id=otb.tenant_id and t.status='ACTIVE'
+         join tenant_account_memberships tam on tam.tenant_id=otb.tenant_id and tam.account_id=apb.account_id
+           and tam.status='ACTIVE' and tam.valid_from <= now() and (tam.valid_to is null or tam.valid_to > now())
+        where apb.account_id=$1 and apb.status='ACTIVE'
+          and apb.valid_from <= now() and (apb.valid_to is null or apb.valid_to > now())
+          and o.organization_id::text=$2`,
+      [accountId, contextRef],
+    );
+    return r.rows;
   }
 }

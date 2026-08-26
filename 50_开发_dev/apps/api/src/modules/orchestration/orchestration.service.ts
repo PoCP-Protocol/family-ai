@@ -714,15 +714,8 @@ export class OrchestrationService {
     return { family_id: familyId, service_case_id: caseId, grants: result.rows };
   }
 
-  /** Phase A: Party 侧最小 Case projection；不接受客户端声明 party，必须从 account session 解析。 */
-  async getGrantedCaseProjection(caseId: string, accountId: string) {
-    const party = await this.repo.query<{ party_id: string }>(
-      `select apb.party_id from account_party_bindings apb
-        join parties p on p.party_id=apb.party_id and p.status='ACTIVE'
-       where apb.account_id=$1 and apb.status='ACTIVE'
-         and apb.valid_from <= now() and (apb.valid_to is null or apb.valid_to > now())
-       limit 2`, [accountId]);
-    if (party.rows.length !== 1) throw new ForbiddenException('active_party_context_required');
+  /** Phase A: explicit professional context -> minimum Case projection. */
+  async getGrantedCaseProjection(caseId: string, partyId: string, tenantId: string) {
     const result = await this.repo.query<{
       case_id: string; family_id: string; status: string; opened_at: string; next_action_at: string | null;
       scope: Record<string, unknown>;
@@ -731,7 +724,11 @@ export class OrchestrationService {
          from case_access_grants g
          join service_cases sc on sc.case_id=g.service_case_id and sc.family_id=g.family_id
          join service_relationships sr on sr.service_relationship_id=g.service_relationship_id
-        where g.service_case_id=$1 and g.grantee_party_id=$2
+         join tenant_family_bindings tfb on tfb.family_id=sc.family_id and tfb.tenant_id=sr.tenant_id
+           and tfb.status='ACTIVE' and tfb.effective_from <= now()
+           and (tfb.effective_to is null or tfb.effective_to > now())
+         join tenants t on t.tenant_id=sr.tenant_id and t.status='ACTIVE'
+        where g.service_case_id=$1 and g.grantee_party_id=$2 and sr.tenant_id=$3 and g.purpose=sr.purpose
           and g.revoked_at is null and g.effective_from <= now() and (g.expires_at is null or g.expires_at > now())
           and sr.status='ACTIVE' and sr.effective_from <= now() and (sr.effective_to is null or sr.effective_to > now())
           and exists (
@@ -739,7 +736,7 @@ export class OrchestrationService {
               and c.purpose='SERVICE' and c.status='GRANTED' and c.granted_at <= now()
               and (c.withdrawn_at is null or c.withdrawn_at > now())
           )
-        limit 1`, [caseId, party.rows[0].party_id]);
+        limit 1`, [caseId, partyId, tenantId]);
     const row = result.rows[0];
     if (!row) throw new ForbiddenException('case_access_not_granted');
     const rawScope = row.scope ?? {};

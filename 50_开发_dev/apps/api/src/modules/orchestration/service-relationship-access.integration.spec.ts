@@ -47,6 +47,33 @@ async function request(path: string, token: string, method: 'GET' | 'POST', body
   return { status: response.status, body: await response.json() };
 }
 
+/** Admits `partyId` as a real Teacher/Provider in the tenant already bound to `familyId`, and
+ * returns the `x-professional-context` value the ProfessionalWorkContextGuard expects. */
+async function admitAsProfessionalContext(pool: pg.Pool, partyId: string, familyId: string): Promise<string> {
+  const tenantId = (await pool.query<{ tenant_id: string }>(
+    `select tenant_id from tenant_family_bindings where family_id=$1 and status='ACTIVE' limit 1`,
+    [familyId],
+  )).rows[0].tenant_id;
+  await pool.query(`insert into individual_parties(party_id) values ($1) on conflict do nothing`, [partyId]);
+  const teacherProfileId = (await pool.query<{ teacher_profile_id: string }>(
+    `insert into teacher_profiles(party_id, teacher_ref, public_display_name, status)
+     values ($1,$2,'投影教师','ADMITTED') returning teacher_profile_id`,
+    [partyId, `teacher_${partyId}`],
+  )).rows[0].teacher_profile_id;
+  const providerProfileId = (await pool.query<{ provider_profile_id: string }>(
+    `insert into provider_profiles(owner_party_id, provider_kind, provider_ref, display_name, status)
+     values ($1,'INDIVIDUAL',$2,'投影教师','ACTIVE') returning provider_profile_id`,
+    [partyId, `provider_${partyId}`],
+  )).rows[0].provider_profile_id;
+  await pool.query(
+    `insert into provider_admissions(provider_profile_id, tenant_id, status, admission_ref)
+     values ($1,$2,'ADMITTED',$3)`,
+    [providerProfileId, tenantId, `admission_${providerProfileId}`],
+  );
+  void teacherProfileId;
+  return providerProfileId;
+}
+
 async function createCase(seedData: Awaited<ReturnType<typeof seed>>) {
   const need = (await request(`/families/${seedData.familyId}/orchestration/needs`, seedData.token, 'POST', { subject_person_id: seedData.childId, raw_text: '孩子刚摔门，我想先恢复沟通' })).body;
   const intent = (await request(`/families/${seedData.familyId}/orchestration/intents`, seedData.token, 'POST', { signal_id: need.signal_id, goal_text: '先恢复沟通' })).body;
@@ -125,18 +152,19 @@ describe('Patch 4 ServiceRelationship / CaseAccessGrant', () => {
     const caseId = await createCase(s);
     const teacherParty = (await pool.query(`insert into parties(party_kind, display_name) values ('INDIVIDUAL','投影教师') returning party_id`)).rows[0].party_id;
     await pool.query(`insert into account_party_bindings(account_id, party_id, status) values ($1,$2,'ACTIVE')`, [s.accountId, teacherParty]);
+    const contextRef = await admitAsProfessionalContext(pool, teacherParty, s.familyId);
     const relationship = await request(`/families/${s.familyId}/orchestration/service-relationships`, s.token, 'POST', { counterparty_party_id: teacherParty, purpose: 'SERVICE_DELIVERY' });
     const grant = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/access-grants`, s.token, 'POST', {
       relationship_id: relationship.body.service_relationship_id, grantee_party_id: teacherParty,
       scope: { service_case: 'summary' }, purpose: 'SERVICE_DELIVERY', consent_snapshot_ref: 'consent:patch4:projection',
     });
     expect(grant.status).toBe(201);
-    const projection = await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET');
+    const projection = await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET', undefined, { 'x-professional-context': contextRef });
     expect(projection.status).toBe(200);
     expect(projection.body.projection).toMatchObject({ case_id: caseId, status: expect.any(String) });
     expect(projection.body.projection).not.toHaveProperty('subject_person_id');
     await pool.query(`update account_party_bindings set status='REVOKED', valid_to=now() where account_id=$1 and party_id=$2`, [s.accountId, teacherParty]);
-    expect((await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET')).status).toBe(403);
+    expect((await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET', undefined, { 'x-professional-context': contextRef })).status).toBe(403);
   });
 
   it('同一个 Party 不能读取另一个家庭的 Case', async () => {
@@ -154,6 +182,7 @@ describe('Patch 4 ServiceRelationship / CaseAccessGrant', () => {
     const caseId = await createCase(s);
     const teacherParty = (await pool.query(`insert into parties(party_kind, display_name) values ('INDIVIDUAL','过期授权测试教师') returning party_id`)).rows[0].party_id;
     await pool.query(`insert into account_party_bindings(account_id, party_id, status) values ($1,$2,'ACTIVE')`, [s.accountId, teacherParty]);
+    const contextRef = await admitAsProfessionalContext(pool, teacherParty, s.familyId);
     const relationship = await request(`/families/${s.familyId}/orchestration/service-relationships`, s.token, 'POST', { counterparty_party_id: teacherParty, purpose: 'SERVICE_DELIVERY' });
     const grant = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/access-grants`, s.token, 'POST', {
       relationship_id: relationship.body.service_relationship_id, grantee_party_id: teacherParty,
@@ -161,8 +190,12 @@ describe('Patch 4 ServiceRelationship / CaseAccessGrant', () => {
       expires_at: new Date(Date.now() + 60_000).toISOString(),
     });
     expect(grant.status).toBe(201);
-    await pool.query(`update case_access_grants set expires_at=now()-interval '1 second' where case_access_grant_id=$1`, [grant.body.case_access_grant_id]);
-    expect((await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET')).status).toBe(403);
+    // expires_at must stay > effective_from (case_access_grant_time CHECK), so anchor the
+    // expiry just past effective_from rather than "now() - 1s" (which can be earlier than
+    // effective_from and always violate the constraint). By the time this UPDATE runs it is
+    // already past that point, so the grant reads as expired without racing the constraint.
+    await pool.query(`update case_access_grants set expires_at=effective_from + interval '1 millisecond' where case_access_grant_id=$1`, [grant.body.case_access_grant_id]);
+    expect((await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET', undefined, { 'x-professional-context': contextRef })).status).toBe(403);
   });
 
   it('非法 scope 不会把敏感字段带入 Party projection', async () => {
@@ -170,13 +203,14 @@ describe('Patch 4 ServiceRelationship / CaseAccessGrant', () => {
     const caseId = await createCase(s);
     const teacherParty = (await pool.query(`insert into parties(party_kind, display_name) values ('INDIVIDUAL','非法 scope 测试教师') returning party_id`)).rows[0].party_id;
     await pool.query(`insert into account_party_bindings(account_id, party_id, status) values ($1,$2,'ACTIVE')`, [s.accountId, teacherParty]);
+    const contextRef = await admitAsProfessionalContext(pool, teacherParty, s.familyId);
     const relationship = await request(`/families/${s.familyId}/orchestration/service-relationships`, s.token, 'POST', { counterparty_party_id: teacherParty, purpose: 'SERVICE_DELIVERY' });
     const grant = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/access-grants`, s.token, 'POST', {
       relationship_id: relationship.body.service_relationship_id, grantee_party_id: teacherParty,
       scope: { family_full_profile: 'read', raw_consent: 'read' }, purpose: 'SERVICE_DELIVERY', consent_snapshot_ref: 'consent:patch4:invalid-scope',
     });
     expect(grant.status).toBe(201);
-    const response = await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET');
+    const response = await request(`/orchestration/case-access/${caseId}/projection`, s.token, 'GET', undefined, { 'x-professional-context': contextRef });
     expect(response.status).toBe(200);
     expect(response.body.granted_scope).toEqual({});
     expect(response.body.projection).not.toHaveProperty('opened_at');
