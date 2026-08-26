@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
@@ -63,25 +63,25 @@ export default function JourneyPlanScreen() {
   const [remoteJourney, setRemoteJourney] = useState<RemoteJourneyPlan | null>(null);
   const [remotePreview, setRemotePreview] = useState<RemotePlanPreview | null>(null);
   const [remotePriority, setRemotePriority] = useState<RemoteGrowthPriority | null>(null);
+  const [projectionState, setProjectionState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [projectionError, setProjectionError] = useState<string | null>(null);
   const [activationState, setActivationState] = useState<"idle" | "submitting">("idle");
   const [activationMessage, setActivationMessage] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadPlanProjection = useCallback(async () => {
     if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
-    let active = true;
-    familyApi.getJourneyPlan<RemoteJourneyPlan>(session.token, session.selectedFamily.family_id)
-      .then((result) => { if (active) setRemoteJourney(result); })
-      .catch(() => undefined);
-    if (activeOnboardingId) {
-      familyApi.getPlanPreview<RemotePlanPreview>(session.token, session.selectedFamily.family_id, activeOnboardingId)
-        .then((result) => { if (active) setRemotePreview(result); })
-        .catch(() => undefined);
-      familyApi.getGrowthPriority<RemoteGrowthPriority>(session.token, session.selectedFamily.family_id, activeOnboardingId)
-        .then((result) => { if (active) setRemotePriority(result); })
-        .catch(() => undefined);
-    }
-    return () => { active = false; };
+    setProjectionState("loading"); setProjectionError(null);
+    try {
+      const [journeyResult, previewResult, priorityResult] = await Promise.all([
+        familyApi.getJourneyPlan<RemoteJourneyPlan>(session.token, session.selectedFamily.family_id),
+        activeOnboardingId ? familyApi.getPlanPreview<RemotePlanPreview>(session.token, session.selectedFamily.family_id, activeOnboardingId) : Promise.resolve(null),
+        activeOnboardingId ? familyApi.getGrowthPriority<RemoteGrowthPriority>(session.token, session.selectedFamily.family_id, activeOnboardingId) : Promise.resolve(null),
+      ]);
+      setRemoteJourney(journeyResult); setRemotePreview(previewResult); setRemotePriority(priorityResult); setProjectionState("ready");
+    } catch { setProjectionState("error"); setProjectionError("成长方案暂时无法同步；请稍后重试。"); }
   }, [activeOnboardingId, session.selectedFamily, session.status, session.token]);
+
+  useEffect(() => { void loadPlanProjection(); }, [loadPlanProjection]);
 
   const plan = remoteJourney?.plan;
   const currentPhase = plan?.current_phase ?? null;
@@ -165,6 +165,7 @@ export default function JourneyPlanScreen() {
                 <View style={styles.topActions}><Text style={styles.moreText}>•••</Text><Text style={styles.circleText}>⊙</Text></View>
               </View>
               <PlanSummaryCard planIsActive={planIsActive} />
+              {projectionState === "error" ? <Pressable onPress={() => void loadPlanProjection()} style={styles.projectionNotice}><Text style={styles.projectionNoticeText}>{projectionError} 点击重试</Text></Pressable> : null}
             </>
           }
           renderItem={({ item, index }) => {
@@ -305,6 +306,6 @@ const styles = StyleSheet.create({
   fixedFooter: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: "#FFFFFF", paddingHorizontal: 19, paddingTop: 11, paddingBottom: 13, borderTopWidth: 1, borderTopColor: "#F2F2F2" },
   primaryButton: { minHeight: 54, borderRadius: 27, alignItems: "center", justifyContent: "center", backgroundColor: "#FF8A1F" },
   primaryButtonText: { color: "#FFFFFF", fontSize: 19, lineHeight: 26, fontWeight: "900" },
-  activationMessage: { marginHorizontal: 4, marginBottom: 8, color: "#A0532C", fontSize: 12, lineHeight: 18, textAlign: "center" },
+  projectionNotice: { marginTop: 10, borderRadius: 12, padding: 10, backgroundColor: "#FFF4F0" }, projectionNoticeText: { color: "#9D4E38", fontSize: 11, lineHeight: 16, textAlign: "center", fontWeight: "800" }, activationMessage: { marginHorizontal: 4, marginBottom: 8, color: "#A0532C", fontSize: 12, lineHeight: 18, textAlign: "center" },
   pressed: { opacity: 0.86, transform: [{ scale: 0.985 }] },
 });

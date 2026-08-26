@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { router, Stack } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyFlatList as FlatList } from "@/components/family/family-refresh-control";
@@ -22,7 +22,10 @@ const SUPPORTS = [
 export default function MyServicesScreen() {
   const colors = useColors(); const session = useFamilyApiSession(); const state = useFamilyMobile();
   const [customer, setCustomer] = useState<FamilyApiServiceCustomerProjection | null>(null);
-  useEffect(() => { if (session.status !== "connected" || !session.token || !session.selectedFamily) return; let active = true; familyApi.getServiceCustomerProjection<FamilyApiServiceCustomerProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setCustomer(result); }).catch(() => undefined); return () => { active = false; }; }, [session.selectedFamily, session.status, session.token]);
+  const [loadState, setLoadState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const loadServices = useCallback(async () => { if (session.status !== "connected" || !session.token || !session.selectedFamily) return; setLoadState("loading"); setLoadError(null); try { setCustomer(await familyApi.getServiceCustomerProjection<FamilyApiServiceCustomerProjection>(session.token, session.selectedFamily.family_id)); setLoadState("ready"); } catch { setLoadState("error"); setLoadError("服务记录暂时无法同步；请稍后重试。"); } }, [session.selectedFamily, session.status, session.token]);
+  useEffect(() => { void loadServices(); }, [loadServices]);
   const taskItems = useMemo(() => [
     { id: "today", title: state.todayAction.title, detail: state.todayAction.status === "checked_in" ? "已留下家庭回看" : "今天可以尝试的一件小事", done: state.todayAction.status === "checked_in" },
     ...(state.campStarted ? [{ id: "camp", title: "21 天成长营", detail: `已完成 ${state.campCompletedDays.length} 个小结`, done: state.campCompletedDays.length > 0 }] : []),

@@ -44,7 +44,7 @@ export default function PublishFamilyNoteScreen() {
     setStatus("SAVING");
     saveCommunityPostDraft(kind, title, body, topic, aiTagDraft);
     if (session.status === "connected" && session.token && session.selectedFamily) {
-      await familyApi.recordDevFlowEvent(session.token, session.selectedFamily.family_id, { ui_id: "UI-26", command: "ACK_SYNTHETIC_POST_DRAFT", selection: `${kind}:${topic}` }, idempotencyKey).catch(() => undefined);
+      await familyApi.recordDevFlowEvent(session.token, session.selectedFamily.family_id, { ui_id: "UI-26", command: "SAVE_COMMUNITY_POST_DRAFT", selection: `${kind}:${topic}` }, idempotencyKey);
     }
     setStatus("SAVED");
   };

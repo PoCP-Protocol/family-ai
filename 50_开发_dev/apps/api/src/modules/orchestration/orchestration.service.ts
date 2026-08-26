@@ -884,7 +884,7 @@ export class OrchestrationService {
   }
 
   /** 案件级影子分配：同一案件只计算一次，严格封顶 100，不产生支付或结算副作用。 */
-  async finalizeShadowAllocation(params: { familyId: string; caseId: string; helpfulness?: 'HELPFUL' | 'SOMEWHAT_HELPFUL' | 'NOT_HELPFUL_YET' | 'UNANSWERED'; idempotencyKey?: string }): Promise<{ case_id: string; finalized: boolean; allocations: ServiceContributionAllocationDto[] }> {
+  async finalizeShadowAllocation(params: { familyId: string; caseId: string; actorRef: string; helpfulness?: 'HELPFUL' | 'SOMEWHAT_HELPFUL' | 'NOT_HELPFUL_YET' | 'UNANSWERED'; idempotencyKey?: string }): Promise<{ case_id: string; finalized: boolean; allocations: ServiceContributionAllocationDto[] }> {
     return this.withIdempotency('FinalizeShadowAllocation', params.idempotencyKey, params, async () => this.repo.withTransaction(async (client) => {
       const own = await client.query<{ case_id: string; blueprint_ref: string | null; blueprint_version: number | null; shadow_allocation_finalized_at: string | null }>(`select case_id, collaboration_blueprint_ref as blueprint_ref, collaboration_blueprint_version as blueprint_version, shadow_allocation_finalized_at from service_cases where case_id=$1 and family_id=$2 for update`, [params.caseId, params.familyId]);
       if (!own.rows[0]) throw new ForbiddenException('case_not_in_family');
@@ -895,26 +895,38 @@ export class OrchestrationService {
       const policyRef = own.rows[0].blueprint_ref;
       const policyVersion = own.rows[0].blueprint_version;
       const qualityState = params.helpfulness === 'HELPFUL' || params.helpfulness === 'SOMEWHAT_HELPFUL' ? 'RELEASED' : 'HELD';
-      const allocations: ServiceContributionAllocationDto[] = [];
-      const add = async (contribution: typeof contributions.rows[number], bucket: string, units: number, beneficiaryRef: string, roleKey: string, basisType: string, basisRef: string, releaseState = 'HELD') => {
-        const row = await client.query<ServiceContributionAllocationDto>(`insert into service_contribution_allocations(contribution_ref, case_ref, task_ref, allocation_bucket, units, release_state, reason, beneficiary_ref, beneficiary_kind, role_key, policy_ref, policy_version, basis_type, basis_ref) values ($1,$2,$3,$4,$5,$6,$7,$8,'INTERNAL_ACTOR',$9,$10,$11,$12,$13) on conflict (case_ref, allocation_bucket, beneficiary_ref, role_key) do update set units=excluded.units, release_state=excluded.release_state returning allocation_id, case_ref, task_ref, allocation_bucket, units, release_state, reason, beneficiary_ref, beneficiary_kind, role_key, policy_ref, policy_version, basis_type, basis_ref`, [contribution.contribution_id, params.caseId, contribution.task_ref, bucket, units, releaseState, `CASE_SHADOW_ALLOCATION_${policyVersion}`, beneficiaryRef, roleKey, policyRef, policyVersion, basisType, basisRef]);
-        allocations.push(row.rows[0]);
-      };
+      type PendingAllocation = { contributionId: string | null; taskRef: string; bucket: string; units: number; beneficiaryRef: string; beneficiaryKind: 'PLATFORM' | 'INTERNAL_ACTOR' | 'ADMITTED_PROVIDER'; roleKey: string; basisType: 'CASE' | 'CONTRIBUTION' | 'CONTRIBUTION_WEIGHT'; basisRef: string; releaseState: string };
+      const pending: PendingAllocation[] = [];
       const first = contributions.rows[0];
-      await add(first, 'PLATFORM', 20, 'PLATFORM', 'PLATFORM', 'CASE', params.caseId);
+      // Case-level buckets (PLATFORM/QUALITY_RESERVE) are a property of the case, not of any single
+      // contribution — contribution_ref stays null and basis_type='CASE'/basis_ref=caseId carry the real basis.
+      pending.push({ contributionId: null, taskRef: first.task_ref, bucket: 'PLATFORM', units: 20, beneficiaryRef: 'PLATFORM', beneficiaryKind: 'PLATFORM', roleKey: 'PLATFORM', basisType: 'CASE', basisRef: params.caseId, releaseState: 'HELD' });
       const content = contributions.rows.find((item) => item.role === 'CONTENT_RESOURCE');
-      if (content) await add(content, 'CONTENT_RESOURCE', 15, content.provider_ref ?? 'CONTENT_RESOURCE', 'CONTENT_RESOURCE', 'CONTRIBUTION', content.contribution_id);
-      const steward = contributions.rows.find((item) => item.role === 'CASE_STEWARD' || item.role === 'STEWARD');
-      if (steward) await add(steward, 'CASE_STEWARD', 15, steward.provider_ref ?? 'CASE_STEWARD', 'CASE_STEWARD', 'CONTRIBUTION', steward.contribution_id);
-      const delivery = contributions.rows.filter((item) => item.role === 'DELIVERY_RESOURCE' || item.role === 'DELIVERY');
+      if (content) pending.push({ contributionId: content.contribution_id, taskRef: content.task_ref, bucket: 'CONTENT_RESOURCE', units: 15, beneficiaryRef: content.provider_ref ?? 'CONTENT_RESOURCE', beneficiaryKind: 'INTERNAL_ACTOR', roleKey: 'CONTENT_RESOURCE', basisType: 'CONTRIBUTION', basisRef: content.contribution_id, releaseState: 'HELD' });
+      const steward = contributions.rows.find((item) => item.role === 'CASE_STEWARD');
+      if (steward) pending.push({ contributionId: steward.contribution_id, taskRef: steward.task_ref, bucket: 'CASE_STEWARD', units: 15, beneficiaryRef: steward.provider_ref ?? 'CASE_STEWARD', beneficiaryKind: 'INTERNAL_ACTOR', roleKey: 'CASE_STEWARD', basisType: 'CONTRIBUTION', basisRef: steward.contribution_id, releaseState: 'HELD' });
+      const delivery = contributions.rows.filter((item) => item.role === 'DELIVERY_RESOURCE');
       const totalWeight = delivery.reduce((sum, item) => sum + Number(item.task_weight || 1), 0);
       for (const item of delivery) {
         const units = totalWeight ? 40 * Number(item.task_weight || 1) / totalWeight : 0;
-        await add(item, 'DELIVERY_RESOURCE', units, item.provider_ref ?? item.contribution_id, 'DELIVERY_RESOURCE', 'CONTRIBUTION_WEIGHT', item.contribution_id);
+        pending.push({ contributionId: item.contribution_id, taskRef: item.task_ref, bucket: 'DELIVERY_RESOURCE', units, beneficiaryRef: item.provider_ref ?? item.contribution_id, beneficiaryKind: 'ADMITTED_PROVIDER', roleKey: 'DELIVERY_RESOURCE', basisType: 'CONTRIBUTION_WEIGHT', basisRef: item.contribution_id, releaseState: 'HELD' });
       }
-      await add(first, 'QUALITY_RESERVE', 10, 'QUALITY_RESERVE', 'QUALITY_RESERVE', 'CASE', params.caseId, qualityState);
-      const totalUnits = allocations.reduce((sum, allocation) => sum + Number(allocation.units), 0);
+      pending.push({ contributionId: null, taskRef: first.task_ref, bucket: 'QUALITY_RESERVE', units: 10, beneficiaryRef: 'QUALITY_RESERVE', beneficiaryKind: 'PLATFORM', roleKey: 'QUALITY_RESERVE', basisType: 'CASE', basisRef: params.caseId, releaseState: qualityState });
+      const totalUnits = pending.reduce((sum, item) => sum + item.units, 0);
       if (totalUnits > 100.0001) throw new ConflictException('shadow_allocation_total_exceeds_100');
+      const run = await client.query<{ allocation_run_id: string }>(`insert into service_case_allocation_runs(case_ref, policy_ref, policy_version, triggered_by_actor_ref, total_units) values ($1,$2,$3,$4,$5) returning allocation_run_id`, [params.caseId, policyRef, policyVersion, params.actorRef, totalUnits]);
+      const allocationRunId = run.rows[0].allocation_run_id;
+      const allocations: ServiceContributionAllocationDto[] = [];
+      for (const item of pending) {
+        const row = await client.query<ServiceContributionAllocationDto>(
+          `insert into service_contribution_allocations(contribution_ref, case_ref, task_ref, allocation_bucket, units, release_state, reason, beneficiary_ref, beneficiary_kind, role_key, policy_ref, policy_version, basis_type, basis_ref, allocation_run_ref)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+           on conflict (case_ref, allocation_bucket, beneficiary_ref, role_key) do update set units=excluded.units, release_state=excluded.release_state, allocation_run_ref=excluded.allocation_run_ref
+           returning allocation_id, case_ref, task_ref, allocation_bucket, units, release_state, reason, beneficiary_ref, beneficiary_kind, role_key, policy_ref, policy_version, basis_type, basis_ref`,
+          [item.contributionId, params.caseId, item.taskRef, item.bucket, item.units, item.releaseState, `CASE_SHADOW_ALLOCATION_${policyVersion}`, item.beneficiaryRef, item.beneficiaryKind, item.roleKey, policyRef, policyVersion, item.basisType, item.basisRef, allocationRunId],
+        );
+        allocations.push(row.rows[0]);
+      }
       await client.query(`update service_cases set shadow_allocation_finalized_at=now(), shadow_allocation_policy_ref=$2, shadow_allocation_policy_version=$3 where case_id=$1`, [params.caseId, policyRef, policyVersion]);
       return { case_id: params.caseId, finalized: true, allocations };
     }));

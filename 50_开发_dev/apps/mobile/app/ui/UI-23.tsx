@@ -40,7 +40,7 @@ export default function ActivityDetailScreen() {
     setSaveState("submitting");
     state.saveActivityInterestDraft(activity.activityRef, activity.title);
     if (session.status === "connected" && session.token && session.selectedFamily) {
-      await familyApi.recordDevFlowEvent(session.token, session.selectedFamily.family_id, { ui_id: "UI-23", command: "PREVIEW_SYNTHETIC_REGISTRATION", selection: activity.activityRef }, `family-mobile-ui23:${session.selectedFamily.family_id}:${activity.activityRef}`).catch(() => undefined);
+      await familyApi.recordDevFlowEvent(session.token, session.selectedFamily.family_id, { ui_id: "UI-23", command: "SAVE_ACTIVITY_INTEREST_DRAFT", selection: activity.activityRef }, `family-mobile-ui23:${session.selectedFamily.family_id}:${activity.activityRef}`);
     }
     setSaveState("saved");
     haptic.success();

@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { router, Stack } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { FamilyFlatList as FlatList } from "@/components/family/family-refresh-control";
@@ -14,7 +14,9 @@ import { useFamilyMobile } from "@/lib/family/family-state";
 
 export default function ServiceRecordsScreen() {
   const colors = useColors(); const session = useFamilyApiSession(); const state = useFamilyMobile(); const [customer, setCustomer] = useState<FamilyApiServiceCustomerProjection | null>(null);
-  useEffect(() => { if (session.status !== "connected" || !session.token || !session.selectedFamily) return; let active = true; familyApi.getServiceCustomerProjection<FamilyApiServiceCustomerProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setCustomer(result); }).catch(() => undefined); return () => { active = false; }; }, [session.selectedFamily, session.status, session.token]);
+  const [loadState, setLoadState] = useState<"idle" | "loading" | "ready" | "error">("idle"); const [loadError, setLoadError] = useState<string | null>(null);
+  const loadRecords = useCallback(async () => { if (session.status !== "connected" || !session.token || !session.selectedFamily) return; setLoadState("loading"); setLoadError(null); try { setCustomer(await familyApi.getServiceCustomerProjection<FamilyApiServiceCustomerProjection>(session.token, session.selectedFamily.family_id)); setLoadState("ready"); } catch { setLoadState("error"); setLoadError("服务记录暂时无法同步；请稍后重试。"); } }, [session.selectedFamily, session.status, session.token]);
+  useEffect(() => { void loadRecords(); }, [loadRecords]);
   const consultations = useMemo(() => [
     ...(customer?.bookings.map((item) => ({ id: item.booking_request_id, title: "家庭咨询意向", detail: `${channelLabel(item.channel)} · ${item.starts_at.slice(0, 10)}`, status: bookingLabel(item.status) })) ?? []),
     ...(state.consultationNeedDraft ? [{ id: state.consultationNeedDraft.id, title: state.consultationNeedDraft.offeringTitle, detail: "家庭私有咨询需求草稿", status: "已保存" }] : []),

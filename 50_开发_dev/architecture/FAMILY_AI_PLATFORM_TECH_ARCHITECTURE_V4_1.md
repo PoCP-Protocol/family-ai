@@ -446,3 +446,61 @@ G8   Consumer UI baseline cross-loop full E2E
 ```
 
 No G2+ business/runtime capability is authorized by this document alone.
+
+## 26. Agentic long-horizon execution pattern (bounded)
+
+This section adopts computer-use/long-horizon agent execution patterns (Manus-class) where, and only where, they fit inside the existing tool and consent boundary defined in §10/§11/§24. It authorizes no new tool, skill, data access or scope. It constrains HOW an already-registry-authorized AI Use Case may execute across many steps.
+
+Plan-Act-Observe loop:
+
+```text
+AI Use Case Registry entry (§11)
+→ Family Intelligence Runtime drafts a Plan: an ordered list of calls within
+  allowed_skills / the FamilyHarnessAdapter allowlist (§10)
+→ FamilyHarnessAdapter executes one step at a time against that fixed allowlist
+→ each step result is observed and appended to the AI Run trace (§21), never
+  silently re-planned outside the registry entry's declared scope
+→ loop continues until Plan complete, step/cost/latency budget exhausted, or an
+  escalation condition trips
+```
+
+Artifact-first context, extending §15:
+
+```text
+Prior turn/step transcripts, retrieved documents and generated intermediate drafts
+default to ai_artifact storage, not raw prompt context.
+Family Intelligence Runtime pulls back only the summarized/derived slice needed for
+the next step, never the full unbounded history, mirroring file-system-as-memory
+patterns without granting the model filesystem access itself.
+```
+
+Async, resumable execution, extending §8/§10:
+
+```text
+Multi-step/long-horizon agent tasks run as a Temporal workflow wrapping the Codex
+App Server Thread/Turn/Resume contract (§10), not as a single blocking request.
+Approval/Human Gate pauses are Temporal signals, not client-side polling hacks.
+Client disconnect or app close MUST NOT abort an in-flight, already-approved task;
+resume happens through the same Thread/Turn identity.
+```
+
+Escalation instead of self-expansion:
+
+```text
+If Plan execution needs a tool, data class or scope outside the current AI Use Case
+Registry entry, the agent MUST stop and call request_human_review or
+create_support_case_draft.
+It MUST NOT invent a new tool call, widen its own consent/data scope, or reach
+outside FamilyHarnessAdapter to obtain capability the registry entry did not grant.
+```
+
+Forbidden regardless of framing:
+
+```text
+NO_OPEN_CODE_EXECUTION_SANDBOX
+NO_DIRECT_SHELL_OR_FILESYSTEM_ACCESS_BY_MODEL
+NO_SELF_GRANTED_TOOL_OR_SCOPE_EXPANSION
+NO_UNBOUNDED_STEP_LOOP_WITHOUT_BUDGET
+```
+
+Net effect: Family borrows the long-horizon autonomy, artifact-centric context management and async resumability that make computer-use agents like Manus effective, while keeping every existing closed-tool-boundary, consent and Human Gate invariant (§10, §11, §24) fully intact. A general-purpose open execution sandbox is deliberately not adopted; it is incompatible with §10's read-only/proposal-only tool boundary and with the family-data/minor-safety posture this platform is built for.
