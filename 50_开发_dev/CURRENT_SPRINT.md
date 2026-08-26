@@ -16,9 +16,9 @@ CONSUMER_UI_BASELINE     = KEEP
 UI35_DELETED       = YES
 AI_DIAGNOSIS       = KEEP
 G1_A_AUTHORIZED    = YES
-G1_B_PLUS          = NOT_AUTHORIZED
+G1_B_PLUS          = AUTHORIZED  # 2026-08-26, Project Owner override (not Chief Architect) — see note below
 BUSINESS_RUNTIME   = INTERNAL_LOCAL_AUTHORIZED_FOR_FAMILY_ASSESSMENT_MODEL
-DB_SCHEMA_CHANGE   = NOT_AUTHORIZED
+DB_SCHEMA_CHANGE   = AUTHORIZED  # 2026-08-26, Project Owner override (not Chief Architect) — see note below
 LIVE_EXTERNAL_AI   = INTERNAL_LOCAL_AUTHORIZED_FOR_UI02_FAMILY_MODEL_GATEWAY
 DIRECT_PUSH_MAIN   = NO
 AUTO_MERGE         = NO
@@ -31,7 +31,10 @@ Authorization scope:
 - Authorization source: `governance/AUTHORIZATION_REGISTRY.yaml` capability `G1A_FAMILY_EDUCATION_ASSESSMENT_MODEL_INTERNAL`.
 - Allowed now: package/API-local wiring for UI-02/UI-03 Family Education Assessment Model runtime, through `@family/family-model` and `@family/ai-gateway` only.
 - Live external model call: allowed only in local/internal explicitly configured environments; default `.env.example` remains mock and fail-closed.
-- Still forbidden: DB schema change, direct provider calls, client-side model calls, pilot exposure, production default enablement, and AI direct canonical Family/Growth state mutation.
+- Still forbidden: direct provider calls, client-side model calls, pilot exposure, production default enablement, and AI direct canonical Family/Growth state mutation.
+
+**2026-08-26 Project Owner Override (not a Chief Architect ruling — recorded separately, original G1-A block above left unmodified in substance):**
+The project owner explicitly authorized `G1_B_PLUS` and `DB_SCHEMA_CHANGE` for the pre-existing service-collaboration-allocation feature line (`feat/service-collab-allocation-p0-002` and its history: `9d9de4d`→`e84a919`→`a0ea305`→`8427997`→`6eef592`), plus the 4 branches built on top of it today (`feat/theory-whitelist-registry-001`, `feat/academic-need-classification-g1a-001`, `feat/service-product-registry-001`, `feat/growth-priority-theory-basis-001`). This override was requested verbally in-session by the project owner, not by the Chief Architect who signed the G1-A block above — recorded here for traceability, not silently merged into the original ruling. `governance/AUTHORIZATION_REGISTRY.yaml` has no corresponding entry yet; a formal registry entry should still be added before treating this as durable (this note is the interim record). `AUTO_MERGE` and `DIRECT_PUSH_MAIN` remain `NO` — this override unblocks PR creation and review, not unreviewed merge.
 
 Program: 21-Day Program is carried by UI-14/UI-09/UI-31/UI-34; UI-35 is deleted from the product baseline.
 Architecture: `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md`
