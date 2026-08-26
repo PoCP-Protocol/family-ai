@@ -8,10 +8,11 @@ import { BadRequestException, ConflictException, ForbiddenException, Inject, Inj
 import { createHash, randomUUID } from 'node:crypto';
 import { safetyPrecheck } from '@family/principal-ai';
 import type { PrincipalRiskRoute } from '@family/principal-ai';
-import type {
-  ContextReuseProjectionDto, FamilyDecisionType, GrowthCapabilityKey,
-  ResourceOfferDto, ResourceRecommendationDto, SafeOrchestrationOutcome,
-  ServiceTaskDto, TaskAssignmentDto, ServiceContributionAllocationDto,
+import {
+  SERVICE_PRODUCT_REGISTRY,
+  type ContextReuseProjectionDto, type FamilyDecisionType, type GrowthCapabilityKey,
+  type ResourceOfferDto, type ResourceRecommendationDto, type SafeOrchestrationOutcome,
+  type ServiceTaskDto, type TaskAssignmentDto, type ServiceContributionAllocationDto,
 } from '@family/contracts';
 import { PrincipalAiCoachResource } from '../principal/principal-ai-coach.resource';
 import { classifyNeed } from './need-classification.policy';
@@ -801,6 +802,12 @@ export class OrchestrationService {
         const blueprintRow = await this.repo.query<Record<string, unknown>>(`select blueprint_ref, version, applicable_program_ref, roles, task_templates, assignment_rules, required_capability_keys, allocation_policy, release_rules, status, checksum from service_collaboration_blueprints where blueprint_ref=$1 and status='ACTIVE' order by version desc limit 1`, [params.blueprintRef]);
         if (!blueprintRow.rows[0]) throw new ForbiddenException('active_collaboration_blueprint_required');
         blueprint = blueprintRow.rows[0];
+        // 代码层校验,与 database/migrations/0058 的 CHECK 约束形成双重一致(约束挡不住旧快照/未来数据源迁移,
+        // 这里挡运行时读到的值),呼应 assertTheoryRefsAreWhitelisted 同类"运行时也要挡"的设计哲学。
+        const programRef = typeof blueprint.applicable_program_ref === 'string' ? blueprint.applicable_program_ref : null;
+        if (!programRef || !SERVICE_PRODUCT_REGISTRY.some((product) => product.product_ref === programRef)) {
+          throw new ConflictException('collaboration_blueprint_program_ref_not_registered');
+        }
         await this.repo.query(`update service_cases set collaboration_blueprint_ref=$2, collaboration_blueprint_version=$3, collaboration_blueprint_snapshot=$4::jsonb where case_id=$1 and family_id=$5 and collaboration_blueprint_snapshot is null`, [params.caseId, params.blueprintRef, blueprint.version, JSON.stringify(blueprint), params.familyId]);
       }
       const frozenBlueprintRef = typeof blueprint.blueprint_ref === 'string' ? blueprint.blueprint_ref : null;

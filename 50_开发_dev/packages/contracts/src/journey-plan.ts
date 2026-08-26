@@ -1,4 +1,5 @@
 import type { M2GrowthDimensionId } from './index';
+import type { ServiceProductStage } from './service-product';
 
 /**
  * A family-confirmed, 90-day operating plan. It is deliberately distinct from
@@ -90,9 +91,19 @@ export interface ReviewJourneyPhaseResponse {
   decision: JourneyPhaseReviewDecision;
 }
 
+/** 4阶段(SEE/PARENT_FIRST/CO_CREATE/STABILIZE) → 平台通用三阶段词汇的只读反查。不改现有阶段状态机。 */
+export const JOURNEY_PHASE_TO_PRODUCT_STAGE: Record<JourneyPlanPhase, ServiceProductStage> = {
+  SEE: 'CONSENSUS',
+  PARENT_FIRST: 'EXECUTION',
+  CO_CREATE: 'EXECUTION',
+  STABILIZE: 'RETROSPECTIVE',
+};
+
 export interface JourneyPlanProjection {
   family_id: string;
   plan: JourneyPlanDto | null;
+  product_ref: 'FAMILY_90_DAY_JOURNEY';
+  product_stage: ServiceProductStage | null; // plan为null时无阶段
   fact_boundary: 'JOURNEY_PROGRESS_IS_SCHEDULE_STATE_NOT_GROWTH_OUTCOME';
   recommendation_boundary: 'NEXT_PHASE_IS_A_FAMILY_DECISION_NOT_AN_AUTOMATIC_RECOMMENDATION';
   model_gateway_status: 'NOOP';

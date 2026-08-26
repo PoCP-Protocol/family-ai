@@ -2,6 +2,24 @@ import type { GrowthFocusId } from "./core-growth";
 
 export type JourneyPhaseId = "SEE" | "PARENT_FIRST" | "CO_CREATE" | "STABILIZE";
 
+/**
+ * 与 @family/contracts 的 ServiceProductStage 保持字面量一致——apps/mobile 当前不依赖
+ * @family/contracts,这里本地维护一份对齐类型(同 family-assessment-capability-memory.ts
+ * 的 FamilyTheoryRef 一样的模式)。新增/修改两边需同步。
+ */
+export type ServiceProductStage = "CONSENSUS" | "EXECUTION" | "RETROSPECTIVE";
+
+/**
+ * 90天方案4个专业阶段 → 平台通用三阶段词汇(建共识/执行调整/复盘沉淀)的映射。
+ * 不替换4阶段本身的专业术语(看见与理解/家长先行动等),只用于跨产品(90天/21天营)的统一身份展示。
+ */
+export const JOURNEY_PHASE_TO_PRODUCT_STAGE: Record<JourneyPhaseId, ServiceProductStage> = {
+  SEE: "CONSENSUS",
+  PARENT_FIRST: "EXECUTION",
+  CO_CREATE: "EXECUTION",
+  STABILIZE: "RETROSPECTIVE",
+};
+
 export interface MobileJourneyPhase {
   id: JourneyPhaseId;
   label: string;

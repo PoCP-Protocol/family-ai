@@ -1,4 +1,5 @@
 import type { TodayTaskProjection } from './ui01-ui09-first-slice';
+import type { ServiceProductStage } from './service-product';
 
 export type Ui01FeatureAvailability = 'AVAILABLE' | 'POLICY_BLOCKED' | 'SUPPLY_UNAVAILABLE' | 'NOT_CONFIGURED';
 
@@ -65,6 +66,8 @@ export interface FamilyHomeProjection {
     current_day: number;
     total_days: 90;
     boundary: 'PLAN_PROGRESS_IS_PROCESS_NOT_OUTCOME';
+    product_ref: 'FAMILY_90_DAY_JOURNEY';
+    product_stage: ServiceProductStage;
   } | null;
   recommendations: readonly FamilyHomeRecommendation[];
   feature_availability: readonly {

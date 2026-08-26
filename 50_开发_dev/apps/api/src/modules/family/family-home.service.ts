@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { FamilyHomeProjection, FamilyHomeRecommendation, GrowthActionDto, Ui01FeatureAvailability } from '@family/contracts';
-import { projectTodayTask, UI01_HOME_FEATURES } from '@family/contracts';
+import type { FamilyHomeProjection, FamilyHomeRecommendation, GrowthActionDto, JourneyPlanPhase, Ui01FeatureAvailability } from '@family/contracts';
+import { JOURNEY_PHASE_TO_PRODUCT_STAGE, projectTodayTask, UI01_HOME_FEATURES } from '@family/contracts';
 import { FamilyRepository } from './family.repository';
 import { GrowthActionService } from './growth-action.service';
 
@@ -129,7 +129,13 @@ export class FamilyHomeService {
           display_name: row.display_name,
           availability: row.age_in_scope ? (row.service_consent_granted ? 'AVAILABLE' : 'CONSENT_REQUIRED') : 'OUT_OF_SCOPE',
         })),
-        journey: j ? { ...j, total_days: 90, boundary: 'PLAN_PROGRESS_IS_PROCESS_NOT_OUTCOME' } : null,
+        journey: j
+          ? {
+              ...j, total_days: 90, boundary: 'PLAN_PROGRESS_IS_PROCESS_NOT_OUTCOME',
+              product_ref: 'FAMILY_90_DAY_JOURNEY',
+              product_stage: JOURNEY_PHASE_TO_PRODUCT_STAGE[j.current_phase as JourneyPlanPhase],
+            }
+          : null,
         recommendations,
       };
     });

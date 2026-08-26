@@ -1,22 +1,23 @@
 import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import type pg from 'pg';
-import type {
-  AuditMeta,
-  ConfirmJourneyPlanRequest,
-  ConfirmJourneyPlanResponse,
-  CreateJourneyPlanRequest,
-  CreateJourneyPlanResponse,
-  JourneyPlanDto,
-  JourneyPlanPhase,
-  JourneyPlanPhaseDto,
-  JourneyPlanPhaseStatus,
-  JourneyPlanProjection,
-  JourneyPhaseReviewDecision,
-  PauseJourneyPlanRequest,
-  PauseJourneyPlanResponse,
-  ReviewJourneyPhaseRequest,
-  ReviewJourneyPhaseResponse,
+import {
+  JOURNEY_PHASE_TO_PRODUCT_STAGE,
+  type AuditMeta,
+  type ConfirmJourneyPlanRequest,
+  type ConfirmJourneyPlanResponse,
+  type CreateJourneyPlanRequest,
+  type CreateJourneyPlanResponse,
+  type JourneyPlanDto,
+  type JourneyPlanPhase,
+  type JourneyPlanPhaseDto,
+  type JourneyPlanPhaseStatus,
+  type JourneyPlanProjection,
+  type JourneyPhaseReviewDecision,
+  type PauseJourneyPlanRequest,
+  type PauseJourneyPlanResponse,
+  type ReviewJourneyPhaseRequest,
+  type ReviewJourneyPhaseResponse,
 } from '@family/contracts';
 import { FamilyRepository } from './family.repository';
 import { assertFamilyManagePermission } from './family-permission';
@@ -87,6 +88,8 @@ export class JourneyPlanService {
       return {
         family_id: familyId,
         plan: plan ? await hydratePlan(client, plan) : null,
+        product_ref: 'FAMILY_90_DAY_JOURNEY',
+        product_stage: plan ? JOURNEY_PHASE_TO_PRODUCT_STAGE[plan.current_phase] : null,
         fact_boundary: 'JOURNEY_PROGRESS_IS_SCHEDULE_STATE_NOT_GROWTH_OUTCOME',
         recommendation_boundary: 'NEXT_PHASE_IS_A_FAMILY_DECISION_NOT_AN_AUTOMATIC_RECOMMENDATION',
         model_gateway_status: 'NOOP',
