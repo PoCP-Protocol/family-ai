@@ -182,11 +182,11 @@ export class OrchestrationController {
     @Param('familyId') familyId: string,
     @Param('caseId') caseId: string,
     @Param('taskId') taskId: string,
-    @Body() body: { assignee_ref?: string },
+    @Body() body: { assignee_ref?: string; handoff_reason?: string },
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     if (!body?.assignee_ref) throw new BadRequestException('assignee_ref required');
-    return this.svc.assignServiceTask({ familyId, caseId, taskId, assigneeRef: body.assignee_ref, idempotencyKey: idempotencyKey?.trim() || undefined });
+    return this.svc.assignServiceTask({ familyId, caseId, taskId, assigneeRef: body.assignee_ref, idempotencyKey: idempotencyKey?.trim() || undefined, handoffReason: body.handoff_reason ?? null });
   }
 
   @Post('orchestration/cases/:caseId/tasks/:taskId/deliver')

@@ -297,3 +297,83 @@ describe('DEV service collaboration result triage — behavioral/subjective/veri
     expect(summaryAfterVerify.body.behavioral).toEqual({ total_tasks: 2, verified_tasks: 1, delivered_tasks: 0 });
   });
 });
+
+/**
+ * Verifies handoff contribution preservation (database/migrations/
+ * 0057_service_task_handoff_contribution.sql): reassigning a task away from an assignee
+ * who already delivered substantial work must not erase their share — previously
+ * verifyServiceTask produced exactly one service_contributions row per task, attributed to
+ * whoever held responsible_ref at final verification, silently discarding any prior
+ * assignee's work.
+ */
+describe('DEV service collaboration handoff — outgoing assignee keeps a contribution share', () => {
+  it('转交已 DELIVERED 的任务给新责任人：旧责任人产生 PARTIAL_HANDOFF 贡献，新责任人验收后产生 VERIFIED 贡献，两者共同参与分配', async () => {
+    const s = await seed();
+    const caseId = await createCase(s);
+    const task = (await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks`, s.token, 'POST', {
+      blueprint_ref: BLUEPRINT_REF, task_key: 'CASE_OPEN_AND_STEWARD', title: '开案与管家', description: '开案与管家',
+    })).body;
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task.task_id}/assign`, s.token, 'POST', { assignee_ref: 'steward-A' });
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task.task_id}/deliver`, s.token, 'POST', { deliverable: { note: 'A 完成了一半' } });
+
+    // Reassign to a new party while the task is DELIVERED — a real handoff, not a
+    // reassignment of untouched work.
+    const handoff = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task.task_id}/assign`, s.token, 'POST', { assignee_ref: 'steward-B', handoff_reason: 'steward-A 时间不足' });
+    expect(handoff.status).toBe(201);
+
+    const partialContribution = await pool.query(`select provider_ref, quality_state from service_contributions where task_ref=$1 and provider_ref='steward-A'`, [task.task_id]);
+    expect(partialContribution.rows).toHaveLength(1);
+    expect(partialContribution.rows[0].quality_state).toBe('PARTIAL_HANDOFF');
+
+    const revokedAssignment = await pool.query(`select revoke_reason from task_assignments where task_id=$1 and assignee_ref='steward-A' and status='REVOKED'`, [task.task_id]);
+    expect(revokedAssignment.rows[0].revoke_reason).toBe('steward-A 时间不足');
+
+    // steward-B finishes and gets a normal verify.
+    const reviewerTask = (await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks`, s.token, 'POST', {
+      blueprint_ref: BLUEPRINT_REF, task_key: 'CLOSURE_QUALITY_REVIEW', title: '结案质量审核', description: '结案质量审核',
+    })).body;
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${reviewerTask.task_id}/assign`, s.token, 'POST', { assignee_ref: 'reviewer-handoff' });
+    // steward-B must re-deliver after taking over (the task's status carried over as
+    // DELIVERED from steward-A's work; verify requires DELIVERED, which it already is).
+    const verify = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task.task_id}/verify`, s.token, 'POST', { reviewer_ref: 'reviewer-handoff', quality_state: 'PASSED' });
+    expect(verify.status).toBe(201);
+
+    const verifiedContribution = await pool.query(`select provider_ref, quality_state from service_contributions where task_ref=$1 and provider_ref='steward-B'`, [task.task_id]);
+    expect(verifiedContribution.rows).toHaveLength(1);
+    expect(verifiedContribution.rows[0].quality_state).toBe('VERIFIED');
+
+    const finalize = await request(`/families/${s.familyId}/orchestration/cases/${caseId}/shadow-allocation/finalize`, s.token, 'POST', { helpfulness: 'HELPFUL' });
+    expect(finalize.status).toBe(201);
+    const byBeneficiary: Record<string, number> = {};
+    for (const allocation of finalize.body.allocations) {
+      // CASE_OPEN_AND_STEWARD is a CASE_STEWARD-role task (not DELIVERY_RESOURCE — that
+      // role requires a real provider_admissions/teacher_capabilities/case_access_grants
+      // setup, orthogonal to what this test verifies), so the shared units land in the
+      // CASE_STEWARD bucket. Distribution across multiple providers for a handed-off task
+      // is now unified across CASE_STEWARD/CONTENT_RESOURCE/DELIVERY_RESOURCE (see
+      // distributeBucket in finalizeShadowAllocation) — this exercises that unification.
+      if (allocation.allocation_bucket === 'CASE_STEWARD') byBeneficiary[allocation.beneficiary_ref] = Number(allocation.units);
+    }
+    // Both outgoing and incoming assignee get a share of the same task's CASE_STEWARD
+    // bucket — neither is zero, and neither claims the other's share too (an even split of
+    // one task's weight across its two contribution rows, not double-counted).
+    expect(byBeneficiary['steward-A']).toBeGreaterThan(0);
+    expect(byBeneficiary['steward-B']).toBeGreaterThan(0);
+    expect(byBeneficiary['steward-A']).toBeCloseTo(byBeneficiary['steward-B'], 5);
+  });
+
+  it('转交未开始工作的任务（PENDING/ACCEPTED 且未 deliver）：不产生任何贡献记录', async () => {
+    const s = await seed();
+    const caseId = await createCase(s);
+    const task = (await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks`, s.token, 'POST', {
+      blueprint_ref: BLUEPRINT_REF, task_key: 'CASE_OPEN_AND_STEWARD', title: '开案与管家', description: '开案与管家',
+    })).body;
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task.task_id}/assign`, s.token, 'POST', { assignee_ref: 'steward-idle' });
+    // No deliver call — steward-idle never actually started substantive work.
+
+    await request(`/families/${s.familyId}/orchestration/cases/${caseId}/tasks/${task.task_id}/assign`, s.token, 'POST', { assignee_ref: 'steward-fresh' });
+
+    const contributions = await pool.query(`select provider_ref from service_contributions where task_ref=$1`, [task.task_id]);
+    expect(contributions.rows).toHaveLength(0);
+  });
+});

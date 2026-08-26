@@ -829,10 +829,15 @@ export class OrchestrationService {
   }
 
   /** DEV 履约协作：一个任务只保留一个当前 ACCEPTED 责任人；新责任人会撤销旧分配。 */
-  async assignServiceTask(params: { familyId: string; caseId: string; taskId: string; assigneeRef: string; idempotencyKey?: string }): Promise<TaskAssignmentDto> {
+  /**
+   * @param handoffReason Optional freeform note on why a reassignment happened (stored on
+   *   the REVOKED task_assignments row). Only meaningful when this call is actually a
+   *   handoff away from an existing assignee — ignored on first assignment.
+   */
+  async assignServiceTask(params: { familyId: string; caseId: string; taskId: string; assigneeRef: string; idempotencyKey?: string; handoffReason?: string | null }): Promise<TaskAssignmentDto> {
     return this.withIdempotency('AssignServiceTask', params.idempotencyKey, params, async () => this.repo.withTransaction(async (client) => {
       if (!params.assigneeRef.trim()) throw new BadRequestException('assignee_ref_required');
-      const task = await client.query<{ task_id: string; status: string; role_key: string | null; required_capability_keys: string[] }>(`select st.task_id, st.status, st.role_key, st.required_capability_keys from service_tasks st join service_cases sc on sc.case_id=st.case_ref where st.task_id=$1 and sc.case_id=$2 and sc.family_id=$3 for update`, [params.taskId, params.caseId, params.familyId]);
+      const task = await client.query<{ task_id: string; status: string; role_key: string | null; required_capability_keys: string[]; responsible_ref: string | null }>(`select st.task_id, st.status, st.role_key, st.required_capability_keys, st.responsible_ref from service_tasks st join service_cases sc on sc.case_id=st.case_ref where st.task_id=$1 and sc.case_id=$2 and sc.family_id=$3 for update`, [params.taskId, params.caseId, params.familyId]);
       if (!task.rowCount) throw new ForbiddenException('task_not_in_family_case');
       if (['VERIFIED', 'CLOSED', 'CANCELLED'].includes(task.rows[0].status)) throw new ConflictException('task_not_assignable');
       const roleKey = task.rows[0].role_key;
@@ -854,7 +859,27 @@ export class OrchestrationService {
       }
       const access = await client.query(`select 1 from service_relationships sr join provider_profiles pp on pp.provider_profile_id=sr.provider_profile_id where sr.family_id=$1 and sr.status='ACTIVE' and sr.purpose='SERVICE_DELIVERY' and sr.effective_from <= now() and (sr.effective_to is null or sr.effective_to > now()) and pp.provider_ref=$2 and exists (select 1 from case_access_grants g where g.service_case_id=$3 and g.service_relationship_id=sr.service_relationship_id and g.revoked_at is null and g.effective_from <= now() and (g.expires_at is null or g.expires_at > now()))`, [params.familyId, params.assigneeRef.trim(), params.caseId]);
       if (['DELIVERY_RESOURCE', 'HUMAN_COACH'].includes(roleKey) && !access.rowCount) throw new ForbiddenException('active_case_access_required');
-      await client.query(`update task_assignments set status='REVOKED', revoked_at=now() where task_id=$1 and status in ('OFFERED','ACCEPTED')`, [params.taskId]);
+      // Handoff contribution preservation: if this task is being reassigned away from an
+      // existing responsible party who has already delivered/started substantial work
+      // (status IN_PROGRESS/DELIVERED, not the empty PENDING/ACCEPTED-with-no-work state),
+      // fix a share of the contribution to that outgoing party BEFORE their assignment is
+      // revoked and service_tasks.responsible_ref is overwritten below — otherwise their
+      // work leaves no trace once verifyServiceTask eventually attributes the single
+      // service_contributions row to whoever holds responsible_ref at verification time.
+      // Uses PARTIAL_HANDOFF (not VERIFIED) because nobody reviewed this partial output —
+      // it is counted for allocation, but never claims to have passed quality review.
+      const outgoingRef = task.rows[0].responsible_ref;
+      const isSubstantiveHandoff = outgoingRef && outgoingRef !== params.assigneeRef.trim() && ['IN_PROGRESS', 'DELIVERED'].includes(task.rows[0].status);
+      if (isSubstantiveHandoff) {
+        const alreadyCredited = await client.query(`select 1 from service_contributions where task_ref=$1 and provider_ref=$2`, [params.taskId, outgoingRef]);
+        if (!alreadyCredited.rowCount) {
+          await client.query(
+            `insert into service_contributions(case_ref, provider_ref, role, task_ref, completed_at, quality_state) values ($1,$2,$3,$4,now(),'PARTIAL_HANDOFF')`,
+            [params.caseId, outgoingRef, roleKey, params.taskId],
+          );
+        }
+      }
+      await client.query(`update task_assignments set status='REVOKED', revoked_at=now(), revoke_reason=$2 where task_id=$1 and status in ('OFFERED','ACCEPTED')`, [params.taskId, params.handoffReason?.trim() || null]);
       const row = await client.query<TaskAssignmentDto>(
         `insert into task_assignments(task_id, assignee_ref, assignee_kind, status, accepted_at)
          values ($1,$2,'EXPERT','ACCEPTED',now())
@@ -928,7 +953,15 @@ export class OrchestrationService {
       // cast — without it Postgres raises "operator does not exist: uuid = character
       // varying" (42883). $1::uuid on case_ref is likewise required since nothing else in
       // this query anchors that parameter's type.
-      const contributions = await client.query<{ contribution_id: string; provider_ref: string | null; role: string; task_ref: string; task_weight: number }>(`select c.contribution_id, c.provider_ref, c.role, c.task_ref, st.task_weight from service_contributions c join service_tasks st on st.task_id=c.task_ref::uuid where c.case_ref=$1::uuid and c.quality_state='VERIFIED' order by c.completed_at asc`, [params.caseId]);
+      // Includes PARTIAL_HANDOFF alongside VERIFIED: a handoff mid-task (assignServiceTask)
+      // fixes a contribution row for the outgoing assignee's already-delivered work, which
+      // was never formally reviewed (no verifyServiceTask ran on it) but should still count
+      // toward allocation rather than silently vanishing. Both quality_state values can
+      // coexist for the same task_ref (outgoing party's PARTIAL_HANDOFF + incoming party's
+      // eventual VERIFIED), each with its own provider_ref, and the DELIVERY_RESOURCE
+      // weighting loop below distributes the bucket across every distinct provider_ref this
+      // query returns for that role.
+      const contributions = await client.query<{ contribution_id: string; provider_ref: string | null; role: string; task_ref: string; task_weight: number }>(`select c.contribution_id, c.provider_ref, c.role, c.task_ref, st.task_weight from service_contributions c join service_tasks st on st.task_id=c.task_ref::uuid where c.case_ref=$1::uuid and c.quality_state in ('VERIFIED','PARTIAL_HANDOFF') order by c.completed_at asc`, [params.caseId]);
       if (!contributions.rows.length) throw new ConflictException('verified_contribution_required');
       if (!own.rows[0].blueprint_ref || !own.rows[0].blueprint_version || !own.rows[0].blueprint_snapshot) throw new ConflictException('case_blueprint_snapshot_required');
       const policyRef = own.rows[0].blueprint_ref;
@@ -947,16 +980,39 @@ export class OrchestrationService {
       };
       const first = contributions.rows[0];
       await add(first, 'PLATFORM', buckets.PLATFORM, 'PLATFORM', 'PLATFORM', 'CASE', params.caseId);
-      const content = contributions.rows.find((item) => item.role === 'CONTENT_RESOURCE');
-      if (content) await add(content, 'CONTENT_RESOURCE', buckets.CONTENT_RESOURCE, content.provider_ref ?? 'CONTENT_RESOURCE', 'CONTENT_RESOURCE', 'CONTRIBUTION', content.contribution_id);
-      const steward = contributions.rows.find((item) => item.role === 'CASE_STEWARD' || item.role === 'STEWARD');
-      if (steward) await add(steward, 'CASE_STEWARD', buckets.CASE_STEWARD, steward.provider_ref ?? 'CASE_STEWARD', 'CASE_STEWARD', 'CONTRIBUTION', steward.contribution_id);
-      const delivery = contributions.rows.filter((item) => item.role === 'DELIVERY_RESOURCE' || item.role === 'DELIVERY');
-      const totalWeight = delivery.reduce((sum, item) => sum + Number(item.task_weight || 1), 0);
-      for (const item of delivery) {
-        const units = totalWeight ? buckets.DELIVERY_RESOURCE * Number(item.task_weight || 1) / totalWeight : 0;
-        await add(item, 'DELIVERY_RESOURCE', units, item.provider_ref ?? item.contribution_id, 'DELIVERY_RESOURCE', 'CONTRIBUTION_WEIGHT', item.contribution_id);
-      }
+      // A handed-off task (assignServiceTask's handoff contribution fix) can produce two
+      // contribution rows sharing the same task_ref — an outgoing party's PARTIAL_HANDOFF
+      // plus an incoming party's eventual VERIFIED — for any role, not just
+      // DELIVERY_RESOURCE. This distributes a bucket's total units across every distinct
+      // provider that contributed to it, weighted evenly per task_ref (task_weight is a
+      // property of the task, not of a specific contribution row, so dividing it by how
+      // many contribution rows that task produced avoids counting the same task's weight
+      // once per party). Previously CASE_STEWARD/CONTENT_RESOURCE used find()-credit-one-
+      // provider (silently dropping any handoff share) while only DELIVERY_RESOURCE used
+      // filter()-and-weight; unified so every role handles a handoff the same way. Even
+      // split, not a measured 60/40-style ratio, because nothing in this system currently
+      // measures how much of a task each party actually completed — an even split is the
+      // honest default until that data exists.
+      const distributeBucket = async (matchesRole: (role: string) => boolean, bucketKey: keyof typeof buckets, basisType: string) => {
+        const items = contributions.rows.filter((item) => matchesRole(item.role));
+        if (!items.length) return;
+        const countByTask = new Map<string, number>();
+        for (const item of items) countByTask.set(item.task_ref, (countByTask.get(item.task_ref) ?? 0) + 1);
+        const perItemWeight = (item: typeof items[number]) => Number(item.task_weight || 1) / (countByTask.get(item.task_ref) ?? 1);
+        const totalWeight = items.reduce((sum, item) => sum + perItemWeight(item), 0);
+        for (const item of items) {
+          const units = totalWeight ? buckets[bucketKey] * perItemWeight(item) / totalWeight : 0;
+          // role_key is normalized to bucketKey (not item.role verbatim) — 'CASE_STEWARD'
+          // vs legacy 'STEWARD' are the same role for allocation purposes, and role_key
+          // participates in the (case_ref, allocation_bucket, beneficiary_ref, role_key)
+          // uniqueness constraint, so an inconsistent literal here would let the same
+          // provider's contributions dodge dedup/conflict resolution across a re-run.
+          await add(item, bucketKey, units, item.provider_ref ?? item.contribution_id, bucketKey, basisType, item.contribution_id);
+        }
+      };
+      await distributeBucket((role) => role === 'CONTENT_RESOURCE', 'CONTENT_RESOURCE', 'CONTRIBUTION');
+      await distributeBucket((role) => role === 'CASE_STEWARD' || role === 'STEWARD', 'CASE_STEWARD', 'CONTRIBUTION');
+      await distributeBucket((role) => role === 'DELIVERY_RESOURCE' || role === 'DELIVERY', 'DELIVERY_RESOURCE', 'CONTRIBUTION_WEIGHT');
       await add(first, 'QUALITY_RESERVE', buckets.QUALITY_RESERVE, 'QUALITY_RESERVE', 'QUALITY_RESERVE', 'CASE', params.caseId, qualityState);
       const totalUnits = allocations.reduce((sum, allocation) => sum + Number(allocation.units), 0);
       if (totalUnits > 100.0001) throw new ConflictException('shadow_allocation_total_exceeds_100');
