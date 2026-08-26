@@ -15,7 +15,56 @@ export interface FamilyAssessmentItem {
   prompt: string;
   construct_refs: string[];
   need_refs: string[];
+  /** Domain tags from docs/model/family_education_domain.registry.yaml, e.g. ACADEMIC_K12, AI_LITERACY. Optional for backward compatibility with pre-registry items. */
+  domain_refs?: string[];
   safety_boundary?: string;
+}
+
+/**
+ * A named, human-defined construct the model is allowed to reason about and cite.
+ * Sourced from docs/model/family_education_construct.registry.yaml (status: draft,
+ * owner: Family Education Industry Model) — this is a real, reviewed specification
+ * that predates this code; it was never wired into any runtime path until this change.
+ * The model must not invent a construct_ref outside this registry (see
+ * assertInterpretationBoundary) — this is the guardrail verified in the 2026-08-26
+ * AI gateway comparison (reports/ai-verify): a live LLM call fabricated
+ * PARENT_CHILD_COMMUNICATION_QUALITY and COMMUNICATION_RESPECT_TURN_TAKING, both
+ * outside any reviewed registry, and was correctly rejected.
+ */
+export interface FamilyEducationConstruct {
+  construct_ref: string;
+  domain_refs: string[];
+  need_refs: string[];
+  name: string;
+  definition: string;
+  observable_signals: string[];
+}
+
+export const FAMILY_EDUCATION_CONSTRUCT_REGISTRY: FamilyEducationConstruct[] = [
+  { construct_ref: 'ACADEMIC_DEVELOPMENT', domain_refs: ['ACADEMIC_K12'], need_refs: ['CHILD_LEARNING_SUPPORT_NEED', 'FAMILY_LEARNING_ENVIRONMENT_NEED', 'FAMILY_SCHOOL_ALIGNMENT_NEED'], name: 'Academic development', definition: 'How the child learns in school contexts and turns feedback into progress.', observable_signals: ['homework_completion_pattern', 'exam_feedback_response', 'learning_confidence', 'teacher_feedback_use'] },
+  { construct_ref: 'SUBJECT_LEARNING_PROFILE', domain_refs: ['ACADEMIC_K12'], need_refs: ['CHILD_LEARNING_SUPPORT_NEED'], name: 'Subject learning profile', definition: 'Subject-specific strengths, gaps, confidence, interest, and misconceptions.', observable_signals: ['subject_strength', 'subject_gap', 'low_subject_confidence', 'misconception_pattern'] },
+  { construct_ref: 'HOMEWORK_PROCESS', domain_refs: ['ACADEMIC_K12'], need_refs: ['CHILD_LEARNING_SUPPORT_NEED', 'FAMILY_LEARNING_ENVIRONMENT_NEED'], name: 'Homework process', definition: 'How homework starts, continues, receives help, and gets reviewed.', observable_signals: ['start_delay', 'interruption_pattern', 'parent_help_conflict', 'completion_review_gap'] },
+  { construct_ref: 'LEARNING_STRATEGY_METACOGNITION', domain_refs: ['ACADEMIC_K12', 'DEVELOPMENTAL_FOUNDATIONS'], need_refs: ['CHILD_LEARNING_SUPPORT_NEED'], name: 'Learning strategy and metacognition', definition: 'Planning, review, error correction, self-checking, transfer, and reflection.', observable_signals: ['no_plan', 'weak_error_correction', 'low_self_check', 'weak_review_cycle'] },
+  { construct_ref: 'SELF_REGULATION_SUPPORT', domain_refs: ['DEVELOPMENTAL_FOUNDATIONS', 'ACADEMIC_K12', 'FAMILY_SYSTEM'], need_refs: ['CHILD_LEARNING_SUPPORT_NEED', 'PARENT_METHOD_NEED', 'FAMILY_LEARNING_ENVIRONMENT_NEED'], name: 'Self-regulation support', definition: "Family scaffolding for planning, starting, monitoring, checking, and reviewing everyday tasks without judging the child's willpower or character.", observable_signals: ['high_supervision_dependency', 'low_plan_participation', 'weak_self_check', 'missing_method_review'] },
+  { construct_ref: 'PHYSICAL_HEALTH_RHYTHM', domain_refs: ['PHYSICAL_HEALTH'], need_refs: ['CHILD_PHYSICAL_HEALTH_NEED', 'FAMILY_RHYTHM_NEED'], name: 'Physical health rhythm', definition: 'Sleep, movement, nutrition, eyesight, posture, energy, and recovery rhythm.', observable_signals: ['sleep_instability', 'low_movement', 'irregular_meals', 'eyestrain', 'posture_load'] },
+  { construct_ref: 'PSYCHOSOMATIC_STRESS_SIGNAL', domain_refs: ['PSYCHOSOMATIC_WELLBEING'], need_refs: ['CHILD_EMOTIONAL_SUPPORT_NEED', 'PARENT_EMOTIONAL_SUPPORT_NEED'], name: 'Psychosomatic stress signal', definition: 'Body signals that appear with stress, fatigue, learning pressure, or conflict.', observable_signals: ['headache', 'stomachache', 'fatigue', 'sleep_disruption', 'appetite_change'] },
+  { construct_ref: 'EMOTION_REGULATION_SUPPORT', domain_refs: ['PSYCHOSOMATIC_WELLBEING', 'RELATIONSHIP', 'PARENTING'], need_refs: ['CHILD_EMOTIONAL_SUPPORT_NEED', 'PARENT_METHOD_NEED', 'FAMILY_COMMUNICATION_NEED'], name: 'Emotion regulation support', definition: 'How the family notices emotional triggers, supports pause and recovery, and responds without turning emotion into blame or diagnosis.', observable_signals: ['slow_conflict_recovery', 'cannot_pause_conflict', 'parent_response_uncertainty', 'repeated_emotional_escalation'] },
+  { construct_ref: 'DEVELOPMENTAL_STAGE_TASK', domain_refs: ['DEVELOPMENTAL_FOUNDATIONS'], need_refs: ['PARENT_UNDERSTANDING_NEED', 'PARENT_LEARNING_NEED'], name: 'Developmental stage task', definition: 'Age-stage developmental tasks in cognition, emotion, autonomy, identity, and social life.', observable_signals: ['autonomy_conflict', 'identity_question', 'peer_importance_shift', 'parent_expectation_mismatch'] },
+  { construct_ref: 'EDUCATIONAL_PSYCHOLOGY_MECHANISM', domain_refs: ['DEVELOPMENTAL_FOUNDATIONS'], need_refs: ['PARENT_UNDERSTANDING_NEED', 'PARENT_METHOD_NEED', 'CHILD_LEARNING_SUPPORT_NEED'], name: 'Educational psychology mechanism', definition: 'Motivation, attribution, self-efficacy, feedback, transfer, and learning environment mechanisms.', observable_signals: ['fear_of_failure', 'fixed_ability_belief', 'feedback_avoidance', 'motivation_drop'] },
+  { construct_ref: 'AI_LITERACY_FLUENCY', domain_refs: ['AI_LITERACY'], need_refs: ['CHILD_DIGITAL_AI_NEED', 'PARENT_LEARNING_NEED'], name: 'AI literacy fluency', definition: 'Ability to use AI tools for learning, creating, checking, and reflecting.', observable_signals: ['ai_tool_confusion', 'weak_prompt_design', 'weak_verification', 'plagiarism_risk'] },
+  { construct_ref: 'MULTIMODAL_CREATION', domain_refs: ['MULTIMODAL_LITERACY'], need_refs: ['CHILD_DIGITAL_AI_NEED', 'CHILD_IDENTITY_STRENGTH_NEED'], name: 'Multimodal creation', definition: 'Ability to express and create across text, image, audio, video, data, code, and presentation.', observable_signals: ['passive_media_use', 'low_creation_output', 'single_mode_expression', 'project_block'] },
+  { construct_ref: 'MULTIPLE_INTELLIGENCE_PROFILE', domain_refs: ['MULTIPLE_INTELLIGENCES'], need_refs: ['CHILD_IDENTITY_STRENGTH_NEED'], name: 'Multiple intelligence profile', definition: 'Observed strengths across eight intelligence lenses and real scenes.', observable_signals: ['strength_signal', 'activity_preference', 'project_expression', 'social_expression'] },
+  { construct_ref: 'PARENT_CHILD_COMMUNICATION', domain_refs: ['RELATIONSHIP'], need_refs: ['CHILD_RELATIONSHIP_NEED', 'FAMILY_COMMUNICATION_NEED', 'PARENT_METHOD_NEED'], name: 'Parent-child communication', definition: 'Trust, listening, expression, conflict cycle, and repair quality.', observable_signals: ['low_trust', 'interrupted_talk', 'conflict_cycle', 'repair_gap'] },
+  { construct_ref: 'DEVICE_USE_CONTEXT', domain_refs: ['DIGITAL_LIFE'], need_refs: ['CHILD_DIGITAL_AI_NEED', 'FAMILY_RHYTHM_NEED', 'FAMILY_COMMUNICATION_NEED'], name: 'Device-use context', definition: 'Device impact on sleep, learning, rules, conflict, and family routines.', observable_signals: ['device_rule_conflict', 'sleep_crowded_out', 'homework_crowded_out', 'passive_media_use'] },
+  { construct_ref: 'PARENT_CAPACITY', domain_refs: ['PARENTING'], need_refs: ['PARENT_EMOTIONAL_SUPPORT_NEED', 'PARENT_METHOD_NEED'], name: 'Parent capacity', definition: 'Parent stress, time, emotional bandwidth, and consistency capacity.', observable_signals: ['parent_burnout', 'time_pressure', 'inconsistent_response', 'high_anxiety'] },
+  { construct_ref: 'FAMILY_ROUTINE', domain_refs: ['FAMILY_SYSTEM'], need_refs: ['FAMILY_RHYTHM_NEED', 'FAMILY_LEARNING_ENVIRONMENT_NEED'], name: 'Family routine', definition: 'Stable rhythms, agreements, rituals, and review mechanisms.', observable_signals: ['routine_instability', 'unclear_agreement', 'missing_review', 'repeated_rush'] },
+  { construct_ref: 'SCHOOL_FAMILY_COLLABORATION', domain_refs: ['HUMAN_SERVICE', 'ACADEMIC_K12'], need_refs: ['FAMILY_SCHOOL_ALIGNMENT_NEED', 'PARENT_COLLABORATION_NEED'], name: 'School-family collaboration', definition: 'Alignment among school, teacher, parent, and child support.', observable_signals: ['teacher_parent_disconnect', 'unclear_feedback_loop', 'school_family_disagreement'] },
+];
+
+const LEGAL_CONSTRUCT_REFS = new Set(FAMILY_EDUCATION_CONSTRUCT_REGISTRY.map((c) => c.construct_ref));
+
+export function getFamilyEducationConstruct(constructRef: string): FamilyEducationConstruct | undefined {
+  return FAMILY_EDUCATION_CONSTRUCT_REGISTRY.find((c) => c.construct_ref === constructRef);
 }
 
 export type FamilySafetyScreeningStatus = 'CLEAR' | 'REVIEW_REQUIRED' | 'BLOCKED';
@@ -351,11 +400,42 @@ export const FAMILY_MODEL_INTERPRETATION_OUTPUT_SCHEMA = {
     model_component_ref: { const: 'FAMILY_ASSESSMENT_V0_COMPONENT' },
     assessment_ref: { type: 'string' },
     boundary_labels: { type: 'array', items: { type: 'string' }, minItems: 1 },
-    need_summary: { type: 'array' },
-    construct_signals: { type: 'array' },
-    hypotheses: { type: 'array' },
-    action_candidates: { type: 'array' },
-    human_gate: { type: 'object' },
+    need_summary: {
+      type: 'array',
+      items: { type: 'object', required: ['need_ref', 'basis_item_refs'], properties: { need_ref: { type: 'string' }, basis_item_refs: { type: 'array', items: { type: 'string' } } } },
+    },
+    construct_signals: {
+      type: 'array',
+      // construct_ref is left as a free string here (not an enum) because this schema is
+      // shared across all requests; the actual whitelist enforcement happens in
+      // assertInterpretationBoundary against LEGAL_CONSTRUCT_REFS, and generateGatewayDraft
+      // additionally tells the model in-prompt which construct_refs are allowed for this
+      // specific input via allowed_constructs.
+      items: { type: 'object', required: ['construct_ref', 'basis_item_refs', 'boundary'], properties: { construct_ref: { type: 'string' }, basis_item_refs: { type: 'array', items: { type: 'string' } }, boundary: { const: 'signal_not_diagnosis' } } },
+    },
+    hypotheses: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['hypothesis_ref', 'construct_refs', 'basis_item_refs', 'confidence', 'boundary'],
+        properties: {
+          hypothesis_ref: { type: 'string' },
+          construct_refs: { type: 'array', items: { type: 'string' } },
+          basis_item_refs: { type: 'array', items: { type: 'string' } },
+          confidence: { enum: ['low', 'medium'] },
+          boundary: { const: 'hypothesis_not_fact' },
+        },
+      },
+    },
+    action_candidates: {
+      type: 'array',
+      items: { type: 'object', required: ['action_ref', 'basis_construct_refs', 'boundary'], properties: { action_ref: { type: 'string' }, basis_construct_refs: { type: 'array', items: { type: 'string' } }, boundary: { const: 'recommendation_not_decision' } } },
+    },
+    human_gate: {
+      type: 'object',
+      required: ['required', 'reason_refs'],
+      properties: { required: { type: 'boolean' }, reason_refs: { type: 'array', items: { type: 'string' } } },
+    },
     prohibited_outputs: { type: 'array', items: { type: 'string' } },
   },
 } as const;
@@ -366,9 +446,41 @@ export interface FamilyEducationModelRuntimeOptions {
   gateway?: AiGateway;
 }
 
+/**
+ * Items sourced from docs/model/family_assessment_item_bank.registry.yaml — a reviewed
+ * specification (25 items total, covering ACADEMIC_K12/AI_LITERACY/MULTIMODAL_LITERACY/
+ * PHYSICAL_HEALTH domains) that predates this code but was never wired into any runtime
+ * path. These 15 items (Chinese prompts, matching apps/mobile/lib/family/
+ * family-assessment-capability-memory.ts's five focus areas) plus the 10 pre-existing
+ * English items below now form the full registry set. Front-end theorySupport citations
+ * (CASEL SEL / Harvard Executive Function / CDC Essentials for Parenting / AAP
+ * HealthyChildren) map onto these same item_refs by ID (see LEARNING_HABITS_Q01 etc. in
+ * that file) but are not duplicated here — the construct_refs/domain_refs below are the
+ * structured, machine-checkable form; free-text theory citations stay in the front-end
+ * capability-memory file as human-readable framing for parents.
+ */
+const FAMILY_EDUCATION_ASSESSMENT_ITEM_BANK_REGISTRY_ITEMS: FamilyAssessmentItem[] = [
+  { item_ref: 'LEARNING_HABITS_Q01', prompt: '过去两周，孩子开始写作业前常需要反复提醒。', construct_refs: ['HOMEWORK_PROCESS', 'FAMILY_ROUTINE'], need_refs: ['CHILD_LEARNING_SUPPORT_NEED', 'FAMILY_LEARNING_ENVIRONMENT_NEED'], domain_refs: ['ACADEMIC_K12'] },
+  { item_ref: 'LEARNING_HABITS_Q02', prompt: '孩子遇到稍难的题目时，容易拖延、分心或直接放弃。', construct_refs: ['LEARNING_STRATEGY_METACOGNITION', 'SELF_REGULATION_SUPPORT'], need_refs: ['CHILD_LEARNING_SUPPORT_NEED'], domain_refs: ['ACADEMIC_K12', 'DEVELOPMENTAL_FOUNDATIONS'] },
+  { item_ref: 'LEARNING_HABITS_Q03', prompt: '家里目前缺少稳定的学习开始、休息和收尾节奏。', construct_refs: ['FAMILY_ROUTINE', 'HOMEWORK_PROCESS'], need_refs: ['FAMILY_LEARNING_ENVIRONMENT_NEED', 'FAMILY_RHYTHM_NEED'], domain_refs: ['ACADEMIC_K12', 'FAMILY_SYSTEM'] },
+  { item_ref: 'EMOTION_REGULATION_Q01', prompt: '过去两周，孩子情绪上来后需要较长时间才能恢复。', construct_refs: ['EMOTION_REGULATION_SUPPORT'], need_refs: ['CHILD_EMOTIONAL_SUPPORT_NEED', 'PARENT_METHOD_NEED'], domain_refs: ['PSYCHOSOMATIC_WELLBEING', 'RELATIONSHIP'], safety_boundary: 'human_gate_if_crisis_signal' },
+  { item_ref: 'EMOTION_REGULATION_Q02', prompt: '亲子冲突中，大人和孩子都很难先暂停再说。', construct_refs: ['EMOTION_REGULATION_SUPPORT', 'PARENT_CHILD_COMMUNICATION'], need_refs: ['FAMILY_COMMUNICATION_NEED', 'PARENT_METHOD_NEED'], domain_refs: ['RELATIONSHIP', 'PARENTING'] },
+  { item_ref: 'EMOTION_REGULATION_Q03', prompt: '孩子表达焦虑、生气或委屈时，家长不太确定如何回应。', construct_refs: ['EMOTION_REGULATION_SUPPORT', 'PARENT_CAPACITY'], need_refs: ['PARENT_METHOD_NEED', 'CHILD_EMOTIONAL_SUPPORT_NEED'], domain_refs: ['PARENTING', 'RELATIONSHIP'] },
+  { item_ref: 'PARENT_CHILD_COMMUNICATION_Q01', prompt: '孩子遇到不顺心的事，通常不太愿意主动和家长说。', construct_refs: ['PARENT_CHILD_COMMUNICATION'], need_refs: ['CHILD_RELATIONSHIP_NEED', 'FAMILY_COMMUNICATION_NEED'], domain_refs: ['RELATIONSHIP'] },
+  { item_ref: 'PARENT_CHILD_COMMUNICATION_Q02', prompt: '家长想帮助孩子时，对话容易变成讲道理、纠正或争执。', construct_refs: ['PARENT_CHILD_COMMUNICATION'], need_refs: ['FAMILY_COMMUNICATION_NEED', 'PARENT_METHOD_NEED'], domain_refs: ['RELATIONSHIP', 'PARENTING'] },
+  { item_ref: 'PARENT_CHILD_COMMUNICATION_Q03', prompt: '冲突后，家里较少有重新和好、复盘或修复的过程。', construct_refs: ['PARENT_CHILD_COMMUNICATION', 'FAMILY_ROUTINE'], need_refs: ['FAMILY_COMMUNICATION_NEED', 'CHILD_RELATIONSHIP_NEED'], domain_refs: ['RELATIONSHIP', 'FAMILY_SYSTEM'] },
+  { item_ref: 'DEVICE_USE_CONTEXT_Q01', prompt: '手机或平板使用经常影响作业、睡眠或家庭安排。', construct_refs: ['DEVICE_USE_CONTEXT', 'FAMILY_ROUTINE'], need_refs: ['CHILD_DIGITAL_AI_NEED', 'FAMILY_RHYTHM_NEED'], domain_refs: ['DIGITAL_LIFE'] },
+  { item_ref: 'DEVICE_USE_CONTEXT_Q02', prompt: '围绕手机使用，家里经常发生讨价还价或冲突。', construct_refs: ['DEVICE_USE_CONTEXT', 'PARENT_CHILD_COMMUNICATION'], need_refs: ['CHILD_DIGITAL_AI_NEED', 'FAMILY_COMMUNICATION_NEED'], domain_refs: ['DIGITAL_LIFE', 'RELATIONSHIP'] },
+  { item_ref: 'DEVICE_USE_CONTEXT_Q03', prompt: '家里的手机规则不够清楚，或大人和孩子执行标准不一致。', construct_refs: ['DEVICE_USE_CONTEXT', 'FAMILY_ROUTINE'], need_refs: ['FAMILY_RHYTHM_NEED', 'FAMILY_COMMUNICATION_NEED'], domain_refs: ['DIGITAL_LIFE', 'FAMILY_SYSTEM'] },
+  { item_ref: 'SELF_REGULATION_Q01', prompt: '孩子完成日常任务时，比较依赖家长全程监督。', construct_refs: ['SELF_REGULATION_SUPPORT', 'FAMILY_ROUTINE'], need_refs: ['CHILD_LEARNING_SUPPORT_NEED', 'PARENT_METHOD_NEED'], domain_refs: ['DEVELOPMENTAL_FOUNDATIONS', 'FAMILY_SYSTEM'] },
+  { item_ref: 'SELF_REGULATION_Q02', prompt: '孩子较少参与制定自己的计划、目标或检查方式。', construct_refs: ['SELF_REGULATION_SUPPORT', 'LEARNING_STRATEGY_METACOGNITION'], need_refs: ['CHILD_LEARNING_SUPPORT_NEED', 'PARENT_METHOD_NEED'], domain_refs: ['DEVELOPMENTAL_FOUNDATIONS', 'ACADEMIC_K12'] },
+  { item_ref: 'SELF_REGULATION_Q03', prompt: '事情没做好时，家里通常忙着催促补救，较少一起复盘方法。', construct_refs: ['SELF_REGULATION_SUPPORT', 'LEARNING_STRATEGY_METACOGNITION', 'FAMILY_ROUTINE'], need_refs: ['CHILD_LEARNING_SUPPORT_NEED', 'FAMILY_LEARNING_ENVIRONMENT_NEED'], domain_refs: ['DEVELOPMENTAL_FOUNDATIONS', 'ACADEMIC_K12', 'FAMILY_SYSTEM'] },
+];
+
 export const FAMILY_EDUCATION_ASSESSMENT_ITEM_BANK: FamilyAssessmentItemBankAsset = {
   asset_ref: 'FAMILY_ASSESSMENT_ITEM_BANK_REGISTRY',
   items: [
+    ...FAMILY_EDUCATION_ASSESSMENT_ITEM_BANK_REGISTRY_ITEMS,
     {
       item_ref: 'PARENT_CHILD_TALK_INTERRUPTION',
       prompt: 'When the child tries to explain a difficulty, how often does the conversation become interrupted, corrected, or rushed?',
@@ -443,6 +555,8 @@ export const FAMILY_EDUCATION_ASSESSMENT_ITEM_BANK: FamilyAssessmentItemBankAsse
     { construct_ref: 'MULTIMODAL_CREATION', candidate_action_refs: ['MULTIMODAL_LEARNING_ARTIFACT_REVIEW'] },
     { construct_ref: 'PARENT_CAPACITY', candidate_action_refs: ['HUMAN_SERVICE_CONTEXT_PACKAGE'] },
     { construct_ref: 'SCHOOL_FAMILY_COLLABORATION', candidate_action_refs: ['SCHOOL_FAMILY_FEEDBACK_HANDOFF', 'HUMAN_SERVICE_CONTEXT_PACKAGE'] },
+    { construct_ref: 'EMOTION_REGULATION_SUPPORT', candidate_action_refs: ['COMMUNICATION_REPAIR_CONVERSATION', 'HUMAN_SERVICE_CONTEXT_PACKAGE'] },
+    { construct_ref: 'SELF_REGULATION_SUPPORT', candidate_action_refs: ['SEVEN_DAY_HOMEWORK_START_RITUAL'] },
   ],
 };
 
@@ -734,13 +848,19 @@ export class FamilyEducationModelRuntime {
   async generateGatewayDraft(input: FamilyModelInterpretationInput): Promise<FamilyModelInterpretationDraft> {
     if (!this.options.gateway) return this.interpretDeterministically(input);
     const deterministicDraft = this.interpretDeterministically(input);
-    const request: StructuredGenerationRequest<FamilyModelInterpretationInput & { deterministic_draft: FamilyModelInterpretationDraft }, FamilyModelInterpretationDraft> = {
+    // Only the constructs actually touched by this response set are sent as the
+    // legal vocabulary — a narrower, task-relevant whitelist rather than the full
+    // registry, so the model has both a real construct definition to ground its
+    // reasoning in and a hard boundary it cannot exceed.
+    const eligibleConstructRefs = new Set(deterministicDraft.construct_signals.map((s) => s.construct_ref));
+    const allowedConstructs = FAMILY_EDUCATION_CONSTRUCT_REGISTRY.filter((c) => eligibleConstructRefs.has(c.construct_ref));
+    const request: StructuredGenerationRequest<FamilyModelInterpretationInput & { deterministic_draft: FamilyModelInterpretationDraft; allowed_constructs: FamilyEducationConstruct[] }, FamilyModelInterpretationDraft> = {
       use_case: 'FAMILY_EDUCATION_ASSESSMENT_INTERPRETATION',
-      prompt_version: 'family-education-assessment-v0.1',
+      prompt_version: 'family-education-assessment-v0.2',
       schema_version: 'family-interpretation-draft.schema.v0.1',
-      input: { ...input, deterministic_draft: deterministicDraft },
+      input: { ...input, deterministic_draft: deterministicDraft, allowed_constructs: allowedConstructs },
       output_schema: FAMILY_MODEL_INTERPRETATION_OUTPUT_SCHEMA,
-      input_refs: [input.assessment_ref, this.options.itemBank.asset_ref, this.options.interpretationSchema.asset_ref],
+      input_refs: [input.assessment_ref, this.options.itemBank.asset_ref, this.options.interpretationSchema.asset_ref, 'family_education_construct.registry.yaml'],
       policy_context: {
         human_confirmation_required: true,
         may_mutate_business_state: false,
@@ -1219,9 +1339,18 @@ export function assertInterpretationBoundary(output: FamilyModelInterpretationDr
   if (!output.boundary_labels.includes('recommendation_not_decision')) throw new Error('Missing recommendation_not_decision boundary');
   for (const signal of output.construct_signals) {
     if (signal.boundary !== 'signal_not_diagnosis') throw new Error(`Invalid construct signal boundary: ${signal.construct_ref}`);
+    // Fail closed on any construct_ref the model invents outside the reviewed registry
+    // (docs/model/family_education_construct.registry.yaml). Verified necessary: a live
+    // LLM call on 2026-08-26 fabricated PARENT_CHILD_COMMUNICATION_QUALITY and
+    // COMMUNICATION_RESPECT_TURN_TAKING when input signals were sparse — both plausible-
+    // sounding but unreviewed, and correctly rejected by this check.
+    if (!LEGAL_CONSTRUCT_REFS.has(signal.construct_ref)) throw new Error(`Construct ref not in reviewed registry: ${signal.construct_ref}`);
   }
   for (const hypothesis of output.hypotheses) {
     if (hypothesis.boundary !== 'hypothesis_not_fact') throw new Error(`Invalid hypothesis boundary: ${hypothesis.hypothesis_ref}`);
+    for (const constructRef of hypothesis.construct_refs) {
+      if (!LEGAL_CONSTRUCT_REFS.has(constructRef)) throw new Error(`Construct ref not in reviewed registry: ${constructRef}`);
+    }
   }
   for (const actionCandidate of output.action_candidates) {
     if (actionCandidate.boundary !== 'recommendation_not_decision') throw new Error(`Invalid action candidate boundary: ${actionCandidate.action_ref}`);
@@ -1301,5 +1430,12 @@ function uniqueRefs<T extends string>(refs: T[]): T[] {
 
 function isEvidenceBearingAnswer(answerRef: string): boolean {
   const normalized = String(answerRef).trim().toUpperCase();
-  return ['OFTEN', 'SOMETIMES', 'YES', 'TRUE', 'HIGH', 'SEVERE', 'CRISIS'].includes(normalized);
+  // VERY_OFTEN is one of the five labels on the FIVE_POINT_FREQUENCY scale defined in
+  // docs/model/family_assessment_item_bank.registry.yaml (rarely/sometimes/often/
+  // very_often/not_sure) and used by several English items (e.g.
+  // PARENT_CHILD_TALK_INTERRUPTION's followup_when: often_or_very_often). It was missing
+  // here, silently dropping those items from every construct_signal/hypothesis whenever a
+  // respondent picked the highest-frequency answer — the opposite of the intended
+  // fail-closed direction, since it under-reported evidence rather than over-reporting it.
+  return ['OFTEN', 'VERY_OFTEN', 'SOMETIMES', 'YES', 'TRUE', 'HIGH', 'SEVERE', 'CRISIS'].includes(normalized);
 }
