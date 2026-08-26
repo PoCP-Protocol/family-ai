@@ -7,9 +7,14 @@
  */
 
 // ---- 枚举（V1 确定性，封闭集）----
-export type GrowthNeedType = 'PARENT_CHILD_COMMUNICATION_CONFLICT';
+// G1-A(FAMILY-AI-ARCHITECTURE-V4-1-CONVERGENCE-001)范围说明:
+// CHILD_ACADEMIC_SUPPORT_NEED / ACADEMIC_SUPPORT_TRIAGE 仅用于 GrowthNeedSignal 识别层(信号分类)。
+// confirmIntent 硬闸门(orchestration.service.ts)仍只放行 PARENT_CHILD_COMMUNICATION_CONFLICT——
+// 资源候选(resource.registry.ts)/推荐(recommend)/资格判定(eligibility.policy.ts)未接入此取值,
+// 属于 G1_B_PLUS(NOT_AUTHORIZED),留给下一个 Sprint 正式授权后再打通。
+export type GrowthNeedType = 'PARENT_CHILD_COMMUNICATION_CONFLICT' | 'CHILD_ACADEMIC_SUPPORT_NEED';
 export type GrowthNeedSource = 'MANUAL' | 'PRINCIPAL' | 'SERVICE_FOLLOWUP';
-export type GrowthCapabilityKey = 'DE_ESCALATION' | 'COMMUNICATION_REOPENING';
+export type GrowthCapabilityKey = 'DE_ESCALATION' | 'COMMUNICATION_REOPENING' | 'ACADEMIC_SUPPORT_TRIAGE';
 export type ResourceType = 'NO_ACTION' | 'CONTENT' | 'PRACTICE' | 'AI_COACH' | 'PROGRAM' | 'HUMAN_COACH' | 'QUALIFIED_EXPERT' | 'EXTERNAL_REFERRAL';
 export type QualificationMode = 'REQUIRED' | 'NOT_APPLICABLE' | 'EXTERNAL_REFERRAL_POLICY';
 export type GrowthIntentStatus = 'OPEN' | 'CLOSED' | 'CANCELLED' | 'SUPERSEDED';
