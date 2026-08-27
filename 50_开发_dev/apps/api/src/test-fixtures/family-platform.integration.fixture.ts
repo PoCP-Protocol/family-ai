@@ -66,6 +66,10 @@ export async function seedFamilyPlatformFixture(pool: pg.Pool) {
     await pool.query('delete from persons where family_id = $1', [f.familyId]);
     await pool.query('delete from families where family_id = $1', [f.familyId]);
     await pool.query('delete from accounts where account_id = $1', [f.accountId]);
+    // provider_admissions 不在本分支 main 的 migration 历史里(共享测试库可能混入其它未合并分支的 schema),
+    // 但若存在,其 FK 会挡住下面的 tenants 清理——同 test-database.ts 的 provider_admissions 守卫,同一根因。
+    const providerAdmissionsExists = await pool.query<{ reg: string | null }>('select to_regclass($1) as reg', ['provider_admissions']);
+    if (providerAdmissionsExists.rows[0].reg) await pool.query('delete from provider_admissions where tenant_id = $1', [f.tenantId]);
     await pool.query('delete from tenants where tenant_id = $1', [f.tenantId]);
 
     await pool.query(

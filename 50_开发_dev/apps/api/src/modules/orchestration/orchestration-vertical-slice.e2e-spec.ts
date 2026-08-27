@@ -99,10 +99,20 @@ describe('Golden Product E2E(3A 修正语义)', () => {
     expect((await (await get(`/families/${s.familyId}/orchestration/cases/${dec.case_id}`, s.token)).json()).status).toBe('WAITING_FAMILY');
     expect(await count(`select count(*) n from growth_intents where intent_id='${intentId}' and status='OPEN'`)).toBe(1);
 
+    // 首页最小投影反映交付结果(闭环:decide()写入的case状态,下次打开首页能看到,不是仅决定端点内部可见)。
+    const homeAfterDecide = await (await get(`/families/${s.familyId}/home`, s.token)).json();
+    expect(homeAfterDecide.active_case).toMatchObject({ case_id: dec.case_id, status: 'WAITING_FAMILY' });
+    expect(homeAfterDecide.pending_followup_required).toBe(true);
+
     // 回访 → 服务环完成:Case COMPLETED,Intent CLOSED/SERVICE_DELIVERED。
     expect((await post(`/families/${s.familyId}/orchestration/cases/${dec.case_id}/followups`, s.token, { helpfulness: 'SOMEWHAT_HELPFUL', text: '感觉好一点' })).status).toBe(201);
     expect((await (await get(`/families/${s.familyId}/orchestration/cases/${dec.case_id}`, s.token)).json()).status).toBe('COMPLETED');
     expect(await count(`select count(*) n from growth_intents where intent_id='${intentId}' and status='CLOSED' and close_reason='SERVICE_DELIVERED'`)).toBe(1);
+
+    // 回访后首页反馈同步更新:不再要求回访,active_case反映COMPLETED状态。
+    const homeAfterFollowup = await (await get(`/families/${s.familyId}/home`, s.token)).json();
+    expect(homeAfterFollowup.active_case).toMatchObject({ case_id: dec.case_id, status: 'COMPLETED' });
+    expect(homeAfterFollowup.pending_followup_required).toBe(false);
 
     const reuse = await (await get(`/families/${s.familyId}/orchestration/context-reuse?subject_person_id=${s.childId}`, s.token)).json();
     expect(reuse.prior_case_ref).toBe(dec.case_id);

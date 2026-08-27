@@ -189,3 +189,21 @@ export interface ContextReuseProjectionDto {
   // 面向用户的只读回顾语句（家庭主观价值，绝非"方法已证明有效"）
   reuse_statements: string[];
 }
+
+// ---- 首页最小投影（亲子沟通冲突主线闭环）----
+// 只读反馈:decide()创建的case在下次打开首页时可见,不改变现有 requestHelp→…→submitFollowUp 链路本身。
+// 不是完整的家庭首页模块(不含90天journey/21天营/商品推荐等无关字段),范围收窄到本条主线。
+export interface ActiveCommunicationConflictCaseDto {
+  case_id: string;
+  status: ServiceCaseStatus;
+  intent_goal_text: string;
+  opened_at: string;
+}
+
+export interface FamilyHomeMinimalProjectionDto {
+  family_id: string;
+  prompt: string;
+  active_case: ActiveCommunicationConflictCaseDto | null;
+  // case已COMPLETED但家庭尚未提交回访 → 首页应提示回访,而不是静默认为已完结。
+  pending_followup_required: boolean;
+}

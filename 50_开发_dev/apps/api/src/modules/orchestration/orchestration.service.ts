@@ -8,8 +8,8 @@ import { BadRequestException, ConflictException, ForbiddenException, Inject, Inj
 import { createHash, randomUUID } from 'node:crypto';
 import { safetyPrecheck } from '@family/principal-ai';
 import type {
-  ContextReuseProjectionDto, FamilyDecisionType, GrowthCapabilityKey,
-  ResourceOfferDto, ResourceRecommendationDto, SafeOrchestrationOutcome,
+  ContextReuseProjectionDto, FamilyDecisionType, FamilyHomeMinimalProjectionDto, GrowthCapabilityKey,
+  ResourceOfferDto, ResourceRecommendationDto, SafeOrchestrationOutcome, ServiceCaseStatus,
 } from '@family/contracts';
 import { PrincipalAiCoachResource } from '../principal/principal-ai-coach.resource';
 import { classifyNeed } from './need-classification.policy';
@@ -567,6 +567,27 @@ export class OrchestrationService {
       [caseId, familyId],
     );
     return r.rows[0] ?? null;
+  }
+
+  /**
+   * 首页最小投影(亲子沟通冲突主线闭环)。只读反查最近一条 service_cases,不改写任何状态。
+   * pending_followup_required 对应 case 已交付、等待家庭回访这一步(status=WAITING_FAMILY);
+   * COMPLETED/ESCALATED/CANCELLED 均不再要求回访。
+   */
+  async getHomeMinimalProjection(familyId: string): Promise<FamilyHomeMinimalProjectionDto> {
+    const r = await this.repo.query<{ case_id: string; status: string; opened_at: string; goal_text: string }>(
+      `select sc.case_id, sc.status, sc.opened_at, gi.goal_text
+         from service_cases sc join growth_intents gi on gi.intent_id = sc.intent_ref
+        where sc.family_id=$1 order by sc.opened_at desc limit 1`,
+      [familyId],
+    );
+    const row = r.rows[0];
+    return {
+      family_id: familyId,
+      prompt: '现在有什么需要 Family 帮忙的吗?',
+      active_case: row ? { case_id: row.case_id, status: row.status as ServiceCaseStatus, intent_goal_text: row.goal_text, opened_at: row.opened_at } : null,
+      pending_followup_required: row?.status === 'WAITING_FAMILY',
+    };
   }
 
   /** ⑤ 回访 + helpfulness(actor provenance;非 Observation)。有效反馈→完成服务环:Case COMPLETED + Intent CLOSED/SERVICE_DELIVERED。 */

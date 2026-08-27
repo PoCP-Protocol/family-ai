@@ -5,7 +5,7 @@
  */
 import { BadRequestException, Body, Controller, Get, Headers, Inject, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import type { FamilyDecisionType } from '@family/contracts';
+import type { FamilyDecisionType, FamilyHomeMinimalProjectionDto } from '@family/contracts';
 import { OrchestrationAuthGuard, OrchestrationActor, RequireOrchestrationAction } from './orchestration-auth.guard';
 import { OrchestrationService } from './orchestration.service';
 import { TestExperienceService } from './test-experience.service';
@@ -38,8 +38,9 @@ export class OrchestrationController {
 
   @Get('home')
   @RequireOrchestrationAction('ReadFamily')
-  async home(@Param('familyId') familyId: string, @OrchestrationActor() actor: Actor): Promise<{ prompt: string; family_id: string; actor_role: string }> {
-    return { prompt: '现在有什么需要 Family 帮忙的吗?', family_id: familyId, actor_role: actor.familyRole };
+  async home(@Param('familyId') familyId: string, @OrchestrationActor() actor: Actor): Promise<FamilyHomeMinimalProjectionDto & { actor_role: string }> {
+    const projection = await this.svc.getHomeMinimalProjection(familyId);
+    return { ...projection, actor_role: actor.familyRole };
   }
 
   @Post('orchestration/needs')

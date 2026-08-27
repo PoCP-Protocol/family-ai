@@ -370,6 +370,79 @@ export class FamilyApiClient {
       },
     });
   }
+
+  getFamilyHome<T>(token: string, familyId: string) {
+    return this.request<T>(`/families/${familyId}/home`, { token });
+  }
+
+  getFamilyAggregate<T>(token: string, familyId: string) {
+    return this.request<T>(`/families/${familyId}`, { token });
+  }
+
+  requestGrowthHelp<T>(token: string, familyId: string, body: { subject_person_id: string; raw_text: string }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/orchestration/needs`, {
+      method: "POST",
+      token,
+      body,
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-growth-help"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
+  confirmGrowthIntent<T>(token: string, familyId: string, body: { signal_id: string; goal_text: string }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/orchestration/intents`, {
+      method: "POST",
+      token,
+      body,
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-confirm-growth-intent"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
+  requestGrowthRecommendation<T>(token: string, familyId: string, intentId: string, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/orchestration/intents/${intentId}/recommendations`, {
+      method: "POST",
+      token,
+      body: {},
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-growth-recommendation"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
+  decideGrowthService<T>(token: string, familyId: string, body: { intent_id: string; recommendation_id: string; recommendation_version: number; decision_type: "ACCEPT_RECOMMENDATION" | "SELECT_ALTERNATIVE" | "DISMISS"; selected_offer_refs: string[] }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/orchestration/decisions`, {
+      method: "POST",
+      token,
+      body,
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-growth-decision"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
+  submitCaseFollowUp<T>(token: string, familyId: string, caseId: string, body: { helpfulness: "HELPFUL" | "SOMEWHAT_HELPFUL" | "NOT_HELPFUL_YET" | "UNANSWERED"; text?: string }, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/orchestration/cases/${caseId}/followups`, {
+      method: "POST",
+      token,
+      body,
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-case-followup"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
 }
 
 function safeJson(raw: string) {

@@ -90,6 +90,10 @@ export async function cleanOrchestrationTablesIfPresent(pool: pg.Pool): Promise<
     'family_llm_gateway_audits',
     'multimodal_audit_events', 'multimodal_derived_artifacts', 'multimodal_processing_runs', 'multimodal_assets', 'multimodal_consents',
     'multimodal_output_schemas', 'multimodal_processing_policies', 'multimodal_capability_profiles',
+    // provider_admissions/provider_profiles 不在本分支 main 的 migration 历史里(共享测试库可能混入其它未合并分支的
+    // schema),但若存在,其 FK 会挡住下面的 tenants 清理——to_regclass 守卫本身就是为这种情况设计的,清理不假设
+    // main 代码认识这张表,只保证清理顺序在这两张表存在时是安全的。
+    'provider_admissions', 'provider_profiles',
     'tenant_catalog_bindings', 'tenant_policy_profiles', 'tenant_family_bindings', 'tenant_account_memberships', 'tenants',
     'service_followup_responses', 'service_contributions', 'service_cases',
     'orchestration_plans', 'family_service_decisions', 'resource_recommendations',
