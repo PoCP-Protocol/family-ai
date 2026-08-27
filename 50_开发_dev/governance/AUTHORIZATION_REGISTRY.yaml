@@ -442,3 +442,38 @@ capabilities:
     authorized_at: "2026-08-16"
     supersedes: []
     notes: "仅输出材料-功能-治理边界-实施顺序映射与 App Gate 草案。两份自家 PPT 证据等级上限 E1，不证明效果或治理结论；不得改业务代码、DTO/API/数据库，不启动 HOME 或移动端 runtime。"
+
+  - capability_id: G1B_SERVICE_COLLAB_ALLOCATION_OWNER_OVERRIDE_001
+    stage: G1-B
+    status: OWNER_OVERRIDE_INTERIM_NOT_CHIEF_ARCHITECT_RULING
+    architecture_authorized: false      # Chief Architect 未就此能力单独裁决;本条目登记的是 Project Owner override,不冒充架构师裁决
+    code_authorized: true
+    runtime_authorized: false           # 仅限功能分支内部运行时;未在 main 上验证过与当前架构基线的整合
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: project-owner        # 非 family-chief-architect;与本文件第4行"授权只能由总架构师(或其上级)"的上级条款对应
+    authorization_ref: "Conversation authorization 2026-08-26: 项目负责人以口头方式,在会话内正式授权 G1_B_PLUS 与 DB_SCHEMA_CHANGE,针对已存在但从未合入 main 的 service-collaboration-allocation 功能线(feat/service-collab-allocation-p0-002 及其历史 9d9de4d→e84a919→a0ea305→8427997→6eef592)与其上叠加的4条分支,以解开 PR 创建阻塞。同一决定已记录于 CURRENT_SPRINT.md 的 2026-08-26 Project Owner Override 段落(commit 551fa3e),本条目是该口头 override 在正式授权登记表里的补充落记,不是新的独立授权行为。"
+    authorized_at: "2026-08-26"
+    supersedes: []
+    scope:
+      surfaces: []                      # 尚未映射到具体UI surface,该功能线目前无前端消费入口在main上
+      flow_refs:
+        - SERVICE_COLLABORATION_ALLOCATION
+      runtime_package: 'apps/api/src/modules/orchestration'
+      branch_scope:
+        - feat/service-collab-allocation-p0-002
+        - feat/theory-whitelist-registry-001
+        - feat/academic-need-classification-g1a-001
+        - feat/service-product-registry-001
+        - feat/growth-priority-theory-basis-001
+        - growth-invite-pickup
+        - feat/family-memory-p0-subject-scope-001
+    constraints:
+      db_schema_change_authorized: true   # 仅限已存在于上述分支历史的migration(0055-0058等);不授权在此基础上新增未审阅的schema变更
+      direct_provider_call_authorized: false
+      client_direct_model_call_authorized: false
+      canonical_state_mutation_by_model_authorized: false
+      merge_to_main_authorized: false     # 关键:本次override只解开PR创建/review阻塞,不等于批准合入main——2026-08-26调研确认这条功能线(含@family/family-model包与orchestration.service.ts核心方法)与main自分叉点起已独立演化,存在实质性架构分歧(140处冲突标记/64文件),合入main需要专门的架构收敛评审,不是本override范围
+      real_keys_in_repo_authorized: false
+    notes: "本条目登记一次 Project Owner(非 Chief Architect)的口头 override,用于解开今日7个PR(#5-#11)的创建/review阻塞。调研过程中发现该功能线与main存在自分叉点起从未汇合的实质性架构分歧(见2026-08-26会话记录),因此本override明确不授权合入main——PR#5-#10已确认暂停在旧基座分支上,等待专门的架构收敛任务,不视为本条目遗留的待办。若未来Chief Architect就此功能线的main整合方案做出正式裁决,应新增独立capability条目并在此条目supersedes字段回填引用,不得直接修改本条目冒充架构师裁决。"
