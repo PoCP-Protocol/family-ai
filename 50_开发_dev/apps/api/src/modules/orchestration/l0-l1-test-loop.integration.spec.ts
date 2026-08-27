@@ -50,6 +50,13 @@ async function seedSyntheticGuardian(opts: { service?: boolean } = {}): Promise<
   const accountId = (await p.query(`insert into accounts(status) values ('ACTIVE') returning account_id`)).rows[0].account_id;
   await p.query(`insert into account_person_bindings(account_id, person_id, status) values ($1,$2,'ACTIVE')`, [accountId, guardianId]);
   await p.query(`insert into family_memberships(family_id, person_id, role, status, joined_at) values ($1,$2,'OWNER_GUARDIAN','ACTIVE',now())`, [familyId, guardianId]);
+  const tenantId = (await p.query(`
+    insert into tenants(tenant_ref, display_name, tenant_type, status)
+    values ('FAMILY_DIRECT', 'Family Direct Customer Tenant', 'DIRECT_CUSTOMER', 'ACTIVE')
+    on conflict (tenant_ref) do update set status='ACTIVE', updated_at=now()
+    returning tenant_id`)).rows[0].tenant_id;
+  await p.query(`insert into tenant_account_memberships(tenant_id, account_id, role, status, valid_from) values ($1,$2,'TENANT_VIEWER','ACTIVE',now())`, [tenantId, accountId]);
+  await p.query(`insert into tenant_family_bindings(tenant_id, family_id, status, effective_from, migration_ref) values ($1,$2,'ACTIVE',now(),'TEST_L0_L1')`, [tenantId, familyId]);
   const token = `test_loop_${randomUUID()}`;
   await p.query(`insert into identity_sessions(token_hash, account_ref, expires_at) values ($1,$2,now()+interval '1 day')`, [sha256(token), accountId]);
   return { familyId, guardianId, childId, token };

@@ -32,6 +32,10 @@ export async function seedFamilyPlatformFixture(pool: pg.Pool) {
   await pool.query('begin');
   try {
     // Repeatable cleanup for this fixture only. It never touches another family.
+    await pool.query(`delete from family_growth_hypothesis_decisions where family_id = $1`, [f.familyId]);
+    await pool.query(`delete from family_assessment_operations where family_id = $1`, [f.familyId]);
+    await pool.query(`delete from family_assessment_responses where assessment_session_id in (select assessment_session_id from family_assessment_sessions where family_id = $1)`, [f.familyId]);
+    await pool.query(`delete from family_assessment_sessions where family_id = $1`, [f.familyId]);
     await pool.query('delete from audit_logs where family_id = $1', [f.familyId]);
     await pool.query('delete from family_product_events where family_id = $1', [f.familyId]);
     await pool.query('delete from product_events where family_id = $1', [f.familyId]);
@@ -60,6 +64,7 @@ export async function seedFamilyPlatformFixture(pool: pg.Pool) {
     await pool.query('delete from consents where family_id = $1', [f.familyId]);
     await pool.query('delete from identity_sessions where family_id = $1 or account_ref = $2', [f.familyId, f.accountId]);
     await pool.query('delete from account_person_bindings where account_id = $1', [f.accountId]);
+    await pool.query('delete from tenant_account_memberships where account_id = $1 or tenant_id = $2', [f.accountId, f.tenantId]);
     await pool.query('delete from tenant_family_bindings where family_id = $1', [f.familyId]);
     await pool.query('delete from family_memberships where family_id = $1', [f.familyId]);
     await pool.query('update families set primary_contact_person_id = null where family_id = $1', [f.familyId]);
@@ -74,6 +79,11 @@ export async function seedFamilyPlatformFixture(pool: pg.Pool) {
       [f.tenantId],
     );
     await pool.query(`insert into accounts(account_id, external_ref, status) values ($1, 'test-family-guardian', 'ACTIVE')`, [f.accountId]);
+    await pool.query(
+      `insert into tenant_account_memberships(tenant_id, account_id, role, status, valid_from)
+       values ($1, $2, 'TENANT_VIEWER', 'ACTIVE', now())`,
+      [f.tenantId, f.accountId],
+    );
     await pool.query(
       `insert into families(family_id, display_name, status, version)
        values ($1, '星河家庭（测试）', 'ACTIVE', 1)`,

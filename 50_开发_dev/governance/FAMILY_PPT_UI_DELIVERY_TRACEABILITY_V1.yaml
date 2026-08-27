@@ -1,0 +1,221 @@
+schema_version: FAMILY_PPT_UI_DELIVERY_TRACEABILITY_V1
+status: EXECUTION_BASELINE
+as_of: 2026-08-23
+purpose: 以3份PPT的业务目标与方案、UI-01到UI-35的体验定义共同约束开发与测试
+
+baseline_rules:
+  - PPT定义业务目标、产品阶梯、服务方案、经营假设与阶段路线，不直接证明系统已实现或业务效果成立
+  - UI-01到UI-35定义用户可见能力、主动作、状态与跨端验收，不允许为后端方便删改基线能力
+  - 每项开发必须同时引用至少一个PPT目标和一个UI；纯平台底座必须说明其支撑的UI集合
+  - PPT中的收入、转化、完成率、家庭数量与估值数字均为待审批经营目标，不作为代码事实
+  - 自动获客、自动成交、公开发布、真人服务、支付与儿童参与均受Consent、Human Gate和External Adapter约束
+  - 家庭成长数据仅能按目的、同意和最小化原则使用；Perspective、Hypothesis、Action与Outcome保持分离
+
+decks:
+  - id: PPT-BUSINESS
+    title: 榜样教育新商业模式
+    path: 30_素材_materials/榜样教育/榜样教育新商业模式对外宣发PPT_原图版(2).pptx
+    slides: 20
+    authority: 产品阶梯、家庭长期关系、增长、服务、社区、会员与经营指标
+  - id: PPT-STRATEGY
+    title: 榜样教育AI成长平台战略白皮书
+    path: 30_素材_materials/榜样教育/榜样教育战略白皮书_30页演讲汇报版_D盘版.pptx
+    slides: 30
+    authority: 产品闭环优先、交付SOP、AI位置、数据结构、组织与三年路线
+  - id: PPT-PLATFORM
+    title: 家庭教育大模型平台科技公司项目合作方案
+    path: 30_素材_materials/榜样教育/家庭教育大模型平台科技公司项目合作方案.pptx
+    slides: 10
+    authority: 平台底座、知识库、Agent、跨端复用、自动化与落地节奏
+
+delivery_objectives:
+  - id: BL-01
+    name: 家庭账户与长期关系资产
+    source_slides: [PPT-BUSINESS:S2, PPT-BUSINESS:S15, PPT-BUSINESS:S18, PPT-STRATEGY:S6, PPT-STRATEGY:S9]
+    ui: [UI-01, UI-06, UI-18, UI-29, UI-31, UI-32, UI-33]
+    scenarios: [SCN-001, SCN-201, SCN-502]
+    slices: [VS-00, VS-01, VS-04]
+    capability: 同一Account在App和Web解析同一Tenant与FamilyContext，并回读家庭、服务、权益和成长资产
+    acceptance_tests:
+      - T-BL01-CTX: Account到TenantMembership到TenantFamilyBinding到FamilyMembership全链ALLOW与撤销DENY
+      - T-BL01-XPORT: App与Web消费相同contexts契约且tenant_id/family_id一致
+      - T-BL01-RESTART: 服务重启后家庭上下文和资产仍可从PostgreSQL回读
+
+  - id: BL-02
+    name: 测评入口到家庭确认的成长解读
+    source_slides: [PPT-BUSINESS:S7, PPT-BUSINESS:S17, PPT-STRATEGY:S12, PPT-STRATEGY:S19]
+    ui: [UI-02, UI-03, UI-07, UI-08]
+    scenarios: [SCN-101, SCN-102]
+    slices: [VS-01]
+    capability: 版本化测评、结构化回答、Evidence、AI诊断假设与家庭确认的GrowthIntent形成闭环
+    acceptance_tests:
+      - T-BL02-VERSION: Session固定Tool版本且提交后回答不可静默覆盖
+      - T-BL02-BOUNDARY: AI诊断只产生Hypothesis并展示来源、局限与非医学边界
+      - T-BL02-CONFIRM: 只有授权家庭成员确认后才生成GrowthIntent
+
+  - id: BL-03
+    name: 每日行动与21天首次可见改变
+    source_slides: [PPT-BUSINESS:S7, PPT-BUSINESS:S17, PPT-STRATEGY:S12, PPT-STRATEGY:S15, PPT-STRATEGY:S28]
+    ui: [UI-01, UI-09, UI-10, UI-11, UI-12, UI-29, UI-35]
+    scenarios: [SCN-201, SCN-301, SCN-601]
+    slices: [VS-01, VS-02, VS-05]
+    capability: 家庭每天只看到清晰行动，完成、部分完成、跳过和反思均可记录且不伪造成长结果
+    acceptance_tests:
+      - T-BL03-ACTION: 今日行动可开始、完成、部分完成、跳过且Named Action幂等
+      - T-BL03-MINOR: 儿童输入最小化、可见性受限、高风险进入Human Gate
+      - T-BL03-NOSCORE: UI与API均不生成家庭总分、儿童永久分数或跨家庭排名
+
+  - id: BL-04
+    name: 21天与90天可暂停恢复的陪伴计划
+    source_slides: [PPT-BUSINESS:S7, PPT-BUSINESS:S17, PPT-STRATEGY:S8, PPT-STRATEGY:S11, PPT-STRATEGY:S27]
+    ui: [UI-04, UI-05, UI-11, UI-29, UI-35]
+    scenarios: [SCN-301]
+    slices: [VS-02]
+    capability: 模板版本化后实例化计划与任务，支持定时、复盘、暂停、恢复、调整和完成
+    acceptance_tests:
+      - T-BL04-TEMPLATE: Journey实例固定模板版本且模板变更不改写运行中计划
+      - T-BL04-RECOVERY: 进程重启和工作流重试后计划计时与等待节点可恢复
+      - T-BL04-EXIT: PAUSE、CANCEL与NO_ACTION不会偷偷创建下游事实
+
+  - id: BL-05
+    name: 产品阶梯、订单、支付与权益分离
+    source_slides: [PPT-BUSINESS:S15, PPT-BUSINESS:S17, PPT-STRATEGY:S8, PPT-STRATEGY:S24]
+    ui: [UI-06, UI-13, UI-14, UI-16, UI-17, UI-18, UI-30, UI-32]
+    scenarios: [SCN-501, SCN-502]
+    slices: [VS-04]
+    capability: 体验、核心、年度会员和生态服务以目录版本销售，交易、支付、权益、核销、退款分别记账
+    acceptance_tests:
+      - T-BL05-LEDGER: Order、PaymentAttempt、Entitlement和Usage状态不可相互冒充
+      - T-BL05-IDEMPOTENCY: 支付回调、退款和核销重复投递不会重复入账
+      - T-BL05-SANDBOX: 未过Production Gate时只允许sandbox Adapter且external_effect=false
+
+  - id: BL-06
+    name: 合格专家与线上线下服务履约
+    source_slides: [PPT-BUSINESS:S11, PPT-BUSINESS:S17, PPT-BUSINESS:S18, PPT-STRATEGY:S11, PPT-STRATEGY:S13]
+    ui: [UI-19, UI-20, UI-21, UI-22, UI-23, UI-24, UI-31, UI-34]
+    scenarios: [SCN-401, SCN-402]
+    slices: [VS-03]
+    capability: Provider资格、Offering、Slot、Booking、ServiceCase、履约记录与反馈可追踪
+    acceptance_tests:
+      - T-BL06-ADMISSION: 无有效Qualification的Provider或失效Slot不能被预约
+      - T-BL06-HUMAN: 真人联系、日历和通知必须经Human Gate及Adapter Receipt
+      - T-BL06-OUTCOME: ServiceCompletion绝不自动生成GrowthOutcome
+
+  - id: BL-07
+    name: 私有成长内容、社区与价值型邀请
+    source_slides: [PPT-BUSINESS:S9, PPT-BUSINESS:S13, PPT-BUSINESS:S16, PPT-STRATEGY:S10, PPT-STRATEGY:S20, PPT-PLATFORM:S5]
+    ui: [UI-12, UI-15, UI-16, UI-17, UI-25, UI-26, UI-27, UI-28]
+    scenarios: [SCN-601, SCN-602]
+    slices: [VS-05]
+    capability: 内容默认私有，经家庭确认、去标识化、审核后发布，可撤回并记录单层邀请归因
+    acceptance_tests:
+      - T-BL07-PRIVATE: 草稿默认PRIVATE且跨家庭不可读
+      - T-BL07-PUBLISH: 缺分享同意、去标识化或审核通过任一条件均禁止发布
+      - T-BL07-WITHDRAW: 撤回后公开投影失效且保留最小审计链
+
+  - id: BL-08
+    name: AI嵌入交付闭环而非直接写业务事实
+    source_slides: [PPT-STRATEGY:S15, PPT-STRATEGY:S16, PPT-STRATEGY:S17, PPT-STRATEGY:S29, PPT-PLATFORM:S5, PPT-PLATFORM:S6]
+    ui: [UI-01, UI-02, UI-03, UI-04, UI-05, UI-08, UI-19, UI-20, UI-29, UI-33]
+    scenarios: [SCN-102, SCN-201, SCN-301, SCN-401]
+    slices: [VS-01, VS-02, VS-03]
+    capability: AI经UseCase、Consent、最小ContextSnapshot、Gateway、输出校验和Human Confirmation参与交付
+    acceptance_tests:
+      - T-BL08-ZEROWRITE: AI与Agent无canonical数据库直写权限
+      - T-BL08-CONSENT: 缺目的同意、数据等级或安全许可时fail closed且不外呼模型
+      - T-BL08-AUDIT: 每次AiRun记录模型、策略、来源、停止码、token、成本和结构化输出校验结果
+
+  - id: BL-09
+    name: 结构化家庭成长数据与经营可观测性
+    source_slides: [PPT-BUSINESS:S19, PPT-STRATEGY:S14, PPT-STRATEGY:S18, PPT-STRATEGY:S19, PPT-STRATEGY:S21, PPT-STRATEGY:S25, PPT-PLATFORM:S2]
+    ui: [UI-01, UI-05, UI-06, UI-18, UI-24, UI-29, UI-31, UI-32, UI-33]
+    scenarios: [SCN-001, SCN-201, SCN-301, SCN-402, SCN-502]
+    slices: [VS-00, VS-01, VS-02, VS-03, VS-04]
+    capability: 业务事实、过程指标、审计、成本与经营漏斗可追溯，不把目标KPI写成已达成事实
+    acceptance_tests:
+      - T-BL09-LINEAGE: 指标能回溯到事件、对象版本、时间、租户与家庭范围
+      - T-BL09-PRIVACY: 经营看板只使用授权聚合并禁止跨家庭成长排名
+      - T-BL09-TRUTH: fixture、目标值、预测值与生产事实在Schema和UI中显式区分
+
+  - id: BL-10
+    name: 分阶段商业化与跨端同源运行
+    source_slides: [PPT-BUSINESS:S18, PPT-STRATEGY:S6, PPT-STRATEGY:S27, PPT-STRATEGY:S28, PPT-PLATFORM:S4, PPT-PLATFORM:S6]
+    ui: [UI-01, UI-02, UI-03, UI-04, UI-05, UI-06, UI-07, UI-08, UI-09, UI-10, UI-11, UI-12, UI-13, UI-14, UI-15, UI-16, UI-17, UI-18, UI-19, UI-20, UI-21, UI-22, UI-23, UI-24, UI-25, UI-26, UI-27, UI-28, UI-29, UI-30, UI-31, UI-32, UI-33, UI-34, UI-35]
+    scenarios: [SCN-001, SCN-101, SCN-102, SCN-201, SCN-301, SCN-401, SCN-402, SCN-501, SCN-502, SCN-601, SCN-602]
+    slices: [VS-00, VS-01, VS-02, VS-03, VS-04, VS-05]
+    capability: App与Web共用Family API和PostgreSQL真相，按纵切逐步从TEST/SANDBOX升级到商业运行
+    acceptance_tests:
+      - T-BL10-SAMEAPI: App/Web契约测试证明同一Named Action与Projection语义一致
+      - T-BL10-NOSECONDDB: 移动端只保留草稿/缓存且不存在第二canonical数据库或服务端
+      - T-BL10-GATE: 每个纵切只有在真实DB、审计、恢复、跨端E2E通过后才能升级runtime_status
+
+implementation_evidence:
+  - slice: VS-00
+    baseline_objectives: [BL-01, BL-09, BL-10]
+    status: IMPLEMENTED_TESTED_DEV
+    code:
+      - database/migrations/0039_vs00_tenant_trusted_context.sql
+      - apps/api/src/modules/auth/auth.repository.ts
+      - apps/api/src/modules/auth/auth.service.ts
+      - apps/api/src/modules/auth/family-platform-auth.guard.ts
+      - apps/mobile/lib/family/family-api-client.ts
+      - apps/web/src/platform/onboarding/onboarding-flow.ts
+    tests:
+      - apps/api/src/modules/auth/family-scope.integration.spec.ts
+      - apps/api/src/modules/auth/otp.e2e-spec.ts
+    verified: [TYPECHECK, API_UNIT, WEB_UNIT, MOBILE_UNIT, POSTGRES_42_MIGRATIONS, INTEGRATION_103, E2E_133, BUSINESS_MODEL_GATE, PPT_UI_TRACE_GATE, ARCHITECTURE_GATE]
+    blocked: []
+  - slice: VS-01
+    baseline_objectives: [BL-02, BL-03, BL-08, BL-10]
+    status: IMPLEMENTED_TESTED_DEV
+    completed_capabilities:
+      - UI-01统一商业首页投影与App/Web同源读取
+      - 明确孩子选择、年龄范围与SERVICE同意状态，不使用首孩子捷径
+      - RequestGrowthHelp到ConfirmGrowthIntent到ResourceRecommendation到FamilyServiceDecision真实闭环
+      - NORMAL、REVIEW与HIGH_RISK安全分流，高风险禁止进入普通Intent链路
+      - 各Named Action幂等，RequestGrowthHelp具备Audit与Outbox事件
+      - UI-02使用已准入版本化Tool、显式孩子与ASSESSMENT同意启动可恢复会话
+      - UI-02回答采用追加式修订，提交生成E1家庭视角Evidence且提交后不可修改
+      - UI-02 App/Web共用START_ASSESSMENT、SAVE_ASSESSMENT_RESPONSE与SUBMIT_ASSESSMENT
+      - UI-03从已提交Assessment/Evidence与版本化NeedType目录生成Hypothesis，AI保持NOT_INVOKED
+      - UI-03展示来源、三项局限与非事实非诊断边界，家庭CONFIRM后才创建GrowthIntent
+      - UI-03支持DISMISS为NO_ACTION，App/Web决定幂等并具备Audit与Outbox
+      - UI-09以GrowthAction为唯一任务事实，App/Web共用FamilyTodayProjection与受控任务动作
+      - UI-09开始、暂停、继续、取消、完成与部分/未完成终态均由数据库持久化并带row_version
+      - UI-09状态动作具备family scope、consent/safety复验、幂等、Audit与Outbox
+      - UI-09完成、暂停和取消状态支持客户端与API服务重启后的PostgreSQL回读
+    code:
+      - packages/contracts/src/ui01-home.ts
+      - packages/contracts/src/ui02-assessment.ts
+      - packages/contracts/src/ui03-growth-hypothesis.ts
+      - database/migrations/0040_ui02_versioned_family_assessment.sql
+      - database/migrations/0041_ui03_growth_hypothesis_confirmation.sql
+      - database/migrations/0042_ui09_growth_action_execution_lifecycle.sql
+      - apps/api/src/modules/family/family-home.service.ts
+      - apps/api/src/modules/family/assessment.service.ts
+      - apps/api/src/modules/family/growth-hypothesis.service.ts
+      - apps/api/src/modules/family/growth-action.service.ts
+      - apps/api/src/modules/family/today.service.ts
+      - apps/api/src/modules/family/task-state-action.dto.ts
+      - apps/api/src/modules/orchestration/orchestration.service.ts
+      - apps/mobile/app/(tabs)/index.tsx
+      - apps/mobile/app/ui/UI-09.tsx
+      - apps/mobile/lib/family/family-api-client.ts
+      - apps/web/src/family-api-adapter.js
+      - apps/web/src/main.js
+      - apps/web/src/test-loop.js
+    tests:
+      - apps/api/src/modules/family/family-home.service.spec.ts
+      - apps/api/src/modules/family/family-platform-iam.e2e-spec.ts
+      - apps/api/src/modules/orchestration/orchestration-vertical-slice.e2e-spec.ts
+      - apps/api/src/modules/family/assessment.e2e-spec.ts
+      - apps/api/src/modules/family/family-wave2.e2e-spec.ts
+      - apps/api/src/modules/family/task-state-action.dto.spec.ts
+      - apps/mobile/tests/ui01-home-entry-map.test.ts
+      - apps/mobile/tests/ui09-daily-task-baseline.test.ts
+      - apps/mobile/tests/ui05-ui09-real-session-harness.test.ts
+      - apps/web/src/family-api-adapter.spec.ts
+      - apps/web/src/test-loop.journey-action-execution.spec.ts
+    verified: [TYPECHECK_22_PACKAGES, API_UNIT_201, WEB_UNIT_154, MOBILE_UNIT_153, POSTGRES_UI01_E2E_7, POSTGRES_UI02_UI03_E2E_3, POSTGRES_WAVE2_UI09_E2E_10, POSTGRES_ORCHESTRATION_E2E_16, INTEGRATION_103, BUSINESS_MODEL_GATE, PPT_UI_TRACE_GATE, ARCHITECTURE_GATE]
+    remaining_before_slice_gate: []
+    blocked: []

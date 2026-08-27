@@ -16,16 +16,23 @@ describe("UI-05/UI-09 real family session harness contract", () => {
   });
 
   it("checks in the server-provided Journey Plan action before acknowledging the local visual receipt", () => {
-    expect(ui09).toContain("familyApi.getTodayGrowthAction");
-    expect(ui09).toContain("remoteAction.journey_plan_id");
+    expect(ui09).toContain("familyApi.getFamilyToday");
+    expect(ui09).toContain("remoteAction?.journey_plan_id");
+    expect(ui09).toContain("familyApi.changeTodayTaskState");
+    expect(ui09).toContain('"START"');
+    expect(ui09).toContain('"PAUSE"');
+    expect(ui09).toContain('"RESUME"');
+    expect(ui09).toContain('"CANCEL"');
     expect(ui09).toContain("familyApi.checkInTodayTask");
-    expect(ui09).toContain('`ui09-checkin-${remoteAction.action_id}`');
+    expect(ui09).toContain("operationFor(`checkin-${remoteAction.task_id}-v${remoteAction.task_version}`)");
     expect(ui09).toContain("completeAction(reflection)");
   });
 
   it("uses Bearer-safe Family API commands with correlation and idempotency metadata", () => {
     expect(client).toContain("/growth/journey-plans/${planId}/phase-review");
     expect(client).toContain("/growth/actions/today");
+    expect(client).toContain("/families/${familyId}/today");
+    expect(client).toContain("/tasks/${taskId}/state");
     expect(client).toContain("/tasks/${taskId}/check-in");
     expect(client).toContain('"idempotency-key": idempotencyKey');
     expect(client).toContain('"x-source": "family-ai-mobile"');

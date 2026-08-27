@@ -1,3 +1,5 @@
+> **EXECUTION NOTICE** — `SUPERSEDED_FOR_EXECUTION_BY = FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md + FAMILY_35UI_RUNTIME_MATRIX_V1.json`. This file remains historical architecture context; do not use it as current execution SSOT.
+
 # FAMILY 35 UI Full-Stack Architecture V1
 
 ```text

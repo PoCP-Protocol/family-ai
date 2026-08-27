@@ -1,0 +1,323 @@
+version: 0.1.0
+asset_ref: FAMILY_MODEL_TECHNICAL_ARCHITECTURE_REGISTRY
+status: draft
+owner: Family Education Industry Model
+purpose: >
+  Defines the buildable technical architecture for the Family Education Large Model.
+  The model is a governed component platform: domain kernel, skill runtime, memory,
+  multimodal understanding, model gateway, evaluation, and human-service handoff are
+  separate layers connected by structured contracts.
+
+architecture_id: FAMILY_EDUCATION_LARGE_MODEL_TECH_ARCH_V0_1
+runtime_boundary:
+  current_gate: G1-A ARCHITECTURE_AND_CONTRACT_CONVERGENCE
+  business_runtime: AUTHORIZED
+  database_schema_change: NOT_AUTHORIZED
+  live_external_ai: AUTHORIZED
+  authorization_ref: governance/AUTHORIZATION_REGISTRY.yaml#G1A_FAMILY_EDUCATION_ASSESSMENT_MODEL_INTERNAL
+  allowed_now:
+    - architecture_contract_assets
+    - pure_runtime_packages
+    - mock_gateway_execution
+    - local_internal_api_runtime_integration
+    - local_internal_live_gateway_execution_after_explicit_authorization
+    - distilled_dataset_generation
+    - validation_scripts
+  forbidden_now:
+    - production_business_state_mutation
+    - database_schema_change
+    - client_direct_model_provider_call
+    - live_external_ai_call_without_authorization
+    - pilot_or_production_live_external_ai_default_enablement
+    - ai_free_text_writing_core_ontology
+
+technical_principles:
+  - Domain intelligence is first-party and versioned as registries, schemas, catalogs, and evals.
+  - External frontier models are replaceable engines behind Model Gateway, not the source of business truth.
+  - Every AI output is a draft, hypothesis, recommendation candidate, or memory update candidate until human or Named Action confirmation.
+  - The model must support text, image, document, audio, video, and mixed artifacts through multimodal artifact contracts.
+  - Memory is consent-aware, purpose-bound, scope-limited, and never writes canonical family state directly.
+  - Evaluation is part of the runtime architecture, not a later reporting activity.
+  - Small models, routers, classifiers, and rerankers are trained only from approved distilled datasets and carry model cards.
+
+architecture_layers:
+  - layer_ref: EXPERIENCE_SURFACE_LAYER
+    layer_kind: product_surface
+    owned_by: Family Growth Platform UI
+    responsibilities:
+      - collect user intent and consent-aware inputs
+      - render structured drafts and human confirmation states
+      - never call model providers directly
+    primary_contract_refs:
+      - family_ui_model_binding.registry.yaml
+    component_refs: []
+    may_mutate_business_state: false
+
+  - layer_ref: FAMILY_DOMAIN_KERNEL_LAYER
+    layer_kind: domain_kernel
+    owned_by: Family Education Industry Model
+    responsibilities:
+      - define family education domains, needs, constructs, evidence boundaries, actions, and outcomes
+      - provide stable refs for all downstream skills and model outputs
+      - reject total-score, ranking, and diagnosis-style outputs
+    primary_contract_refs:
+      - family_education_domain.registry.yaml
+      - family_education_need.registry.yaml
+      - family_education_construct.registry.yaml
+      - family_support_action.catalog.yaml
+      - family_outcome_signal.schema.yaml
+    component_refs:
+      - FAMILY_DOMAIN_KERNEL
+    may_mutate_business_state: false
+
+  - layer_ref: SKILL_COMPONENT_RUNTIME_LAYER
+    layer_kind: skill_runtime
+    owned_by: Family Model Runtime
+    responsibilities:
+      - compose versioned model components by dependency refs
+      - run deterministic baseline interpretation before model generation
+      - enforce boundary labels on every structured output
+      - expose package-level capabilities before API integration is authorized
+    primary_contract_refs:
+      - family_model_component.registry.yaml
+      - family_interpretation.schema.yaml
+      - family_assessment_item_bank.registry.yaml
+    component_refs:
+      - FAMILY_ASSESSMENT_V0_COMPONENT
+    implementation_refs:
+      - packages/family-model/src/index.ts
+    may_mutate_business_state: false
+
+  - layer_ref: MEMORY_CONTEXT_LAYER
+    layer_kind: memory_context
+    owned_by: Family Context Platform
+    responsibilities:
+      - create consent-aware memory update candidates
+      - retrieve purpose-bound family context for authorized model use cases
+      - separate child growth timeline, parent learning timeline, and service timeline
+    primary_contract_refs:
+      - family_memory_conversation.schema.yaml
+    component_refs:
+      - FAMILY_MEMORY_DIALOGUE_COMPONENT
+      - FAMILY_REALTIME_DIALOGUE_COMPONENT
+    may_mutate_business_state: false
+
+  - layer_ref: MULTIMODAL_UNDERSTANDING_LAYER
+    layer_kind: multimodal_signal_extraction
+    owned_by: Family Multimodal Component
+    responsibilities:
+      - extract structured observations from photos, images, documents, audio, video, charts, and mixed artifacts
+      - preserve artifact provenance and consent requirements
+      - convert observations into signals, never diagnoses
+    primary_contract_refs:
+      - family_multimodal_artifact.schema.yaml
+    component_refs:
+      - FAMILY_MULTIMODAL_ARTIFACT_COMPONENT
+    may_mutate_business_state: false
+
+  - layer_ref: MODEL_GATEWAY_LAYER
+    layer_kind: provider_gateway
+    owned_by: AI Gateway
+    responsibilities:
+      - isolate external provider APIs behind a structured gateway
+      - enforce timeout, fail-closed parsing, schema requirements, and no direct client calls
+      - support cc switch only when explicit live authorization and local credentials exist
+    primary_contract_refs:
+      - family_interpretation.schema.yaml
+    component_refs: []
+    implementation_refs:
+      - packages/ai-gateway/src/index.ts
+      - tools/validate-family-model-gateway-config.mjs
+      - tools/run-family-model-live-smoke.mjs
+    may_mutate_business_state: false
+
+  - layer_ref: EVALUATION_AND_DISTILLATION_LAYER
+    layer_kind: eval_and_data_factory
+    owned_by: Family Model Evaluation
+    responsibilities:
+      - generate approved distillation datasets from model registries
+      - run scenario, safety, schema, and regression gates
+      - keep evaluation failures visible before runtime expansion
+    primary_contract_refs:
+      - family_model_evaluation_scenarios.yaml
+      - distilled/manifest.json
+    component_refs:
+      - FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT
+    implementation_refs:
+      - tools/distill-family-education-model.mjs
+      - tools/validate-family-model-assets.mjs
+    may_mutate_business_state: false
+
+  - layer_ref: HUMAN_SERVICE_HANDOFF_LAYER
+    layer_kind: human_service_handoff
+    owned_by: Family Service OS
+    responsibilities:
+      - route high-risk or professional scenarios to human review
+      - package model draft, evidence, consent, and family context into handoff context
+      - record service outcomes only through authorized business actions
+    primary_contract_refs:
+      - family_outcome_signal.schema.yaml
+    component_refs:
+      - FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT
+    may_mutate_business_state: false
+
+
+model_gateway_profiles:
+  - profile_ref: FAMILY_MODEL_MOCK_GATEWAY
+    provider_kind: mock
+    provider_id: local-mock
+    live_external_ai_required: false
+    default_for_current_gate: true
+    allowed_use:
+      - unit_test
+      - asset_validation
+      - deterministic_development
+
+  - profile_ref: FAMILY_MODEL_CC_SWITCH_GATEWAY
+    provider_kind: openai_compatible
+    provider_id: anthropic-cc-switch
+    live_external_ai_required: true
+    default_for_current_gate: false
+    required_env:
+      - FAMILY_MODEL_GATEWAY_MODE=cc-switch
+      - FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI=true
+      - FAMILY_MODEL_CC_SWITCH_BASE_URL
+      - FAMILY_MODEL_CC_SWITCH_API_KEY
+      - FAMILY_MODEL_CC_SWITCH_MODEL
+    allowed_use:
+      - authorized_live_smoke
+      - authorized_eval_generation
+    forbidden_use:
+      - client_direct_provider_call
+      - unauthorized_runtime_feature
+
+architecture_flows:
+  - flow_ref: UI02_ASSESSMENT_TO_STRUCTURED_DRAFT
+    flow_kind: assessment_interpretation
+    trigger_surface_refs:
+      - UI-02
+    ordered_layer_refs:
+      - EXPERIENCE_SURFACE_LAYER
+      - FAMILY_DOMAIN_KERNEL_LAYER
+      - SKILL_COMPONENT_RUNTIME_LAYER
+      - MODEL_GATEWAY_LAYER
+      - EVALUATION_AND_DISTILLATION_LAYER
+    input_refs:
+      - family_assessment_item_bank.registry.yaml
+    output_refs:
+      - family_interpretation.schema.yaml
+    required_boundary_labels:
+      - perspective_not_fact
+      - signal_not_diagnosis
+      - hypothesis_not_fact
+      - recommendation_not_decision
+      - action_requires_named_action
+      - outcome_required_for_completion
+    may_mutate_business_state: false
+    authorization_required_for_live_ai: true
+
+  - flow_ref: MULTIMODAL_ARTIFACT_TO_SIGNAL
+    flow_kind: multimodal_signal_extraction
+    trigger_surface_refs:
+      - UI-10
+      - UI-11
+      - UI-12
+    ordered_layer_refs:
+      - EXPERIENCE_SURFACE_LAYER
+      - MULTIMODAL_UNDERSTANDING_LAYER
+      - FAMILY_DOMAIN_KERNEL_LAYER
+      - EVALUATION_AND_DISTILLATION_LAYER
+    input_refs:
+      - family_multimodal_artifact.schema.yaml
+    output_refs:
+      - family_interpretation.schema.yaml
+    required_boundary_labels:
+      - signal_not_diagnosis
+      - hypothesis_not_fact
+    may_mutate_business_state: false
+    authorization_required_for_live_ai: true
+
+  - flow_ref: CONSENT_MEMORY_RECALL_AND_UPDATE_CANDIDATE
+    flow_kind: memory_context
+    trigger_surface_refs:
+      - UI-03
+      - UI-07
+      - UI-18
+    ordered_layer_refs:
+      - EXPERIENCE_SURFACE_LAYER
+      - MEMORY_CONTEXT_LAYER
+      - FAMILY_DOMAIN_KERNEL_LAYER
+      - SKILL_COMPONENT_RUNTIME_LAYER
+    input_refs:
+      - family_memory_conversation.schema.yaml
+    output_refs:
+      - memory_update_candidate
+      - dialogue_summary
+    required_boundary_labels:
+      - perspective_not_fact
+      - action_requires_named_action
+    may_mutate_business_state: false
+    authorization_required_for_live_ai: false
+
+  - flow_ref: ACTION_CANDIDATE_TO_OUTCOME_LOOP
+    flow_kind: action_outcome_learning
+    trigger_surface_refs:
+      - UI-04
+      - UI-05
+      - UI-08
+    ordered_layer_refs:
+      - EXPERIENCE_SURFACE_LAYER
+      - FAMILY_DOMAIN_KERNEL_LAYER
+      - SKILL_COMPONENT_RUNTIME_LAYER
+      - HUMAN_SERVICE_HANDOFF_LAYER
+      - EVALUATION_AND_DISTILLATION_LAYER
+    input_refs:
+      - family_support_action.catalog.yaml
+    output_refs:
+      - family_outcome_signal.schema.yaml
+    required_boundary_labels:
+      - recommendation_not_decision
+      - action_requires_named_action
+      - outcome_required_for_completion
+    may_mutate_business_state: false
+    authorization_required_for_live_ai: false
+
+implementation_sequence:
+  - step_ref: TECH-ARCH-001
+    title: freeze technical architecture registry
+    deliverable_refs:
+      - family_model_technical_architecture.registry.yaml
+      - tools/validate-family-model-assets.mjs
+    exit_gate: model assets validator passes
+
+  - step_ref: TECH-ARCH-002
+    title: keep live provider behind one-shot smoke command
+    deliverable_refs:
+      - tools/run-family-model-live-smoke.mjs
+      - packages/ai-gateway/src/index.ts
+    exit_gate: smoke script fails closed until LIVE_EXTERNAL_AI is authorized
+
+  - step_ref: TECH-ARCH-003
+    title: expand family-model runtime without business mutation
+    deliverable_refs:
+      - packages/family-model/src/index.ts
+      - packages/family-model/src/index.spec.ts
+    exit_gate: package tests and typecheck pass
+
+  - step_ref: TECH-ARCH-004
+    title: prepare runtime integration plan after authorization
+    deliverable_refs:
+      - FAMILY_MODEL_RUNTIME_INTEGRATION_CONTRACT
+      - docs/model/family_model_runtime_integration.contract.yaml
+      - contracts/model/FAMILY_MODEL_RUNTIME_INTEGRATION_CONTRACT_V0_1.md
+      - tools/plan-family-model-architecture.mjs
+    exit_gate: BUSINESS_RUNTIME authorized by sprint governance
+
+acceptance:
+  - architecture registry parses as YAML
+  - architecture layers have unique layer_ref values
+  - every architecture flow references known layers
+  - every architecture layer component_ref points to registered model components
+  - cc switch profile requires live external AI authorization
+  - no architecture flow may mutate business state in current gate
+  - implementation sequence keeps runtime integration behind explicit authorization

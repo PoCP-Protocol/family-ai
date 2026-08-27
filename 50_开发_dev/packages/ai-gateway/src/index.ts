@@ -147,7 +147,7 @@ interface JsonHttpResponse {
   json(): Promise<unknown>;
 }
 
-type JsonFetch = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal?: AbortSignal }) => Promise<JsonHttpResponse>;
+export type JsonFetch = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal?: AbortSignal }) => Promise<JsonHttpResponse>;
 
 export class OpenAICompatibleAiGateway implements AiGateway {
   constructor(private readonly config: AiGatewayModelConfig, private readonly httpFetch: JsonFetch = getGlobalFetch()) {}
@@ -264,6 +264,78 @@ export function createOpenAICompatibleAiGatewayFromEnv(env: Record<string, strin
   }
 
   return new OpenAICompatibleAiGateway({ baseUrl, apiKey, model, timeoutMs });
+}
+
+export interface FamilyModelGatewayAuthorization {
+  liveExternalAiAuthorized: boolean;
+  approvedProviderIds?: readonly string[];
+}
+
+export interface FamilyModelGatewayOptions {
+  authorization?: FamilyModelGatewayAuthorization;
+  responseByUseCase?: Record<string, object>;
+  httpFetch?: JsonFetch;
+}
+
+export const FAMILY_MODEL_ANTHROPIC_CC_SWITCH_PROVIDER_ID = 'anthropic-cc-switch';
+export const FAMILY_MODEL_CODEX_CC_SWITCH_PROVIDER_ID = 'codex-cc-switch';
+export const FAMILY_MODEL_CC_SWITCH_PROVIDER_ID = FAMILY_MODEL_ANTHROPIC_CC_SWITCH_PROVIDER_ID;
+
+function selectFamilyModelCcSwitchProviderId(env: Record<string, string | undefined>): string {
+  const explicitProviderId = env.FAMILY_MODEL_CC_SWITCH_PROVIDER_ID?.trim();
+  if (explicitProviderId) return explicitProviderId;
+
+  const apiKind = env.FAMILY_MODEL_CC_SWITCH_API_KIND?.trim().toLowerCase();
+  if (apiKind === 'codex') return FAMILY_MODEL_CODEX_CC_SWITCH_PROVIDER_ID;
+
+  if (env.FAMILY_MODEL_CODEX_BASE_URL || env.FAMILY_MODEL_CODEX_API_KEY || env.FAMILY_MODEL_CODEX_MODEL || env.CODEX_API_KEY) {
+    return FAMILY_MODEL_CODEX_CC_SWITCH_PROVIDER_ID;
+  }
+
+  return FAMILY_MODEL_ANTHROPIC_CC_SWITCH_PROVIDER_ID;
+}
+
+function pickFirstEnv(env: Record<string, string | undefined>, names: string[]): string | undefined {
+  for (const name of names) {
+    const value = env[name]?.trim();
+    if (value) return value;
+  }
+  return undefined;
+}
+
+/**
+ * Family Education Model 专用入口。
+ * 默认 mock;只有本地 env 显式 cc-switch + live flag + 当前授权同时满足时,才构造真实 OpenAI-compatible cc switch 网关。
+ * 这里不读取密钥、不记录密钥、不发起探活请求;调用方仍必须走业务层 consent / human gate。
+ */
+export function createFamilyModelGatewayFromEnv(
+  env: Record<string, string | undefined>,
+  options: FamilyModelGatewayOptions = {},
+): AiGateway {
+  const mode = env.FAMILY_MODEL_GATEWAY_MODE ?? 'mock';
+  if (mode === 'mock') return new FakeAiGateway(options.responseByUseCase);
+  if (mode !== 'cc-switch') throw new AiGatewayError('POLICY_REJECTED', `unsupported FAMILY_MODEL_GATEWAY_MODE: ${mode}`);
+
+  if (env.FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI !== 'true') {
+    throw new AiGatewayError('POLICY_REJECTED', 'FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI must be true for cc-switch mode');
+  }
+  if (options.authorization?.liveExternalAiAuthorized !== true) {
+    throw new AiGatewayError('POLICY_REJECTED', 'current authorization does not allow live external AI');
+  }
+  const providerId = selectFamilyModelCcSwitchProviderId(env);
+  if (options.authorization.approvedProviderIds && !options.authorization.approvedProviderIds.includes(providerId)) {
+    throw new AiGatewayError('POLICY_REJECTED', `${providerId} is not approved for this runtime`);
+  }
+
+  const baseUrl = pickFirstEnv(env, ['FAMILY_MODEL_CODEX_BASE_URL', 'CODEX_API_BASE_URL', 'FAMILY_MODEL_CC_SWITCH_BASE_URL', 'FPAI_MODEL_BASE_URL']);
+  const apiKey = pickFirstEnv(env, ['FAMILY_MODEL_CODEX_API_KEY', 'CODEX_API_KEY', 'FAMILY_MODEL_CC_SWITCH_API_KEY', 'FPAI_MODEL_API_KEY']);
+  const model = pickFirstEnv(env, ['FAMILY_MODEL_CODEX_MODEL', 'CODEX_MODEL', 'FAMILY_MODEL_CC_SWITCH_MODEL', 'FPAI_MODEL_NAME']);
+  const timeoutMs = Number(env.FAMILY_MODEL_CC_SWITCH_TIMEOUT_MS ?? env.FPAI_MODEL_TIMEOUT_MS ?? 30000);
+  if (!baseUrl || !apiKey || !model) {
+    throw new AiGatewayError('POLICY_REJECTED', 'missing Family Model cc switch/Codex base URL, API key, or model name');
+  }
+
+  return new OpenAICompatibleAiGateway({ baseUrl, apiKey, model, timeoutMs }, options.httpFetch);
 }
 
 /** 剥离模型输出外层的 ```json ... ``` / ``` ... ``` markdown 围栏(仅去外层,内容不改)。 */

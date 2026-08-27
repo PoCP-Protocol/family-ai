@@ -1,0 +1,176 @@
+version: 0.1.0
+asset_ref: FAMILY_EDUCATION_NEED_REGISTRY
+status: draft
+owner: Family Education Industry Model
+source_doc: ../FAMILY_EDUCATION_INTELLIGENCE_MODEL_V0_1.md
+purpose: >
+  Defines child, parent, and family needs as the demand center of the Family
+  Education Industry Model. Every assessment interpretation, support action,
+  and outcome review should link back to one or more need refs.
+
+registry_rules:
+  - need_ref must be stable and uppercase snake case.
+  - need_type must be child, parent, or family.
+  - every action must declare which need_ref it serves.
+  - every outcome review must ask whether the linked need was better met.
+
+needs:
+  - need_ref: CHILD_PHYSICAL_HEALTH_NEED
+    need_type: child
+    domain_refs: [CHILD_NEEDS, PHYSICAL_HEALTH]
+    name: Child physical health need
+    description: The child needs stable sleep, movement, nutrition, growth support, safety, recovery, or age-appropriate body care.
+    observable_signals: [poor_sleep, low_energy, limited_movement, eyesight_strain, posture_fatigue, puberty_confusion]
+    first_product_use: Health rhythm intake and family routine action.
+
+  - need_ref: CHILD_EMOTIONAL_SUPPORT_NEED
+    need_type: child
+    domain_refs: [CHILD_NEEDS, PSYCHOSOMATIC_WELLBEING, RELATIONSHIP]
+    name: Child emotional support need
+    description: The child needs to be seen, understood, accepted, soothed, encouraged, and supported after frustration.
+    observable_signals: [frustration, irritability, withdrawal, fear_of_failure, slow_conflict_recovery]
+    first_product_use: Emotion support and parent-child repair plan.
+
+  - need_ref: CHILD_RELATIONSHIP_NEED
+    need_type: child
+    domain_refs: [CHILD_NEEDS, RELATIONSHIP]
+    name: Child relationship need
+    description: The child needs trust, respectful communication, autonomy with connection, and stable affection.
+    observable_signals: [low_trust, unwilling_to_talk, repeated_conflict, lack_of_repair, feeling_misunderstood]
+    first_product_use: UI-02 parent-child communication focus.
+
+  - need_ref: CHILD_LEARNING_SUPPORT_NEED
+    need_type: child
+    domain_refs: [CHILD_NEEDS, ACADEMIC_K12]
+    name: Child learning support need
+    description: The child needs clear goals, achievable challenge, feedback, strategy, practice, and help-seeking support.
+    observable_signals: [homework_delay, subject_gap, weak_strategy, weak_feedback_use, low_self_efficacy]
+    first_product_use: Learning habits and academic support plan.
+
+  - need_ref: CHILD_IDENTITY_STRENGTH_NEED
+    need_type: child
+    domain_refs: [CHILD_NEEDS, MULTIPLE_INTELLIGENCES, VALUES_CHARACTER]
+    name: Child identity and strengths need
+    description: The child needs self-understanding, strengths discovery, belonging, values, voice, and future imagination.
+    observable_signals: [unclear_strengths, low_confidence, lack_of_voice, excessive_comparison, weak_future_imagination]
+    first_product_use: Strength discovery and portfolio growth record.
+
+  - need_ref: CHILD_SOCIAL_NEED
+    need_type: child
+    domain_refs: [CHILD_NEEDS, SOCIAL_COMPETENCE]
+    name: Child social need
+    description: The child needs peer belonging, boundary setting, collaboration, and conflict handling support.
+    observable_signals: [peer_conflict, isolation, boundary_problem, collaboration_difficulty, social_anxiety_signal]
+    first_product_use: Peer relationship support and school-family collaboration.
+
+  - need_ref: CHILD_DIGITAL_AI_NEED
+    need_type: child
+    domain_refs: [CHILD_NEEDS, DIGITAL_LIFE, AI_LITERACY, MULTIMODAL_LITERACY]
+    name: Child digital and AI-era growth need
+    description: The child needs healthy technology rhythm, safe AI use, creative tool use, media judgment, and privacy awareness.
+    observable_signals: [device_conflict, passive_media_use, ai_misuse, weak_verification, privacy_confusion]
+    first_product_use: Family AI-use agreement and device-use action.
+
+  - need_ref: PARENT_UNDERSTANDING_NEED
+    need_type: parent
+    domain_refs: [PARENT_NEEDS, DEVELOPMENTAL_FOUNDATIONS]
+    name: Parent understanding need
+    description: The parent needs to see the child's stage, signals, strengths, pressure, and context more clearly.
+    observable_signals: [cannot_read_child_signals, disagreement_about_cause, confusing_school_feedback]
+    first_product_use: Parent-facing explanation and learning path.
+
+  - need_ref: PARENT_METHOD_NEED
+    need_type: parent
+    domain_refs: [PARENT_NEEDS, PARENTING]
+    name: Parent method need
+    description: The parent needs concrete language, routines, boundaries, and review methods for current family scenes.
+    observable_signals: [does_not_know_what_to_say, rule_setting_difficulty, homework_help_conflict, cannot_review_action]
+    first_product_use: Low-risk parent action recommendation.
+
+  - need_ref: PARENT_EMOTIONAL_SUPPORT_NEED
+    need_type: parent
+    domain_refs: [PARENT_NEEDS, PSYCHOSOMATIC_WELLBEING]
+    name: Parent emotional support need
+    description: The parent needs support for anxiety, anger, guilt, burnout, comparison pressure, or helplessness.
+    observable_signals: [anxiety, anger, guilt, burnout, comparison_pressure, helplessness]
+    first_product_use: Parent support intensity routing.
+
+  - need_ref: PARENT_LEARNING_NEED
+    need_type: parent
+    domain_refs: [PARENT_NEEDS, DEVELOPMENTAL_FOUNDATIONS, AI_LITERACY]
+    name: Parent learning need
+    description: The parent needs knowledge about child development, education psychology, AI-era learning, communication, or health.
+    observable_signals: [asks_for_knowledge, unclear_age_stage, ai_learning_confusion, health_learning_gap]
+    first_product_use: Parent learning path.
+
+  - need_ref: PARENT_COLLABORATION_NEED
+    need_type: parent
+    domain_refs: [PARENT_NEEDS, HUMAN_SERVICE, FAMILY_SYSTEM]
+    name: Parent collaboration need
+    description: The parent needs teacher communication, spouse alignment, grandparent alignment, or service navigation.
+    observable_signals: [teacher_communication_need, spouse_disagreement, grandparent_disagreement, service_navigation_need]
+    first_product_use: School-family handoff and family alignment.
+
+  - need_ref: PARENT_DECISION_NEED
+    need_type: parent
+    domain_refs: [PARENT_NEEDS]
+    name: Parent decision support need
+    description: The parent needs to choose priority, learning support, activity, intervention, or professional resource.
+    observable_signals: [many_options_no_priority, intervention_choice_confusion, activity_choice_confusion]
+    first_product_use: Priority selection and decision support.
+
+  - need_ref: PARENT_FEEDBACK_NEED
+    need_type: parent
+    domain_refs: [PARENT_NEEDS]
+    name: Parent feedback need
+    description: The parent needs to know whether an action helped and what to adjust next.
+    observable_signals: [wants_progress_feedback, unsure_action_worked, repeated_without_adjustment]
+    first_product_use: Outcome review and next-step adjustment.
+
+  - need_ref: FAMILY_RHYTHM_NEED
+    need_type: family
+    domain_refs: [FAMILY_SHARED_NEEDS, FAMILY_SYSTEM, PHYSICAL_HEALTH]
+    name: Family rhythm need
+    description: The family needs stable sleep, homework, mealtime, device, and review rhythms.
+    observable_signals: [unstable_sleep, unstable_homework_rhythm, repeated_rushed_routines]
+    first_product_use: Family routine plan.
+
+  - need_ref: FAMILY_COMMUNICATION_NEED
+    need_type: family
+    domain_refs: [FAMILY_SHARED_NEEDS, RELATIONSHIP]
+    name: Family communication need
+    description: The family needs better listening, clearer agreements, lower conflict intensity, and repair.
+    observable_signals: [repeated_arguments, low_listening, unclear_agreements, poor_repair]
+    first_product_use: Communication repair action.
+
+  - need_ref: FAMILY_LEARNING_ENVIRONMENT_NEED
+    need_type: family
+    domain_refs: [FAMILY_SHARED_NEEDS, ACADEMIC_K12, FAMILY_SYSTEM]
+    name: Family learning environment need
+    description: The family needs a quieter, clearer, more consistent environment for learning and support.
+    observable_signals: [noisy_learning_context, inconsistent_rules, unclear_parent_role, weak_resource_match]
+    first_product_use: Learning environment action.
+
+  - need_ref: FAMILY_SCHOOL_ALIGNMENT_NEED
+    need_type: family
+    domain_refs: [FAMILY_SHARED_NEEDS, ACADEMIC_K12, HUMAN_SERVICE]
+    name: Family school alignment need
+    description: The family needs school feedback translated into clear family action and teacher communication.
+    observable_signals: [school_feedback_not_translated, school_family_disagreement, teacher_parent_loop_missing]
+    first_product_use: School-family handoff.
+
+  - need_ref: FAMILY_SUPPORT_NETWORK_NEED
+    need_type: family
+    domain_refs: [FAMILY_SHARED_NEEDS, HUMAN_SERVICE]
+    name: Family support network need
+    description: The family needs expert, peer, community, or service resources.
+    observable_signals: [lacks_expert_resource, lacks_peer_support, lacks_community_resource, service_gap]
+    first_product_use: Human-service routing.
+
+  - need_ref: FAMILY_GROWTH_RECORD_NEED
+    need_type: family
+    domain_refs: [FAMILY_SHARED_NEEDS]
+    name: Family growth record need
+    description: The family needs to see progress, effort, patterns, and next steps over time.
+    observable_signals: [cannot_see_progress, cannot_see_effort, pattern_unclear, next_step_unclear]
+    first_product_use: Outcome review and growth report.

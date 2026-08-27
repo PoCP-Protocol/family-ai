@@ -1,0 +1,169 @@
+version: 0.1.0
+asset_ref: FAMILY_MEMORY_CONVERSATION_SCHEMA
+status: draft
+owner: Family Education Industry Model
+source_doc: ../FAMILY_EDUCATION_AI_ERA_MODEL_GAP_ANALYSIS.md
+purpose: >
+  Defines model-level memory and realtime conversation objects for Family Education
+  Intelligence. Memory and dialogue are first-class model capabilities, not product-only
+  chat features.
+
+schema_rules:
+  - memory records must preserve Perspective != Fact and Hypothesis != Fact.
+  - memory updates must be structured candidates before being committed to core state.
+  - realtime dialogue must be role-aware and consent-aware.
+  - conversation summaries can update model memory only through approved structured fields.
+  - multimodal artifacts referenced in dialogue must include provenance and artifact type.
+
+memory_objects:
+  - object_ref: FAMILY_MEMORY_PROFILE
+    name: Family memory profile
+    description: Longitudinal memory of family needs, priorities, routines, actions, outcomes, and service interactions.
+    fields:
+      - family_ref
+      - active_need_refs
+      - recurring_construct_refs
+      - current_priority_refs
+      - action_memory_refs
+      - outcome_memory_refs
+      - conversation_summary_refs
+      - multimodal_artifact_refs
+      - human_review_refs
+      - last_reviewed_at
+
+  - object_ref: CHILD_GROWTH_TIMELINE
+    name: Child growth timeline
+    description: Time-ordered child growth signals across learning, health, emotion, relationship, identity, social life, digital life, and future skills.
+    fields:
+      - child_ref
+      - life_stage
+      - school_stage
+      - signal_refs
+      - artifact_refs
+      - need_refs
+      - construct_refs
+      - outcome_refs
+      - updated_at
+
+  - object_ref: PARENT_LEARNING_TIMELINE
+    name: Parent learning timeline
+    description: Parent learning needs, tried methods, reflection, emotional support needs, and collaboration progress over time.
+    fields:
+      - parent_ref
+      - learning_need_refs
+      - method_need_refs
+      - parent_capacity_signals
+      - tried_action_refs
+      - parent_feedback_refs
+      - updated_at
+
+  - object_ref: ACTION_MEMORY
+    name: Action memory
+    description: Records action candidates, parent confirmation, action attempts, and review status.
+    fields:
+      - action_ref
+      - need_refs
+      - construct_refs
+      - owner_role
+      - proposed_at
+      - confirmed_at
+      - tried_status
+      - review_due_at
+      - outcome_refs
+
+  - object_ref: OUTCOME_MEMORY
+    name: Outcome memory
+    description: Stores structured outcome signals over time without treating them as causal proof by default.
+    fields:
+      - outcome_ref
+      - action_ref
+      - need_ref
+      - respondent_role
+      - time_window
+      - usefulness_rating
+      - observed_change
+      - confidence
+
+conversation_objects:
+  - object_ref: DIALOGUE_SESSION
+    name: Dialogue session
+    description: A realtime parent, child, teacher, or human-service conversation session.
+    fields:
+      - session_ref
+      - family_ref
+      - participant_roles
+      - modality
+      - intent_refs
+      - active_need_refs
+      - active_construct_refs
+      - risk_signal_refs
+      - memory_update_candidate_refs
+      - started_at
+      - ended_at
+
+  - object_ref: DIALOGUE_TURN
+    name: Dialogue turn
+    description: A single role-aware turn in a realtime exchange.
+    fields:
+      - turn_ref
+      - session_ref
+      - speaker_role
+      - input_modality
+      - text_summary
+      - artifact_refs
+      - extracted_signal_refs
+      - missing_information_refs
+      - created_at
+
+  - object_ref: CONVERSATION_INTENT
+    name: Conversation intent
+    description: Structured intent detected in a family education conversation.
+    allowed_values:
+      - ask_for_understanding
+      - ask_for_method
+      - report_new_signal
+      - review_action
+      - upload_artifact
+      - request_school_handoff
+      - request_human_service
+      - child_voice_reflection
+      - parent_emotional_support
+      - ai_literacy_guidance
+
+  - object_ref: CLARIFYING_QUESTION
+    name: Clarifying question
+    description: A minimal question used to reduce uncertainty before interpretation or action matching.
+    fields:
+      - question_ref
+      - linked_need_refs
+      - linked_construct_refs
+      - missing_information_ref
+      - preferred_respondent_role
+      - answer_format
+
+  - object_ref: DIALOGUE_SUMMARY
+    name: Dialogue summary
+    description: Structured summary that can become a memory update candidate.
+    fields:
+      - summary_ref
+      - session_ref
+      - need_summary
+      - construct_mapping
+      - missing_information
+      - support_hypothesis
+      - action_candidate_refs
+      - outcome_review_plan
+      - human_service_handoff_candidate
+      - memory_update_candidate
+
+realtime_capabilities:
+  - capability_ref: REALTIME_NEED_ROUTING
+    description: Identify likely needs and constructs during conversation, then ask a clarifying question when needed.
+  - capability_ref: REALTIME_MEMORY_RECALL
+    description: Recall relevant family memory, prior actions, outcomes, and artifacts during conversation.
+  - capability_ref: REALTIME_MEMORY_UPDATE_CANDIDATE
+    description: Propose structured memory updates from dialogue without directly writing core ontology.
+  - capability_ref: REALTIME_MULTIMODAL_CONTEXT_USE
+    description: Use referenced images, photos, documents, audio, video, or project artifacts as context with provenance.
+  - capability_ref: REALTIME_HUMAN_SERVICE_HANDOFF
+    description: Prepare role-aware handoff context when AI-only support is insufficient.

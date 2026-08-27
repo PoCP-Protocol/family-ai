@@ -1,6 +1,6 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { createHash, randomBytes } from 'node:crypto';
-import { AuthRepository } from './auth.repository';
+import { BadRequestException, ConflictException, Inject, Injectable } from '@nestjs/common';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { AccountAlreadyHasFamilyError, AccountBootstrapIdempotencyConflictError, AuthRepository } from './auth.repository';
 
 const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex');
 const TTL_MS = Number(process.env.IAM_SESSION_TTL_MS ?? 1000 * 60 * 60 * 24 * 7); // 默认 7 天
@@ -20,6 +20,7 @@ export interface AuthenticatedAccount {
 export interface FamilyAuthContext {
   accountId: string;
   sessionId: string;
+  tenantId: string;
   familyId: string;
   personId: string;
   membershipId: string;
@@ -27,6 +28,7 @@ export interface FamilyAuthContext {
 }
 export interface FamilyContextSummary {
   type: 'FAMILY';
+  tenant_id: string;
   family_id: string;
   person_id: string;
   membership_id: string;
@@ -89,21 +91,29 @@ export class AuthService {
   /** 列出 Account 的全部 Family 上下文;零家庭 → []。 */
   async listContexts(accountId: string): Promise<FamilyContextSummary[]> {
     const rows = await this.repo.listContextsForAccount(accountId);
-    return rows.map((r) => ({ type: 'FAMILY', family_id: r.family_id, person_id: r.person_id, membership_id: r.membership_id, role: r.role }));
+    return rows.map((r) => ({ type: 'FAMILY', tenant_id: r.tenant_id, family_id: r.family_id, person_id: r.person_id, membership_id: r.membership_id, role: r.role }));
   }
 
   /**
    * ACCOUNT_BOOTSTRAP:认证 Account 创建首个家庭(原子)。仅当该 Account 当前零家庭上下文时允许;
    * 不需要既有 Family 权限,也不授予对既有 Family 的访问。返回新家庭上下文关键字段。
    */
-  async createFirstFamily(token: string | undefined, displayName: string, guardianName: string): Promise<{ family_id: string; person_id: string; membership_id: string; role: string }> {
+  async createFirstFamily(token: string | undefined, displayName: string, guardianName: string, correlationId: string = randomUUID()): Promise<{ tenant_id: string; family_id: string; person_id: string; membership_id: string; role: string }> {
     const account = await this.resolveAccount(token);
     if (!account) throw new BadRequestException('invalid_or_expired_session');
     if (!displayName?.trim() || !guardianName?.trim()) throw new BadRequestException('display_name and guardian_name are required');
-    const existing = await this.repo.countActiveContexts(account.accountId);
-    if (existing > 0) throw new BadRequestException('account_already_has_family (use invite/join, not CreateFirstFamily)');
-    const r = await this.repo.createFirstFamilyTx(account.accountId, displayName.trim(), guardianName.trim());
-    return { ...r, role: 'OWNER_GUARDIAN' };
+    try {
+      const r = await this.repo.createFirstFamilyTx(account.accountId, displayName.trim(), guardianName.trim(), correlationId);
+      return { ...r, role: 'OWNER_GUARDIAN' };
+    } catch (error) {
+      if (error instanceof AccountAlreadyHasFamilyError) {
+        throw new BadRequestException('account_already_has_family (use invite/join, not CreateFirstFamily)');
+      }
+      if (error instanceof AccountBootstrapIdempotencyConflictError) {
+        throw new ConflictException('account_bootstrap_idempotency_conflict');
+      }
+      throw error;
+    }
   }
 
   /**
@@ -116,7 +126,7 @@ export class AuthService {
     const ctx = await this.repo.resolveFamilyContext(account.accountId, familyId);
     if (!ctx) return null;
     return {
-      accountId: account.accountId, sessionId: account.sessionId,
+      accountId: account.accountId, sessionId: account.sessionId, tenantId: ctx.tenant_id,
       familyId: ctx.family_id, personId: ctx.person_id, membershipId: ctx.membership_id, familyRole: ctx.role,
     };
   }
@@ -132,7 +142,7 @@ export class AuthService {
     if (rows.length === 0) return { status: 'NONE' };
     if (rows.length > 1) return { status: 'AMBIGUOUS' };
     const r = rows[0];
-    return { status: 'OK', ctx: { accountId: account.accountId, sessionId: account.sessionId, familyId: r.family_id, personId: r.person_id, membershipId: r.membership_id, familyRole: r.role } };
+    return { status: 'OK', ctx: { accountId: account.accountId, sessionId: account.sessionId, tenantId: r.tenant_id, familyId: r.family_id, personId: r.person_id, membershipId: r.membership_id, familyRole: r.role } };
   }
 }
 

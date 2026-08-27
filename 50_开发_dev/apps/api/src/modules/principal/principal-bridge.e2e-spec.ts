@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../app.module';
-import { cleanFamilyCoreTables, createTestPool, getTestDatabaseUrl } from '../../test/test-database';
+import { bindTestAccountToFamilyTenant, cleanFamilyCoreTables, createTestPool, getTestDatabaseUrl } from '../../test/test-database';
 
 // M3-101A-C Action Bridge E2E(真实 PostgreSQL)。
 // 验证:被采纳的 NORMAL proposal → 既有 StartIntervention Named Action;桥接不绕任何 canonical 门;
@@ -178,6 +178,7 @@ async function issueConsumerSession(familyId: string, canManage = true): Promise
      values ($1, $2, $3, 'ACTIVE', now())`,
     [familyId, personId, canManage ? 'OWNER_GUARDIAN' : 'CHILD_SUBJECT'],
   );
+  await bindTestAccountToFamilyTenant(pool, accountId, familyId);
   const token = `fam_${randomUUID()}`;
   await pool.query(
     `insert into identity_sessions(token_hash, account_ref, expires_at)

@@ -8,8 +8,8 @@ No file in this directory is canonical Family domain state. These files must not
 
 | Package | Source | Files | Purpose |
 |---|---|---:|---|
-| `distillation/` | `D:\Bole.AI` | 6 | Bole Family education distillation, evidence index, corpus, digitization, and short-video signal exports. |
-| `joysoul/` | `D:\AiSoul` and `D:\JoySoul_corpus_backup` discovery | 18 | JoySoul/AiSoul distillation, SFT, exemplar, scenario, fleet, and chain datasets found while tracing Bole.ai JoySoul transplant data. |
+| `distillation/` | `D:\Bole.AI` | 2 | Bole Family education SFT/train-mix files currently used by the 220k Family staging source plan. |
+| `joysoul/` | `D:\AiSoul` and `D:\JoySoul_corpus_backup` discovery | 10 | JoySoul/AiSoul files currently used by the 220k Family staging source plan. Unused migrated copies were removed from this integration layer. |
 
 ## Import Rule
 

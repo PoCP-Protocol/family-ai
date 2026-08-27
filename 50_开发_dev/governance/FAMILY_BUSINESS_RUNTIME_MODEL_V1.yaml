@@ -1,0 +1,758 @@
+schema_version: FAMILY_BUSINESS_RUNTIME_MODEL_V1
+status: EXECUTION_BASELINE_DRAFT
+as_of: 2026-08-23
+purpose: 将现有3份PPT、35UI、六循环、主数据、数据库与V4.1架构收敛为可实施、可校验的业务运行模型
+
+source_authority:
+  - id: SRC-ARCH
+    path: architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md
+    role: 技术与AI架构边界
+  - id: SRC-UI
+    path: governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json
+    role: 35UI、循环、领域、动作与运行状态
+  - id: SRC-DATA
+    path: governance/FAMILY_MASTER_DATA_CATALOG_V2.md
+    role: 主数据对象与关系
+  - id: SRC-OBJECT
+    path: governance/FAMILY_GLOBAL_DATA_OBJECT_EXECUTION_MATRIX_V1.md
+    role: 事实、投影、审计与接口对象
+  - id: SRC-SCENE
+    path: governance/BANGYANG_34_UI_SCENARIO_FLOWS_AND_RULES_001.md
+    role: 历史场景、异常路径与规则输入
+  - id: SRC-PPT
+    path: apps/mobile/research/three-ppt-mobile-baseline.md
+    role: 产品、服务、商业与视觉叙事，证据等级上限E1
+  - id: SRC-PPT-UI-TRACE
+    path: governance/FAMILY_PPT_UI_DELIVERY_TRACEABILITY_V1.yaml
+    role: 3份PPT目标到35UI、场景、纵切与验收测试的强制追踪基线
+
+canonical_loops:
+  - GROWTH
+  - PLAN
+  - ASSESSMENT
+  - SERVICE
+  - COMMERCE
+  - COMMUNITY
+
+domains:
+  - FAMILY_CORE
+  - GROWTH_INTELLIGENCE
+  - GROWTH_JOURNEY
+  - RESOURCE_NETWORK
+  - SERVICE_OS
+  - COMMERCE_ENTITLEMENT
+  - CONTENT_COMMUNITY
+
+actors:
+  - id: GUARDIAN
+    name: 家长/监护人
+    trust: FAMILY_MEMBER
+  - id: CHILD
+    name: 儿童/青少年家庭成员
+    trust: MINOR_RESTRICTED
+  - id: ADVISOR
+    name: 顾问/班主任
+    trust: TENANT_STAFF_SCOPED
+  - id: EXPERT
+    name: 专家/服务者
+    trust: QUALIFIED_PROVIDER_SCOPED
+  - id: OPERATOR
+    name: 运营人员
+    trust: TENANT_STAFF_SCOPED
+  - id: REVIEWER
+    name: 安全/内容审核人员
+    trust: PRIVILEGED_SCOPED
+  - id: SYSTEM
+    name: 系统工作流
+    trust: SERVICE_PRINCIPAL
+  - id: AI_RUNTIME
+    name: AI运行时
+    trust: PROPOSE_ONLY
+
+global_rules:
+  - id: BR-001
+    name: 范围可信链
+    statement: 所有家庭访问必须沿Account到TenantMembership到TenantFamilyBinding到FamilyContext解析，跨范围查询失败关闭
+  - id: BR-002
+    name: 同意与目的
+    statement: 数据读取、AI使用、儿童参与、公开分享与训练同意分别判断，同意可撤回且不得默认扩大
+  - id: BR-003
+    name: Named Action唯一写入口
+    statement: 核心业务状态只能经服务端Named Action写入，客户端、AI与投影不得直写
+  - id: BR-004
+    name: AI无事实写权
+    statement: AI只能生成Draft、Hypothesis、Explanation或Recommendation，确认后才能进入Named Action
+  - id: BR-005
+    name: 事实边界
+    statement: Fact、Perspective、Evidence、Recommendation、Decision、Action与Outcome必须分离存储和展示
+  - id: BR-006
+    name: 幂等与并发
+    statement: 所有事实写入带idempotency_key、correlation_id与row_version，同键异请求拒绝
+  - id: BR-007
+    name: 事务事件
+    statement: 领域写入与OutboxEvent同事务提交，消费者按至少一次投递并保证幂等
+  - id: BR-008
+    name: 外部副作用隔离
+    statement: 支付、通知、预约、公开发布与真人联系只能通过环境感知Adapter并产生Receipt
+  - id: BR-009
+    name: 未成年人安全
+    statement: 儿童输入最小化、可见性受限，高风险内容进入Human Gate，不得形成永久标签或自动诊断
+  - id: BR-010
+    name: 禁止总分与跨家庭排名
+    statement: 不生成Family Total Score、儿童永久分数或跨家庭成长排名
+  - id: BR-011
+    name: 服务不等于效果
+    statement: ServiceCompletion、ActionCompletion与GrowthOutcome相互独立，结果必须有来源、时间与确认边界
+  - id: BR-012
+    name: 可退出与可恢复
+    statement: 每个流程支持NO_ACTION、PAUSE、CANCEL或RETURN，退出不得偷偷创建下游对象
+  - id: BR-013
+    name: 目录与事实分离
+    statement: Product、Service、Provider、Journey模板是目录主数据，订单、预约、计划与权益是家庭事实
+  - id: BR-014
+    name: 供给准入
+    statement: Provider必须有有效Qualification，Offering与Slot有效后才可接受BookingRequest
+  - id: BR-015
+    name: 交易权益分离
+    statement: Order与Payment成功不自动等同权益可用，FamilyEntitlement由明确政策和事件激活
+  - id: BR-016
+    name: 审计最小化
+    statement: 审计记录动作、策略、对象引用、前后状态和结果，不记录密钥、不必要原文或隐式推理
+
+data_objects:
+  - id: OBJ-001
+    name: Tenant
+    kind: MASTER
+    domain: FAMILY_CORE
+    key: tenant_id
+    required_fields: [tenant_id, tenant_ref, status, version_no, created_at, updated_at]
+  - id: OBJ-002
+    name: Account
+    kind: MASTER
+    domain: FAMILY_CORE
+    key: account_id
+    required_fields: [account_id, account_ref, status, created_at, updated_at]
+  - id: OBJ-003
+    name: TenantAccountMembership
+    kind: MASTER
+    domain: FAMILY_CORE
+    key: tenant_membership_id
+    required_fields: [tenant_membership_id, tenant_id, account_id, role_code, status, valid_from, valid_to]
+  - id: OBJ-004
+    name: Family
+    kind: MASTER
+    domain: FAMILY_CORE
+    key: family_id
+    required_fields: [family_id, tenant_id, family_ref, status, row_version, created_at, updated_at]
+  - id: OBJ-005
+    name: Person
+    kind: MASTER
+    domain: FAMILY_CORE
+    key: person_id
+    required_fields: [person_id, family_id, person_ref, role_hint, status, visibility, created_at, updated_at]
+  - id: OBJ-006
+    name: FamilyMembership
+    kind: MASTER
+    domain: FAMILY_CORE
+    key: membership_id
+    required_fields: [membership_id, family_id, person_id, role_code, status, valid_from, valid_to]
+  - id: OBJ-007
+    name: FamilyRelationship
+    kind: MASTER
+    domain: FAMILY_CORE
+    key: relationship_id
+    required_fields: [relationship_id, family_id, person_a_id, person_b_id, relationship_type, status]
+  - id: OBJ-008
+    name: Consent
+    kind: FACT
+    domain: FAMILY_CORE
+    key: consent_id
+    required_fields: [consent_id, tenant_id, family_id, subject_person_id, guardian_person_id, purpose_code, policy_version, status, granted_at, withdrawn_at]
+  - id: OBJ-101
+    name: AssessmentToolDefinition
+    kind: MASTER
+    domain: GROWTH_INTELLIGENCE
+    key: tool_ref_version
+    required_fields: [tool_ref, version_no, status, evidence_level, admission_status, schema_ref]
+  - id: OBJ-102
+    name: AssessmentSession
+    kind: FACT
+    domain: GROWTH_INTELLIGENCE
+    key: assessment_session_id
+    required_fields: [assessment_session_id, tenant_id, family_id, subject_person_id, tool_ref, tool_version, status, started_at, submitted_at, row_version]
+  - id: OBJ-103
+    name: AssessmentResponse
+    kind: FACT
+    domain: GROWTH_INTELLIGENCE
+    key: assessment_response_id
+    required_fields: [assessment_response_id, assessment_session_id, item_ref, response_type, response_value, author_person_id, captured_at, visibility]
+  - id: OBJ-104
+    name: EvidenceRecord
+    kind: FACT
+    domain: GROWTH_INTELLIGENCE
+    key: evidence_id
+    required_fields: [evidence_id, tenant_id, family_id, source_type, source_ref, evidence_grade, captured_at, limitations]
+  - id: OBJ-105
+    name: GrowthDiagnosticHypothesis
+    kind: AI_ARTIFACT
+    domain: GROWTH_INTELLIGENCE
+    key: hypothesis_id
+    required_fields: [hypothesis_id, tenant_id, family_id, source_refs, ai_run_id, status, confidence_band, limitations, created_at]
+  - id: OBJ-106
+    name: GrowthIntent
+    kind: FACT
+    domain: GROWTH_INTELLIGENCE
+    key: growth_intent_id
+    required_fields: [growth_intent_id, tenant_id, family_id, intent_ref, focus_code, status, confirmed_by, confirmed_at, row_version]
+  - id: OBJ-201
+    name: JourneyTemplate
+    kind: MASTER
+    domain: GROWTH_JOURNEY
+    key: journey_template_ref_version
+    required_fields: [journey_template_ref, version_no, duration_days, status, admission_status, source_ref]
+  - id: OBJ-202
+    name: TaskTemplate
+    kind: MASTER
+    domain: GROWTH_JOURNEY
+    key: task_template_ref_version
+    required_fields: [task_template_ref, version_no, journey_template_ref, stage_no, day_no, status, content_ref]
+  - id: OBJ-203
+    name: GrowthJourney
+    kind: FACT
+    domain: GROWTH_JOURNEY
+    key: journey_id
+    required_fields: [journey_id, tenant_id, family_id, growth_intent_id, journey_template_ref, template_version, status, started_at, paused_at, completed_at, row_version]
+  - id: OBJ-204
+    name: GrowthAction
+    kind: FACT
+    domain: GROWTH_JOURNEY
+    key: action_id
+    required_fields: [action_id, tenant_id, family_id, journey_id, task_template_ref, scheduled_for, status, assigned_to, row_version]
+  - id: OBJ-205
+    name: ActionCheckin
+    kind: FACT
+    domain: GROWTH_JOURNEY
+    key: checkin_id
+    required_fields: [checkin_id, tenant_id, family_id, action_id, completion_status, reflection_perspective_ref, occurred_at, idempotency_key]
+  - id: OBJ-206
+    name: StageReview
+    kind: FACT
+    domain: GROWTH_JOURNEY
+    key: review_id
+    required_fields: [review_id, tenant_id, family_id, journey_id, stage_no, decision_code, evidence_refs, reviewed_by, reviewed_at]
+  - id: OBJ-301
+    name: Capability
+    kind: MASTER
+    domain: RESOURCE_NETWORK
+    key: capability_code
+    required_fields: [capability_code, version_no, status, risk_class, admission_policy_ref]
+  - id: OBJ-302
+    name: Provider
+    kind: MASTER
+    domain: RESOURCE_NETWORK
+    key: provider_ref_version
+    required_fields: [provider_ref, version_no, tenant_id, provider_type, status, admission_status]
+  - id: OBJ-303
+    name: ProviderQualification
+    kind: MASTER
+    domain: RESOURCE_NETWORK
+    key: qualification_ref_version
+    required_fields: [qualification_ref, version_no, provider_ref, qualification_type, status, valid_from, valid_to, verified_by]
+  - id: OBJ-304
+    name: ServiceOffering
+    kind: MASTER
+    domain: SERVICE_OS
+    key: service_offering_ref_version
+    required_fields: [service_offering_ref, version_no, provider_ref, capability_code, tenant_id, status, admission_status, delivery_mode]
+  - id: OBJ-305
+    name: AvailabilitySlot
+    kind: MASTER
+    domain: SERVICE_OS
+    key: slot_ref_version
+    required_fields: [slot_ref, version_no, service_offering_ref, starts_at, ends_at, capacity, status, row_version]
+  - id: OBJ-306
+    name: BookingRequest
+    kind: FACT
+    domain: SERVICE_OS
+    key: booking_request_id
+    required_fields: [booking_request_id, tenant_id, family_id, service_offering_ref, slot_ref, status, requested_by, idempotency_key, created_at]
+  - id: OBJ-307
+    name: ServiceCase
+    kind: FACT
+    domain: SERVICE_OS
+    key: service_case_id
+    required_fields: [service_case_id, tenant_id, family_id, booking_request_id, provider_ref, status, opened_at, closed_at, row_version]
+  - id: OBJ-308
+    name: ServiceRecord
+    kind: FACT
+    domain: SERVICE_OS
+    key: service_record_id
+    required_fields: [service_record_id, tenant_id, family_id, service_case_id, event_type, occurred_at, source_ref, visibility]
+  - id: OBJ-401
+    name: ProductOffering
+    kind: MASTER
+    domain: COMMERCE_ENTITLEMENT
+    key: product_ref_version
+    required_fields: [product_ref, version_no, tenant_id, status, admission_status, price_plan_ref, entitlement_policy_ref]
+  - id: OBJ-402
+    name: PricePlan
+    kind: MASTER
+    domain: COMMERCE_ENTITLEMENT
+    key: price_plan_ref_version
+    required_fields: [price_plan_ref, version_no, currency, amount_minor, billing_type, status, valid_from, valid_to]
+  - id: OBJ-403
+    name: Order
+    kind: FACT
+    domain: COMMERCE_ENTITLEMENT
+    key: order_id
+    required_fields: [order_id, tenant_id, family_id, order_ref, status, total_amount_minor, currency, placed_by, idempotency_key, row_version]
+  - id: OBJ-404
+    name: PaymentAttempt
+    kind: FACT
+    domain: COMMERCE_ENTITLEMENT
+    key: payment_attempt_id
+    required_fields: [payment_attempt_id, order_id, adapter_ref, environment, external_ref, status, amount_minor, requested_at, settled_at]
+  - id: OBJ-405
+    name: FamilyEntitlement
+    kind: FACT
+    domain: COMMERCE_ENTITLEMENT
+    key: entitlement_id
+    required_fields: [entitlement_id, tenant_id, family_id, entitlement_ref, source_order_id, policy_ref, status, valid_from, valid_to, row_version]
+  - id: OBJ-406
+    name: EntitlementUsage
+    kind: LEDGER
+    domain: COMMERCE_ENTITLEMENT
+    key: usage_id
+    required_fields: [usage_id, entitlement_id, service_case_id, quantity, occurred_at, idempotency_key]
+  - id: OBJ-407
+    name: Refund
+    kind: FACT
+    domain: COMMERCE_ENTITLEMENT
+    key: refund_id
+    required_fields: [refund_id, order_id, payment_attempt_id, amount_minor, reason_code, status, requested_at, completed_at]
+  - id: OBJ-501
+    name: CommunitySpace
+    kind: MASTER
+    domain: CONTENT_COMMUNITY
+    key: space_ref_version
+    required_fields: [space_ref, version_no, tenant_id, visibility_policy, moderation_policy_ref, status]
+  - id: OBJ-502
+    name: GrowthStoryDraft
+    kind: FACT
+    domain: CONTENT_COMMUNITY
+    key: story_draft_id
+    required_fields: [story_draft_id, tenant_id, family_id, author_person_id, source_refs, content_ref, visibility, status, row_version]
+  - id: OBJ-503
+    name: ModerationDecision
+    kind: FACT
+    domain: CONTENT_COMMUNITY
+    key: moderation_decision_id
+    required_fields: [moderation_decision_id, story_draft_id, policy_ref, decision, reason_codes, decided_by, decided_at]
+  - id: OBJ-504
+    name: CommunityPublication
+    kind: FACT
+    domain: CONTENT_COMMUNITY
+    key: publication_id
+    required_fields: [publication_id, tenant_id, family_id, story_draft_id, space_ref, visibility, status, published_at, withdrawn_at]
+  - id: OBJ-505
+    name: Invitation
+    kind: FACT
+    domain: CONTENT_COMMUNITY
+    key: invitation_id
+    required_fields: [invitation_id, tenant_id, family_id, campaign_ref, inviter_person_id, status, channel, created_at]
+  - id: OBJ-601
+    name: AiUseCase
+    kind: CONTROL_MASTER
+    domain: GROWTH_INTELLIGENCE
+    key: use_case_id_version
+    required_fields: [use_case_id, version_no, allowed_skills, required_consent, input_data_class, output_schema_ref, human_confirmation, runtime_authorization]
+  - id: OBJ-602
+    name: ContextSnapshot
+    kind: AI_FACT
+    domain: GROWTH_INTELLIGENCE
+    key: context_snapshot_id
+    required_fields: [context_snapshot_id, tenant_id, family_id, use_case_id, source_refs, purpose_code, policy_version, expires_at]
+  - id: OBJ-603
+    name: AiRun
+    kind: AI_AUDIT
+    domain: GROWTH_INTELLIGENCE
+    key: ai_run_id
+    required_fields: [ai_run_id, use_case_id, context_snapshot_id, model_ref, prompt_policy_ref, decision, stop_code, latency_ms, token_usage, cost_amount, created_at]
+  - id: OBJ-701
+    name: OutboxEvent
+    kind: EVENT
+    domain: FAMILY_CORE
+    key: event_id
+    required_fields: [event_id, event_type, event_version, aggregate_type, aggregate_id, tenant_id, family_id, actor_type, correlation_id, causation_id, occurred_at, payload]
+  - id: OBJ-702
+    name: AuditEvent
+    kind: AUDIT
+    domain: FAMILY_CORE
+    key: audit_id
+    required_fields: [audit_id, tenant_id, family_id, actor_type, actor_id, action_code, object_type, object_id, decision, policy_version, correlation_id, occurred_at]
+  - id: OBJ-703
+    name: AdapterReceipt
+    kind: INTEGRATION_FACT
+    domain: FAMILY_CORE
+    key: receipt_id
+    required_fields: [receipt_id, adapter_ref, environment, operation, request_ref, external_ref, status, error_code, occurred_at]
+
+relationships:
+  - from: OBJ-001
+    to: OBJ-003
+    cardinality: ONE_TO_MANY
+    rule: Tenant拥有Account成员关系
+  - from: OBJ-003
+    to: OBJ-004
+    cardinality: MANY_TO_MANY_VIA_BINDING
+    rule: Account必须经租户家庭绑定获得FamilyContext
+  - from: OBJ-004
+    to: OBJ-005
+    cardinality: ONE_TO_MANY
+    rule: Family包含Person
+  - from: OBJ-004
+    to: OBJ-008
+    cardinality: ONE_TO_MANY
+    rule: Family拥有按目的区分的Consent
+  - from: OBJ-101
+    to: OBJ-102
+    cardinality: ONE_TO_MANY
+    rule: AssessmentSession固定工具版本
+  - from: OBJ-102
+    to: OBJ-103
+    cardinality: ONE_TO_MANY
+    rule: Response不能脱离Session
+  - from: OBJ-102
+    to: OBJ-105
+    cardinality: ONE_TO_MANY
+    rule: Hypothesis引用Evidence与AiRun，不等于Fact
+  - from: OBJ-105
+    to: OBJ-106
+    cardinality: OPTIONAL_TO_ONE
+    rule: 只有家庭确认才能形成GrowthIntent
+  - from: OBJ-201
+    to: OBJ-203
+    cardinality: ONE_TO_MANY
+    rule: Journey实例固定模板版本
+  - from: OBJ-203
+    to: OBJ-204
+    cardinality: ONE_TO_MANY
+    rule: Journey包含Action实例
+  - from: OBJ-204
+    to: OBJ-205
+    cardinality: ONE_TO_MANY
+    rule: Checkin是发生记录而非成长结果
+  - from: OBJ-302
+    to: OBJ-303
+    cardinality: ONE_TO_MANY
+    rule: Provider必须有有效Qualification
+  - from: OBJ-304
+    to: OBJ-305
+    cardinality: ONE_TO_MANY
+    rule: Offering通过Slot提供可预约容量
+  - from: OBJ-306
+    to: OBJ-307
+    cardinality: ZERO_OR_ONE_TO_ONE
+    rule: Booking确认后才创建ServiceCase
+  - from: OBJ-401
+    to: OBJ-403
+    cardinality: ONE_TO_MANY
+    rule: Order保留产品与价格版本快照
+  - from: OBJ-403
+    to: OBJ-404
+    cardinality: ONE_TO_MANY
+    rule: 一个Order可有多次PaymentAttempt
+  - from: OBJ-403
+    to: OBJ-405
+    cardinality: ZERO_TO_MANY
+    rule: 支付与政策共同决定Entitlement激活
+  - from: OBJ-405
+    to: OBJ-406
+    cardinality: ONE_TO_MANY
+    rule: 权益使用通过Ledger核销
+  - from: OBJ-502
+    to: OBJ-503
+    cardinality: ONE_TO_MANY
+    rule: 草稿发布前必须有最新审核决定
+  - from: OBJ-502
+    to: OBJ-504
+    cardinality: ZERO_OR_ONE_TO_ONE
+    rule: 默认私有，明确同意与审核通过后方可发布
+  - from: OBJ-602
+    to: OBJ-603
+    cardinality: ONE_TO_MANY
+    rule: 每次AI运行固定最小上下文快照
+
+application_components:
+  - id: CMP-APP
+    name: Family Mobile App
+    layer: EXPERIENCE
+    responsibility: 今日行动、计划执行、家庭回读、服务进度、权益与私有草稿
+  - id: CMP-CWEB
+    name: Consumer Web
+    layer: EXPERIENCE
+    responsibility: 内容获客、轻量测评、报告预览、账号登录、购买与App引导
+  - id: CMP-OWEB
+    name: Operations and Advisor Web
+    layer: EXPERIENCE
+    responsibility: 家庭队列、人工门、内容编排、供给、排班、履约、审核、退款与经营分析
+  - id: CMP-API
+    name: Family API
+    layer: INTERACTION
+    responsibility: 身份、范围、投影、Named Action、幂等、错误契约与SSE
+  - id: CMP-DOMAIN
+    name: Domain Modular Monolith
+    layer: DOMAIN_TRUTH
+    responsibility: 七领域聚合、状态机、业务规则与PostgreSQL事务
+  - id: CMP-WORKFLOW
+    name: Workflow and Event Workers
+    layer: WORKFLOW_EVENT
+    responsibility: Outbox、定时器、重试、暂停恢复、人工等待、21/90天流程与通知编排
+  - id: CMP-AI
+    name: AI Control Plane
+    layer: AI_INTELLIGENCE
+    responsibility: 用例注册、上下文、Skill、Gateway、输出验证、评测、审计与Kill Switch
+  - id: CMP-CONTEXT
+    name: Family Context Platform
+    layer: DATA_KNOWLEDGE
+    responsibility: 许可范围内的组合、索引、检索、摘要与投影，不拥有业务写权
+  - id: CMP-ADAPTER
+    name: External Effect Adapters
+    layer: INTEGRATION
+    responsibility: 支付、消息、日历/视频、对象存储、内容审核与CRM连接
+  - id: CMP-OBS
+    name: Observability and Governance
+    layer: CONTROL
+    responsibility: 日志、指标、Trace、审计、成本、安全、数据保留、CI与发布门禁
+
+scenarios:
+  - id: SCN-001
+    name: 家庭建档、成员关系与同意
+    loop: GROWTH
+    primary_domain: FAMILY_CORE
+    actors: [GUARDIAN, SYSTEM]
+    trigger: 已认证账户首次进入或加入家庭
+    state_flow: ACCOUNT_AUTHENTICATED -> FAMILY_CONTEXT_REQUIRED -> FAMILY_ACTIVE -> CONSENT_ACTIVE
+    success_outcome: 获得受范围约束的FamilyContext
+    ui: [UI-01, UI-33]
+    named_actions: [CREATE_FAMILY, ADD_PARENT, ADD_CHILD, CREATE_FAMILY_RELATIONSHIP, GRANT_CONSENT, WITHDRAW_CONSENT]
+    rules: [BR-001, BR-002, BR-003, BR-006, BR-009, BR-016]
+    objects: [OBJ-001, OBJ-002, OBJ-003, OBJ-004, OBJ-005, OBJ-006, OBJ-007, OBJ-008, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-CWEB, CMP-API, CMP-DOMAIN, CMP-OBS]
+    release_gate: VS-00
+  - id: SCN-101
+    name: 问题进入与家庭测评
+    loop: ASSESSMENT
+    primary_domain: GROWTH_INTELLIGENCE
+    actors: [GUARDIAN, SYSTEM]
+    trigger: 家长从内容、首页或历史报告选择测评
+    state_flow: CATALOG_READY -> SESSION_STARTED -> RESPONSES_SAVED -> SESSION_SUBMITTED
+    success_outcome: 形成可追溯的测评会话与Evidence输入
+    ui: [UI-02, UI-07]
+    named_actions: [START_ASSESSMENT, SAVE_ASSESSMENT_RESPONSE, SUBMIT_ASSESSMENT]
+    rules: [BR-001, BR-002, BR-003, BR-005, BR-006, BR-009, BR-012]
+    objects: [OBJ-008, OBJ-101, OBJ-102, OBJ-103, OBJ-104, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-CWEB, CMP-API, CMP-DOMAIN, CMP-OBS]
+    release_gate: VS-01
+  - id: SCN-102
+    name: 成长解读与成长意图确认
+    loop: ASSESSMENT
+    primary_domain: GROWTH_INTELLIGENCE
+    actors: [GUARDIAN, AI_RUNTIME, SYSTEM]
+    trigger: 测评会话提交并通过安全与同意检查
+    state_flow: EVIDENCE_READY -> HYPOTHESIS_DRAFTED -> OUTPUT_VALIDATED -> FAMILY_ACKNOWLEDGED -> INTENT_CONFIRMED
+    success_outcome: 家庭确认一个成长关注点，未把AI解释写成事实
+    ui: [UI-03, UI-08]
+    named_actions: [ACKNOWLEDGE_GROWTH_REPORT, CONFIRM_GROWTH_INTENT]
+    rules: [BR-002, BR-003, BR-004, BR-005, BR-009, BR-010, BR-016]
+    objects: [OBJ-104, OBJ-105, OBJ-106, OBJ-601, OBJ-602, OBJ-603, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-CWEB, CMP-API, CMP-DOMAIN, CMP-AI, CMP-CONTEXT, CMP-OBS]
+    release_gate: VS-01
+  - id: SCN-201
+    name: 今日成长行动与回读
+    loop: GROWTH
+    primary_domain: GROWTH_JOURNEY
+    actors: [GUARDIAN, CHILD, SYSTEM, AI_RUNTIME]
+    trigger: 已确认旅程在当天存在可执行行动
+    state_flow: ACTION_AVAILABLE -> ACTION_STARTED -> CHECKIN_RECORDED -> REFLECTION_RECORDED -> NEXT_HINT_READY
+    success_outcome: 记录一次行动发生与家庭视角回读
+    ui: [UI-01, UI-09, UI-10, UI-11, UI-29]
+    named_actions: [START_GROWTH_ACTION, COMPLETE_GROWTH_ACTION, RECORD_REFLECTION, SKIP_GROWTH_ACTION]
+    rules: [BR-001, BR-002, BR-003, BR-004, BR-005, BR-006, BR-009, BR-010, BR-011, BR-012]
+    objects: [OBJ-203, OBJ-204, OBJ-205, OBJ-206, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-API, CMP-DOMAIN, CMP-WORKFLOW, CMP-AI, CMP-CONTEXT, CMP-OBS]
+    release_gate: VS-01
+  - id: SCN-301
+    name: 21天与90天计划编排
+    loop: PLAN
+    primary_domain: GROWTH_JOURNEY
+    actors: [GUARDIAN, ADVISOR, SYSTEM, AI_RUNTIME]
+    trigger: 家庭已有确认的GrowthIntent与适配的JourneyTemplate
+    state_flow: PLAN_DRAFTED -> FAMILY_CONFIRMED -> IN_PROGRESS -> STAGE_REVIEW -> CONTINUE_OR_ADJUST_OR_PAUSE -> COMPLETED
+    success_outcome: 计划可暂停、恢复、调整并完成阶段复盘
+    ui: [UI-04, UI-05, UI-35]
+    named_actions: [ACCEPT_GROWTH_PLAN, START_PROGRAM, RECORD_STAGE_REVIEW, PAUSE_PROGRAM, RESUME_PROGRAM]
+    rules: [BR-002, BR-003, BR-004, BR-006, BR-007, BR-011, BR-012, BR-013]
+    objects: [OBJ-106, OBJ-201, OBJ-202, OBJ-203, OBJ-204, OBJ-205, OBJ-206, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-OWEB, CMP-API, CMP-DOMAIN, CMP-WORKFLOW, CMP-AI, CMP-CONTEXT, CMP-OBS]
+    release_gate: VS-02
+  - id: SCN-401
+    name: 服务发现与适配说明
+    loop: SERVICE
+    primary_domain: RESOURCE_NETWORK
+    actors: [GUARDIAN, ADVISOR, SYSTEM, AI_RUNTIME]
+    trigger: 家庭表达需要人工或专业支持
+    state_flow: NEED_READY -> CAPABILITY_RESOLVED -> ELIGIBLE_RESOURCES -> RECOMMENDATION_EXPLAINED -> FAMILY_SELECTED_OR_NO_ACTION
+    success_outcome: 家庭选择一个已准入服务或明确不行动
+    ui: [UI-19, UI-20]
+    named_actions: [REQUEST_SERVICE_HELP, SELECT_SERVICE_OFFERING, NO_ACTION]
+    rules: [BR-001, BR-002, BR-003, BR-004, BR-012, BR-013, BR-014]
+    objects: [OBJ-301, OBJ-302, OBJ-303, OBJ-304, OBJ-601, OBJ-602, OBJ-603, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-CWEB, CMP-OWEB, CMP-API, CMP-DOMAIN, CMP-AI, CMP-CONTEXT, CMP-OBS]
+    release_gate: VS-03
+  - id: SCN-402
+    name: 服务预约、履约与反馈
+    loop: SERVICE
+    primary_domain: SERVICE_OS
+    actors: [GUARDIAN, ADVISOR, EXPERT, SYSTEM]
+    trigger: 家庭选择Offering和可用Slot
+    state_flow: BOOKING_DRAFT -> REQUESTED -> HUMAN_CONFIRMED -> CASE_OPEN -> SERVICE_DELIVERED -> FEEDBACK_RECORDED -> CASE_CLOSED
+    success_outcome: 服务发生、反馈和后续建议均可回读且不冒充成长结果
+    ui: [UI-21, UI-22, UI-23, UI-24, UI-31, UI-34]
+    named_actions: [REQUEST_SERVICE_BOOKING, CONFIRM_SERVICE_BOOKING, CANCEL_SERVICE_BOOKING, RECORD_SERVICE_DELIVERY, SUBMIT_SERVICE_FEEDBACK]
+    rules: [BR-001, BR-002, BR-003, BR-006, BR-007, BR-008, BR-011, BR-012, BR-014, BR-016]
+    objects: [OBJ-304, OBJ-305, OBJ-306, OBJ-307, OBJ-308, OBJ-703, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-OWEB, CMP-API, CMP-DOMAIN, CMP-WORKFLOW, CMP-ADAPTER, CMP-OBS]
+    release_gate: VS-03
+  - id: SCN-501
+    name: 商品购买、支付与权益激活
+    loop: COMMERCE
+    primary_domain: COMMERCE_ENTITLEMENT
+    actors: [GUARDIAN, OPERATOR, SYSTEM]
+    trigger: 家庭选择已准入ProductOffering和PricePlan
+    state_flow: OFFERING_SELECTED -> ORDER_CREATED -> PAYMENT_PENDING -> PAYMENT_SETTLED -> ENTITLEMENT_PENDING -> ENTITLEMENT_AVAILABLE
+    success_outcome: 订单、支付与权益分别可审计和回读
+    ui: [UI-13, UI-14, UI-16, UI-18, UI-30, UI-32]
+    named_actions: [CREATE_ORDER, INITIATE_PAYMENT, APPLY_PAYMENT_RECEIPT, ACTIVATE_ENTITLEMENT, CANCEL_ORDER, REQUEST_REFUND]
+    rules: [BR-001, BR-003, BR-006, BR-007, BR-008, BR-012, BR-013, BR-015, BR-016]
+    objects: [OBJ-401, OBJ-402, OBJ-403, OBJ-404, OBJ-405, OBJ-407, OBJ-703, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-CWEB, CMP-OWEB, CMP-API, CMP-DOMAIN, CMP-WORKFLOW, CMP-ADAPTER, CMP-OBS]
+    release_gate: VS-04
+  - id: SCN-502
+    name: 权益核销、资产回读与续费
+    loop: COMMERCE
+    primary_domain: COMMERCE_ENTITLEMENT
+    actors: [GUARDIAN, ADVISOR, OPERATOR, SYSTEM]
+    trigger: 家庭拥有可用Entitlement
+    state_flow: ENTITLEMENT_AVAILABLE -> USAGE_RESERVED -> USAGE_CONSUMED_OR_RELEASED -> ASSET_PROJECTED -> RENEWAL_DECIDED
+    success_outcome: 家庭清楚知道拥有、使用和剩余的权益
+    ui: [UI-06, UI-17, UI-18, UI-30, UI-32]
+    named_actions: [RESERVE_ENTITLEMENT, CONSUME_ENTITLEMENT, RELEASE_ENTITLEMENT, SUBMIT_RENEWAL_INTENT]
+    rules: [BR-001, BR-003, BR-006, BR-007, BR-011, BR-012, BR-015]
+    objects: [OBJ-405, OBJ-406, OBJ-307, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-OWEB, CMP-API, CMP-DOMAIN, CMP-WORKFLOW, CMP-OBS]
+    release_gate: VS-04
+  - id: SCN-601
+    name: 家庭私有成长故事
+    loop: COMMUNITY
+    primary_domain: CONTENT_COMMUNITY
+    actors: [GUARDIAN, SYSTEM, AI_RUNTIME]
+    trigger: 家庭希望保存一次行动、感受或里程碑
+    state_flow: PRIVATE_DRAFT -> FAMILY_REVIEW -> SAVED_PRIVATE -> SHARE_DRAFT_OPTIONAL
+    success_outcome: 私有故事可跨设备回读，默认不公开
+    ui: [UI-12, UI-26, UI-28]
+    named_actions: [SAVE_PRIVATE_GROWTH_STORY, CREATE_SHARE_DRAFT, WITHDRAW_SHARE_DRAFT]
+    rules: [BR-001, BR-002, BR-003, BR-004, BR-005, BR-009, BR-011, BR-012, BR-016]
+    objects: [OBJ-502, OBJ-601, OBJ-602, OBJ-603, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-API, CMP-DOMAIN, CMP-AI, CMP-CONTEXT, CMP-OBS]
+    release_gate: VS-05
+  - id: SCN-602
+    name: 审核发布与邀请归因
+    loop: COMMUNITY
+    primary_domain: CONTENT_COMMUNITY
+    actors: [GUARDIAN, REVIEWER, OPERATOR, SYSTEM]
+    trigger: 家庭明确申请将去标识化故事发布到CommunitySpace
+    state_flow: SHARE_DRAFT -> CONSENT_CONFIRMED -> MODERATION_PENDING -> APPROVED_OR_REJECTED -> PUBLISHED -> WITHDRAWN_OPTIONAL
+    success_outcome: 发布、撤回、邀请和奖励来源完整可追溯
+    ui: [UI-15, UI-25, UI-27, UI-28]
+    named_actions: [SUBMIT_FOR_MODERATION, RECORD_MODERATION_DECISION, PUBLISH_COMMUNITY_STORY, WITHDRAW_PUBLICATION, CREATE_INVITATION]
+    rules: [BR-001, BR-002, BR-003, BR-006, BR-007, BR-008, BR-009, BR-010, BR-012, BR-016]
+    objects: [OBJ-501, OBJ-502, OBJ-503, OBJ-504, OBJ-505, OBJ-703, OBJ-701, OBJ-702]
+    components: [CMP-APP, CMP-CWEB, CMP-OWEB, CMP-API, CMP-DOMAIN, CMP-WORKFLOW, CMP-ADAPTER, CMP-OBS]
+    release_gate: VS-05
+
+runtime_slices:
+  - id: VS-00
+    name: 身份、租户、家庭与同意可信根
+    order: 0
+    implementation_status: IMPLEMENTED_TESTED_DEV
+    scenarios: [SCN-001]
+    runnable_when: 真实PostgreSQL、迁移、认证、Tenant/Family scope、Consent、审计和E2E均通过
+  - id: VS-01
+    name: 测评到今日行动首闭环
+    order: 1
+    implementation_status: NEXT_IN_PROGRESS
+    scenarios: [SCN-101, SCN-102, SCN-201]
+    runnable_when: 一个测试家庭可在App/Web完成测评、确认解读、执行行动并重启回读
+  - id: VS-02
+    name: 21天计划运行闭环
+    order: 2
+    implementation_status: PLANNED
+    scenarios: [SCN-301]
+    runnable_when: 计划可启动、定时、暂停、恢复、复盘和完成，所有状态有Outbox与审计
+  - id: VS-03
+    name: 服务供给与履约闭环
+    order: 3
+    implementation_status: PLANNED
+    scenarios: [SCN-401, SCN-402]
+    runnable_when: 准入供给、时段、人工确认、履约、取消和反馈在测试Adapter下全链可回放
+  - id: VS-04
+    name: 交易与权益闭环
+    order: 4
+    implementation_status: PLANNED
+    scenarios: [SCN-501, SCN-502]
+    runnable_when: sandbox支付、订单、退款、权益激活与核销对账一致
+  - id: VS-05
+    name: 私有内容到受控发布闭环
+    order: 5
+    implementation_status: PLANNED
+    scenarios: [SCN-601, SCN-602]
+    runnable_when: 私有草稿、同意、去标识化、审核、发布和撤回全部可验证
+
+architecture:
+  it_flow:
+    - Experience: [CMP-APP, CMP-CWEB, CMP-OWEB]
+    - Interaction: [CMP-API]
+    - DomainTruth: [CMP-DOMAIN]
+    - WorkflowEvent: [CMP-WORKFLOW]
+    - AIIntelligence: [CMP-AI]
+    - DataKnowledge: [CMP-CONTEXT]
+    - Integration: [CMP-ADAPTER]
+    - Control: [CMP-OBS]
+  ai_flow:
+    - AuthenticateAndAuthorize
+    - CheckConsentPurposeAndDataClass
+    - ResolveAiUseCaseAndSkill
+    - BuildPermissionedContextSnapshot
+    - CallProviderThroughGateway
+    - ValidateStructuredOutputAndSafety
+    - StoreAiRunAuditAndDerivedArtifact
+    - PresentDraftOrHypothesis
+    - RequireFamilyOrHumanConfirmation
+    - ExecuteNamedActionThroughDomainAPI
+  permanent_boundaries:
+    - NO_CLIENT_DIRECT_MODEL_CALL
+    - NO_AGENT_DIRECT_DATABASE_WRITE
+    - NO_SECOND_CANONICAL_DATABASE
+    - PERSPECTIVE_NOT_FACT
+    - HYPOTHESIS_NOT_FACT
+    - SERVICE_COMPLETION_NOT_GROWTH_OUTCOME
+    - PLATFORM_MARGIN_RANKING_SIGNAL_ZERO
+
+execution_order:
+  - 统一本文件、35UI矩阵、主数据目录与V4.1术语
+  - 先实现VS-00可信根
+  - 再实现VS-01真实首闭环
+  - 通过真实数据库、API、App/Web、审计和恢复测试后进入VS-02
+  - 服务、商业、社区按VS-03到VS-05逐项解冻
+  - 每个Slice先TEST/SANDBOX，外部副作用另行Production Gate

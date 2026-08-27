@@ -1,0 +1,21 @@
+{
+  "asset_ref": "FAMILY_MODEL_LIVE_RUN_REPORT",
+  "status": "CONFIG_FAILED",
+  "generated_at": "2026-08-23T05:32:43.047Z",
+  "config": {
+    "mode": "mock",
+    "allowLiveExternalAi": false,
+    "providerId": "anthropic-cc-switch",
+    "baseUrl": "<MISSING>",
+    "apiKey": "<MISSING>",
+    "model": "<MISSING>",
+    "timeoutMs": 30000
+  },
+  "failures": [
+    "FAMILY_MODEL_GATEWAY_MODE must be cc-switch",
+    "FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI must be true",
+    "FAMILY_MODEL_CODEX_BASE_URL/CODEX_API_BASE_URL or FAMILY_MODEL_CC_SWITCH_BASE_URL is required",
+    "FAMILY_MODEL_CODEX_API_KEY/CODEX_API_KEY or FAMILY_MODEL_CC_SWITCH_API_KEY is required",
+    "FAMILY_MODEL_CODEX_MODEL/CODEX_MODEL or FAMILY_MODEL_CC_SWITCH_MODEL is required"
+  ]
+}

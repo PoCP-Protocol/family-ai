@@ -1,0 +1,48 @@
+{
+  "asset_ref": "CAMP21_UI_HARNESS_RUN_REPORT",
+  "version": "0.1.0",
+  "generated_at": "2026-08-23T17:29:08.175Z",
+  "product_ref": "PRODUCT_PARENT_CHILD_CAMP",
+  "ui_ref": "UI-14",
+  "authorization_boundary": {
+    "payment_sdk": "NOT_INVOKED",
+    "external_order_placement": "NOT_INVOKED",
+    "business_runtime_mutation": "CONTROLLED_INTENT_ONLY"
+  },
+  "harness_reference": {
+    "mode": "local_ui_contract_runner",
+    "note": "Guards the 21-day parent-child communication camp product detail baseline and controlled commerce intent path."
+  },
+  "steps": [
+    {
+      "id": "ui14_baseline_and_cross_page_regression",
+      "lane_refs": [
+        "UI14_VISUAL_BASELINE_LANE",
+        "CONTROLLED_COMMERCE_LANE"
+      ],
+      "command": "pnpm --dir apps/mobile exec vitest run tests/ui14-product-detail-baseline.test.ts tests/ui13-ui18-cross-page-regression.test.ts",
+      "started_at": "2026-08-23T17:29:08.176Z",
+      "completed_at": "2026-08-23T17:29:10.069Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "\n\u001b[1m\u001b[7m\u001b[36m RUN \u001b[39m\u001b[27m\u001b[22m \u001b[36mv2.1.9 \u001b[39m\u001b[90mD:/family-ai/50_开发_dev/apps/mobile\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/ui13-ui18-cross-page-regression.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[90m 6\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/ui14-product-detail-baseline.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[90m 6\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m9 passed\u001b[39m\u001b[22m\u001b[90m (9)\u001b[39m\n\u001b[2m   Start at \u001b[22m 01:29:09\n\u001b[2m   Duration \u001b[22m 691ms\u001b[2m (transform 145ms, setup 0ms, collect 157ms, tests 11ms, environment 0ms, prepare 400ms)\u001b[22m\n\n",
+      "stderr": "",
+      "ok": true
+    },
+    {
+      "id": "mobile_typecheck",
+      "lane_refs": [
+        "MOBILE_TYPECHECK_LANE"
+      ],
+      "command": "pnpm --dir apps/mobile check",
+      "started_at": "2026-08-23T17:29:10.070Z",
+      "completed_at": "2026-08-23T17:29:19.428Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": "$ tsc --noEmit\n",
+      "ok": true
+    }
+  ],
+  "ok": true
+}

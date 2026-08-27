@@ -8,7 +8,8 @@ import type { GrowthActionDto } from './index';
  */
 
 export type FamilyTodayEntryState = 'READY' | 'EMPTY' | 'CONSENT_REQUIRED' | 'REVIEW_REQUIRED' | 'FORBIDDEN' | 'ERROR' | 'STALE';
-export type FamilyTodayTaskState = 'NOT_STARTED' | 'CHECKED_IN' | 'ARCHIVED';
+export type FamilyTodayTaskState = 'NOT_STARTED' | 'IN_PROGRESS' | 'PAUSED' | 'CHECKED_IN' | 'PARTIAL' | 'NOT_COMPLETED' | 'CANCELLED' | 'ARCHIVED';
+export type FamilyTodayTaskAction = 'START' | 'PAUSE' | 'RESUME' | 'CANCEL';
 
 export interface TodayTaskProjection {
   task_id: string;
@@ -22,6 +23,7 @@ export interface TodayTaskProjection {
   assignment_text: string;
   due_date: string;
   task_state: FamilyTodayTaskState;
+  execution_status: NonNullable<GrowthActionDto['execution_status']>;
   persisted_status: GrowthActionDto['status'];
   completion_status: GrowthActionDto['completion_status'];
   completed_at: string | null;
@@ -29,7 +31,11 @@ export interface TodayTaskProjection {
   reflection_present: boolean;
   checkin_allowed: boolean;
   blocking_state: 'NONE' | 'CONSENT_REQUIRED' | 'REVIEW_REQUIRED' | 'FORBIDDEN' | 'STALE';
-  task_version: null;
+  task_version: number;
+  started_at: string | null;
+  paused_at: string | null;
+  cancelled_at: string | null;
+  allowed_actions: readonly FamilyTodayTaskAction[];
   as_of: string;
 }
 
@@ -59,6 +65,8 @@ export interface FamilyTodayProjection {
     policy_version: 'EXISTING_GROWTH_ACTION_POLICY';
   };
   today_task: TodayTaskProjection | null;
+  /** All canonical actions due today, ordered with actionable tasks first. */
+  today_tasks: readonly TodayTaskProjection[];
   provenance: {
     source_refs: readonly ['growth_actions'];
     policy_version: 'EXISTING_GROWTH_ACTION_POLICY';
@@ -80,6 +88,19 @@ export interface Ui01Ui09CheckinRequest {
   occurred_at: string;
 }
 
+export interface Ui09TaskStateRequest {
+  action: FamilyTodayTaskAction;
+  occurred_at: string;
+}
+
+export interface Ui09TaskStateResultProjection {
+  result_state: 'SUCCESS' | 'REPLAYED';
+  action: TodayTaskProjection;
+  correlation_id: string;
+  idempotency_key_ref: string;
+  audit_status: 'RECORDED';
+}
+
 export interface TaskCheckinResultProjection {
   result_state: 'SUCCESS' | 'REPLAYED';
   action: TodayTaskProjection;
@@ -96,7 +117,16 @@ export interface TaskCheckinResultProjection {
 }
 
 export function projectTodayTask(action: GrowthActionDto, asOf: string): TodayTaskProjection {
-  const checkedIn = action.completed_at !== null;
+  const executionStatus = action.execution_status ?? (action.status === 'PENDING' ? 'NOT_STARTED' : action.status);
+  const stateByExecution: Record<NonNullable<GrowthActionDto['execution_status']>, FamilyTodayTaskState> = {
+    NOT_STARTED: 'NOT_STARTED', IN_PROGRESS: 'IN_PROGRESS', PAUSED: 'PAUSED', COMPLETED: 'CHECKED_IN',
+    PARTIAL: 'PARTIAL', NOT_COMPLETED: 'NOT_COMPLETED', CANCELLED: 'CANCELLED',
+  };
+  const allowedByExecution: Record<NonNullable<GrowthActionDto['execution_status']>, readonly FamilyTodayTaskAction[]> = {
+    NOT_STARTED: ['START', 'CANCEL'], IN_PROGRESS: ['PAUSE', 'CANCEL'], PAUSED: ['RESUME', 'CANCEL'],
+    COMPLETED: [], PARTIAL: [], NOT_COMPLETED: [], CANCELLED: [],
+  };
+  const checkedIn = executionStatus === 'COMPLETED' || executionStatus === 'PARTIAL' || executionStatus === 'NOT_COMPLETED';
   return {
     task_id: action.action_id,
     family_id: action.family_id,
@@ -106,33 +136,41 @@ export function projectTodayTask(action: GrowthActionDto, asOf: string): TodayTa
     journey_execution_boundary: action.journey_plan_id ? 'JOURNEY_ACTION_IS_PROCESS_NOT_OUTCOME' : null,
     assignment_text: action.assignment_text,
     due_date: action.due_date,
-    task_state: checkedIn ? 'CHECKED_IN' : 'NOT_STARTED',
+    task_state: stateByExecution[executionStatus],
+    execution_status: executionStatus,
     persisted_status: action.status,
     completion_status: action.completion_status,
     completed_at: action.completed_at,
     reflection_boundary: action.reflection_boundary,
     reflection_present: action.reflection !== null && action.reflection.trim().length > 0,
-    checkin_allowed: !checkedIn && action.status === 'PENDING',
+    checkin_allowed: !checkedIn && executionStatus !== 'CANCELLED' && action.status === 'PENDING',
     blocking_state: 'NONE',
-    task_version: null,
+    task_version: action.row_version ?? 1,
+    started_at: action.started_at ?? null,
+    paused_at: action.paused_at ?? null,
+    cancelled_at: action.cancelled_at ?? null,
+    allowed_actions: allowedByExecution[executionStatus],
     as_of: asOf,
   };
 }
 
-export function projectFamilyToday(familyId: string, action: GrowthActionDto | null, asOf: string): FamilyTodayProjection {
+export function projectFamilyToday(familyId: string, actionOrActions: GrowthActionDto | readonly GrowthActionDto[] | null, asOf: string): FamilyTodayProjection {
+  const actions = Array.isArray(actionOrActions) ? actionOrActions : actionOrActions ? [actionOrActions] : [];
+  const projected = actions.map((action) => projectTodayTask(action, asOf));
   return {
     projection_version: 'UI01_UI09_FAMILY_TODAY_V1',
     family_id: familyId,
     as_of: asOf,
     expires_at: null,
-    entry_state: action ? 'READY' : 'EMPTY',
+    entry_state: projected.length > 0 ? 'READY' : 'EMPTY',
     family_display: { display_name: null, actor_scope: 'AUTHORIZED_FAMILY_MANAGER' },
     consent_state: {
       state: 'COMMAND_POLICY_ENFORCED',
       required_purposes: ['SERVICE', 'ASSESSMENT', 'GROWTH_TRACKING'],
       policy_version: 'EXISTING_GROWTH_ACTION_POLICY',
     },
-    today_task: action ? projectTodayTask(action, asOf) : null,
+    today_task: projected[0] ?? null,
+    today_tasks: projected,
     provenance: {
       source_refs: ['growth_actions'],
       policy_version: 'EXISTING_GROWTH_ACTION_POLICY',
@@ -144,6 +182,21 @@ export function projectFamilyToday(familyId: string, action: GrowthActionDto | n
       model_gateway_status: 'NOOP_NOT_INVOKED',
       agent_hint: 'READ_TODAY_AND_AWAIT_GUARDED_CHECKIN',
     },
+  };
+}
+
+export function projectTaskStateResult(
+  action: GrowthActionDto,
+  correlationId: string,
+  idempotencyKey: string,
+  replayed: boolean,
+): Ui09TaskStateResultProjection {
+  return {
+    result_state: replayed ? 'REPLAYED' : 'SUCCESS',
+    action: projectTodayTask(action, new Date().toISOString()),
+    correlation_id: correlationId,
+    idempotency_key_ref: idempotencyKey,
+    audit_status: 'RECORDED',
   };
 }
 

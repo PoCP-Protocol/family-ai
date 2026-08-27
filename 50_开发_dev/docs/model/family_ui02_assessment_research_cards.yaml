@@ -1,0 +1,176 @@
+version: 0.1.0
+asset_ref: FAMILY_UI02_ASSESSMENT_RESEARCH_CARDS
+status: draft
+owner: Family Education Industry Model
+purpose: >
+  Provides source-linked research cards for the five UI-02 free family assessment
+  themes. These cards are design anchors and evidence-upgrade work items. They do
+  not authorize diagnosis, ranking, causal claims, or product claims of proven effect.
+
+evidence_governance:
+  evidence_gate_source: ../../20_知识_knowledge/byresearch/evidence.py
+  decisive_claim_allowed: false
+  reason: >
+    Current cards combine public-guidance patterns, research-pattern placeholders,
+    and internal UI implementation anchors whose extraction status is still pending
+    deep review or internal-only. They may guide item wording and evaluation design,
+    but cannot support conclusions that an interpretation is true or an action is effective.
+  hard_boundaries:
+    - Perspective != Fact
+    - Hypothesis != Fact
+    - Recommendation != Decision != Action
+    - no Family Total Score
+    - no family or child ranking
+    - no medical or psychiatric diagnosis
+    - internal_artifact evidence ceiling is E1
+
+card_rules:
+  - theme_ref must match FAMILY_UI02_ASSESSMENT_MODEL_SLICE five_theme_model.
+  - every card must link at least one source_ref from FAMILY_EDUCATION_SOURCE_REGISTRY.
+  - every card must declare evidence_status and conclusion_allowed.
+  - cards with pending_deep_review or internal_artifact sources must keep conclusion_allowed false.
+  - product_copy_boundary must be parent-facing and avoid labels, scores, diagnosis, or blame.
+
+research_cards:
+  - card_ref: UI02_RESEARCH_LEARNING_HABITS
+    theme_ref: LEARNING_HABITS
+    title_zh: 学习习惯
+    construct_refs: [HOMEWORK_PROCESS, FAMILY_ROUTINE, LEARNING_STRATEGY_METACOGNITION, SELF_REGULATION_SUPPORT]
+    source_refs: [K12_LEARNING_SCIENCE_PATTERN, FAMILY_INTERNAL_UI02_V2]
+    evidence_status: pending_deep_review
+    strongest_current_grade_ceiling: E1_for_internal_anchor_or_unverified_until_extracted
+    conclusion_allowed: false
+    usable_now_for:
+      - item_wording_design
+      - family-facing self-check structure
+      - golden scenario draft
+    not_usable_now_for:
+      - proven_learning_effect_claim
+      - causal_claim_about_homework_delay
+      - child_ability_inference
+    model_question_focus:
+      - task_start
+      - difficulty_persistence
+      - family_learning_routine
+    product_copy_boundary: >
+      可以说“这次你关注到学习开始、坚持和家庭节奏”，不能说“孩子学习能力弱”或“学习习惯得分低”。
+    next_evidence_work:
+      - Extract and register verified sources for self-regulated learning, homework routines, feedback use, and executive-function scaffolding.
+      - Add citation-level source records before turning rationale into product claims.
+
+  - card_ref: UI02_RESEARCH_EMOTION_REGULATION
+    theme_ref: EMOTION_REGULATION
+    title_zh: 情绪管理
+    construct_refs: [EMOTION_REGULATION_SUPPORT, PARENT_CAPACITY, PARENT_CHILD_COMMUNICATION]
+    source_refs: [HARVARD_SERVE_RETURN_PATTERN, TRIPLE_P_STEPPED_CARE_PATTERN, FAMILY_INTERNAL_UI02_V2]
+    evidence_status: pending_deep_review
+    strongest_current_grade_ceiling: E1_for_internal_anchor_or_unverified_until_extracted
+    conclusion_allowed: false
+    usable_now_for:
+      - conflict_pause_and_recovery_item_design
+      - human_gate_routing_design
+      - non-blaming_parent_copy
+    not_usable_now_for:
+      - mental_health_screening
+      - psychiatric_diagnosis
+      - family_causal_explanation
+    model_question_focus:
+      - emotional_recovery_time
+      - conflict_pause
+      - parent_response_uncertainty
+    product_copy_boundary: >
+      可以说“家里可能需要更多情绪恢复和回应方式支持”，不能说“孩子情绪调节障碍”或“家长处理错误”。
+    next_evidence_work:
+      - Separate normal parenting support from crisis or clinical signals.
+      - Define Human Gate trigger examples before any runtime interpretation expansion.
+
+  - card_ref: UI02_RESEARCH_PARENT_CHILD_COMMUNICATION
+    theme_ref: PARENT_CHILD_COMMUNICATION
+    title_zh: 亲子沟通
+    construct_refs: [PARENT_CHILD_COMMUNICATION, FAMILY_ROUTINE]
+    source_refs: [HARVARD_SERVE_RETURN_PATTERN, FAMILY_CHECKUP_PATTERN, FAMILY_INTERNAL_UI02_V2]
+    evidence_status: pending_deep_review
+    strongest_current_grade_ceiling: E1_for_internal_anchor_or_unverified_until_extracted
+    conclusion_allowed: false
+    usable_now_for:
+      - parent-facing_reflection_items
+      - repair_action_candidate_design
+      - no-label_result_copy
+    not_usable_now_for:
+      - relationship_quality_score
+      - child_personality_label
+      - family_ranking
+    model_question_focus:
+      - child_willingness_to_talk
+      - correction_or_lecture_cycle
+      - post_conflict_repair
+    product_copy_boundary: >
+      可以说“这次你关注到表达、倾听和修复过程”，不能把一次沟通模式写成亲子关系事实。
+    next_evidence_work:
+      - Extract verified public guidance and family intervention patterns for repair conversation design.
+      - Add examples of safe language and unsafe labeling to eval scenarios.
+
+  - card_ref: UI02_RESEARCH_DEVICE_USE_CONTEXT
+    theme_ref: DEVICE_USE_CONTEXT
+    title_zh: 手机依赖
+    construct_refs: [DEVICE_USE_CONTEXT, FAMILY_ROUTINE, PARENT_CHILD_COMMUNICATION]
+    source_refs: [AAP_FIVE_CS_MEDIA_PATTERN, COMMON_SENSE_FAMILY_TECH_PLANNER_PATTERN, FAMILY_INTERNAL_UI02_V2]
+    evidence_status: pending_deep_review
+    strongest_current_grade_ceiling: E1_for_internal_anchor_or_unverified_until_extracted
+    conclusion_allowed: false
+    usable_now_for:
+      - family_media_rule_item_design
+      - device_conflict_action_candidate
+      - digital_wellbeing_boundary_copy
+    not_usable_now_for:
+      - addiction_diagnosis
+      - screen_time_single_cause_claim
+      - child_blame
+    model_question_focus:
+      - crowding_out_sleep_or_homework
+      - conflict_over_device_rules
+      - rule_clarity_and_consistency
+    product_copy_boundary: >
+      可以说“设备使用正在影响家庭节奏或规则协商”，不能说“孩子手机成瘾”或把全部原因归给孩子。
+    next_evidence_work:
+      - Verify AAP 5 Cs and family technology planner details with extraction notes.
+      - Add age-stage and family-rhythm constraints before personalized advice.
+
+  - card_ref: UI02_RESEARCH_SELF_REGULATION
+    theme_ref: SELF_REGULATION
+    title_zh: 自律能力
+    construct_refs: [SELF_REGULATION_SUPPORT, LEARNING_STRATEGY_METACOGNITION, FAMILY_ROUTINE]
+    source_refs: [K12_LEARNING_SCIENCE_PATTERN, TRIPLE_P_STEPPED_CARE_PATTERN, FAMILY_INTERNAL_UI02_V2]
+    evidence_status: pending_deep_review
+    strongest_current_grade_ceiling: E1_for_internal_anchor_or_unverified_until_extracted
+    conclusion_allowed: false
+    usable_now_for:
+      - scaffolded_self-management_item_design
+      - parent_method_need_mapping
+      - no-willpower-judgment_copy
+    not_usable_now_for:
+      - character_judgment
+      - willpower_score
+      - causal_claim_about_laziness
+    model_question_focus:
+      - supervision_dependency
+      - child_participation_in_planning
+      - method_review_after_failure
+    product_copy_boundary: >
+      可以说“孩子可能需要计划、执行、检查和复盘的家庭脚手架”，不能说“孩子不自律”或“意志力差”。
+    next_evidence_work:
+      - Extract evidence on autonomy support, self-regulated learning, and parent scaffolding.
+      - Define safe interpretation templates before linking to longer plans.
+
+research_upgrade_backlog:
+  - task_ref: UI02-EVIDENCE-001_SOURCE_EXTRACTION
+    objective: Turn pending source patterns into page/URL/DOI-level extraction notes.
+    acceptance: Every source_ref used by UI02 cards has extraction_status reviewed or a clear rejection reason.
+
+  - task_ref: UI02-EVIDENCE-002_CLAIM_GATE_TABLE
+    objective: Split each theme into design-allowed claims, hypothesis-only claims, and prohibited claims.
+    acceptance: Every UI02 result sentence can be traced to one allowed claim category.
+
+  - task_ref: UI02-EVIDENCE-003_GOLDEN_EVAL_EXPANSION
+    objective: Add one positive and one boundary-failure scenario for each UI02 theme.
+    acceptance: eval:family-model fails on diagnosis, ranking, blame, and unsupported causal claims.

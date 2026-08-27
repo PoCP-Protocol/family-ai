@@ -1,0 +1,167 @@
+version: 0.1.0
+asset_ref: FAMILY_EDUCATION_CONSTRUCT_REGISTRY
+status: draft
+owner: Family Education Industry Model
+source_doc: ../FAMILY_EDUCATION_INTELLIGENCE_MODEL_V0_1.md
+purpose: >
+  Defines reusable constructs that can be assessed, observed, supported, evaluated,
+  and later mapped into item banks, action catalogs, small-model labels, and reports.
+
+registry_rules:
+  - construct_ref must be stable and uppercase snake case.
+  - each construct must link to at least one domain_ref and one need_ref.
+  - constructs are not diagnoses, rankings, or total scores.
+  - constructs must expose observable signals and first product use.
+
+constructs:
+  - construct_ref: ACADEMIC_DEVELOPMENT
+    domain_refs: [ACADEMIC_K12]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, FAMILY_LEARNING_ENVIRONMENT_NEED, FAMILY_SCHOOL_ALIGNMENT_NEED]
+    name: Academic development
+    definition: How the child learns in school contexts and turns feedback into progress.
+    observable_signals: [homework_completion_pattern, exam_feedback_response, learning_confidence, teacher_feedback_use]
+    first_product_use: Academic support plan.
+
+  - construct_ref: SUBJECT_LEARNING_PROFILE
+    domain_refs: [ACADEMIC_K12]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED]
+    name: Subject learning profile
+    definition: Subject-specific strengths, gaps, confidence, interest, and misconceptions.
+    observable_signals: [subject_strength, subject_gap, low_subject_confidence, misconception_pattern]
+    first_product_use: K12 learning support.
+
+  - construct_ref: HOMEWORK_PROCESS
+    domain_refs: [ACADEMIC_K12]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, FAMILY_LEARNING_ENVIRONMENT_NEED]
+    name: Homework process
+    definition: How homework starts, continues, receives help, and gets reviewed.
+    observable_signals: [start_delay, interruption_pattern, parent_help_conflict, completion_review_gap]
+    first_product_use: UI-02 and UI-03 learning path.
+
+  - construct_ref: LEARNING_STRATEGY_METACOGNITION
+    domain_refs: [ACADEMIC_K12, DEVELOPMENTAL_FOUNDATIONS]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED]
+    name: Learning strategy and metacognition
+    definition: Planning, review, error correction, self-checking, transfer, and reflection.
+    observable_signals: [no_plan, weak_error_correction, low_self_check, weak_review_cycle]
+    first_product_use: Study-method action matching.
+
+  - construct_ref: SELF_REGULATION_SUPPORT
+    domain_refs: [DEVELOPMENTAL_FOUNDATIONS, ACADEMIC_K12, FAMILY_SYSTEM]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, PARENT_METHOD_NEED, FAMILY_LEARNING_ENVIRONMENT_NEED]
+    name: Self-regulation support
+    definition: Family scaffolding for planning, starting, monitoring, checking, and reviewing everyday tasks without judging the child's willpower or character.
+    observable_signals: [high_supervision_dependency, low_plan_participation, weak_self_check, missing_method_review]
+    first_product_use: UI-02 free assessment self-regulation focus.
+
+  - construct_ref: PHYSICAL_HEALTH_RHYTHM
+    domain_refs: [PHYSICAL_HEALTH]
+    need_refs: [CHILD_PHYSICAL_HEALTH_NEED, FAMILY_RHYTHM_NEED]
+    name: Physical health rhythm
+    definition: Sleep, movement, nutrition, eyesight, posture, energy, and recovery rhythm.
+    observable_signals: [sleep_instability, low_movement, irregular_meals, eyestrain, posture_load]
+    first_product_use: Health habit action design.
+
+  - construct_ref: PSYCHOSOMATIC_STRESS_SIGNAL
+    domain_refs: [PSYCHOSOMATIC_WELLBEING]
+    need_refs: [CHILD_EMOTIONAL_SUPPORT_NEED, PARENT_EMOTIONAL_SUPPORT_NEED]
+    name: Psychosomatic stress signal
+    definition: Body signals that appear with stress, fatigue, learning pressure, or conflict.
+    observable_signals: [headache, stomachache, fatigue, sleep_disruption, appetite_change]
+    first_product_use: Wellbeing intake.
+
+  - construct_ref: EMOTION_REGULATION_SUPPORT
+    domain_refs: [PSYCHOSOMATIC_WELLBEING, RELATIONSHIP, PARENTING]
+    need_refs: [CHILD_EMOTIONAL_SUPPORT_NEED, PARENT_METHOD_NEED, FAMILY_COMMUNICATION_NEED]
+    name: Emotion regulation support
+    definition: How the family notices emotional triggers, supports pause and recovery, and responds without turning emotion into blame or diagnosis.
+    observable_signals: [slow_conflict_recovery, cannot_pause_conflict, parent_response_uncertainty, repeated_emotional_escalation]
+    first_product_use: UI-02 free assessment emotion-management focus.
+
+  - construct_ref: DEVELOPMENTAL_STAGE_TASK
+    domain_refs: [DEVELOPMENTAL_FOUNDATIONS]
+    need_refs: [PARENT_UNDERSTANDING_NEED, PARENT_LEARNING_NEED]
+    name: Developmental stage task
+    definition: Age-stage developmental tasks in cognition, emotion, autonomy, identity, and social life.
+    observable_signals: [autonomy_conflict, identity_question, peer_importance_shift, parent_expectation_mismatch]
+    first_product_use: Assessment branching.
+
+  - construct_ref: EDUCATIONAL_PSYCHOLOGY_MECHANISM
+    domain_refs: [DEVELOPMENTAL_FOUNDATIONS]
+    need_refs: [PARENT_UNDERSTANDING_NEED, PARENT_METHOD_NEED, CHILD_LEARNING_SUPPORT_NEED]
+    name: Educational psychology mechanism
+    definition: Motivation, attribution, self-efficacy, feedback, transfer, and learning environment mechanisms.
+    observable_signals: [fear_of_failure, fixed_ability_belief, feedback_avoidance, motivation_drop]
+    first_product_use: Action rationale.
+
+  - construct_ref: AI_LITERACY_FLUENCY
+    domain_refs: [AI_LITERACY]
+    need_refs: [CHILD_DIGITAL_AI_NEED, PARENT_LEARNING_NEED]
+    name: AI literacy fluency
+    definition: Ability to use AI tools for learning, creating, checking, and reflecting.
+    observable_signals: [ai_tool_confusion, weak_prompt_design, weak_verification, plagiarism_risk]
+    first_product_use: AI-era learning guidance.
+
+  - construct_ref: MULTIMODAL_CREATION
+    domain_refs: [MULTIMODAL_LITERACY]
+    need_refs: [CHILD_DIGITAL_AI_NEED, CHILD_IDENTITY_STRENGTH_NEED]
+    name: Multimodal creation
+    definition: Ability to express and create across text, image, audio, video, data, code, and presentation.
+    observable_signals: [passive_media_use, low_creation_output, single_mode_expression, project_block]
+    first_product_use: Project learning.
+
+  - construct_ref: MULTIPLE_INTELLIGENCE_PROFILE
+    domain_refs: [MULTIPLE_INTELLIGENCES]
+    need_refs: [CHILD_IDENTITY_STRENGTH_NEED]
+    name: Multiple intelligence profile
+    definition: Observed strengths across eight intelligence lenses and real scenes.
+    observable_signals: [strength_signal, activity_preference, project_expression, social_expression]
+    first_product_use: Strength discovery.
+
+  - construct_ref: DERMATOGLYPHICS_PRACTICE_SIGNAL
+    domain_refs: [DERMATOGLYPHICS_PRACTICE]
+    need_refs: [PARENT_DECISION_NEED, PARENT_UNDERSTANDING_NEED]
+    name: Dermatoglyphics practice signal
+    definition: Dermatoglyphics report, consultation claim, and parent expectation as practice input.
+    observable_signals: [dermatoglyphics_report_used, parent_expectation_from_report, consultation_claim]
+    first_product_use: Source registry and comparison.
+
+  - construct_ref: PARENT_CHILD_COMMUNICATION
+    domain_refs: [RELATIONSHIP]
+    need_refs: [CHILD_RELATIONSHIP_NEED, FAMILY_COMMUNICATION_NEED, PARENT_METHOD_NEED]
+    name: Parent-child communication
+    definition: Trust, listening, expression, conflict cycle, and repair quality.
+    observable_signals: [low_trust, interrupted_talk, conflict_cycle, repair_gap]
+    first_product_use: Communication support.
+
+  - construct_ref: DEVICE_USE_CONTEXT
+    domain_refs: [DIGITAL_LIFE]
+    need_refs: [CHILD_DIGITAL_AI_NEED, FAMILY_RHYTHM_NEED, FAMILY_COMMUNICATION_NEED]
+    name: Device-use context
+    definition: Device impact on sleep, learning, rules, conflict, and family routines.
+    observable_signals: [device_rule_conflict, sleep_crowded_out, homework_crowded_out, passive_media_use]
+    first_product_use: Media-plan action matching.
+
+  - construct_ref: PARENT_CAPACITY
+    domain_refs: [PARENTING]
+    need_refs: [PARENT_EMOTIONAL_SUPPORT_NEED, PARENT_METHOD_NEED]
+    name: Parent capacity
+    definition: Parent stress, time, emotional bandwidth, and consistency capacity.
+    observable_signals: [parent_burnout, time_pressure, inconsistent_response, high_anxiety]
+    first_product_use: Support intensity routing.
+
+  - construct_ref: FAMILY_ROUTINE
+    domain_refs: [FAMILY_SYSTEM]
+    need_refs: [FAMILY_RHYTHM_NEED, FAMILY_LEARNING_ENVIRONMENT_NEED]
+    name: Family routine
+    definition: Stable rhythms, agreements, rituals, and review mechanisms.
+    observable_signals: [routine_instability, unclear_agreement, missing_review, repeated_rush]
+    first_product_use: Family action planning.
+
+  - construct_ref: SCHOOL_FAMILY_COLLABORATION
+    domain_refs: [HUMAN_SERVICE, ACADEMIC_K12]
+    need_refs: [FAMILY_SCHOOL_ALIGNMENT_NEED, PARENT_COLLABORATION_NEED]
+    name: School-family collaboration
+    definition: Alignment among school, teacher, parent, and child support.
+    observable_signals: [teacher_parent_disconnect, unclear_feedback_loop, school_family_disagreement]
+    first_product_use: School-family handoff.

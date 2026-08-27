@@ -1,0 +1,142 @@
+version: 0.1.0
+asset_ref: FAMILY_EDUCATION_DOMAIN_REGISTRY
+status: draft
+owner: Family Education Industry Model
+source_doc: ../FAMILY_EDUCATION_INTELLIGENCE_MODEL_V0_1.md
+purpose: >
+  Defines the top-level domain modules of the Family Education Industry Model.
+  Domains are pluggable model areas that can own needs, constructs, item banks,
+  action catalogs, evaluation labels, and localized extensions.
+
+registry_rules:
+  - domain_ref must be stable and uppercase snake case.
+  - domains can be extended without rewriting the domain kernel.
+  - every domain should eventually link to need_refs, construct_refs, action_refs, outcome_refs, source_refs, and evaluation_metrics.
+  - product surfaces must not create unregistered domains directly.
+
+domains:
+  - domain_ref: CHILD_NEEDS
+    name: Child needs
+    scope: Physical, emotional, relationship, learning, identity, social, digital, and future-skill needs.
+    expansion_role: demand_center
+    supported_life_stages: [preschool, primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Need-centered interpretation for UI-02 and UI-03.
+
+  - domain_ref: PARENT_NEEDS
+    name: Parent needs
+    scope: Understanding, method, emotional support, collaboration, decision support, feedback.
+    expansion_role: demand_center
+    supported_life_stages: [preschool, primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Parent learning path and support routing.
+
+  - domain_ref: FAMILY_SHARED_NEEDS
+    name: Family shared needs
+    scope: Common goals, routines, reduced conflict, trust, school alignment, growth records.
+    expansion_role: demand_center
+    supported_life_stages: [preschool, primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Family routine and shared action planning.
+
+  - domain_ref: PHYSICAL_HEALTH
+    name: Physical health
+    scope: Growth, sleep, movement, nutrition, eyesight, posture, puberty, energy, recovery.
+    expansion_role: foundation_domain
+    supported_life_stages: [preschool, primary_school, middle_school, high_school]
+    first_product_use: Health habit action design and learning-readiness context.
+
+  - domain_ref: PSYCHOSOMATIC_WELLBEING
+    name: Psychosomatic wellbeing
+    scope: Stress body signals, fatigue, sleep disruption, appetite change, emotion-body recovery.
+    expansion_role: foundation_domain
+    supported_life_stages: [primary_school, middle_school, high_school]
+    first_product_use: Wellbeing intake and parent-child care planning.
+
+  - domain_ref: DEVELOPMENTAL_FOUNDATIONS
+    name: Child development foundations
+    scope: Developmental psychology, educational psychology, learning science, family systems, SEL.
+    expansion_role: theory_kernel
+    supported_life_stages: [preschool, primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Assessment branching and action rationale.
+
+  - domain_ref: ACADEMIC_K12
+    name: Academic and K12 learning
+    scope: Subjects, homework, exams, learning strategy, motivation, feedback, pressure, school-family collaboration.
+    expansion_role: product_domain
+    supported_life_stages: [primary_school, middle_school, high_school]
+    first_product_use: Academic support plan and school-family handoff.
+
+  - domain_ref: AI_LITERACY
+    name: AI literacy
+    scope: AI concepts, AI tool use, prompt/task design, verification, privacy, ethics, human-AI collaboration.
+    expansion_role: future_skill_domain
+    supported_life_stages: [primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Family AI-use agreement and AI-era learning path.
+
+  - domain_ref: MULTIMODAL_LITERACY
+    name: Multimodal literacy
+    scope: Text, image, audio, video, data, code, presentation, creative production, cross-modal translation.
+    expansion_role: future_skill_domain
+    supported_life_stages: [primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Project-based learning and creation tasks.
+
+  - domain_ref: MULTIPLE_INTELLIGENCES
+    name: Multiple intelligences
+    scope: Linguistic, logical-mathematical, spatial, bodily, musical, interpersonal, intrapersonal, naturalistic strengths.
+    expansion_role: strengths_domain
+    supported_life_stages: [preschool, primary_school, middle_school, high_school]
+    first_product_use: Strength discovery and portfolio growth record.
+
+  - domain_ref: DERMATOGLYPHICS_PRACTICE
+    name: Dermatoglyphics theory and practice
+    scope: Fingerprint and palm-pattern concepts, report claims, consultation process, parent expectation, service pattern.
+    expansion_role: practice_review_domain
+    supported_life_stages: [preschool, primary_school, middle_school, high_school]
+    first_product_use: Source registry and family belief/context intake.
+
+  - domain_ref: PARENTING
+    name: Parenting model
+    scope: Beliefs, response style, involvement, consistency, boundaries, encouragement, repair.
+    expansion_role: product_domain
+    supported_life_stages: [preschool, primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Parent support and family action matching.
+
+  - domain_ref: RELATIONSHIP
+    name: Family relationship
+    scope: Trust, communication, conflict cycle, repair, affection, shared meaning.
+    expansion_role: product_domain
+    supported_life_stages: [preschool, primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Parent-child communication support.
+
+  - domain_ref: FAMILY_SYSTEM
+    name: Family system
+    scope: Structure, roles, routines, resources, stressors, sibling/grandparent context.
+    expansion_role: system_domain
+    supported_life_stages: [preschool, primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Family routine and support-network planning.
+
+  - domain_ref: DIGITAL_LIFE
+    name: Digital life
+    scope: Device use, media content, games, short video, online safety, privacy, sleep, family rules.
+    expansion_role: product_domain
+    supported_life_stages: [primary_school, middle_school, high_school]
+    first_product_use: Device-use context and family media plan.
+
+  - domain_ref: VALUES_CHARACTER
+    name: Values and character
+    scope: Responsibility, integrity, empathy, perseverance, contribution, citizenship, life purpose.
+    expansion_role: growth_domain
+    supported_life_stages: [primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Family mission and growth reflection.
+
+  - domain_ref: SOCIAL_COMPETENCE
+    name: Social competence
+    scope: Peer relationship, collaboration, boundaries, leadership, conflict handling, community participation.
+    expansion_role: growth_domain
+    supported_life_stages: [primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Adolescent support and school-family coordination.
+
+  - domain_ref: HUMAN_SERVICE
+    name: Human service network
+    scope: Educators, counselors, doctors, social workers, community programs, service follow-up.
+    expansion_role: service_domain
+    supported_life_stages: [preschool, primary_school, middle_school, high_school, youth_transition]
+    first_product_use: Human-service handoff and expert review.

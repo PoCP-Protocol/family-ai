@@ -1,0 +1,133 @@
+{
+  "asset_ref": "FAMILY_MODEL_HARNESS_RUN_REPORT",
+  "version": "0.1.0",
+  "generated_at": "2026-08-23T23:39:20.781Z",
+  "authorization_boundary": {
+    "live_external_ai": "NOT_INVOKED",
+    "business_runtime": "NOT_TOUCHED",
+    "database_schema_change": "NOT_TOUCHED"
+  },
+  "harness_reference": {
+    "mode": "codex_harness_style_local_runner",
+    "distillation_mode": "full_staging_review_batch_and_subsets",
+    "note": "Composes Family-owned deterministic validators, distillers, and planners. It does not call external AI under the current gate."
+  },
+  "steps": [
+    {
+      "id": "distill_family_model",
+      "lane_refs": [
+        "DISTILLATION_DATA_LANE"
+      ],
+      "command": "pnpm run distill:family-model",
+      "started_at": "2026-08-23T23:39:20.782Z",
+      "completed_at": "2026-08-23T23:39:21.722Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "=== Family Education Model Distillation ===\nWROTE docs/model/distilled/assessment_item_distillation.v0_1.jsonl records=25\nWROTE docs/model/distilled/interpretation_template_distillation.v0_1.jsonl records=6\nWROTE docs/model/distilled/evaluation_scenario_distillation.v0_1.jsonl records=6\nWROTE docs/model/distilled/memory_candidate_distillation.v0_1.jsonl records=10\nWROTE docs/model/distilled/domain_distillation.v0_1.jsonl records=18\nWROTE docs/model/distilled/source_distillation.v0_1.jsonl records=12\nWROTE docs/model/distilled/support_action_distillation.v0_1.jsonl records=8\nWROTE docs/model/distilled/multimodal_artifact_distillation.v0_1.jsonl records=7\nWROTE docs/model/distilled/manifest.json\n",
+      "stderr": "$ node tools/distill-family-education-model.mjs\n",
+      "ok": true
+    },
+    {
+      "id": "stage_family_model_220k",
+      "lane_refs": [
+        "DISTILLATION_DATA_LANE"
+      ],
+      "command": "pnpm run stage:family-model-220k",
+      "started_at": "2026-08-23T23:39:21.733Z",
+      "completed_at": "2026-08-23T23:39:48.171Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "=== Family Education 220K Staging Corpus ===\nTARGET 220000\nWROTE docs/model/distilled/220k_staging/family_education_220k_staging.v0_1.jsonl records=220000\nWROTE docs/model/distilled/220k_staging/manifest.json\nCOMPLETE bole-family-education/family_edu_train_mix.jsonl staged=9999 quota=9999\nCOMPLETE bole-family-education/family_edu_sft.jsonl staged=6322 quota=6322\nCOMPLETE bole-family-education/short_video_signals_ingested.jsonl staged=0 quota=0\nCOMPLETE joysoul-aisoul/joysoul_train_ready_v2.gold.clean.jsonl staged=52000 quota=52000\nCOMPLETE joysoul-aisoul/joysoul_exemplar_bank.jsonl staged=42000 quota=42000\nCOMPLETE joysoul-aisoul/joysoul_distill_api.jsonl staged=39679 quota=39679\nCOMPLETE joysoul-aisoul/joysoul_distill_multilang.jsonl staged=18000 quota=18000\nCOMPLETE joysoul-aisoul/joysoul_distill_recX_v4sft.jsonl staged=16000 quota=16000\nCOMPLETE joysoul-aisoul/joysoul_ft_v4_sft.jsonl staged=14000 quota=14000\nCOMPLETE joysoul-aisoul/joysoul_ft_review.jsonl staged=9000 quota=9000\nCOMPLETE joysoul-aisoul/joysoul_ft_legalclean.jsonl staged=5000 quota=5000\nCOMPLETE joysoul-aisoul/joysoul_needs_expert_v2.jsonl staged=5000 quota=5000\nCOMPLETE joysoul-aisoul/joysoul_distill_fleet_scenexp.jsonl staged=3000 quota=3000\n",
+      "stderr": "$ node tools/stage-family-education-220k-corpus.mjs\n",
+      "ok": true
+    },
+    {
+      "id": "distill_family_model_review_batch",
+      "lane_refs": [
+        "DISTILLATION_DATA_LANE"
+      ],
+      "command": "pnpm run distill:family-model-review-batch",
+      "started_at": "2026-08-23T23:39:48.172Z",
+      "completed_at": "2026-08-23T23:40:01.028Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "=== Family Education Review Batch Distillation ===\nTARGET 22000\nSCANNED 217347\nWROTE docs/model/distilled/review_batch_v0_1/family_education_review_batch.v0_1.jsonl records=22000\nWROTE docs/model/distilled/review_batch_v0_1/manifest.json\nfamily_education_core_sft accepted=1632 quota=1632\nfamily_pain_signal accepted=0 quota=0\nbroad_parent_child_dialogue accepted=5200 quota=5200\nexemplar_response_candidate accepted=4200 quota=4200\ndistilled_instruction_response accepted=3968 quota=3968\nmultilingual_family_expression accepted=1800 quota=1800\nrecommendation_style_candidate accepted=1600 quota=1600\nchat_sft_candidate accepted=1400 quota=1400\nreviewed_chat_candidate accepted=900 quota=900\nlegalclean_chat_candidate accepted=500 quota=500\nexpert_review_needed accepted=500 quota=500\nscenario_explanation_candidate accepted=300 quota=300\n",
+      "stderr": "$ node tools/distill-family-education-review-batch.mjs\n",
+      "ok": true
+    },
+    {
+      "id": "distill_family_model_subsets",
+      "lane_refs": [
+        "DISTILLATION_DATA_LANE"
+      ],
+      "command": "pnpm run distill:family-model-subsets",
+      "started_at": "2026-08-23T23:40:01.028Z",
+      "completed_at": "2026-08-23T23:40:04.124Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "=== Family Education Distillation Subsets ===\nWROTE docs/model/distilled/subsets_v0_1/family_education_golden_eval_set.v0_1.jsonl records=1200/1200 complete=true\nWROTE docs/model/distilled/subsets_v0_1/family_education_style_imitation_candidate.v0_1.jsonl records=6000/6000 complete=true\nWROTE docs/model/distilled/subsets_v0_1/family_education_risk_human_gate_set.v0_1.jsonl records=5627/6000 complete=false\nWROTE docs/model/distilled/subsets_v0_1/family_education_training_candidate_if_rights_cleared.v0_1.jsonl records=10000/10000 complete=true\nWROTE docs/model/distilled/subsets_v0_1/manifest.json\n",
+      "stderr": "$ node tools/distill-family-education-subsets.mjs\n",
+      "ok": true
+    },
+    {
+      "id": "validate_model_assets",
+      "lane_refs": [
+        "MODEL_ASSET_BUILD_LANE",
+        "EVAL_AND_SAFETY_LANE",
+        "RUNTIME_PLAN_LANE",
+        "DISTILLATION_DATA_LANE"
+      ],
+      "command": "pnpm run validate:model-assets",
+      "started_at": "2026-08-23T23:40:04.124Z",
+      "completed_at": "2026-08-23T23:40:13.203Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "=== Family Education Model Foundation Validation ===\nPASS  Manifest: ok=1 fail=0\nPASS  FoundationAsset: ok=13 fail=0\nPASS  ComponentRegistry: ok=2 fail=0\nPASS  ComponentContract: ok=8 fail=0\nPASS  ComponentDependency: ok=11 fail=0\nPASS  TechnicalArchitecture: ok=4 fail=0\nPASS  TechnicalArchitectureBoundary: ok=2 fail=0\nPASS  TechnicalArchitectureLayer: ok=8 fail=0\nPASS  TechnicalArchitectureLayerMutation: ok=8 fail=0\nPASS  TechnicalArchitectureLayerComponentRef: ok=7 fail=0\nPASS  TechnicalArchitectureGatewayProfile: ok=4 fail=0\nPASS  TechnicalArchitectureFlow: ok=4 fail=0\nPASS  TechnicalArchitectureFlowMutation: ok=4 fail=0\nPASS  TechnicalArchitectureFlowLayerRef: ok=18 fail=0\nPASS  TechnicalArchitectureFlowBoundary: ok=4 fail=0\nPASS  RuntimeIntegrationContract: ok=1 fail=0\nPASS  RuntimeIntegrationContractBoundary: ok=2 fail=0\nPASS  RuntimeIntegrationContractRuntime: ok=2 fail=0\nPASS  RuntimeIntegrationContractFlow: ok=1 fail=0\nPASS  RuntimeIntegrationContractFlowRef: ok=4 fail=0\nPASS  RuntimeIntegrationContractFlowMutation: ok=4 fail=0\nPASS  RuntimeIntegrationContractFlowBoundary: ok=4 fail=0\nPASS  RuntimeIntegrationContractSurfaceRef: ok=14 fail=0\nPASS  RuntimeIntegrationContractEventName: ok=8 fail=0\nPASS  RuntimeIntegrationContractLiveGate: ok=2 fail=0\nPASS  RuntimeIntegrationContractForbiddenPath: ok=4 fail=0\nPASS  UiModelBinding: ok=3 fail=0\nPASS  UiModelBindingCoverage: ok=35 fail=0\nPASS  UiModelBindingComponent: ok=60 fail=0\nPASS  ModelAsset: ok=10 fail=0\nPASS  AssessmentItemBank: ok=2 fail=0\nPASS  AssessmentItemBankItem: ok=25 fail=0\nPASS  AssessmentItemConstructRef: ok=45 fail=0\nPASS  AssessmentItemNeedRef: ok=52 fail=0\nPASS  AssessmentActionMapConstructRef: ok=10 fail=0\nPASS  AssessmentActionMapActionRef: ok=14 fail=0\nPASS  InterpretationSchema: ok=1 fail=0\nPASS  InterpretationSafetyRule: ok=5 fail=0\nPASS  InterpretationTemplate: ok=6 fail=0\nPASS  InterpretationTemplateConstructRef: ok=12 fail=0\nPASS  InterpretationTemplateActionRef: ok=10 fail=0\nPASS  InterpretationTemplateOutcomeRef: ok=12 fail=0\nPASS  EvaluationScenarioSet: ok=1 fail=0\nPASS  EvaluationScenario: ok=6 fail=0\nPASS  EvaluationScenarioSafety: ok=6 fail=0\nPASS  EvaluationScenarioConstructRef: ok=15 fail=0\nPASS  EvaluationScenarioActionRef: ok=10 fail=0\nPASS  Ui02AssessmentSlice: ok=2 fail=0\nPASS  Ui02AssessmentSliceBoundary: ok=2 fail=0\nPASS  Ui02AssessmentSliceThemeCoverage: ok=5 fail=0\nPASS  Ui02AssessmentSliceTheme: ok=5 fail=0\nPASS  Ui02AssessmentSliceThemeItemCount: ok=5 fail=0\nPASS  Ui02AssessmentSliceThemeTemplate: ok=5 fail=0\nPASS  Ui02AssessmentSliceConstructRef: ok=11 fail=0\nPASS  Ui02AssessmentSliceNeedRef: ok=12 fail=0\nPASS  Ui02AssessmentSliceItemRef: ok=15 fail=0\nPASS  Ui02AssessmentSliceActionRef: ok=9 fail=0\nPASS  Ui02AssessmentSliceProhibitedOutput: ok=6 fail=0\nPASS  Ui02AssessmentSliceResultSection: ok=5 fail=0\nPASS  Ui02ResearchCards: ok=2 fail=0\nPASS  Ui02ResearchCardCoverage: ok=5 fail=0\nPASS  Ui02ResearchCard: ok=5 fail=0\nPASS  Ui02ResearchCardThemeRef: ok=5 fail=0\nPASS  Ui02ResearchCardEvidenceGate: ok=5 fail=0\nPASS  Ui02ResearchCardEvidenceStatus: ok=5 fail=0\nPASS  Ui02ResearchCardSourceCount: ok=5 fail=0\nPASS  Ui02ResearchCardUseBoundary: ok=5 fail=0\nPASS  Ui02ResearchCardCopyBoundary: ok=5 fail=0\nPASS  Ui02ResearchCardConstructRef: ok=15 fail=0\nPASS  Ui02ResearchCardSourceRef: ok=14 fail=0\nPASS  DistilledDatasetManifest: ok=1 fail=0\nPASS  DistilledDataset: ok=8 fail=0\nPASS  DistilledDatasetRow: ok=92 fail=0\nPASS  Staging220kManifest: ok=2 fail=0\nPASS  Staging220kGovernance: ok=3 fail=0\nPASS  Staging220kOutput: ok=1 fail=0\nPASS  Staging220kRow: ok=6 fail=0\nPASS  ReviewBatchManifest: ok=2 fail=0\nPASS  ReviewBatchGovernance: ok=2 fail=0\nPASS  ReviewBatchOutput: ok=1 fail=0\nPASS  ReviewBatchRow: ok=6 fail=0\nPASS  SubsetManifest: ok=1 fail=0\nPASS  SubsetGovernance: ok=5 fail=0\nPASS  SubsetOutput: ok=8 fail=0\nPASS  SubsetRow: ok=48 fail=0\nPASS  MultiApiDistillationReport: ok=3 fail=0\nPASS  MultiApiDistillationBoundary: ok=3 fail=0\nPASS  HarnessIntegration: ok=1 fail=0\nPASS  HarnessIntegrationBoundary: ok=2 fail=0\nPASS  HarnessIntegrationLane: ok=5 fail=0\nPASS  HarnessIntegrationTool: ok=1 fail=0\nPASS  HarnessIntegrationSourceAsset: ok=14 fail=0\nPASS  HarnessIntegrationLaneGate: ok=4 fail=0\nPASS  HarnessIntegrationLaneInputAsset: ok=14 fail=0\nPASS  HarnessIntegrationToolCommand: ok=11 fail=0\nPASS  HarnessIntegrationToolLane: ok=19 fail=0\nPASS  HarnessIntegrationMultiApiGate: ok=3 fail=0\nPASS  HarnessIntegrationLiveSmokeGate: ok=2 fail=0\n\nTotal checks: 905; failed: 0\n",
+      "stderr": "$ node tools/validate-family-model-assets.mjs\n",
+      "ok": true
+    },
+    {
+      "id": "eval_family_model",
+      "lane_refs": [
+        "EVAL_AND_SAFETY_LANE"
+      ],
+      "command": "pnpm run eval:family-model",
+      "started_at": "2026-08-23T23:40:13.203Z",
+      "completed_at": "2026-08-23T23:40:18.936Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "=== Family Education Model Eval ===\nrunner=deterministic_family_model_baseline\nscenarios=6 passed=6 structured_valid=6\nPASS SCN_COMMUNICATION_001\nPASS SCN_LEARNING_001\nPASS SCN_HEALTH_001\nPASS SCN_DIGITAL_AI_001\nPASS SCN_MULTIMODAL_001\nPASS SCN_PARENT_CAPACITY_001\nWROTE reports/model-eval/family-model-eval.deterministic.latest.json\n",
+      "stderr": "$ pnpm --filter @family/family-model build && node tools/eval-family-model.mjs\n$ tsc -p tsconfig.json\n",
+      "ok": true
+    },
+    {
+      "id": "eval_family_memory",
+      "lane_refs": [
+        "EVAL_AND_SAFETY_LANE"
+      ],
+      "command": "pnpm run eval:family-memory",
+      "started_at": "2026-08-23T23:40:18.936Z",
+      "completed_at": "2026-08-23T23:40:22.731Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "=== Family Memory Candidate Eval ===\nscenarios=3 passed=3 structured_valid=3\nPASS MEM_CONSENT_COMMUNICATION_001\nPASS MEM_MISSING_CONSENT_001\nPASS MEM_HIGH_RISK_001\nWROTE reports/model-eval/family-memory-eval.latest.json\n",
+      "stderr": "$ pnpm --filter @family/family-model build && node tools/eval-family-memory.mjs\n$ tsc -p tsconfig.json\n",
+      "ok": true
+    },
+    {
+      "id": "plan_family_model_architecture",
+      "lane_refs": [
+        "RUNTIME_PLAN_LANE"
+      ],
+      "command": "pnpm run plan:family-model-architecture -- --all",
+      "started_at": "2026-08-23T23:40:22.731Z",
+      "completed_at": "2026-08-23T23:40:26.099Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "{\n  \"generated_at\": \"2026-08-23T23:40:26.036Z\",\n  \"architecture_asset_ref\": \"FAMILY_MODEL_TECHNICAL_ARCHITECTURE_REGISTRY\",\n  \"architecture_id\": \"FAMILY_EDUCATION_LARGE_MODEL_TECH_ARCH_V0_1\",\n  \"live_authorized_input\": false,\n  \"available_env_keys\": [],\n  \"plans\": [\n    {\n      \"architecture_id\": \"FAMILY_EDUCATION_LARGE_MODEL_TECH_ARCH_V0_1\",\n      \"flow_ref\": \"UI02_ASSESSMENT_TO_STRUCTURED_DRAFT\",\n      \"flow_kind\": \"assessment_interpretation\",\n      \"ordered_layer_refs\": [\n        \"EXPERIENCE_SURFACE_LAYER\",\n        \"FAMILY_DOMAIN_KERNEL_LAYER\",\n        \"SKILL_COMPONENT_RUNTIME_LAYER\",\n        \"MODEL_GATEWAY_LAYER\",\n        \"EVALUATION_AND_DISTILLATION_LAYER\"\n      ],\n      \"ordered_component_refs\": [\n        \"FAMILY_DOMAIN_KERNEL\",\n        \"FAMILY_ASSESSMENT_V0_COMPONENT\",\n        \"FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT\"\n      ],\n      \"input_refs\": [\n        \"family_assessment_item_bank.registry.yaml\"\n      ],\n      \"output_refs\": [\n        \"family_interpretation.schema.yaml\"\n      ],\n      \"required_boundary_labels\": [\n        \"perspective_not_fact\",\n        \"signal_not_diagnosis\",\n        \"hypothesis_not_fact\",\n        \"recommendation_not_decision\",\n        \"action_requires_named_action\",\n        \"outcome_required_for_completion\"\n      ],\n      \"gateway_profile_refs\": [],\n      \"blocked_reasons\": [\n        \"business_runtime_authorization_not_confirmed\",\n        \"live_external_ai_not_authorized\",\n        \"live_gateway_env_missing\"\n      ],\n      \"may_call_live_external_ai\": false,\n      \"may_mutate_business_state\": false\n    },\n    {\n      \"architecture_id\": \"FAMILY_EDUCATION_LARGE_MODEL_TECH_ARCH_V0_1\",\n      \"flow_ref\": \"MULTIMODAL_ARTIFACT_TO_SIGNAL\",\n      \"flow_kind\": \"multimodal_signal_extraction\",\n      \"ordered_layer_refs\": [\n        \"EXPERIENCE_SURFACE_LAYER\",\n        \"MULTIMODAL_UNDERSTANDING_LAYER\",\n        \"FAMILY_DOMAIN_KERNEL_LAYER\",\n        \"EVALUATION_AND_DISTILLATION_LAYER\"\n      ],\n      \"ordered_component_refs\": [\n        \"FAMILY_MULTIMODAL_ARTIFACT_COMPONENT\",\n        \"FAMILY_DOMAIN_KERNEL\",\n        \"FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT\"\n      ],\n      \"input_refs\": [\n        \"family_multimodal_artifact.schema.yaml\"\n      ],\n      \"output_refs\": [\n        \"family_interpretation.schema.yaml\"\n      ],\n      \"required_boundary_labels\": [\n        \"signal_not_diagnosis\",\n        \"hypothesis_not_fact\"\n      ],\n      \"gateway_profile_refs\": [],\n      \"blocked_reasons\": [\n        \"business_runtime_authorization_not_confirmed\",\n        \"live_external_ai_not_authorized\",\n        \"live_gateway_env_missing\"\n      ],\n      \"may_call_live_external_ai\": false,\n      \"may_mutate_business_state\": false\n    },\n    {\n      \"architecture_id\": \"FAMILY_EDUCATION_LARGE_MODEL_TECH_ARCH_V0_1\",\n      \"flow_ref\": \"CONSENT_MEMORY_RECALL_AND_UPDATE_CANDIDATE\",\n      \"flow_kind\": \"memory_context\",\n      \"ordered_layer_refs\": [\n        \"EXPERIENCE_SURFACE_LAYER\",\n        \"MEMORY_CONTEXT_LAYER\",\n        \"FAMILY_DOMAIN_KERNEL_LAYER\",\n        \"SKILL_COMPONENT_RUNTIME_LAYER\"\n      ],\n      \"ordered_component_refs\": [\n        \"FAMILY_MEMORY_DIALOGUE_COMPONENT\",\n        \"FAMILY_REALTIME_DIALOGUE_COMPONENT\",\n        \"FAMILY_DOMAIN_KERNEL\",\n        \"FAMILY_ASSESSMENT_V0_COMPONENT\"\n      ],\n      \"input_refs\": [\n        \"family_memory_conversation.schema.yaml\"\n      ],\n      \"output_refs\": [\n        \"memory_update_candidate\",\n        \"dialogue_summary\"\n      ],\n      \"required_boundary_labels\": [\n        \"perspective_not_fact\",\n        \"action_requires_named_action\"\n      ],\n      \"gateway_profile_refs\": [],\n      \"blocked_reasons\": [\n        \"business_runtime_authorization_not_confirmed\"\n      ],\n      \"may_call_live_external_ai\": false,\n      \"may_mutate_business_state\": false\n    },\n    {\n      \"architecture_id\": \"FAMILY_EDUCATION_LARGE_MODEL_TECH_ARCH_V0_1\",\n      \"flow_ref\": \"ACTION_CANDIDATE_TO_OUTCOME_LOOP\",\n      \"flow_kind\": \"action_outcome_learning\",\n      \"ordered_layer_refs\": [\n        \"EXPERIENCE_SURFACE_LAYER\",\n        \"FAMILY_DOMAIN_KERNEL_LAYER\",\n        \"SKILL_COMPONENT_RUNTIME_LAYER\",\n        \"HUMAN_SERVICE_HANDOFF_LAYER\",\n        \"EVALUATION_AND_DISTILLATION_LAYER\"\n      ],\n      \"ordered_component_refs\": [\n        \"FAMILY_DOMAIN_KERNEL\",\n        \"FAMILY_ASSESSMENT_V0_COMPONENT\",\n        \"FAMILY_HUMAN_SERVICE_HANDOFF_COMPONENT\",\n        \"FAMILY_KNOWLEDGE_EVIDENCE_COMPONENT\"\n      ],\n      \"input_refs\": [\n        \"family_support_action.catalog.yaml\"\n      ],\n      \"output_refs\": [\n        \"family_outcome_signal.schema.yaml\"\n      ],\n      \"required_boundary_labels\": [\n        \"recommendation_not_decision\",\n        \"action_requires_named_action\",\n        \"outcome_required_for_completion\"\n      ],\n      \"gateway_profile_refs\": [],\n      \"blocked_reasons\": [\n        \"business_runtime_authorization_not_confirmed\"\n      ],\n      \"may_call_live_external_ai\": false,\n      \"may_mutate_business_state\": false\n    }\n  ]\n}\n",
+      "stderr": "$ pnpm --filter @family/family-model build && node tools/plan-family-model-architecture.mjs \"--\" \"--all\"\n$ tsc -p tsconfig.json\n",
+      "ok": true
+    }
+  ],
+  "ok": true
+}

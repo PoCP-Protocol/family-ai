@@ -11,9 +11,11 @@ describe("UI-25 至 UI-28 原图社区循环契约", () => {
   });
   it("保留发布动态的私有草稿、可编辑标签与隐私边界", () => {
     const ui26 = source("UI-26");
-    for (const copy of ["发布动态", "选择小记类型", "小记内容", "仅家庭可见", "保存私有小记"]) expect(ui26).toContain(copy);
+    for (const copy of ["发布动态", "选择小记类型", "小记内容", "可见范围", "仅家庭可见", "保存私有小记"]) expect(ui26).toContain(copy);
     expect(ui26).toContain("saveCommunityPostDraft");
     expect(ui26).toContain("不会公开发布");
+    expect(ui26).toContain('flexWrap: "wrap"');
+    expect(ui26).toContain('width: "48%"');
   });
   it("保留动态详情与我的社区的私有互动和回读", () => {
     const ui27 = source("UI-27"); const ui28 = source("UI-28");

@@ -17,6 +17,9 @@ import { DevCoreGrowthService } from './dev-core-growth.service';
 import { DevPlatformSurfacesService } from './dev-platform-surfaces.service';
 import { DevFlowReceiptService } from './dev-flow-receipt.service';
 import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.service';
+import { FamilyHomeService } from './family-home.service';
+import { AssessmentService } from './assessment.service';
+import { GrowthHypothesisService } from './growth-hypothesis.service';
 
 /**
  * Family 模块占位(TASK-001)。
@@ -44,6 +47,9 @@ import { TenantScopedUiProjectionService } from './tenant-scoped-ui-projection.s
 	    DevPlatformSurfacesService,
 	    DevFlowReceiptService,
 	    TenantScopedUiProjectionService,
+	    FamilyHomeService,
+	    AssessmentService,
+	    GrowthHypothesisService,
 
 		],
 	// M3-101A-C:导出 InterventionService,供 Principal Action Bridge 调用既有 StartIntervention Named Action(不复制其 canonical 门)。

@@ -92,4 +92,49 @@ describe('UI-05 to UI-09 90-day Journey action execution', () => {
     expect(root.dataset.familyPageObjectsStatus).toBe('SUCCESS');
     expect(root.querySelector('[data-first-slice-state="CHECKED_IN"]')?.textContent).toContain('今天的行动已记录');
   });
+
+  it('persists start and pause controls and reconstructs the paused task after a fresh Web app mount', async () => {
+    let task = {
+      task_id: taskId,
+      task_state: 'NOT_STARTED',
+      execution_status: 'NOT_STARTED',
+      checkin_allowed: true,
+      allowed_actions: ['START', 'CANCEL'],
+      assignment_text: '先听完，再回应。',
+      task_version: 1,
+    };
+    const projection = () => ({ projection_version: 'UI01_UI09_FAMILY_TODAY_V1', family_id: familyId, entry_state: 'READY', today_task: task, today_tasks: [task] });
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init: RequestInit = {}) => {
+      const endpoint = String(url);
+      if (endpoint.endsWith(`/families/${familyId}/today`)) return response(projection());
+      if (endpoint.endsWith(`/families/${familyId}/tasks/${taskId}/state`)) {
+        const body = JSON.parse(String(init.body));
+        expect((init.headers as Record<string, string>)?.['idempotency-key']).toEqual(expect.any(String));
+        task = body.action === 'START'
+          ? { ...task, task_state: 'IN_PROGRESS', execution_status: 'IN_PROGRESS', allowed_actions: ['PAUSE', 'CANCEL'], task_version: 2 }
+          : { ...task, task_state: 'PAUSED', execution_status: 'PAUSED', allowed_actions: ['RESUME', 'CANCEL'], task_version: 3 };
+        return response({ result_state: 'SUCCESS', action: task, audit_status: 'RECORDED' });
+      }
+      throw new Error(`unexpected_fetch:${endpoint}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const firstRoot = document.createElement('div');
+    document.body.append(firstRoot);
+    createTestLoopApp(firstRoot, { apiBaseUrl: 'http://family-api.test', familyId, authToken: 'journey-action-web-token', firstSliceApiMode: 'synthetic-api', initialPage: 'growth-daily-task' });
+    await tick(); await tick();
+    firstRoot.querySelector<HTMLButtonElement>('[data-by="ui09-start-task"]')?.click();
+    await tick(); await tick();
+    expect(firstRoot.querySelector('[data-first-slice-state="IN_PROGRESS"]')).not.toBeNull();
+    firstRoot.querySelector<HTMLButtonElement>('[data-by="ui09-pause-task"]')?.click();
+    await tick(); await tick();
+    expect(firstRoot.querySelector('[data-first-slice-state="PAUSED"]')?.textContent).toContain('稍后继续');
+
+    const restartedRoot = document.createElement('div');
+    document.body.append(restartedRoot);
+    createTestLoopApp(restartedRoot, { apiBaseUrl: 'http://family-api.test', familyId, authToken: 'journey-action-web-token', firstSliceApiMode: 'synthetic-api', initialPage: 'growth-daily-task' });
+    await tick(); await tick();
+    expect(restartedRoot.querySelector('[data-first-slice-state="PAUSED"]')).not.toBeNull();
+    expect(restartedRoot.querySelector('[data-by="ui09-resume-task"]')).not.toBeNull();
+  });
 });

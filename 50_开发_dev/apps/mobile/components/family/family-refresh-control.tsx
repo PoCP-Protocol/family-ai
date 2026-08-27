@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type PropsWithChildren } from "react";
-import { FlatList, type FlatListProps, Platform, RefreshControl } from "react-native";
+import { FlatList, StyleSheet, type FlatListProps, Platform, RefreshControl } from "react-native";
 
 import { useColors } from "@/hooks/use-colors";
 import { useFamilyApiSession } from "@/lib/family/family-api-session";
@@ -42,5 +42,17 @@ export function FamilyRefreshControl({ children }: PropsWithChildren) {
 }
 
 export function FamilyFlatList<ItemT>(props: FlatListProps<ItemT>) {
-  return <FlatList {...props} refreshControl={props.refreshControl ?? <FamilyRefreshControl />} />;
+  const colors = useColors();
+
+  return (
+    <FlatList
+      {...props}
+      style={[styles.list, { backgroundColor: colors.background }, props.style]}
+      refreshControl={props.refreshControl ?? <FamilyRefreshControl />}
+    />
+  );
 }
+
+const styles = StyleSheet.create({
+  list: { flex: 1 },
+});
