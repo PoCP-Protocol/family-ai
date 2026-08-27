@@ -22,7 +22,7 @@ export default function FamilyGrowthMallScreen() {
     let active = true;
     familyApi.getCommerceProducts<FamilyApiCommerceProductsProjection>(session.token, session.selectedFamily.family_id)
       .then((result) => { if (active) setRemoteCatalog(result); })
-      .catch(() => undefined);
+      .catch((error) => { console.error("UI-13 remote projection failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 

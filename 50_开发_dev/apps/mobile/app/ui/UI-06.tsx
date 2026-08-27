@@ -39,7 +39,7 @@ export default function MyMembershipScreen() {
       setPlans(nextPlans);
       setMembership(nextMembership);
       setCommerce(nextCommerce);
-    }).catch(() => undefined);
+    }).catch((error) => { console.error("UI-06 remote action failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 

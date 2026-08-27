@@ -24,7 +24,7 @@ export default function TeacherZoneScreen() {
     let active = true;
     familyApi.getServiceOfferings<FamilyApiServiceSupplyProjection>(session.token, session.selectedFamily.family_id, {})
       .then((result) => { if (active) setProjection(result); })
-      .catch(() => undefined);
+      .catch((error) => { console.error("UI-19 remote projection failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 

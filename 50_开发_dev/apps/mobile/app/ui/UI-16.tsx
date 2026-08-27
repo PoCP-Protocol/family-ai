@@ -32,7 +32,7 @@ export default function FamilyStudyGroupScreen() {
       session.selectedFamily.family_id,
       { ui_id: "UI-16", command: "SAVE_SYNTHETIC_STUDY_GROUP_DRAFT", selection: item.productRef },
       createMobileRequestId("family-mobile-ui16"),
-    ).catch(() => undefined);
+    ).catch((error) => { console.error("UI-16 remote action failed", error); });
   };
 
   return (

@@ -41,7 +41,7 @@ export default function MembershipCenterScreen() {
       setPlans(planResult);
       setMembership(membershipResult);
       setCommerce(commerceResult);
-    }).catch(() => undefined);
+    }).catch((error) => { console.error("UI-18 remote projection failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 

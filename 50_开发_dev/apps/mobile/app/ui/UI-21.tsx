@@ -50,7 +50,7 @@ export default function ConsultationBookingScreen() {
         const preferred = slotResult.slots.find((item) => item.availability_slot_ref === slotRef) ?? slotResult.slots.find((item) => item.status === "AVAILABLE");
         setSelectedSlot(preferred?.availability_slot_ref ?? null);
         if (preferred) setChannel(preferred.channel);
-      }).catch(() => undefined);
+      }).catch((error) => { console.error("UI-21 remote action failed", error); });
     return () => { active = false; };
   }, [offeringRef, session.selectedFamily, session.status, session.token, slotRef]);
 
@@ -61,6 +61,9 @@ export default function ConsultationBookingScreen() {
 
   const saveConsultationNeed = async () => {
     const familyPerspective = needFocus.trim() || "想先了解家庭当前最需要支持的方向";
+    if (!offering) { setSubmitState("error"); return; }
+    const flowId = `consultation:${offering.offeringRef}`;
+    state.setFlowStatus({ flowId, lastAction: "SAVE_CONSULTATION_NEED_DRAFT", remoteSyncState: "NOT_STARTED", source: "LOCAL_DRAFT", retryable: false });
     state.saveConsultationNeedDraft(offering.offeringRef, offering.version, offering.title, offering.providerName, channel, selectedSlot, timePreference, ageBand, familyPerspective);
     setSubmitState("submitting");
     if (session.status !== "connected" || !session.token || !session.selectedFamily || !selectedSlot) {
@@ -69,6 +72,7 @@ export default function ConsultationBookingScreen() {
       return;
     }
     try {
+      state.setFlowStatus({ flowId, lastAction: "SUBMIT_SERVICE_BOOKING", remoteSyncState: "SYNCING", source: "LOCAL_DRAFT", retryable: false });
       const result = await familyApi.submitServiceBooking<FamilyApiServiceBookingReceipt>(
         session.token,
         session.selectedFamily.family_id,
@@ -82,9 +86,11 @@ export default function ConsultationBookingScreen() {
         `family-mobile-ui21:${session.selectedFamily.family_id}:${offering.offeringRef}:${selectedSlot}`,
       );
       state.syncConsultationNeedReceipt(result.booking.booking_request_id, result.service_record.service_record_id);
+      state.setFlowStatus({ flowId, lastAction: "SUBMIT_SERVICE_BOOKING", remoteSyncState: "SYNCED", source: "REMOTE_RECEIPT", retryable: false });
       setSubmitState("saved");
       haptic.success();
     } catch {
+      state.setFlowStatus({ flowId, lastAction: "SUBMIT_SERVICE_BOOKING", remoteSyncState: "ERROR", source: "LOCAL_DRAFT", retryable: true });
       setSubmitState("error");
     }
   };

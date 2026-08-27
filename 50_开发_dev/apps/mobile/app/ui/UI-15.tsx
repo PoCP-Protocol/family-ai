@@ -37,7 +37,7 @@ export default function InvitationRewardsScreen() {
       session.selectedFamily.family_id,
       { ui_id: "UI-15", command: "SAVE_SYNTHETIC_INVITATION_DRAFT", selection: product.productRef },
       createMobileRequestId("family-mobile-ui15"),
-    ).catch(() => undefined);
+    ).catch((error) => { console.error("UI-15 remote action failed", error); });
   };
 
   return (

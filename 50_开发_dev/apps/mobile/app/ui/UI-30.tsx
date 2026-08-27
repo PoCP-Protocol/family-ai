@@ -45,7 +45,7 @@ export default function AnnualCompanionScreen() {
       setPlans(nextPlans);
       setMembership(nextMembership);
       setCommerce(nextCommerce);
-    }).catch(() => undefined);
+    }).catch((error) => { console.error("UI-30 remote projection failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 

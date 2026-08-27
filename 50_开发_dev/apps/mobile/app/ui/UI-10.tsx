@@ -29,7 +29,7 @@ export default function ChildAssistantScreen() {
     let active = true;
     familyApi.getDevCoreGrowth<FamilyApiCoreGrowthProjection>(session.token, session.selectedFamily.family_id)
       .then((result) => { if (active) setRemoteProjection(result); })
-      .catch(() => undefined);
+      .catch((error) => { console.error("UI-10 remote projection failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 

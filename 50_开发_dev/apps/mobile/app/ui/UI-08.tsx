@@ -25,7 +25,7 @@ export default function GrowthReviewScreen() {
     let active = true;
     familyApi.getFamilyReviewReadback<RemoteReview>(session.token, session.selectedFamily.family_id, activeOnboardingId)
       .then((result) => { if (active) setRemote(result); })
-      .catch(() => undefined);
+      .catch((error) => { console.error("UI-08 remote projection failed", error); });
     return () => { active = false; };
   }, [activeOnboardingId, session.selectedFamily, session.status, session.token]);
 

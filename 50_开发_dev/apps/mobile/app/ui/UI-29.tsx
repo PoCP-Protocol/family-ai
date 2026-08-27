@@ -38,7 +38,7 @@ export default function GrowthOutcomesScreen() {
       if (!active) return;
       setCore(coreResult);
       setPlatform(platformResult);
-    }).catch(() => undefined).finally(() => { if (active) setLoading(false); });
+    }).catch((error) => { console.error("UI-29 remote projection failed", error); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 

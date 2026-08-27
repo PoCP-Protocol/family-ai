@@ -27,7 +27,7 @@ export default function FamilyNoteDetailScreen() {
     let active = true;
     familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id)
       .then((result) => { if (active) setProjection(result); })
-      .catch(() => undefined);
+      .catch((error) => { console.error("UI-27 remote projection failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 

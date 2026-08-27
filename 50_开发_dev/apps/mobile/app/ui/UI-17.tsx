@@ -41,7 +41,7 @@ export default function GrowthPointsScreen() {
     let active = true;
     familyApi.getMembershipCustomerProjection<FamilyApiMembershipProjection>(session.token, session.selectedFamily.family_id)
       .then((result) => { if (active) setMembership(result); })
-      .catch(() => undefined);
+      .catch((error) => { console.error("UI-17 remote projection failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 

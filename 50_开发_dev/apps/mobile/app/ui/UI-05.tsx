@@ -45,10 +45,10 @@ export default function CompanionJourneyScreen() {
     let active = true;
     familyApi.getServiceJourney<ServiceJourney>(session.token, session.selectedFamily.family_id, activeOnboardingId)
       .then((result) => { if (active) setRemote(result); })
-      .catch(() => undefined);
+      .catch((error) => { console.error("UI-05 journey projection failed", error); });
     familyApi.getJourneyPlan<JourneyPlanProjection>(session.token, session.selectedFamily.family_id)
       .then((result) => { if (active) setJourneyPlan(result); })
-      .catch(() => undefined);
+      .catch((error) => { console.error("UI-05 journey plan projection failed", error); });
     return () => { active = false; };
   }, [activeOnboardingId, session.selectedFamily, session.status, session.token]);
 
@@ -85,8 +85,7 @@ export default function CompanionJourneyScreen() {
   }, [serviceCardsOffset, serviceCardsOpacity]);
 
   useEffect(() => {
-    const fallback = setTimeout(revealServiceCards, 260);
-    return () => clearTimeout(fallback);
+    revealServiceCards();
   }, [revealServiceCards]);
 
   const openCheckin = () => {

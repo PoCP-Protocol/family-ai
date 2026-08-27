@@ -1,9 +1,10 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
+import { DataSourceBanner } from "@/components/family/data-source-banner";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
@@ -24,15 +25,17 @@ export default function ParentCommunityScreen() {
   const [channel, setChannel] = useState<(typeof CHANNELS)[number]>("推荐");
   const [visibleCount, setVisibleCount] = useState(4);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadState, setLoadState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadCommunityFeed = useCallback(async () => {
     if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
-    let active = true;
-    familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id)
-      .then((result) => { if (active) setProjection(result); })
-      .catch(() => undefined);
-    return () => { active = false; };
+    setLoadState("loading"); setLoadError(null);
+    try { setProjection(await familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id)); setLoadState("ready"); }
+    catch { setLoadState("error"); setLoadError("社区内容暂时无法同步。"); }
   }, [session.selectedFamily, session.status, session.token]);
+
+  useEffect(() => { void loadCommunityFeed(); }, [loadCommunityFeed]);
 
   const feed = selectLearningExchangeFeed(projection);
   const entries = useMemo(() => {
@@ -47,7 +50,8 @@ export default function ParentCommunityScreen() {
   const loadMore = () => {
     if (loadingMore || visibleCount >= entries.length) return;
     setLoadingMore(true);
-    setTimeout(() => { setVisibleCount((count) => Math.min(count + 4, entries.length)); setLoadingMore(false); }, 260);
+    setVisibleCount((count) => Math.min(count + 4, entries.length));
+    setLoadingMore(false);
   };
 
   const openDetail = (exchangeRef: string) => router.push(`/ui/UI-27?exchangeRef=${encodeURIComponent(exchangeRef)}` as Href);
@@ -61,7 +65,7 @@ export default function ParentCommunityScreen() {
         keyExtractor={(item) => item.exchangeRef}
         contentContainerStyle={styles.content}
         ListHeaderComponent={<View style={styles.header}>
-          <View style={styles.topBar}><Text style={styles.topTitle}>家长社区</Text><IconSymbol name="magnifyingglass" size={23} color="#22272D" /></View>
+          <View style={styles.topBar}><Text style={styles.topTitle}>家长社区</Text><IconSymbol name="magnifyingglass" size={23} color="#22272D" /></View><DataSourceBanner />{loadState === "error" ? <Pressable onPress={() => void loadCommunityFeed()} style={styles.errorNotice}><Text style={styles.errorText}>{loadError} 点击重试</Text></Pressable> : null}
           <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}><IconSymbol name="magnifyingglass" size={20} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} placeholder="搜索话题、内容或用户" placeholderTextColor={colors.muted} style={[styles.searchInput, { color: colors.text }]} returnKeyType="search" /></View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.channelRow}>{CHANNELS.map((item) => <Pressable key={item} onPress={() => setChannel(item)} style={({ pressed }) => [styles.channelButton, pressed && styles.pressed]}><Text style={[styles.channelText, { color: channel === item ? colors.tint : colors.muted }]}>{item}</Text>{channel === item ? <View style={[styles.channelLine, { backgroundColor: colors.tint }]} /> : null}</Pressable>)}</ScrollView>
           <View style={styles.hero}><View style={styles.heroCopy}><Text style={styles.heroTitle}>今天也来分享孩子成长的小变化</Text><Pressable onPress={() => router.push("/ui/UI-26" as Href)} style={({ pressed }) => [styles.heroAction, pressed && styles.pressed]}><Text style={styles.heroActionText}>去分享</Text><IconSymbol name="chevron.right" size={17} color="#FFFFFF" /></Pressable></View><View style={styles.heroIcon}><IconSymbol name="person.2.fill" size={44} color="#2563EB" /></View></View>
@@ -88,6 +92,7 @@ export default function ParentCommunityScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorNotice: { borderRadius: 12, padding: 9, backgroundColor: "#FFF4F0" }, errorText: { color: "#9D4E38", fontSize: 11, lineHeight: 16, textAlign: "center", fontWeight: "800" },
   content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100, gap: 11 }, header: { gap: 13, marginBottom: 2 }, topBar: { minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, topTitle: { color: "#22272D", fontSize: 22, lineHeight: 30, fontWeight: "900" },
   searchBox: { minHeight: 48, borderWidth: 1, borderRadius: 17, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 8 }, searchInput: { flex: 1, fontSize: 13, lineHeight: 19, paddingVertical: 9 },
   channelRow: { gap: 23, paddingHorizontal: 2 }, channelButton: { minHeight: 36, justifyContent: "center", alignItems: "center" }, channelText: { fontSize: 14, lineHeight: 20, fontWeight: "800" }, channelLine: { width: 27, height: 3, borderRadius: 2, marginTop: 5 },

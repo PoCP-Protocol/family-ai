@@ -47,7 +47,7 @@ export default function GrowthProductDetailScreen() {
       if (!active) return;
       setCatalog(catalogResult);
       setCommerceProjection(projectionResult);
-    }).catch(() => undefined);
+    }).catch((error) => { console.error("UI-14 remote action failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 
@@ -59,14 +59,18 @@ export default function GrowthProductDetailScreen() {
   const hasEntitlement = commerceProjection?.entitlements.some((item) => item.status === "AVAILABLE" && matchingIntents.some((intent) => intent.order_intent_id === item.source_order_intent_id)) ?? false;
 
   const saveIntent = async () => {
+    const flowId = `commerce-intent:${product.productRef}`;
+    state.setFlowStatus({ flowId, lastAction: "SAVE_COMMERCE_INTENT_DRAFT", remoteSyncState: "NOT_STARTED", source: "LOCAL_DRAFT", retryable: false });
     state.saveCommerceIntentDraft(product.productRef, product.productVersion, product.title);
     setSubmitState("submitting");
     if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      state.setFlowStatus({ flowId, lastAction: "SAVE_COMMERCE_INTENT_DRAFT", remoteSyncState: "NOT_STARTED", source: "LOCAL_DRAFT", retryable: false });
       setSubmitState("saved");
       haptic.success();
       return;
     }
     try {
+      state.setFlowStatus({ flowId, lastAction: "SUBMIT_COMMERCE_INTENT", remoteSyncState: "SYNCING", source: "LOCAL_DRAFT", retryable: false });
       const result = await familyApi.submitCommerceIntent<FamilyApiCommerceIntentReceipt>(
         session.token,
         session.selectedFamily.family_id,
@@ -74,9 +78,11 @@ export default function GrowthProductDetailScreen() {
         `family-mobile-ui14:${session.selectedFamily.family_id}:${product.productRef}:v${product.productVersion}`,
       );
       state.syncCommerceIntentReceipt(result.intent.order_intent_id, result.entitlement.entitlement_id);
+      state.setFlowStatus({ flowId, lastAction: "SUBMIT_COMMERCE_INTENT", remoteSyncState: "SYNCED", source: "REMOTE_RECEIPT", retryable: false });
       setSubmitState("saved");
       haptic.success();
     } catch {
+      state.setFlowStatus({ flowId, lastAction: "SUBMIT_COMMERCE_INTENT", remoteSyncState: "ERROR", source: "LOCAL_DRAFT", retryable: true });
       setSubmitState("error");
     }
   };

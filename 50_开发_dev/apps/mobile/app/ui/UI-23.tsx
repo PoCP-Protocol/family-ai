@@ -28,7 +28,7 @@ export default function ActivityDetailScreen() {
     let active = true;
     familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id)
       .then((result) => { if (active) setProjection(result); })
-      .catch(() => undefined);
+      .catch((error) => { console.error("UI-23 remote projection failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 
@@ -38,9 +38,13 @@ export default function ActivityDetailScreen() {
 
   const saveInterest = async () => {
     setSaveState("submitting");
+    const flowId = `activity-interest:${activity.activityRef}`;
+    state.setFlowStatus({ flowId, lastAction: "SAVE_ACTIVITY_INTEREST_DRAFT", remoteSyncState: "NOT_STARTED", source: "LOCAL_DRAFT", retryable: false });
     state.saveActivityInterestDraft(activity.activityRef, activity.title);
     if (session.status === "connected" && session.token && session.selectedFamily) {
+      state.setFlowStatus({ flowId, lastAction: "SAVE_ACTIVITY_INTEREST_DRAFT", remoteSyncState: "SYNCING", source: "LOCAL_DRAFT", retryable: false });
       await familyApi.recordDevFlowEvent(session.token, session.selectedFamily.family_id, { ui_id: "UI-23", command: "SAVE_ACTIVITY_INTEREST_DRAFT", selection: activity.activityRef }, `family-mobile-ui23:${session.selectedFamily.family_id}:${activity.activityRef}`);
+      state.setFlowStatus({ flowId, lastAction: "SAVE_ACTIVITY_INTEREST_DRAFT", remoteSyncState: "SYNCED", source: "REMOTE_RECEIPT", retryable: false });
     }
     setSaveState("saved");
     haptic.success();

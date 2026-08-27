@@ -33,7 +33,7 @@ export default function TeacherDetailScreen() {
         if (!active) return;
         setSlots(slotResult);
         setSelectedSlot(slotResult.slots.find((item) => item.status === "AVAILABLE")?.availability_slot_ref ?? null);
-      }).catch(() => undefined);
+      }).catch((error) => { console.error("UI-20 remote projection failed", error); });
     return () => { active = false; };
   }, [offeringRef, session.selectedFamily, session.status, session.token]);
 

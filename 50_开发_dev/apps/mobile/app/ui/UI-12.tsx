@@ -21,7 +21,7 @@ export default function PrivateGrowthStoryScreen() {
   useEffect(() => {
     if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
     let active = true;
-    familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setRemoteProjection(result); }).catch(() => undefined);
+    familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setRemoteProjection(result); }).catch((error) => { console.error("UI-12 remote projection failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 

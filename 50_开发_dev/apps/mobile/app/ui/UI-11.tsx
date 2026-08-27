@@ -22,7 +22,7 @@ export default function FamilyRhythmScreen() {
   useEffect(() => {
     if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
     let active = true;
-    familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setRemoteProjection(result); }).catch(() => undefined);
+    familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id).then((result) => { if (active) setRemoteProjection(result); }).catch((error) => { console.error("UI-11 remote projection failed", error); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
 
