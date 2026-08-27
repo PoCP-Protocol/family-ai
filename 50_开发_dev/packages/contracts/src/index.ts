@@ -8,6 +8,7 @@
 export * from './orchestration';
 export * from './ui01-ui09-first-slice';
 export * from './family-35ui';
+export * from './platform-v4-1';
 
 export type FamilyStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 export type PersonType = 'PARENT' | 'CHILD';

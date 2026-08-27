@@ -1,3 +1,5 @@
+> **EXECUTION NOTICE** — `SUPERSEDED_FOR_EXECUTION_BY = FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md`. This file remains historical architecture context; do not use it as current execution SSOT.
+
 # FAMILY AI PLATFORM — TECH ARCHITECTURE V4.0
 
 ```text

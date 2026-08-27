@@ -1,0 +1,109 @@
+schema_version: FAMILY_AI_USE_CASE_REGISTRY_V1
+architecture_id: FAMILY_AI_PLATFORM_V4_1
+default_policy: DENY
+live_external_default: DENY
+canonical_control_plane: FAMILY_AI_CONTROL_PLANE
+current_transitional_adapter: FAMILY_LLM_GATEWAY
+notes:
+  - Registry authorization and environment runtime flags are separate.
+  - No entry grants pilot or production authorization by itself.
+  - AI may propose; it may not directly mutate canonical business state.
+use_cases:
+  - use_case_id: AI_DIAGNOSIS
+    domain: GROWTH_INTELLIGENCE
+    product_label: AI诊断
+    allowed_skills: [GROWTH_DIAGNOSIS_SKILL]
+    input_data_class: FAMILY_SENSITIVE
+    required_consent: [ASSESSMENT, AI_PERSONALIZATION]
+    human_confirmation: REQUIRED
+    may_propose_action: YES
+    may_mutate_business_state: NO
+    runtime_authorization: NOT_YET_AUTHORIZED
+    live_external_authorization: NO
+    eval_suite: REQUIRED
+
+  - use_case_id: ASSESSMENT_INTERPRETATION
+    domain: GROWTH_INTELLIGENCE
+    allowed_skills: [ASSESSMENT_SKILL]
+    input_data_class: FAMILY_SENSITIVE
+    required_consent: [ASSESSMENT]
+    human_confirmation: REQUIRED_FOR_CANONICAL_FOLLOWUP
+    may_propose_action: YES
+    may_mutate_business_state: NO
+    runtime_authorization: NOT_YET_AUTHORIZED
+    live_external_authorization: NO
+    eval_suite: REQUIRED
+
+  - use_case_id: GROWTH_PLAN_DRAFT
+    domain: GROWTH_JOURNEY
+    allowed_skills: [GROWTH_PLANNING_SKILL]
+    input_data_class: FAMILY_SENSITIVE
+    required_consent: [GROWTH_TRACKING, AI_PERSONALIZATION]
+    human_confirmation: REQUIRED
+    may_propose_action: YES
+    may_mutate_business_state: NO
+    runtime_authorization: NOT_YET_AUTHORIZED
+    live_external_authorization: NO
+    eval_suite: REQUIRED
+
+  - use_case_id: PRIVATE_NOTE_TAGGING
+    domain: CONTENT_COMMUNITY
+    allowed_skills: [PRIVATE_NOTE_TAG_SKILL]
+    input_data_class: FAMILY_SENSITIVE
+    required_consent: [AI_PERSONALIZATION]
+    human_confirmation: EDITABLE_RESULT
+    may_propose_action: NO
+    may_mutate_business_state: NO
+    current_runtime: LEGACY_MOBILE_DIRECT_PROVIDER_HOLD
+    runtime_authorization: MIGRATION_ONLY
+    live_external_authorization: NO_NEW_DIRECT_CALLS
+    eval_suite: REQUIRED
+
+  - use_case_id: RESOURCE_RECOMMENDATION
+    domain: RESOURCE_NETWORK
+    allowed_skills: [RESOURCE_MATCH_SKILL]
+    input_data_class: FAMILY_CONTEXT_MINIMIZED
+    required_consent: [SERVICE]
+    human_confirmation: FAMILY_DECISION_REQUIRED
+    may_propose_action: YES
+    may_mutate_business_state: NO
+    ranking_rule: PLATFORM_MARGIN_RANKING_SIGNAL_ZERO
+    runtime_authorization: NOT_YET_AUTHORIZED
+    live_external_authorization: NO
+    eval_suite: REQUIRED
+
+  - use_case_id: EXPERT_ROUTING
+    domain: SERVICE_OS
+    allowed_skills: [EXPERT_ROUTING_SKILL]
+    input_data_class: FAMILY_CONTEXT_MINIMIZED
+    required_consent: [EXPERT_SERVICE]
+    human_confirmation: FAMILY_DECISION_REQUIRED
+    may_propose_action: YES
+    may_mutate_business_state: NO
+    runtime_authorization: NOT_YET_AUTHORIZED
+    live_external_authorization: NO
+    eval_suite: REQUIRED
+
+  - use_case_id: REPORT_EXPLANATION
+    domain: GROWTH_INTELLIGENCE
+    allowed_skills: [REPORT_INTERPRETATION_SKILL]
+    input_data_class: FAMILY_SENSITIVE
+    required_consent: [GROWTH_TRACKING]
+    human_confirmation: NOT_REQUIRED_FOR_READ_ONLY_EXPLANATION
+    may_propose_action: YES
+    may_mutate_business_state: NO
+    runtime_authorization: NOT_YET_AUTHORIZED
+    live_external_authorization: NO
+    eval_suite: REQUIRED
+
+  - use_case_id: DAILY_COACH
+    domain: GROWTH_JOURNEY
+    allowed_skills: [MICRO_ACTION_SKILL]
+    input_data_class: FAMILY_SENSITIVE
+    required_consent: [AI_PERSONALIZATION, GROWTH_TRACKING]
+    human_confirmation: REQUIRED_BEFORE_CANONICAL_ACTION
+    may_propose_action: YES
+    may_mutate_business_state: NO
+    runtime_authorization: NOT_YET_AUTHORIZED
+    live_external_authorization: NO
+    eval_suite: REQUIRED

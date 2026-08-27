@@ -13,7 +13,7 @@ import {
   type DevGrowthProfileProgress,
   type DevGrowthPlanPreview,
   type DevServiceJourneyProjection,
-  getFamilyGrowthSurfaceArchitectureBinding,
+  getLegacyFamilyGrowthSurfaceArchitectureBinding,
 } from '@family/contracts';
 
 /**
@@ -60,7 +60,7 @@ export class DevCoreGrowthService {
         rule: 'NO_FREE_TEXT_MODEL_WRITE_TO_CORE_ONTOLOGY',
       },
       cards: this.cards(focus, focusSelected, planPreviewed, weeklyActionOpened, actionReviewReady).map((item) => {
-        const architecture = getFamilyGrowthSurfaceArchitectureBinding(item.surface);
+        const architecture = getLegacyFamilyGrowthSurfaceArchitectureBinding(item.surface);
         return {
           ...item,
           loop: architecture.loop,
