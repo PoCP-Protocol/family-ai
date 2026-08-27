@@ -232,9 +232,10 @@ export class OrchestrationController {
     @Param('familyId') familyId: string,
     @Param('caseId') caseId: string,
     @Body() body: { helpfulness?: 'HELPFUL' | 'SOMEWHAT_HELPFUL' | 'NOT_HELPFUL_YET' | 'UNANSWERED' },
+    @OrchestrationActor() actor: Actor,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    return this.svc.finalizeShadowAllocation({ familyId, caseId, helpfulness: body?.helpfulness, idempotencyKey: idempotencyKey?.trim() || undefined });
+    return this.svc.finalizeShadowAllocation({ familyId, caseId, actorRef: actor.personId, helpfulness: body?.helpfulness, idempotencyKey: idempotencyKey?.trim() || undefined });
   }
 
   // ===== ARCH-GO-TEST-FULL-FUNCTION-001: DEV-only synthetic full-loop =====

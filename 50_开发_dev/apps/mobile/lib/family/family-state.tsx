@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type PropsWithChildren } from "react";
 
-import { familyMobileReducer, initialFamilyMobileState, type FamilyMobileState } from "./family-state-core";
+import { familyMobileReducer, initialFamilyMobileState, type FamilyMobileState, type FamilyFlowSource, type FamilyRemoteSyncState } from "./family-state-core";
 import type { UiActionPolicy } from "./ui-action-policies";
 import type { AssessmentAnswer, GrowthFocusId } from "./core-growth";
 import type { ChildChoice, PrivateGrowthStoryDraft } from "./child-growth";
@@ -15,6 +15,7 @@ interface FamilyMobileContextValue extends FamilyMobileState {
   startAction(): void;
   completeAction(reflection: string): void;
   skipAction(): void;
+  setFlowStatus(status: { flowId?: string | null; lastAction?: string | null; remoteSyncState?: FamilyRemoteSyncState; source?: FamilyFlowSource; retryable?: boolean }): void;
   startCamp(): void;
   activateCampDay(day: number): void;
   recordUiAction(policy: UiActionPolicy, label: string): void;
@@ -83,6 +84,7 @@ export function FamilyMobileProvider({ children }: PropsWithChildren) {
     startAction: () => dispatch({ type: "start_action" }),
     completeAction: (reflection) => dispatch({ type: "complete_action", reflection }),
     skipAction: () => dispatch({ type: "skip_action" }),
+    setFlowStatus: (status) => dispatch({ type: "set_flow_status", ...status }),
     startCamp: () => dispatch({ type: "start_camp" }),
     activateCampDay: (day) => dispatch({ type: "activate_camp_day", day }),
     recordUiAction: (policy, label) => dispatch({

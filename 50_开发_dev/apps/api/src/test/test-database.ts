@@ -131,6 +131,9 @@ export async function cleanOrchestrationTablesIfPresent(pool: pg.Pool): Promise<
     'multimodal_audit_events', 'multimodal_derived_artifacts', 'multimodal_processing_runs', 'multimodal_assets', 'multimodal_consents',
     'multimodal_output_schemas', 'multimodal_processing_policies', 'multimodal_capability_profiles',
     'tenant_catalog_bindings', 'tenant_policy_profiles', 'tenant_family_bindings', 'tenant_account_memberships', 'tenants',
+    // FAMILY-SERVICE-COLLAB-ALLOCATION-P0: allocation/review/assignment rows reference
+    // service_tasks/service_contributions, which in turn reference service_cases; clean children first.
+    'service_contribution_allocations', 'service_case_allocation_runs', 'task_quality_reviews', 'task_assignments', 'service_tasks',
     'service_followup_responses', 'service_contributions', 'service_cases',
     'orchestration_plans', 'family_service_decisions', 'resource_recommendations',
     'eligibility_evaluations', 'growth_intents', 'growth_need_signals', 'growth_need_inputs',

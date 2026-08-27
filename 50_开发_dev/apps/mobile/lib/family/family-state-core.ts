@@ -26,6 +26,9 @@ export interface UiActionReceipt {
   externalEffect: false;
 }
 
+export type FamilyFlowSource = "LOCAL_DRAFT" | "REMOTE_PROJECTION" | "REMOTE_RECEIPT" | "FALLBACK";
+export type FamilyRemoteSyncState = "NOT_STARTED" | "SYNCING" | "SYNCED" | "ERROR";
+
 export interface FamilyMobileState {
   hydrated: boolean;
   todayAction: TodayAction;
@@ -34,6 +37,13 @@ export interface FamilyMobileState {
   campCurrentDay: number;
   campCompletedDays: number[];
   lastReceipt: ActionReceipt | null;
+  /** Cross-screen observability; this is transport/process state, not an outcome. */
+  flowId: string | null;
+  lastAction: string | null;
+  remoteSyncState: FamilyRemoteSyncState;
+  source: FamilyFlowSource;
+  updatedAt: string;
+  retryable: boolean;
   uiActionReceipts: UiActionReceipt[];
   selectedGrowthFocus: GrowthFocusId | null;
   assessmentAnswers: Record<string, AssessmentAnswer>;
@@ -56,6 +66,7 @@ export type FamilyMobileAction =
   | { type: "activate_camp_day"; day: number }
   | { type: "start_camp" }
   | { type: "complete_action"; reflection: string }
+  | { type: "set_flow_status"; flowId?: string | null; lastAction?: string | null; remoteSyncState?: FamilyRemoteSyncState; source?: FamilyFlowSource; retryable?: boolean }
   | { type: "skip_action" }
   | { type: "record_ui_action"; payload: Omit<UiActionReceipt, "recordedAt" | "externalEffect"> }
   | { type: "select_growth_focus"; focus: GrowthFocusId }
@@ -96,6 +107,12 @@ export const initialFamilyMobileState: FamilyMobileState = {
   campCurrentDay: 1,
   campCompletedDays: [],
   lastReceipt: null,
+  flowId: null,
+  lastAction: null,
+  remoteSyncState: "NOT_STARTED",
+  source: "LOCAL_DRAFT",
+  updatedAt: new Date(0).toISOString(),
+  retryable: false,
   uiActionReceipts: [],
   selectedGrowthFocus: null,
   assessmentAnswers: {},
@@ -113,13 +130,28 @@ export const initialFamilyMobileState: FamilyMobileState = {
 };
 
 export function familyMobileReducer(state: FamilyMobileState, action: FamilyMobileAction): FamilyMobileState {
-  if (action.type === "hydrate") return { ...state, ...action.payload, hydrated: true };
-  if (action.type === "start_action") return { ...state, todayAction: { ...state.todayAction, status: "in_progress" } };
-  if (action.type === "start_camp") return { ...state, campStarted: true };
+  if (action.type === "hydrate") return { ...state, ...action.payload, hydrated: true, updatedAt: action.payload.updatedAt ?? state.updatedAt };
+  if (action.type === "set_flow_status") return {
+    ...state,
+    ...(action.flowId === undefined ? {} : { flowId: action.flowId }),
+    ...(action.lastAction === undefined ? {} : { lastAction: action.lastAction }),
+    ...(action.remoteSyncState === undefined ? {} : { remoteSyncState: action.remoteSyncState }),
+    ...(action.source === undefined ? {} : { source: action.source }),
+    ...(action.retryable === undefined ? {} : { retryable: action.retryable }),
+    updatedAt: new Date().toISOString(),
+  };
+  if (action.type === "start_action") return { ...state, lastAction: "START_TODAY_ACTION", updatedAt: new Date().toISOString(), todayAction: { ...state.todayAction, status: "in_progress" } };
+  if (action.type === "start_camp") return { ...state, lastAction: "START_CAMP", updatedAt: new Date().toISOString(), campStarted: true };
   if (action.type === "activate_camp_day") {
     const day = getCamp21Day(action.day);
     return {
       ...state,
+      lastAction: `ACTIVATE_CAMP_DAY:${day.day}`,
+      flowId: `camp21-day-${day.day}`,
+      source: "LOCAL_DRAFT",
+      remoteSyncState: "NOT_STARTED",
+      retryable: false,
+      updatedAt: new Date().toISOString(),
       campStarted: true,
       activeCampDay: day.day,
       campCurrentDay: day.day,
@@ -143,6 +175,11 @@ export function familyMobileReducer(state: FamilyMobileState, action: FamilyMobi
     const nextCampDay = state.activeCampDay ? Math.min(21, state.activeCampDay + 1) : state.campCurrentDay;
     return {
       ...state,
+      lastAction: "COMPLETE_TODAY_ACTION",
+      source: "LOCAL_DRAFT",
+      remoteSyncState: "NOT_STARTED",
+      retryable: false,
+      updatedAt: new Date().toISOString(),
       todayAction: { ...state.todayAction, status: "checked_in" },
       campCompletedDays: completedDays,
       campCurrentDay: nextCampDay,
@@ -155,7 +192,7 @@ export function familyMobileReducer(state: FamilyMobileState, action: FamilyMobi
       },
     };
   }
-  if (action.type === "skip_action") return { ...state, todayAction: { ...state.todayAction, status: "skipped" } };
+  if (action.type === "skip_action") return { ...state, lastAction: "SKIP_TODAY_ACTION", updatedAt: new Date().toISOString(), todayAction: { ...state.todayAction, status: "skipped" } };
   if (action.type === "record_ui_action") {
     const receipt: UiActionReceipt = {
       ...action.payload,

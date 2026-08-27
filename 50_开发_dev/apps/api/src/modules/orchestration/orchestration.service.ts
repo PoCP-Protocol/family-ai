@@ -889,7 +889,7 @@ export class OrchestrationService {
       const own = await client.query<{ case_id: string; blueprint_ref: string | null; blueprint_version: number | null; shadow_allocation_finalized_at: string | null }>(`select case_id, collaboration_blueprint_ref as blueprint_ref, collaboration_blueprint_version as blueprint_version, shadow_allocation_finalized_at from service_cases where case_id=$1 and family_id=$2 for update`, [params.caseId, params.familyId]);
       if (!own.rows[0]) throw new ForbiddenException('case_not_in_family');
       if (own.rows[0].shadow_allocation_finalized_at) return { case_id: params.caseId, finalized: true, allocations: [] };
-      const contributions = await client.query<{ contribution_id: string; provider_ref: string | null; role: string; task_ref: string; task_weight: number }>(`select c.contribution_id, c.provider_ref, c.role, c.task_ref, st.task_weight from service_contributions c join service_tasks st on st.task_id=c.task_ref where c.case_ref=$1 and c.quality_state='VERIFIED' order by c.completed_at asc`, [params.caseId]);
+      const contributions = await client.query<{ contribution_id: string; provider_ref: string | null; role: string; task_ref: string; task_weight: number }>(`select c.contribution_id, c.provider_ref, c.role, c.task_ref, st.task_weight from service_contributions c join service_tasks st on st.task_id=c.task_ref::uuid where c.case_ref=$1 and c.quality_state='VERIFIED' order by c.completed_at asc`, [params.caseId]);
       if (!contributions.rows.length) throw new ConflictException('verified_contribution_required');
       if (!own.rows[0].blueprint_ref || !own.rows[0].blueprint_version) throw new ConflictException('case_blueprint_snapshot_required');
       const policyRef = own.rows[0].blueprint_ref;
