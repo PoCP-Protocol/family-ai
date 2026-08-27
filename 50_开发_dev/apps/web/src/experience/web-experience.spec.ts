@@ -16,6 +16,10 @@ describe('Web 双端 V1', () => {
     const root = document.createElement('main'); document.body.append(root);
     const app = createConsumerExperience(root);
     expect(root.dataset.clientSurface).toBe('consumer-web-v2'); expect(root.dataset.uiBaseline).toBe('34'); expect(root.textContent).toContain('今晚一件事');
+    expect(root.querySelector('[aria-label="成长主题"]')).toBeTruthy();
+    expect(root.textContent).not.toMatch(/设计预览|工作区|Named Action|UI-01/);
+    root.querySelector('[data-topic="情绪支持"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(root.querySelector('[data-topic="情绪支持"]')?.classList.contains('is-active')).toBe(true);
     root.querySelector('[data-nav="growth"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(app.getCurrentScreen().id).toBe('UI-02'); expect(root.textContent).toContain('不生成总分、排名或永久标签'); app.destroy();
   });
