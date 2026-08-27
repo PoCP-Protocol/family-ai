@@ -29,6 +29,15 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: 50_开发_dev/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+      - name: Install (fails fast with an explicit lockfile-staleness message, not a raw pnpm error)
+        run: |
+          set -o pipefail
+          if ! pnpm install --frozen-lockfile 2>&1 | tee /tmp/pnpm-install.log; then
+            if grep -q "ERR_PNPM_OUTDATED_LOCKFILE" /tmp/pnpm-install.log; then
+              echo "##[error]pnpm-lock.yaml is out of date with one or more package.json files (see 'specifiers' diff above)."
+              echo "##[error]Run 'pnpm install' locally to regenerate the lockfile and commit it alongside the dependency change."
+            fi
+            exit 1
+          fi
       - run: pnpm validate:35ui
       - run: pnpm --filter @family/contracts typecheck
