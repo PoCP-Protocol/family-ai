@@ -4,7 +4,7 @@
 # 授权只能由总架构师(或其上级)通过 authorized_by + authorization_ref 落记;AI Agent 不得自增授权。
 schema_version: AUTH_REGISTRY_V1
 maintained_by: family-chief-architect
-updated_at: "2026-08-23"
+updated_at: "2026-08-26"
 
 # M3-W1 收口(架构师 M3_W1_RUNTIME_INTEGRATION_FINAL_REVIEW = PASS,授权合并 PR #1)
 program_gates:
@@ -56,6 +56,43 @@ capabilities:
       canonical_state_mutation_by_model_authorized: false
       real_keys_in_repo_authorized: false
     notes: 家庭测评后端能力可在本地/内部显式授权环境中调用真实外部模型;默认配置继续 mock/零外呼;不得扩展为试点、生产、直接 provider 调用、DB schema 变更或 AI 直接写 canonical Family/Growth 状态。
+
+  # 补记登记(非新增授权):CURRENT_SPRINT.md 已自曝此次 override 且明文承认本 registry 当时缺对应条目;
+  # 本条只是把已发生、已在 CURRENT_SPRINT.md 记录的 project owner override 正式落记到 registry,不追认为总架构师授权。
+  - capability_id: PROJECT_OWNER_OVERRIDE_SERVICE_COLLAB_ALLOCATION_G1B_PLUS_DB_SCHEMA_20260826
+    stage: G1-B-PLUS / DB_SCHEMA_CHANGE (pre-existing service-collaboration-allocation feature line)
+    status: PROJECT_OWNER_OVERRIDE_RECORDED_NOT_CHIEF_ARCHITECT_RATIFIED
+    architecture_authorized: false
+    code_authorized: true
+    runtime_authorized: false
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: project-owner   # 注意:非 family-chief-architect;总架构师未就此单独裁决,仅原 G1-A 区块保留不变
+    authorization_ref: "50_开发_dev/CURRENT_SPRINT.md § '2026-08-26 Project Owner Override' (verbal, in-session)"
+    authorized_at: "2026-08-26"
+    supersedes: []
+    scope:
+      granted_capabilities:
+        - G1_B_PLUS
+        - DB_SCHEMA_CHANGE
+      branch: feat/service-collab-allocation-p0-002
+      commit_history:
+        - 9d9de4d
+        - e84a919
+        - a0ea305
+        - 8427997
+        - 6eef592
+      derived_branches:
+        - feat/theory-whitelist-registry-001
+        - feat/academic-need-classification-g1a-001
+        - feat/service-product-registry-001
+        - feat/growth-priority-theory-basis-001
+    constraints:
+      direct_push_main_authorized: false
+      auto_merge_authorized: false
+      chief_architect_ratification: NOT_YET_OBTAINED
+    notes: "口头/会话内授权,由 project owner(非总架构师)于 2026-08-26 就既有 service-collaboration-allocation 功能线及当日新建的 4 个衍生分支授予;仅解锁该分支线的 PR 创建与评审,不解锁 unreviewed merge(AUTO_MERGE/DIRECT_PUSH_MAIN 仍 NO)。本条目为补记,忠实转录 CURRENT_SPRINT.md 原文,不新增、不扩大、不追认授权范围;总架构师尚未就此单独裁决。"
 
   - capability_id: M3_000_CONTRACT
     stage: M3-000
