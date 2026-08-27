@@ -6,9 +6,12 @@ on:
       - "50_开发_dev/apps/mobile/**"
       - "50_开发_dev/apps/api/**"
       - "50_开发_dev/packages/contracts/**"
+      - "50_开发_dev/pnpm-lock.yaml"
+      - "50_开发_dev/pnpm-workspace.yaml"
       - "50_开发_dev/governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json"
       - "50_开发_dev/architecture/FAMILY_35UI_FULLSTACK_ARCHITECTURE_V1.md"
       - "50_开发_dev/tools/validate-35ui-alignment.mjs"
+      - ".github/workflows/family-35ui-alignment.yml"
 
 jobs:
   alignment:
@@ -23,7 +26,7 @@ jobs:
           version: 11.1.3
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: 50_开发_dev/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
