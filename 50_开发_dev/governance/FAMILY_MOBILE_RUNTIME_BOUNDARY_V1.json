@@ -1,0 +1,43 @@
+{
+  "schema_version": "FAMILY_MOBILE_RUNTIME_BOUNDARY_V1",
+  "boundary_id": "FAMILY-M2-001-AI-GATEWAY-AND-POLICY-RUNTIME-CLOSURE",
+  "dev_test_real_external_ai": {
+    "status": "ALLOWED_VIA_FAMILY_API_MODEL_GATEWAY_ONLY",
+    "required_api_gateway_provider": "apps/api/src/modules/family/family-model-gateway.provider.ts",
+    "required_live_flag": "FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI",
+    "required_gateway_factory": "createFamilyModelGatewayFromEnv",
+    "forbidden_client_secret_paths": ["apps/mobile/app", "apps/mobile/lib", "apps/mobile/components"],
+    "forbidden_mobile_family_domain_provider_path": "apps/mobile/server"
+  },
+  "canonical_runtime": {
+    "family_business_api": "apps/api",
+    "client_family_api_adapter": "apps/mobile/lib/family/family-api-client.ts",
+    "model_gateway_provider": "apps/api/src/modules/family/family-model-gateway.provider.ts",
+    "canonical_database": "PostgreSQL via Family API",
+    "canonical_identity": "Family API account session and family context"
+  },
+  "mobile_template_runtime": {
+    "status": "QUARANTINED_TEMPLATE_COMPATIBILITY_RUNTIME",
+    "root": "apps/mobile/server",
+    "allowed_scripts": ["dev:server"],
+    "dependencies_to_migrate": ["express", "@trpc/server", "mysql2", "drizzle-orm"],
+    "reason": "Legacy Expo template support only; it must not become a second Family business backend, identity system, canonical database, or direct model path for Family scenarios."
+  },
+  "production_forbidden": [
+    "NO_CLIENT_DIRECT_MODEL_CALL",
+    "NO_SECOND_BUSINESS_BACKEND",
+    "NO_SECOND_IDENTITY_SYSTEM",
+    "NO_SECOND_CANONICAL_DB"
+  ],
+  "required_client_boundary_text": [
+    "开发/测试环境允许调用真实 API key，但只能通过 Family API 的 Model Gateway 入口",
+    "Mobile UI → Family API → Model Gateway → Policy / Consent / Safety → Provider Adapter",
+    "QUARANTINED_TEMPLATE_COMPATIBILITY_RUNTIME"
+  ],
+  "required_family_api_client_paths": [
+    "/auth/account-session",
+    "/auth/contexts",
+    "/families/${familyId}/dev/core-growth",
+    "/families/${familyId}/dev/platform-surfaces"
+  ]
+}

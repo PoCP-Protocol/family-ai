@@ -1,0 +1,131 @@
+{
+  "factory_ref": "FAMILY_DEVELOPMENT_FACTORY_V0",
+  "default_target": "camp21-product-detail",
+  "capability_lanes": [
+    {
+      "id": "UI_FACTORY_LANE",
+      "scope": "baseline-driven screen implementation and visual contract checks"
+    },
+    {
+      "id": "MOBILE_CONTRACT_LANE",
+      "scope": "React Native / Expo Router page state, client API, and regression checks"
+    },
+    {
+      "id": "WEB_CONTRACT_LANE",
+      "scope": "web app routes, components, runtime browser evidence, and browser validation"
+    },
+    {
+      "id": "BACKEND_FACTORY_LANE",
+      "scope": "NestJS modules, service contracts, persistence, and integration tests"
+    },
+    {
+      "id": "CONTROLLED_ACTION_LANE",
+      "scope": "Named Action, consent, idempotency, and no external effect gates"
+    },
+    {
+      "id": "BOUNDARY_GATE_LANE",
+      "scope": "domain safety scans and prohibited mechanism checks"
+    },
+    {
+      "id": "REPORT_LANE",
+      "scope": "machine-readable and human-readable run evidence"
+    }
+  ],
+  "targets": [
+    {
+      "id": "camp21-product-detail",
+      "factory_ref": "CAMP21_FULLSTACK_FACTORY_V0",
+      "feature_ref": "CAMP21_PRODUCT_DETAIL",
+      "ui_ref": "UI-14",
+      "frontend_ref": "apps/mobile/app/ui/UI-14.tsx",
+      "backend_ref": "family-commerce-intent",
+      "product_ref": "PRODUCT_PARENT_CHILD_CAMP",
+      "report_base": "camp21-development-factory",
+      "baseline_assets": [
+        "apps/mobile/research/baselines/ui35-original/product-detail-reference-418x970.png",
+        "reports/factory/browser-evidence/camp21-product-detail-8081.latest.png"
+      ],
+      "boundaries": {
+        "allowed_mutations": [
+          "SubmitCommerceIntent",
+          "local bookmark/support no-op state"
+        ],
+        "forbidden_effects": [
+          "payment SDK invocation",
+          "external order placement",
+          "external support notification",
+          "automatic family ranking or total score"
+        ],
+        "authorization_boundary": {
+          "baseline_driven_ui": "AUTHORIZED",
+          "controlled_backend_intent": "AUTHORIZED_TESTDB_ONLY",
+          "payment_or_external_order": "NOT_AUTHORIZED",
+          "live_external_ai": "NOT_INVOKED"
+        }
+      },
+      "steps": [
+        {
+          "id": "camp21_ui_contract_harness",
+          "lane_refs": ["UI_FACTORY_LANE", "MOBILE_CONTRACT_LANE"],
+          "command_kind": "pnpm",
+          "args": ["run", "harness:camp21-ui"]
+        },
+        {
+          "id": "camp21_browser_visible_text_evidence",
+          "lane_refs": ["UI_FACTORY_LANE", "WEB_CONTRACT_LANE"],
+          "check": "browserEvidenceCheck",
+          "evidence_file": "reports/factory/browser-evidence/camp21-product-detail.latest.json",
+          "required_text": [
+            "商品详情",
+            "21天亲子沟通挑战营",
+            "¥399",
+            "拼团价 ¥199 (3人成团)",
+            "会员价 ¥179 (会员再享95折)",
+            "视频课程",
+            "每日打卡",
+            "社群交流",
+            "专家答疑",
+            "立即购买",
+            "发起拼团"
+          ]
+        },
+        {
+          "id": "camp21_backend_commerce_intent_slice",
+          "lane_refs": ["BACKEND_FACTORY_LANE", "CONTROLLED_ACTION_LANE"],
+          "required_for_ui_only": false,
+          "command_kind": "node",
+          "args": ["tools/testdb.mjs", "run", "--filter", "@family/api", "exec", "vitest", "run", "--config", "vitest.integration.config.ts", "src/modules/orchestration/family-commerce-intent.integration.spec.ts"]
+        },
+        {
+          "id": "camp21_forbidden_effect_scan",
+          "lane_refs": ["BOUNDARY_GATE_LANE"],
+          "check": "forbiddenTextScan",
+          "files": [
+            "apps/mobile/app/ui/UI-14.tsx",
+            "apps/mobile/lib/family/family-api-client.ts",
+            "apps/api/src/modules/orchestration/family-commerce-intent.service.ts",
+            "apps/api/src/modules/orchestration/family-commerce-objects.service.ts"
+          ],
+          "patterns": [
+            { "source": "paymentIntent", "flags": "i" },
+            { "source": "checkout", "flags": "i" },
+            { "source": "支付宝|微信支付" },
+            { "source": "external_effect\\s*:\\s*true" }
+          ]
+        }
+      ]
+    }
+  ],
+  "target_template": {
+    "required_fields": [
+      "id",
+      "feature_ref",
+      "ui_ref or frontend_ref",
+      "backend_ref when backend work exists",
+      "boundaries.allowed_mutations",
+      "boundaries.forbidden_effects",
+      "steps"
+    ],
+    "supported_step_kinds": ["pnpm", "node", "shell", "forbiddenTextScan"]
+  }
+}

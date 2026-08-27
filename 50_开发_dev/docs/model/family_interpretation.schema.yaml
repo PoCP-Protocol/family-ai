@@ -1,0 +1,91 @@
+version: 0.1.0
+asset_ref: FAMILY_INTERPRETATION_SCHEMA
+status: draft
+owner: Family Education Industry Model
+purpose: >
+  Defines structured interpretation output for Family Education Large Model.
+  The output supports UI-03 and future reports, but remains hypothesis and
+  recommendation candidates unless confirmed through authorized actions.
+
+schema_rules:
+  - interpretation must not include family total score or family ranking.
+  - interpretation must separate perspective, signal, hypothesis, recommendation, action, and outcome.
+  - every hypothesis must link to construct_refs and source/evidence boundaries when used.
+  - every action candidate must link to action_ref and review method.
+  - high-risk or professional scenarios must produce human_gate_required instead of automated advice.
+
+output_contract:
+  interpretation_ref: stable identifier for the generated interpretation artifact
+  source_session_ref: assessment session or scenario ref
+  respondent_context:
+    family_role: parent, child, teacher, human_reviewer, system
+    child_age_band: preschool, primary_lower, primary_upper, middle_school, high_school, unknown
+    locale_context: optional localization profile
+  need_summary:
+    - need_ref: linked child, parent, or family need
+      support_priority: low, medium, high, unknown
+      evidence_boundary: perspective, context_signal, artifact_signal, human_review, unknown
+  construct_signals:
+    - construct_ref: linked construct
+      signal_strength: low, medium, high, unknown
+      supporting_item_refs: item refs from item bank
+      uncertainty: low, medium, high
+  hypotheses:
+    - hypothesis_ref: stable hypothesis candidate ref
+      statement: parent-facing careful explanation
+      construct_refs: linked constructs
+      confidence: low, medium, high
+      boundary_label: hypothesis_not_fact
+  action_candidates:
+    - action_ref: support action candidate
+      reason: why this action may help
+      review_window: same_day, 7_days, 14_days, 30_days, custom
+      expected_outcome_signal_refs: linked outcome signal types
+      decision_boundary: recommendation_not_decision
+  human_gate:
+    required: true_or_false
+    reason: high_risk, health_risk, crisis_signal, professional_scope, low_confidence, none
+  prohibited_outputs:
+    - family_total_score
+    - family_ranking
+    - child_ranking
+    - medical_diagnosis
+    - psychiatric_diagnosis
+    - causal_claim_without_outcome
+
+interpretation_templates:
+  - template_ref: COMMUNICATION_SUPPORT_INTERPRETATION
+    construct_refs: [PARENT_CHILD_COMMUNICATION]
+    action_refs: [COMMUNICATION_REPAIR_CONVERSATION]
+    outcome_refs: [FAMILY_CONFLICT_CHANGE_SIGNAL, ACTION_TRIED_SIGNAL]
+    explanation_style: careful_parent_facing
+
+  - template_ref: LEARNING_PROCESS_INTERPRETATION
+    construct_refs: [HOMEWORK_PROCESS, LEARNING_STRATEGY_METACOGNITION, ACADEMIC_DEVELOPMENT]
+    action_refs: [SEVEN_DAY_HOMEWORK_START_RITUAL, SCHOOL_FAMILY_FEEDBACK_HANDOFF]
+    outcome_refs: [LEARNING_PROCESS_CHANGE_SIGNAL, ACTION_TRIED_SIGNAL]
+    explanation_style: learning_science_plain_language
+
+  - template_ref: HEALTH_RHYTHM_INTERPRETATION
+    construct_refs: [PHYSICAL_HEALTH_RHYTHM, PSYCHOSOMATIC_STRESS_SIGNAL]
+    action_refs: [SLEEP_AND_ENERGY_RHYTHM_CHECK, HUMAN_SERVICE_CONTEXT_PACKAGE]
+    outcome_refs: [HEALTH_RHYTHM_CHANGE_SIGNAL, HUMAN_REVIEW_NEXT_STEP_SIGNAL]
+    explanation_style: conservative_health_boundary
+
+  - template_ref: DIGITAL_AI_INTERPRETATION
+    construct_refs: [DEVICE_USE_CONTEXT, AI_LITERACY_FLUENCY]
+    action_refs: [FAMILY_DEVICE_AGREEMENT_DRAFT, AI_USE_FAMILY_RULES_MINI_PLAN]
+    outcome_refs: [DIGITAL_AI_USE_CHANGE_SIGNAL, ACTION_TRIED_SIGNAL]
+    explanation_style: ai_era_family_rules
+
+  - template_ref: MULTIMODAL_CREATION_INTERPRETATION
+    construct_refs: [MULTIMODAL_CREATION, SUBJECT_LEARNING_PROFILE]
+    action_refs: [MULTIMODAL_LEARNING_ARTIFACT_REVIEW]
+    outcome_refs: [MULTIMODAL_ARTIFACT_PROGRESS_SIGNAL, ACTION_TRIED_SIGNAL]
+    explanation_style: strength_and_project_learning
+
+  - template_ref: PARENT_CAPACITY_INTERPRETATION
+    construct_refs: [PARENT_CAPACITY, SCHOOL_FAMILY_COLLABORATION]
+    action_refs: [HUMAN_SERVICE_CONTEXT_PACKAGE, SCHOOL_FAMILY_FEEDBACK_HANDOFF]
+    outcome_refs: [HUMAN_REVIEW_NEXT_STEP_SIGNAL, SCHOOL_FEEDBACK_ALIGNMENT_SIGNAL]
+    explanation_style: supportive_not_blaming

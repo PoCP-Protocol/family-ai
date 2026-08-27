@@ -22,6 +22,7 @@ import { FamilyMobileProvider } from "@/lib/family/family-state";
 import { FamilyApiSessionProvider } from "@/lib/family/family-api-session";
 import { FamilyMobileHydrationGate } from "@/components/family/family-mobile-hydration-gate";
 import { AssetActionsOverlay } from "@/components/family/asset-actions-overlay";
+import { ResponsivePlatformShell } from "@/components/family/responsive-platform-shell";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -89,15 +90,24 @@ export default function RootLayout() {
           <FamilyApiSessionProvider>
             <FamilyMobileProvider>
           <FamilyMobileHydrationGate>
+          <ResponsivePlatformShell>
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
           {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
           {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack screenOptions={{
+            headerShown: false,
+            headerStyle: { backgroundColor: "#F8FBFD" },
+            headerTintColor: "#17233B",
+            headerTitleStyle: { fontWeight: "800" },
+            headerShadowVisible: false,
+            contentStyle: { backgroundColor: "#F8FBFD" },
+          }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="oauth/callback" />
           </Stack>
           <StatusBar style="auto" />
           <AssetActionsOverlay />
+          </ResponsivePlatformShell>
           </FamilyMobileHydrationGate>
             </FamilyMobileProvider>
           </FamilyApiSessionProvider>

@@ -1,0 +1,97 @@
+version: 0.1.0
+asset_ref: FAMILY_SUPPORT_ACTION_CATALOG
+status: draft
+owner: Family Education Industry Model
+source_doc: ../FAMILY_EDUCATION_INTELLIGENCE_MODEL_V0_1.md
+purpose: >
+  Defines low-risk, reviewable support actions that can be linked to child,
+  parent, and family needs. Actions are candidates for parent confirmation,
+  family practice, school-family handoff, or human-service review.
+
+catalog_rules:
+  - action_ref must be stable and uppercase snake case.
+  - every action must declare need_refs and construct_refs.
+  - actions are suggestions or candidates, not automatic decisions.
+  - actions should be small enough to review within 7 to 14 days.
+  - multimodal actions may ask families to upload or create artifacts only through approved consent and evidence boundaries.
+
+actions:
+  - action_ref: SEVEN_DAY_HOMEWORK_START_RITUAL
+    name: 7-day homework start ritual
+    owner_role: parent_child
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, FAMILY_LEARNING_ENVIRONMENT_NEED]
+    construct_refs: [HOMEWORK_PROCESS, FAMILY_ROUTINE]
+    action_type: family_practice
+    duration: 7_days
+    review_method: Ask whether homework started with less delay and less conflict.
+    first_product_use: UI-03 learning support action.
+
+  - action_ref: COMMUNICATION_REPAIR_CONVERSATION
+    name: Communication repair conversation
+    owner_role: parent
+    need_refs: [CHILD_RELATIONSHIP_NEED, FAMILY_COMMUNICATION_NEED, PARENT_METHOD_NEED]
+    construct_refs: [PARENT_CHILD_COMMUNICATION]
+    action_type: parent_child_conversation
+    duration: 1_conversation_then_7_day_review
+    review_method: Ask whether the child was more willing to talk and whether conflict intensity changed.
+    first_product_use: UI-03 relationship support action.
+
+  - action_ref: FAMILY_DEVICE_AGREEMENT_DRAFT
+    name: Family device agreement draft
+    owner_role: family
+    need_refs: [CHILD_DIGITAL_AI_NEED, FAMILY_RHYTHM_NEED, FAMILY_COMMUNICATION_NEED]
+    construct_refs: [DEVICE_USE_CONTEXT, FAMILY_ROUTINE]
+    action_type: family_agreement
+    duration: 7_days
+    review_method: Ask whether sleep, homework, and conflict around device use changed.
+    first_product_use: Device-use context action.
+
+  - action_ref: SLEEP_AND_ENERGY_RHYTHM_CHECK
+    name: Sleep and energy rhythm check
+    owner_role: parent_child
+    need_refs: [CHILD_PHYSICAL_HEALTH_NEED, FAMILY_RHYTHM_NEED]
+    construct_refs: [PHYSICAL_HEALTH_RHYTHM]
+    action_type: health_routine_review
+    duration: 7_days
+    review_method: Ask whether bedtime, morning energy, and study fatigue changed.
+    first_product_use: Health and learning-readiness support.
+
+  - action_ref: AI_USE_FAMILY_RULES_MINI_PLAN
+    name: Family AI-use mini plan
+    owner_role: family
+    need_refs: [CHILD_DIGITAL_AI_NEED, PARENT_LEARNING_NEED]
+    construct_refs: [AI_LITERACY_FLUENCY, DEVICE_USE_CONTEXT]
+    action_type: family_learning_agreement
+    duration: 7_days
+    review_method: Ask whether AI use became clearer, safer, and more learning-oriented.
+    first_product_use: AI literacy support.
+
+  - action_ref: MULTIMODAL_LEARNING_ARTIFACT_REVIEW
+    name: Multimodal learning artifact review
+    owner_role: parent_child
+    need_refs: [CHILD_DIGITAL_AI_NEED, CHILD_LEARNING_SUPPORT_NEED, CHILD_IDENTITY_STRENGTH_NEED]
+    construct_refs: [MULTIMODAL_CREATION, SUBJECT_LEARNING_PROFILE]
+    action_type: multimodal_artifact_review
+    duration: 7_to_14_days
+    review_method: Review one child-created artifact, such as a photo explanation, visual mind map, short audio reflection, video demo, data chart, code snippet, or presentation.
+    first_product_use: Multimodal literacy and project learning support.
+
+  - action_ref: SCHOOL_FAMILY_FEEDBACK_HANDOFF
+    name: School-family feedback handoff
+    owner_role: parent_teacher
+    need_refs: [FAMILY_SCHOOL_ALIGNMENT_NEED, PARENT_COLLABORATION_NEED]
+    construct_refs: [SCHOOL_FAMILY_COLLABORATION, ACADEMIC_DEVELOPMENT]
+    action_type: school_family_handoff
+    duration: one_feedback_cycle
+    review_method: Ask whether teacher feedback became clearer and whether family action was adjusted.
+    first_product_use: School-family support.
+
+  - action_ref: HUMAN_SERVICE_CONTEXT_PACKAGE
+    name: Human-service context package
+    owner_role: human_service
+    need_refs: [FAMILY_SUPPORT_NETWORK_NEED, PARENT_DECISION_NEED]
+    construct_refs: [PARENT_CAPACITY, SCHOOL_FAMILY_COLLABORATION]
+    action_type: human_service_handoff
+    duration: case_dependent
+    review_method: Human reviewer records next-step recommendation and follow-up outcome signal.
+    first_product_use: Human service workflow.

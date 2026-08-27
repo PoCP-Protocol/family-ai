@@ -1,0 +1,162 @@
+version: 0.1.0
+asset_ref: FAMILY_EDUCATION_MODEL_FOUNDATION_MANIFEST
+status: draft
+owner: Family Education Industry Model
+purpose: >
+  Defines the first buildable foundation of the Family Education Large Model.
+  The foundation is an asset system, not a single prompt or chatbot. It is made
+  of versioned registries, schemas, component contracts, evaluation gates, and
+  product-surface bindings that support the Family Growth Platform.
+
+model_position:
+  public_name_zh: 法咪莉校长
+  public_name_usage: external-facing name for the Family Education Large Model
+  foundation_for: Family Growth Platform
+  first_ui_baseline: UI-01..UI-35
+  first_runtime_rule: product surfaces compose model components; product surfaces do not own domain logic
+  current_authorization_boundary:
+    business_runtime: AUTHORIZED
+    database_schema_change: NOT_AUTHORIZED
+    live_external_ai: AUTHORIZED
+    ui_visual_change: NOT_AUTHORIZED
+    authorization_ref: governance/AUTHORIZATION_REGISTRY.yaml#G1A_FAMILY_EDUCATION_ASSESSMENT_MODEL_INTERNAL
+    scope: UI-02/UI-03 Family Education Assessment Model internal/local only;pilot and production remain unauthorized.
+
+architecture_principle:
+  statement: Stand on the shoulders of giants, but keep the Family domain intelligence first-party.
+  meaning: >
+    Mature open-source harnesses, schema tools, evaluation methods, retrieval stacks,
+    labeling workflows, and small-model tooling should accelerate the model factory.
+    They must not replace Family-owned domain registries, need taxonomies, action
+    catalogs, safety boundaries, expert labels, and outcome definitions.
+
+foundation_principles:
+  - Family Education Large Model is a componentized industry model, not only a generative LLM.
+  - It must answer child needs, parent needs, family needs, and next support candidates.
+  - It must support memory, realtime dialogue, multimodal artifacts, actions, outcomes, and human service.
+  - It must preserve Perspective != Fact and Hypothesis != Fact.
+  - It must preserve Recommendation != Decision != Action.
+  - It must not create family total scores or family rankings.
+  - It must route model behavior through Model Gateway once runtime is authorized.
+  - It must keep high-risk and professional scenarios behind Human Gate.
+
+foundation_assets:
+  - asset_ref: FAMILY_EDUCATION_DOMAIN_REGISTRY
+    path: family_education_domain.registry.yaml
+    role: domain kernel and extensible domain map
+    phase: P0
+
+  - asset_ref: FAMILY_EDUCATION_NEED_REGISTRY
+    path: family_education_need.registry.yaml
+    role: child, parent, and family need taxonomy
+    phase: P0
+
+  - asset_ref: FAMILY_EDUCATION_CONSTRUCT_REGISTRY
+    path: family_education_construct.registry.yaml
+    role: measurable constructs and signal definitions
+    phase: P0
+
+  - asset_ref: FAMILY_EDUCATION_SOURCE_REGISTRY
+    path: family_education_source.registry.yaml
+    role: source, evidence, research, and practice pattern registry
+    phase: P0
+
+  - asset_ref: FAMILY_SUPPORT_ACTION_CATALOG
+    path: family_support_action.catalog.yaml
+    role: support action candidates and review methods
+    phase: P0
+
+  - asset_ref: FAMILY_OUTCOME_SIGNAL_SCHEMA
+    path: family_outcome_signal.schema.yaml
+    role: outcome feedback and progress signal schema
+    phase: P0
+
+  - asset_ref: FAMILY_MEMORY_CONVERSATION_SCHEMA
+    path: family_memory_conversation.schema.yaml
+    role: family memory, child growth timeline, parent learning timeline, and dialogue structure
+    phase: P0
+
+  - asset_ref: FAMILY_MULTIMODAL_ARTIFACT_SCHEMA
+    path: family_multimodal_artifact.schema.yaml
+    role: photo, image, audio, video, document, chart, code, and mixed artifact signals
+    phase: P0
+
+  - asset_ref: FAMILY_MODEL_COMPONENT_REGISTRY
+    path: family_model_component.registry.yaml
+    role: component runtime contract, dependency map, lifecycle, policy, and evaluation boundary
+    phase: P0
+
+  - asset_ref: FAMILY_MODEL_TECHNICAL_ARCHITECTURE_REGISTRY
+    path: family_model_technical_architecture.registry.yaml
+    role: buildable large-model technical architecture, runtime layers, gateway profiles, and governed data flows
+    phase: P0
+
+  - asset_ref: FAMILY_MODEL_RUNTIME_INTEGRATION_CONTRACT
+    path: family_model_runtime_integration.contract.yaml
+    role: pre-runtime API and worker integration contract for model architecture plans
+    phase: P0
+
+  - asset_ref: FAMILY_MODEL_HARNESS_INTEGRATION
+    path: family_model_harness.integration.yaml
+    role: Codex harness-style model factory, evaluation, distillation, and runtime planning integration
+    phase: P0
+
+  - asset_ref: FAMILY_UI_MODEL_BINDING_REGISTRY
+    path: family_ui_model_binding.registry.yaml
+    role: UI-01..UI-35 product baseline to Family Education Large Model component binding
+    phase: P0
+
+next_foundation_assets:
+  - asset_ref: FAMILY_UI02_ASSESSMENT_MODEL_SLICE
+    path: family_ui02_assessment_model_slice.yaml
+    role: first buildable free family assessment vertical slice for UI-02 and UI-02-result
+    phase: P0
+
+  - asset_ref: FAMILY_UI02_ASSESSMENT_RESEARCH_CARDS
+    path: family_ui02_assessment_research_cards.yaml
+    role: source-linked research and evidence-boundary cards for the five UI-02 free assessment themes
+    phase: P0
+
+  - asset_ref: FAMILY_ASSESSMENT_ITEM_BANK_REGISTRY
+    path: family_assessment_item_bank.registry.yaml
+    role: UI-02/UI-07 assessment item bank and branching rules
+    phase: P0
+
+  - asset_ref: FAMILY_INTERPRETATION_SCHEMA
+    path: family_interpretation.schema.yaml
+    role: UI-03 structured interpretation, need summary, hypothesis, and action candidate output
+    phase: P0
+
+  - asset_ref: FAMILY_MODEL_EVALUATION_SCENARIOS
+    path: family_model_evaluation_scenarios.yaml
+    role: golden scenario cards for safety, quality, and regression gates
+    phase: P0
+
+validated_model_abilities:
+  - ask assessment questions through item refs
+  - map answers to need refs and construct refs
+  - produce structured interpretations without diagnosis or ranking
+  - match action candidates to constructs and review windows
+  - evaluate outputs against safety and scenario expectations
+  - generate consent-aware memory update candidates without writing core state
+  - distill memory and conversation schemas into structured training records
+
+first_build_sequence:
+  - V4.2-001_MODEL_ASSET_VALIDATION
+  - V4.2-002_COMPONENT_REGISTRY_FREEZE
+  - V4.2-003_ITEM_BANK_AND_INTERPRETATION_SCHEMA
+  - V4.2-004_SCENARIO_EVAL_SEED
+  - V4.2-005_UI01_UI35_MODEL_BINDING_BASELINE
+  - V4.2-006_UI02_UI03_CONTRACT_COMPOSITION
+  - V4.2-007_MEMORY_DIALOGUE_MULTIMODAL_MOCK
+  - V4.2-008_ACTION_OUTCOME_LOOP
+
+acceptance:
+  - all listed P0 assets parse as YAML
+  - each listed P0 asset exists in docs/model
+  - component registry declares required fields and registered components
+  - every registered component contains the required component contract fields
+  - every component dependency points to a registered component or an approved external boundary
+  - UI model binding registry covers exactly UI-01..UI-35 once
+  - every UI model binding points to registered model components
+  - model work remains inside current gate until runtime authorization changes

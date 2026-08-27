@@ -1,0 +1,180 @@
+version: 0.1.0
+asset_ref: FAMILY_UI02_ASSESSMENT_MODEL_SLICE
+status: draft
+owner: Family Education Industry Model
+purpose: >
+  Defines the first buildable vertical slice of the Family Education Large Model:
+  UI-02 free family assessment. This slice turns parent perspective into structured
+  need signals, careful interpretation candidates, low-risk support candidates,
+  and outcome feedback hooks without diagnosis, ranking, or family total score.
+
+slice_position:
+  slice_ref: UI02_FREE_FAMILY_ASSESSMENT_V0
+  product_surface_refs: [UI-02, UI-02-result]
+  model_component_refs: [FAMILY_ASSESSMENT_V0_COMPONENT, FAMILY_DOMAIN_KERNEL, FAMILY_ACTION_OUTCOME_COMPONENT]
+  public_product_label: 免费家庭测评
+  first_runtime_scope: local_model_asset_and_ui_contract_only
+  not_in_scope:
+    - AI诊断结论
+    - medical_diagnosis
+    - psychiatric_diagnosis
+    - child_or_family_ranking
+    - family_total_score
+    - automatic_canonical_state_write
+    - live_external_ai_call
+
+governance_boundaries:
+  truth_boundary: parent_perspective_not_fact
+  interpretation_boundary: hypothesis_not_fact
+  action_boundary: recommendation_not_decision_not_action
+  memory_boundary: named_action_and_consent_only
+  high_risk_boundary: human_gate_required
+  prohibited_outputs:
+    - family_total_score
+    - family_ranking
+    - child_ranking
+    - medical_diagnosis
+    - psychiatric_diagnosis
+    - causal_claim_without_outcome
+    - parent_blame
+    - child_labeling
+
+five_theme_model:
+  - theme_ref: LEARNING_HABITS
+    title_zh: 学习习惯
+    family_question: 最近孩子在学习开始、坚持和收尾上，家里最想先支持什么？
+    construct_refs: [HOMEWORK_PROCESS, FAMILY_ROUTINE, LEARNING_STRATEGY_METACOGNITION]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, FAMILY_LEARNING_ENVIRONMENT_NEED]
+    item_refs: [LEARNING_HABITS_Q01, LEARNING_HABITS_Q02, LEARNING_HABITS_Q03]
+    interpretation_template_ref: UI02_LEARNING_HABITS_FREE_RESULT
+    candidate_action_refs: [SEVEN_DAY_HOMEWORK_START_RITUAL, SCHOOL_FAMILY_FEEDBACK_HANDOFF]
+    evidence_upgrade_needed: true
+    evidence_notes: >
+      Current implementation uses research concepts around routine, executive function,
+      and self-regulated learning. P0 requires source registry citations before claims
+      are used beyond product-facing self-check language.
+
+  - theme_ref: EMOTION_REGULATION
+    title_zh: 情绪管理
+    family_question: 最近孩子情绪上来时，家里最想先支持恢复、暂停还是回应方式？
+    construct_refs: [EMOTION_REGULATION_SUPPORT, PARENT_CAPACITY]
+    need_refs: [CHILD_EMOTIONAL_SUPPORT_NEED, PARENT_METHOD_NEED]
+    item_refs: [EMOTION_REGULATION_Q01, EMOTION_REGULATION_Q02, EMOTION_REGULATION_Q03]
+    interpretation_template_ref: UI02_EMOTION_REGULATION_FREE_RESULT
+    candidate_action_refs: [COMMUNICATION_REPAIR_CONVERSATION, HUMAN_SERVICE_CONTEXT_PACKAGE]
+    evidence_upgrade_needed: true
+    evidence_notes: >
+      Current implementation may only describe observed family interaction and support
+      needs. Any crisis, self-harm, violence, or clinical signal must leave UI02 and
+      require Human Gate.
+
+  - theme_ref: PARENT_CHILD_COMMUNICATION
+    title_zh: 亲子沟通
+    family_question: 最近亲子对话中，家里最想先改善表达、倾听还是冲突后的修复？
+    construct_refs: [PARENT_CHILD_COMMUNICATION]
+    need_refs: [CHILD_RELATIONSHIP_NEED, FAMILY_COMMUNICATION_NEED, PARENT_METHOD_NEED]
+    item_refs: [PARENT_CHILD_COMMUNICATION_Q01, PARENT_CHILD_COMMUNICATION_Q02, PARENT_CHILD_COMMUNICATION_Q03]
+    interpretation_template_ref: UI02_PARENT_CHILD_COMMUNICATION_FREE_RESULT
+    candidate_action_refs: [COMMUNICATION_REPAIR_CONVERSATION]
+    evidence_upgrade_needed: true
+    evidence_notes: >
+      Current implementation can support parent-facing reflection on communication
+      patterns, but must not convert one conversation pattern into a child trait or
+      a family relationship fact.
+
+  - theme_ref: DEVICE_USE_CONTEXT
+    title_zh: 手机依赖
+    family_question: 最近设备使用最影响的是睡眠、作业、规则一致性还是亲子冲突？
+    construct_refs: [DEVICE_USE_CONTEXT, FAMILY_ROUTINE]
+    need_refs: [CHILD_DIGITAL_AI_NEED, FAMILY_RHYTHM_NEED, FAMILY_COMMUNICATION_NEED]
+    item_refs: [DEVICE_USE_CONTEXT_Q01, DEVICE_USE_CONTEXT_Q02, DEVICE_USE_CONTEXT_Q03]
+    interpretation_template_ref: UI02_DEVICE_USE_CONTEXT_FREE_RESULT
+    candidate_action_refs: [FAMILY_DEVICE_AGREEMENT_DRAFT, AI_USE_FAMILY_RULES_MINI_PLAN]
+    evidence_upgrade_needed: true
+    evidence_notes: >
+      Use digital wellbeing and family media rule framing. Do not use addiction
+      diagnosis language or attribute the issue only to the child.
+
+  - theme_ref: SELF_REGULATION
+    title_zh: 自律能力
+    family_question: 最近孩子在计划、执行、检查和复盘中，最需要哪种家庭支持？
+    construct_refs: [SELF_REGULATION_SUPPORT, LEARNING_STRATEGY_METACOGNITION, FAMILY_ROUTINE]
+    need_refs: [CHILD_LEARNING_SUPPORT_NEED, PARENT_METHOD_NEED]
+    item_refs: [SELF_REGULATION_Q01, SELF_REGULATION_Q02, SELF_REGULATION_Q03]
+    interpretation_template_ref: UI02_SELF_REGULATION_FREE_RESULT
+    candidate_action_refs: [SEVEN_DAY_HOMEWORK_START_RITUAL, SCHOOL_FAMILY_FEEDBACK_HANDOFF]
+    evidence_upgrade_needed: true
+    evidence_notes: >
+      Frame as scaffolded self-management and family support, not willpower judgment,
+      laziness label, or child ability ranking.
+
+free_result_contract:
+  result_surface: UI-02-result
+  required_sections:
+    - selected_family_focus
+    - parent_observed_signals
+    - careful_need_summary
+    - low_risk_next_step_candidate
+    - boundary_statement
+  copy_boundaries:
+    must_say:
+      - 这是家庭自查，不是诊断。
+      - 这些是家长视角下的观察，不是对孩子的评分或排名。
+      - 下一步建议需要家庭自己确认。
+    must_not_say:
+      - AI 已诊断
+      - 孩子存在某类问题
+      - 家庭总分
+      - 同龄排名
+      - 必须执行某行动
+
+model_flow:
+  - step_ref: CAPTURE_PARENT_PERSPECTIVE
+    input_refs: [selected_theme_ref, child_stage, answer_item_refs]
+    output_refs: [perspective_signal_bundle]
+    upper_bound: perspective_not_fact
+
+  - step_ref: MAP_NEED_AND_CONSTRUCT
+    input_refs: [perspective_signal_bundle]
+    output_refs: [need_refs, construct_refs]
+    upper_bound: signal_mapping_not_conclusion
+
+  - step_ref: PRODUCE_FREE_RESULT
+    input_refs: [need_refs, construct_refs, selected_theme_ref]
+    output_refs: [careful_need_summary, next_step_candidate]
+    upper_bound: recommendation_not_decision
+
+  - step_ref: OFFER_OPTIONAL_DEEPER_SUPPORT
+    input_refs: [free_result_artifact]
+    output_refs: [optional_ai_diagnosis_link_or_plan_link]
+    upper_bound: user_choice_required
+
+  - step_ref: CAPTURE_OUTCOME_FEEDBACK
+    input_refs: [action_tried, parent_feedback, followup_signal]
+    output_refs: [outcome_signal_candidate]
+    upper_bound: outcome_signal_not_causal_claim
+
+harness_acceptance:
+  - asset parses as YAML and is listed in foundation manifest next assets.
+  - all five UI02 themes have exactly three item refs.
+  - every theme declares construct_refs, need_refs, interpretation_template_ref, and candidate_action_refs.
+  - result contract prohibits diagnosis, ranking, total score, and direct action decisions.
+  - UI02 product copy remains family-facing and does not expose internal model terms.
+  - evaluation scenarios include at least one case per theme before runtime expansion.
+
+next_build_tasks:
+  - task_ref: UI02-SLICE-001_RESEARCH_EVIDENCE_UPGRADE
+    objective: Upgrade the five themes from implementation anchors to source-linked evidence cards.
+    output: family_ui02_assessment_research_cards.yaml
+
+  - task_ref: UI02-SLICE-002_ITEM_BANK_REGISTRY_ALIGNMENT
+    objective: Align app item refs with docs/model item bank and interpretation schema.
+    output: synchronized item_ref and construct_ref mapping
+
+  - task_ref: UI02-SLICE-003_FREE_RESULT_EVAL_SEED
+    objective: Add golden scenarios for each free assessment theme and prohibited output checks.
+    output: evaluation scenario additions
+
+  - task_ref: UI02-SLICE-004_UI_BINDING_REGRESSION
+    objective: Ensure UI02 and UI02-result remain decoupled from AI diagnosis unless user explicitly opts in.
+    output: focused mobile tests and harness report

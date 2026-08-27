@@ -1,30 +1,41 @@
 # Current Sprint
 
-task_id: FAMILY-35UI-FULLSTACK-REBASELINE-001
-gate: G0 (PRODUCT_AND_TECH_ARCHITECTURE_FREEZE)
+task_id: FAMILY-AI-ARCHITECTURE-V4-1-CONVERGENCE-001
+gate: G1-A (ARCHITECTURE_AND_CONTRACT_CONVERGENCE)
 status: IN_PROGRESS
 
-## Current Executable Truth (2026-08-22, 架构师裁决)
+## Current Executable Truth (2026-08-23, Chief Architect)
 
 ```text
-TASK              = FAMILY-35UI-FULLSTACK-REBASELINE-001
-GATE              = G0 ALIGNMENT_FOUNDATION (Product + Tech Architecture Freeze)
-BASE_SHA          = 708cf542ab130642f2248bbebecc997930d10a49
-WORK_BRANCH       = platform/35ui-fullstack-rebaseline-001
-SINGLE_WRITER     = YES (本 Claude Code 会话)
-TECH_ARCHITECTURE = FAMILY_AI_PLATFORM_V4 = FROZEN (architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4.md)
-G0_CODE_AUTHORIZED= YES (仅 governance/architecture/contracts/validators/ci/status/evidence/inventory)
-G1_AUTHORIZED     = NO
-G2_AUTHORIZED     = NO
-PILOT/PRODUCTION  = HOLD
-DIRECT_PUSH_MAIN  = NO   AUTO_MERGE = NO   AGENT_SELF_AUTHORIZATION = NO
-PRIOR_TASK        = FAMILY-35UI-ARCHITECTURE-REBASELINE-001 = ABSORBED_INTO_G0
-35_UI_FRONTEND_BASELINE = KEEP; 35_UI_BACKEND_COMPLETE = NO
+TASK               = FAMILY-AI-ARCHITECTURE-V4-1-CONVERGENCE-001
+GATE               = G1-A ARCHITECTURE_AND_CONTRACT_CONVERGENCE
+BASE_SHA           = f2eeacc69fff78b17f45b78a7ab631543ee8cf2a
+WORK_BRANCH        = architecture/family-ai-v4-1-convergence-001
+TECH_ARCHITECTURE  = FAMILY_AI_PLATFORM_V4_1 TARGET_FROZEN
+35_UI_BASELINE     = KEEP
+AI_DIAGNOSIS       = KEEP
+G1_A_AUTHORIZED    = YES
+G1_B_PLUS          = NOT_AUTHORIZED
+BUSINESS_RUNTIME   = INTERNAL_LOCAL_AUTHORIZED_FOR_FAMILY_ASSESSMENT_MODEL
+DB_SCHEMA_CHANGE   = NOT_AUTHORIZED
+LIVE_EXTERNAL_AI   = INTERNAL_LOCAL_AUTHORIZED_FOR_UI02_FAMILY_MODEL_GATEWAY
+DIRECT_PUSH_MAIN   = NO
+AUTO_MERGE         = NO
+AGENT_SELF_AUTH    = NO
+EXACT_HEAD_REVIEW  = REQUIRED
 ```
 
-Program: `governance/FAMILY_35UI_PROGRAM_V1.yaml` · Status: `governance/FAMILY_35UI_PROGRAM_STATUS_V1.md`.
+Authorization scope:
 
-以下 M3-RB-002 / M2 段落标记为 HISTORICAL_IMPORTED_CONTEXT,保留不删,不再作为 Current。
+- Authorization source: `governance/AUTHORIZATION_REGISTRY.yaml` capability `G1A_FAMILY_EDUCATION_ASSESSMENT_MODEL_INTERNAL`.
+- Allowed now: package/API-local wiring for UI-02/UI-03 Family Education Assessment Model runtime, through `@family/family-model` and `@family/ai-gateway` only.
+- Live external model call: allowed only in local/internal explicitly configured environments; default `.env.example` remains mock and fail-closed.
+- Still forbidden: DB schema change, direct provider calls, client-side model calls, pilot exposure, production default enablement, and AI direct canonical Family/Growth state mutation.
+
+Program: `governance/FAMILY_35UI_PROGRAM_V1.yaml`
+Architecture: `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md`
+
+All older sprint/M2/M3/G0 sections below are historical context, not current execution truth.
 
 ---
 

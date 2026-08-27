@@ -1,14 +1,16 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const source = readFileSync(resolve(process.cwd(), "app/ui/UI-05.tsx"), "utf8");
 
 describe("UI-05 original companion service baseline contract", () => {
-  it("uses the recovered original four-service-card image", () => {
-    expect(existsSync(resolve(process.cwd(), "assets/images/ui05-service-cards-baseline.png"))).toBe(true);
-    expect(source).toContain('require("@/assets/images/ui05-service-cards-baseline.png")');
+  it("rebuilds the original four-service-card area as native components", () => {
+    expect(source).toContain("SERVICE_CARDS");
+    expect(source).toContain("SERVICE_CARD_ACCESSIBILITY_LABEL");
+    expect(source).not.toContain('require("@/assets/images/ui05-service-cards-baseline.png")');
     expect(source).toContain("家庭顾问、班主任陪跑、AI提醒和专家答疑");
+    for (const copy of ["家庭顾问", "班主任陪跑", "AI提醒", "专家答疑"]) expect(source).toContain(copy);
   });
 
   it("keeps the original weekly completion card and the three content segments", () => {
@@ -40,11 +42,26 @@ describe("UI-05 original companion service baseline contract", () => {
     expect(source).not.toContain("分享");
   });
 
-  it("uses a lightweight load transition for the original service-card asset", () => {
+  it("keeps companion progress as family-private process evidence, not peer comparison or outcome proof", () => {
+    expect(source).toContain("本周家庭过程记录");
+    expect(source).toContain("remote?.process_summary?.completed_actions ?? 0");
+    expect(source).toContain("index < progress.completed");
+    expect(source).toContain("我记录下这次互动中的一个积极信号");
+    expect(source).toContain("自己的观察和感受记录下来");
+    expect(source).toContain("家庭私有记录");
+    expect(source).toContain("用于复盘");
+    expect(source).not.toContain("超过 78% 的伙伴");
+    expect(source).not.toContain("看到孩子的变化");
+    expect(source).not.toContain("♧ 23");
+    expect(source).not.toContain("◯ 8");
+  });
+
+  it("uses a lightweight component transition for the service-card area", () => {
     expect(source).toContain("const serviceCardsOpacity");
     expect(source).toContain("const serviceCardsOffset");
     expect(source).toContain("revealServiceCards");
-    expect(source).toContain("onLoad={revealServiceCards}");
+    expect(source).toContain("setTimeout(revealServiceCards");
+    expect(source).not.toContain("onLoad={revealServiceCards}");
     expect(source).toContain("serviceCardsTransition");
   });
 });

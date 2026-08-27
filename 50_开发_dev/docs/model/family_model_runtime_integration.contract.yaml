@@ -1,0 +1,161 @@
+version: 0.1.0
+asset_ref: FAMILY_MODEL_RUNTIME_INTEGRATION_CONTRACT
+status: draft
+owner: Family Model Runtime
+purpose: >
+  Defines the pre-runtime integration boundary for API and worker callers that
+  will consume FamilyModelTechnicalArchitectureRuntime plans after explicit
+  sprint authorization. This asset is contract-only under the current gate.
+
+current_authorization_boundary:
+  business_runtime: AUTHORIZED
+  database_schema_change: NOT_AUTHORIZED
+  live_external_ai: AUTHORIZED
+  authorization_ref: governance/AUTHORIZATION_REGISTRY.yaml#G1A_FAMILY_EDUCATION_ASSESSMENT_MODEL_INTERNAL
+
+canonical_runtime:
+  package: '@family/family-model'
+  planner: FamilyModelTechnicalArchitectureRuntime
+  gateway_package: '@family/ai-gateway'
+  architecture_asset_ref: FAMILY_MODEL_TECHNICAL_ARCHITECTURE_REGISTRY
+  human_readable_contract: contracts/model/FAMILY_MODEL_RUNTIME_INTEGRATION_CONTRACT_V0_1.md
+
+required_request_fields:
+  - request_id
+  - surface_ref
+  - flow_ref
+  - actor_ref
+  - purpose_ref
+  - payload
+
+optional_request_fields:
+  - family_context_ref
+  - consent_ref
+  - input_refs
+  - business_runtime_authorized
+  - live_external_ai_authorized
+  - available_env_keys
+
+required_response_fields:
+  - request_id
+  - flow_ref
+  - architecture_plan
+  - draft_kind
+  - draft
+  - boundary_labels
+  - requires_human_confirmation
+  - allowed_next_named_actions
+
+governed_flow_contracts:
+  - flow_ref: UI02_ASSESSMENT_TO_STRUCTURED_DRAFT
+    surface_refs:
+      - UI-02
+      - UI-03
+    purpose_refs:
+      - assessment_interpretation
+    draft_kind: assessment_interpretation
+    requires_consent: true
+    may_call_live_external_ai_after_authorization: true
+    may_mutate_business_state: false
+    required_boundary_labels:
+      - perspective_not_fact
+      - hypothesis_not_fact
+      - recommendation_not_decision
+    worker_allowed: false
+    candidate_events_after_authorization:
+      - FamilyModelDraftGenerated
+      - FamilyModelHumanReviewRequested
+
+  - flow_ref: MULTIMODAL_ARTIFACT_TO_SIGNAL
+    surface_refs:
+      - UI-07
+      - UI-08
+      - UI-09
+      - UI-10
+    purpose_refs:
+      - multimodal_signal
+    draft_kind: multimodal_signal
+    requires_consent: true
+    may_call_live_external_ai_after_authorization: true
+    may_mutate_business_state: false
+    required_boundary_labels:
+      - artifact_signal_not_diagnosis
+      - evidence_level_required
+    worker_allowed: true
+    candidate_events_after_authorization:
+      - FamilyModelDraftGenerated
+      - FamilyModelHumanReviewRequested
+
+  - flow_ref: CONSENT_MEMORY_RECALL_AND_UPDATE_CANDIDATE
+    surface_refs:
+      - UI-11
+      - UI-12
+      - UI-13
+      - UI-14
+    purpose_refs:
+      - memory_recall
+      - memory_update_candidate
+    draft_kind: memory_update_candidate
+    requires_consent: true
+    may_call_live_external_ai_after_authorization: false
+    may_mutate_business_state: false
+    required_boundary_labels:
+      - consent_required
+      - memory_update_candidate_not_fact
+    worker_allowed: true
+    candidate_events_after_authorization:
+      - FamilyModelMemoryUpdateCandidateGenerated
+      - FamilyModelHumanReviewRequested
+
+  - flow_ref: ACTION_CANDIDATE_TO_OUTCOME_LOOP
+    surface_refs:
+      - UI-03
+      - UI-04
+      - UI-05
+      - UI-06
+    purpose_refs:
+      - action_candidate
+      - outcome_signal
+    draft_kind: outcome_signal
+    requires_consent: true
+    may_call_live_external_ai_after_authorization: false
+    may_mutate_business_state: false
+    required_boundary_labels:
+      - action_not_outcome
+      - service_completion_not_growth_outcome
+      - human_gate_for_high_risk
+    worker_allowed: true
+    candidate_events_after_authorization:
+      - FamilyModelOutcomeSignalDrafted
+      - FamilyModelHumanReviewRequested
+
+forbidden_integration_paths:
+  - client_direct_provider_call
+  - business_module_direct_provider_sdk
+  - model_free_text_to_core_ontology_write
+  - draft_to_canonical_state_without_named_action
+  - service_completion_as_growth_outcome
+  - silent_fallback_after_gateway_failure
+
+worker_orchestration_contract:
+  current_status: CONTRACT_ONLY_NOT_RUNTIME
+  allowed_steps_after_authorization:
+    - resolve_flow_ref_to_architecture_plan
+    - retrieve_permissioned_context_set
+    - execute_deterministic_baseline_runtime
+    - call_model_gateway_only_when_plan_allows
+    - validate_structured_output
+    - run_eval_hooks
+    - emit_draft_ready_or_human_review_event
+  forbidden_steps:
+    - write_canonical_family_state
+    - write_growth_outcome_directly
+    - convert_recommendation_to_decision
+    - bypass_gateway_policy
+
+acceptance:
+  - all governed_flow_contracts reference registered technical architecture flows
+  - no governed flow may mutate business state
+  - live external AI remains blocked unless current authorization is AUTHORIZED, request confirmation is true, and Model Gateway env keys are present
+  - every governed flow declares boundary labels
+  - every candidate event follows PascalCase past-tense naming guidance

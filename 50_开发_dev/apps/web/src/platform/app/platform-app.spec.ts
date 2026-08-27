@@ -10,7 +10,7 @@ function fakeBackend() {
   const api: PlatformApi = {
     async get<T>(path: string) {
       if (path === '/auth/contexts') {
-        return { ok: true, data: (state.hasFamily ? { contexts: [{ type: 'FAMILY', family_id: 'fam-1', person_id: 'p', membership_id: 'm', role: 'OWNER_GUARDIAN' }] } : { contexts: [] }) as unknown as T };
+        return { ok: true, data: (state.hasFamily ? { contexts: [{ type: 'FAMILY', tenant_id: 'tenant-1', family_id: 'fam-1', person_id: 'p', membership_id: 'm', role: 'OWNER_GUARDIAN' }] } : { contexts: [] }) as unknown as T };
       }
       if (path.endsWith('/onboarding/status')) {
         const complete = state.step === 'enter_today';

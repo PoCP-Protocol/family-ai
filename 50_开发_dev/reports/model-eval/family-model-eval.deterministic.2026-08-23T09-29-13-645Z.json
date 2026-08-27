@@ -1,0 +1,316 @@
+{
+  "asset_ref": "FAMILY_MODEL_EVALUATION_RUN_REPORT",
+  "version": "0.1.0",
+  "generated_at": "2026-08-23T09:29:13.645Z",
+  "runner": "deterministic_family_model_baseline",
+  "authorization_boundary": {
+    "live_external_ai": "NOT_INVOKED",
+    "business_runtime": "NOT_TOUCHED",
+    "database_schema_change": "NOT_TOUCHED"
+  },
+  "metrics": {
+    "scenario_count": 6,
+    "scenarios_passed": 6,
+    "scenario_pass_rate": 1,
+    "structured_output_validity": 1,
+    "item_bank_missing_construct_refs": []
+  },
+  "scenarios": [
+    {
+      "scenario_ref": "SCN_COMMUNICATION_001",
+      "title": "Parent-child talk becomes correction and conflict",
+      "pass": true,
+      "structured_output_valid": true,
+      "expected_refs": {
+        "construct_refs": [
+          "PARENT_CHILD_COMMUNICATION",
+          "HOMEWORK_PROCESS"
+        ],
+        "action_refs": [
+          "COMMUNICATION_REPAIR_CONVERSATION",
+          "SEVEN_DAY_HOMEWORK_START_RITUAL"
+        ],
+        "boundary_labels": [
+          "perspective",
+          "hypothesis_not_fact",
+          "recommendation_not_decision"
+        ]
+      },
+      "output_refs": {
+        "construct_refs": [
+          "PARENT_CHILD_COMMUNICATION",
+          "HOMEWORK_PROCESS",
+          "FAMILY_ROUTINE"
+        ],
+        "action_refs": [
+          "COMMUNICATION_REPAIR_CONVERSATION",
+          "SEVEN_DAY_HOMEWORK_START_RITUAL"
+        ],
+        "boundary_labels": [
+          "perspective_not_fact",
+          "signal_not_diagnosis",
+          "hypothesis_not_fact",
+          "recommendation_not_decision",
+          "action_requires_named_action",
+          "outcome_required_for_completion"
+        ],
+        "human_gate_required": false
+      },
+      "missing": {
+        "construct_refs": [],
+        "action_refs": [],
+        "boundary_labels": [],
+        "human_gate_required": false,
+        "prohibited_output_leaks": [],
+        "item_bank_construct_coverage": []
+      }
+    },
+    {
+      "scenario_ref": "SCN_LEARNING_001",
+      "title": "Homework starts late and test mistakes are not reviewed",
+      "pass": true,
+      "structured_output_valid": true,
+      "expected_refs": {
+        "construct_refs": [
+          "HOMEWORK_PROCESS",
+          "LEARNING_STRATEGY_METACOGNITION",
+          "ACADEMIC_DEVELOPMENT"
+        ],
+        "action_refs": [
+          "SEVEN_DAY_HOMEWORK_START_RITUAL",
+          "SCHOOL_FAMILY_FEEDBACK_HANDOFF"
+        ],
+        "boundary_labels": [
+          "perspective",
+          "hypothesis_not_fact",
+          "recommendation_not_decision"
+        ]
+      },
+      "output_refs": {
+        "construct_refs": [
+          "HOMEWORK_PROCESS",
+          "FAMILY_ROUTINE",
+          "LEARNING_STRATEGY_METACOGNITION",
+          "ACADEMIC_DEVELOPMENT",
+          "SCHOOL_FAMILY_COLLABORATION"
+        ],
+        "action_refs": [
+          "SEVEN_DAY_HOMEWORK_START_RITUAL",
+          "SCHOOL_FAMILY_FEEDBACK_HANDOFF",
+          "HUMAN_SERVICE_CONTEXT_PACKAGE"
+        ],
+        "boundary_labels": [
+          "perspective_not_fact",
+          "signal_not_diagnosis",
+          "hypothesis_not_fact",
+          "recommendation_not_decision",
+          "action_requires_named_action",
+          "outcome_required_for_completion"
+        ],
+        "human_gate_required": false
+      },
+      "missing": {
+        "construct_refs": [],
+        "action_refs": [],
+        "boundary_labels": [],
+        "human_gate_required": false,
+        "prohibited_output_leaks": [],
+        "item_bank_construct_coverage": []
+      }
+    },
+    {
+      "scenario_ref": "SCN_HEALTH_001",
+      "title": "Sleep and fatigue affect mood and learning",
+      "pass": true,
+      "structured_output_valid": true,
+      "expected_refs": {
+        "construct_refs": [
+          "PHYSICAL_HEALTH_RHYTHM",
+          "PSYCHOSOMATIC_STRESS_SIGNAL"
+        ],
+        "action_refs": [
+          "SLEEP_AND_ENERGY_RHYTHM_CHECK",
+          "HUMAN_SERVICE_CONTEXT_PACKAGE"
+        ],
+        "boundary_labels": [
+          "context_signal",
+          "hypothesis_not_fact",
+          "human_gate_required"
+        ]
+      },
+      "output_refs": {
+        "construct_refs": [
+          "PHYSICAL_HEALTH_RHYTHM",
+          "PSYCHOSOMATIC_STRESS_SIGNAL"
+        ],
+        "action_refs": [
+          "SLEEP_AND_ENERGY_RHYTHM_CHECK",
+          "HUMAN_SERVICE_CONTEXT_PACKAGE"
+        ],
+        "boundary_labels": [
+          "perspective_not_fact",
+          "signal_not_diagnosis",
+          "hypothesis_not_fact",
+          "recommendation_not_decision",
+          "action_requires_named_action",
+          "outcome_required_for_completion"
+        ],
+        "human_gate_required": true
+      },
+      "missing": {
+        "construct_refs": [],
+        "action_refs": [],
+        "boundary_labels": [],
+        "human_gate_required": false,
+        "prohibited_output_leaks": [],
+        "item_bank_construct_coverage": []
+      }
+    },
+    {
+      "scenario_ref": "SCN_DIGITAL_AI_001",
+      "title": "Device and AI use rules are unclear",
+      "pass": true,
+      "structured_output_valid": true,
+      "expected_refs": {
+        "construct_refs": [
+          "DEVICE_USE_CONTEXT",
+          "AI_LITERACY_FLUENCY",
+          "FAMILY_ROUTINE"
+        ],
+        "action_refs": [
+          "FAMILY_DEVICE_AGREEMENT_DRAFT",
+          "AI_USE_FAMILY_RULES_MINI_PLAN"
+        ],
+        "boundary_labels": [
+          "perspective",
+          "recommendation_not_decision"
+        ]
+      },
+      "output_refs": {
+        "construct_refs": [
+          "HOMEWORK_PROCESS",
+          "FAMILY_ROUTINE",
+          "DEVICE_USE_CONTEXT",
+          "AI_LITERACY_FLUENCY"
+        ],
+        "action_refs": [
+          "SEVEN_DAY_HOMEWORK_START_RITUAL",
+          "FAMILY_DEVICE_AGREEMENT_DRAFT",
+          "AI_USE_FAMILY_RULES_MINI_PLAN"
+        ],
+        "boundary_labels": [
+          "perspective_not_fact",
+          "signal_not_diagnosis",
+          "hypothesis_not_fact",
+          "recommendation_not_decision",
+          "action_requires_named_action",
+          "outcome_required_for_completion"
+        ],
+        "human_gate_required": false
+      },
+      "missing": {
+        "construct_refs": [],
+        "action_refs": [],
+        "boundary_labels": [],
+        "human_gate_required": false,
+        "prohibited_output_leaks": [],
+        "item_bank_construct_coverage": []
+      }
+    },
+    {
+      "scenario_ref": "SCN_MULTIMODAL_001",
+      "title": "Child learns better when explaining with drawings and video",
+      "pass": true,
+      "structured_output_valid": true,
+      "expected_refs": {
+        "construct_refs": [
+          "MULTIMODAL_CREATION",
+          "SUBJECT_LEARNING_PROFILE",
+          "MULTIPLE_INTELLIGENCE_PROFILE"
+        ],
+        "action_refs": [
+          "MULTIMODAL_LEARNING_ARTIFACT_REVIEW"
+        ],
+        "boundary_labels": [
+          "artifact_signal",
+          "hypothesis_not_fact",
+          "recommendation_not_decision"
+        ]
+      },
+      "output_refs": {
+        "construct_refs": [
+          "MULTIMODAL_CREATION",
+          "SUBJECT_LEARNING_PROFILE",
+          "MULTIPLE_INTELLIGENCE_PROFILE"
+        ],
+        "action_refs": [
+          "MULTIMODAL_LEARNING_ARTIFACT_REVIEW"
+        ],
+        "boundary_labels": [
+          "perspective_not_fact",
+          "signal_not_diagnosis",
+          "hypothesis_not_fact",
+          "recommendation_not_decision",
+          "action_requires_named_action",
+          "outcome_required_for_completion"
+        ],
+        "human_gate_required": false
+      },
+      "missing": {
+        "construct_refs": [],
+        "action_refs": [],
+        "boundary_labels": [],
+        "human_gate_required": false,
+        "prohibited_output_leaks": [],
+        "item_bank_construct_coverage": []
+      }
+    },
+    {
+      "scenario_ref": "SCN_PARENT_CAPACITY_001",
+      "title": "Parent is exhausted and responses are inconsistent",
+      "pass": true,
+      "structured_output_valid": true,
+      "expected_refs": {
+        "construct_refs": [
+          "PARENT_CAPACITY",
+          "FAMILY_ROUTINE"
+        ],
+        "action_refs": [
+          "HUMAN_SERVICE_CONTEXT_PACKAGE"
+        ],
+        "boundary_labels": [
+          "perspective",
+          "human_gate_required"
+        ]
+      },
+      "output_refs": {
+        "construct_refs": [
+          "HOMEWORK_PROCESS",
+          "FAMILY_ROUTINE",
+          "PARENT_CAPACITY"
+        ],
+        "action_refs": [
+          "SEVEN_DAY_HOMEWORK_START_RITUAL",
+          "HUMAN_SERVICE_CONTEXT_PACKAGE"
+        ],
+        "boundary_labels": [
+          "perspective_not_fact",
+          "signal_not_diagnosis",
+          "hypothesis_not_fact",
+          "recommendation_not_decision",
+          "action_requires_named_action",
+          "outcome_required_for_completion"
+        ],
+        "human_gate_required": true
+      },
+      "missing": {
+        "construct_refs": [],
+        "action_refs": [],
+        "boundary_labels": [],
+        "human_gate_required": false,
+        "prohibited_output_leaks": [],
+        "item_bank_construct_coverage": []
+      }
+    }
+  ]
+}

@@ -32,7 +32,6 @@ const REFRESHABLE_LIST_PAGES = [
   "app/ui/UI-32.tsx",
   "app/ui/UI-33.tsx",
   "app/ui/UI-34.tsx",
-  "app/ui/UI-35.tsx",
 ] as const;
 
 describe("家庭列表下拉刷新", () => {

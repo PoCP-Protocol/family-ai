@@ -79,9 +79,10 @@ export class AuthController {
   async createFirstFamily(
     @Headers('authorization') authorization?: string,
     @Headers('cookie') cookie?: string,
+    @Headers('x-correlation-id') correlationId?: string,
     @Body() body?: { display_name?: string; guardian_name?: string },
   ) {
-    return this.auth.createFirstFamily(sessionTokenFromHeaders({ authorization, cookie }), body?.display_name ?? '', body?.guardian_name ?? '');
+    return this.auth.createFirstFamily(sessionTokenFromHeaders({ authorization, cookie }), body?.display_name ?? '', body?.guardian_name ?? '', correlationId);
   }
 
   // TENANCY-V2 T2:account-scoped 会话签发(内部;真实验证器 = OTP/IAM-102)。零家庭 Account 也可签发。

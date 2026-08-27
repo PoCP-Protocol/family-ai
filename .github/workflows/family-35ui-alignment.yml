@@ -30,5 +30,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: 50_开发_dev/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm validate:35ui
+      - run: pnpm validate:arch:v4.1
+      - run: pnpm validate:34ui
       - run: pnpm --filter @family/contracts typecheck

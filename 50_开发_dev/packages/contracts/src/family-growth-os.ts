@@ -1,12 +1,14 @@
+import type { FamilyUiId } from './family-34ui';
+
 /**
- * Family Growth OS architecture map.
+ * Legacy Family Growth OS surface architecture map.
  *
  * This is a product-architecture boundary, not an effectiveness claim. It
  * maps every supplied UI to one of the six supplied business-loop families so
  * API projections, UI shells, audit events and future AI adapters share a
  * stable vocabulary rather than becoming 34 isolated implementations.
  */
-export const FAMILY_BUSINESS_LOOPS = [
+export const LEGACY_FAMILY_SURFACE_LOOPS = [
   'CORE_LOOP',
   'GROWTH_LOOP',
   'COMMERCE_LOOP',
@@ -15,8 +17,7 @@ export const FAMILY_BUSINESS_LOOPS = [
   'CUSTOMER_BACKEND_LOOP',
 ] as const;
 
-export type FamilyBusinessLoop = typeof FAMILY_BUSINESS_LOOPS[number];
-export type FamilyUiId = `UI-${string}`;
+export type LegacyFamilySurfaceLoop = typeof LEGACY_FAMILY_SURFACE_LOOPS[number];
 
 export type FactPerspectiveRecommendationAction = 'FACT' | 'PERSPECTIVE' | 'RECOMMENDATION' | 'NAMED_ACTION';
 export type ExternalEffectBoundary = 'READ_ONLY' | 'CONTROLLED_DRAFT' | 'NAMED_ACTION' | 'NOOP_ADAPTER';
@@ -24,7 +25,7 @@ export type ExternalEffectBoundary = 'READ_ONLY' | 'CONTROLLED_DRAFT' | 'NAMED_A
 export interface FamilyUiArchitectureBinding {
   ui_id: FamilyUiId;
   route: string;
-  loop: FamilyBusinessLoop;
+  loop: LegacyFamilySurfaceLoop;
   business_capability: string;
   primary_objects: readonly string[];
   state_boundary: ExternalEffectBoundary;
@@ -32,8 +33,8 @@ export interface FamilyUiArchitectureBinding {
   evidence_boundary: FactPerspectiveRecommendationAction;
 }
 
-/** Six supplied business-loop families cover all 34 visual screens exactly once. */
-export const FAMILY_UI_ARCHITECTURE_BINDINGS: readonly FamilyUiArchitectureBinding[] = [
+/** Legacy supplied surface-loop families cover the historical 34-screen mapping exactly once. */
+export const LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS: readonly FamilyUiArchitectureBinding[] = [
   { ui_id: 'UI-01', route: 'home', loop: 'CORE_LOOP', business_capability: 'Family context and today entry', primary_objects: ['Family', 'Person', 'ConsentGrant', 'FamilyTodayProjection'], state_boundary: 'READ_ONLY', ai_boundary: 'MODEL_GATEWAY_NOOP', evidence_boundary: 'FACT' },
   { ui_id: 'UI-02', route: 'growth-assessment', loop: 'GROWTH_LOOP', business_capability: 'Growth assessment intake', primary_objects: ['AssessmentDraft', 'Perspective'], state_boundary: 'CONTROLLED_DRAFT', ai_boundary: 'MODEL_GATEWAY_NOOP', evidence_boundary: 'PERSPECTIVE' },
   { ui_id: 'UI-03', route: 'assessment', loop: 'GROWTH_LOOP', business_capability: 'Assessment evidence review', primary_objects: ['AssessmentDraft', 'EvidenceRef'], state_boundary: 'CONTROLLED_DRAFT', ai_boundary: 'MODEL_GATEWAY_NOOP', evidence_boundary: 'PERSPECTIVE' },
@@ -70,37 +71,22 @@ export const FAMILY_UI_ARCHITECTURE_BINDINGS: readonly FamilyUiArchitectureBindi
   { ui_id: 'UI-34', route: 'service-records', loop: 'TEACHER_SALON_LOOP', business_capability: 'Service and growth record projection', primary_objects: ['ServiceRecord', 'Reflection', 'EvidenceRef'], state_boundary: 'READ_ONLY', ai_boundary: 'NO_MODEL_CALL', evidence_boundary: 'FACT' },
 ] as const;
 
-/**
- * Product support surfaces supplement a supplied baseline when research identifies
- * a distinct capability that cannot truthfully be collapsed into an existing UI.
- * They do not change the exact 34-screen baseline coverage invariant.
- */
-export const FAMILY_SUPPORT_SURFACE_BINDINGS: readonly FamilyUiArchitectureBinding[] = [
-  {
-    ui_id: 'UI-35', route: 'growth-camp-21', loop: 'GROWTH_LOOP',
-    business_capability: '21-day growth camp experience and daily practice',
-    primary_objects: ['GrowthCamp21EnrollmentDraft', 'GrowthCamp21DayTask', 'GrowthActionCompletion', 'Reflection'],
-    state_boundary: 'CONTROLLED_DRAFT', ai_boundary: 'MODEL_GATEWAY_NOOP', evidence_boundary: 'RECOMMENDATION',
-  },
-] as const;
-
-export function getFamilyUiArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
-  const binding = FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId);
+export function getLegacyFamilyUiArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
+  const binding = LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId);
   if (!binding) throw new Error(`unknown_family_ui_binding:${uiId}`);
   return binding;
 }
 
-/** Resolves supplied UI bindings and explicitly registered support surfaces. */
-export function getFamilyGrowthSurfaceArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
-  const binding = FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId)
-    ?? FAMILY_SUPPORT_SURFACE_BINDINGS.find((item) => item.ui_id === uiId);
+/** Resolves supplied 34-UI baseline bindings. */
+export function getLegacyFamilyGrowthSurfaceArchitectureBinding(uiId: FamilyUiId): FamilyUiArchitectureBinding {
+  const binding = LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.find((item) => item.ui_id === uiId);
   if (!binding) throw new Error(`unknown_family_growth_surface_binding:${uiId}`);
   return binding;
 }
 
-export function assertFamilyUiArchitectureCoverage(): void {
-  if (FAMILY_UI_ARCHITECTURE_BINDINGS.length !== 34) throw new Error('family_ui_architecture_coverage_must_be_34');
-  const unique = new Set(FAMILY_UI_ARCHITECTURE_BINDINGS.map((item) => item.ui_id));
+export function assertLegacyFamilyUiArchitectureCoverage(): void {
+  if (LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.length !== 34) throw new Error('family_ui_architecture_coverage_must_be_34');
+  const unique = new Set(LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.map((item) => item.ui_id));
   if (unique.size !== 34) throw new Error('family_ui_architecture_bindings_must_be_unique');
 }
 
@@ -108,7 +94,7 @@ export function assertFamilyUiArchitectureCoverage(): void {
 export interface DevFlowReceiptSummary {
   event_id: string;
   ui_id: FamilyUiId;
-  business_loop: FamilyBusinessLoop;
+  business_loop: LegacyFamilySurfaceLoop;
   command: string;
   event_state: 'DEV_CONFIRMED';
   created_at: string;
@@ -119,7 +105,7 @@ export interface DevFlowReceiptSummary {
 
 export interface FamilyBusinessScenario {
   scenario_id: string;
-  loop: FamilyBusinessLoop;
+  loop: LegacyFamilySurfaceLoop;
   name: string;
   ui_ids: readonly FamilyUiId[];
   trigger: string;
@@ -133,7 +119,7 @@ export interface FamilyBusinessScenario {
  * PDCA verification scenarios. These describe DEV test-flow behaviour only;
  * they neither claim education outcomes nor authorize real world side effects.
  */
-export const FAMILY_BUSINESS_SCENARIOS: readonly FamilyBusinessScenario[] = [
+export const LEGACY_FAMILY_BUSINESS_SCENARIOS: readonly FamilyBusinessScenario[] = [
   {
     scenario_id: 'SCN-CORE-01', loop: 'CORE_LOOP', name: '家庭进入与今日行动',
     ui_ids: ['UI-01'], trigger: 'Guardian opens the family home.',
@@ -186,12 +172,12 @@ export const FAMILY_BUSINESS_SCENARIOS: readonly FamilyBusinessScenario[] = [
   },
 ] as const;
 
-export function assertFamilyBusinessScenarioCoverage(): void {
-  if (FAMILY_BUSINESS_SCENARIOS.length !== FAMILY_BUSINESS_LOOPS.length) {
+export function assertLegacyFamilyBusinessScenarioCoverage(): void {
+  if (LEGACY_FAMILY_BUSINESS_SCENARIOS.length !== LEGACY_FAMILY_SURFACE_LOOPS.length) {
     throw new Error('family_business_scenarios_must_cover_six_loops');
   }
-  const scenarioUis = new Set(FAMILY_BUSINESS_SCENARIOS.flatMap((scenario) => scenario.ui_ids));
-  const bindings = new Set(FAMILY_UI_ARCHITECTURE_BINDINGS.map((binding) => binding.ui_id));
+  const scenarioUis = new Set(LEGACY_FAMILY_BUSINESS_SCENARIOS.flatMap((scenario) => scenario.ui_ids));
+  const bindings = new Set(LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.map((binding) => binding.ui_id));
   for (const uiId of bindings) {
     if (!scenarioUis.has(uiId)) throw new Error(`family_business_scenario_missing_ui:${uiId}`);
   }
@@ -217,15 +203,15 @@ export interface Ui01HomeFeature {
  * home screen.
  */
 export const UI01_HOME_FEATURES: readonly Ui01HomeFeature[] = [
-  { feature_id: 'home_identity', visual_label: '家庭成长平台', mode: 'READ_PROJECTION', target_route: 'home', source_objects: ['FamilyTodayProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
+  { feature_id: 'home_identity', visual_label: '家庭成长平台', mode: 'READ_PROJECTION', target_route: 'home', source_objects: ['FamilyHomeProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'header_more', visual_label: '更多', mode: 'NAVIGATION', target_route: 'core-mine', source_objects: ['Family'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'header_context', visual_label: '家庭上下文', mode: 'READ_PROJECTION', target_route: 'home', source_objects: ['Family', 'Person', 'ConsentGrant'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
-  { feature_id: 'greeting', visual_label: '今天也一起陪孩子成长', mode: 'READ_PROJECTION', target_route: 'home', source_objects: ['FamilyTodayProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
+  { feature_id: 'greeting', visual_label: '今天也一起陪孩子成长', mode: 'READ_PROJECTION', target_route: 'home', source_objects: ['FamilyHomeProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'notification', visual_label: '提醒', mode: 'DEV_NOOP_ROUTE', target_route: 'core-mine', source_objects: ['AuditEvent'], state_boundary: 'NOOP_ADAPTER', evidence_boundary: 'FACT' },
   { feature_id: 'assessment_campaign', visual_label: '免费家庭测评', mode: 'CONTROLLED_DRAFT_ROUTE', target_route: 'growth-assessment', source_objects: ['AssessmentDraft', 'Perspective'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'PERSPECTIVE' },
   { feature_id: 'assessment_cta', visual_label: '立即测评', mode: 'CONTROLLED_DRAFT_ROUTE', target_route: 'growth-assessment', source_objects: ['AssessmentDraft'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'PERSPECTIVE' },
   { feature_id: 'ai_diagnostic', visual_label: 'AI诊断', mode: 'NAVIGATION', target_route: 'assessment', source_objects: ['AssessmentDraft', 'EvidenceRef'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'PERSPECTIVE' },
-  { feature_id: 'challenge_21', visual_label: '21天挑战营', mode: 'NAVIGATION', target_route: 'growth-camp-21', source_objects: ['GrowthCamp21EnrollmentDraft', 'GrowthCamp21DayTask'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'RECOMMENDATION' },
+  { feature_id: 'challenge_21', visual_label: '21天挑战营', mode: 'NAVIGATION', target_route: 'commerce-product', source_objects: ['CatalogOffer'], state_boundary: 'READ_ONLY', evidence_boundary: 'RECOMMENDATION' },
   { feature_id: 'plan_90', visual_label: '90天成长计划', mode: 'NAVIGATION', target_route: 'core-plan', source_objects: ['GrowthPlanDraft', 'GrowthTask'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'RECOMMENDATION' },
   { feature_id: 'growth_cases', visual_label: '成长案例', mode: 'NAVIGATION', target_route: 'growth-poster', source_objects: ['GrowthMilestone', 'PosterProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'expert_live', visual_label: '专家直播', mode: 'NAVIGATION', target_route: 'teacher-zone', source_objects: ['TeacherSupply', 'ServiceOffering'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
@@ -238,7 +224,7 @@ export const UI01_HOME_FEATURES: readonly Ui01HomeFeature[] = [
   { feature_id: 'recommended_card_1', visual_label: '推荐内容卡片一', mode: 'NAVIGATION', target_route: 'commerce-product', source_objects: ['CatalogOffer'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'recommended_card_2', visual_label: '推荐内容卡片二', mode: 'NAVIGATION', target_route: 'commerce-product', source_objects: ['CatalogOffer'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'recommended_card_3', visual_label: '推荐内容卡片三', mode: 'NAVIGATION', target_route: 'commerce-product', source_objects: ['CatalogOffer'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
-  { feature_id: 'nav_home', visual_label: '首页', mode: 'NAVIGATION', target_route: 'home', source_objects: ['FamilyTodayProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
+  { feature_id: 'nav_home', visual_label: '首页', mode: 'NAVIGATION', target_route: 'home', source_objects: ['FamilyHomeProjection'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'nav_plan', visual_label: '计划', mode: 'NAVIGATION', target_route: 'core-plan', source_objects: ['GrowthPlanDraft'], state_boundary: 'CONTROLLED_DRAFT', evidence_boundary: 'RECOMMENDATION' },
   { feature_id: 'nav_community', visual_label: '社群', mode: 'NAVIGATION', target_route: 'core-community', source_objects: ['CommunityThread'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
   { feature_id: 'nav_mine', visual_label: '我的', mode: 'NAVIGATION', target_route: 'core-mine', source_objects: ['GrowthProfile'], state_boundary: 'READ_ONLY', evidence_boundary: 'FACT' },
@@ -300,7 +286,7 @@ export const UI01_ENTRY_EXECUTION_QUEUE: readonly UiEntryExecutionStep[] = [
   { source_ui_id: 'UI-01', source_feature_id: 'assessment_campaign', target_ui_id: 'UI-02', target_route: 'growth-assessment', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
   { source_ui_id: 'UI-01', source_feature_id: 'assessment_cta', target_ui_id: 'UI-02', target_route: 'growth-assessment', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
   { source_ui_id: 'UI-01', source_feature_id: 'ai_diagnostic', target_ui_id: 'UI-03', target_route: 'assessment', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
-  { source_ui_id: 'UI-01', source_feature_id: 'challenge_21', target_ui_id: 'UI-35', target_route: 'growth-camp-21', target_is_support_surface: true, required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
+  { source_ui_id: 'UI-01', source_feature_id: 'challenge_21', target_ui_id: 'UI-14', target_route: 'commerce-product', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
   { source_ui_id: 'UI-01', source_feature_id: 'plan_90', target_ui_id: 'UI-05', target_route: 'core-plan', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
   { source_ui_id: 'UI-01', source_feature_id: 'growth_cases', target_ui_id: 'UI-12', target_route: 'growth-poster', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
   { source_ui_id: 'UI-01', source_feature_id: 'expert_live', target_ui_id: 'UI-19', target_route: 'teacher-zone', required_before_implementation: ['WIDE_RESEARCH', 'NEEDS_ANALYSIS', 'FUNCTION_DESIGN', 'CONTRACT_ALIGNMENT'] },
@@ -316,8 +302,7 @@ export function assertUi01EntryExecutionQueue(): void {
     if (!UI01_HOME_FEATURES.some((feature) => feature.feature_id === step.source_feature_id)) {
       throw new Error(`ui01_entry_queue_unknown_feature:${step.source_feature_id}`);
     }
-    const targetBindings = step.target_is_support_surface ? FAMILY_SUPPORT_SURFACE_BINDINGS : FAMILY_UI_ARCHITECTURE_BINDINGS;
-    if (!targetBindings.some((binding) => binding.ui_id === step.target_ui_id && binding.route === step.target_route)) {
+    if (!LEGACY_FAMILY_UI_ARCHITECTURE_BINDINGS.some((binding) => binding.ui_id === step.target_ui_id && binding.route === step.target_route)) {
       throw new Error(`ui01_entry_queue_unknown_target:${step.target_ui_id}`);
     }
   }

@@ -21,4 +21,10 @@ describe("UI-07 original assessment-entry baseline contract", () => {
   it("does not introduce diagnosis, rankings, or family total scores", () => {
     expect(source).not.toMatch(/诊断|排名|总分/);
   });
+
+  it("does not add extra consent cards that alter the screenshot baseline", () => {
+    for (const copy of ["测评前确认", "历史测评状态会在正式测评页同步", "本页不编造记录"]) {
+      expect(source).not.toContain(copy);
+    }
+  });
 });

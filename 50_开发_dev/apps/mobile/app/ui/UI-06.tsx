@@ -47,17 +47,19 @@ export default function MyMembershipScreen() {
     const activeSubscription = membership?.subscriptions.find((item) => item.status === "ACTIVE");
     const benefitCount = membership?.benefits.filter((item) => item.status === "AVAILABLE").length ?? 0;
     const entitlementCount = commerce?.entitlements.filter((item) => item.status === "AVAILABLE").length ?? 0;
+    const effectiveTo = activeSubscription?.effective_to?.slice(0, 10);
     return {
       memberLabel: activeSubscription ? "年度会员" : "成长会员",
-      points: membership?.dev_points?.balance ?? 1280,
+      companionDays: activeSubscription ? "家庭成长陪伴已同步" : "家庭成长陪伴记录待同步",
+      points: membership?.dev_points?.balance ?? 0,
       level: activeSubscription ? "Lv.3" : "Lv.1",
-      coins: benefitCount + entitlementCount || 56,
-      date: activeSubscription?.effective_to?.slice(0, 10) ?? "2025-05-20",
-      planTitle: plans?.plans[0]?.title ?? "年度会员服务",
+      coins: benefitCount + entitlementCount,
+      dateLabel: effectiveTo ? `有效期至 ${effectiveTo}` : "有效期待确认",
+      planTitle: plans?.plans[0]?.title ?? "会员服务待确认",
     };
   }, [commerce?.entitlements, membership?.benefits, membership?.dev_points?.balance, membership?.subscriptions, plans?.plans]);
 
-  const invitedCount = mobile.invitationDraft ? 1 : 1;
+  const invitedCount = mobile.invitationDraft ? 1 : 0;
 
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
@@ -80,7 +82,7 @@ export default function MyMembershipScreen() {
                 <View style={styles.avatar}><IconSymbol name="person.crop.circle.fill" size={58} color="#FFFFFF" /></View>
                 <View style={styles.memberIdentity}>
                   <View style={styles.nameRow}><Text style={styles.memberName}>乐乐妈妈</Text><Text style={styles.memberBadge}>{summary.memberLabel}</Text></View>
-                  <Text style={styles.memberDays}>家庭成长陪伴第 68 天</Text>
+                  <Text style={styles.memberDays}>{summary.companionDays}</Text>
                 </View>
               </View>
               <View style={styles.memberStats}>
@@ -111,7 +113,7 @@ export default function MyMembershipScreen() {
           <Pressable onPress={() => router.push("/ui/UI-30" as Href)} style={({ pressed }) => [styles.annualCard, pressed && styles.pressed]}>
             <View style={styles.annualCopy}>
               <Text style={styles.annualTitle}>{summary.planTitle}</Text>
-              <Text style={styles.annualDate}>有效期至 {summary.date}</Text>
+              <Text style={styles.annualDate}>{summary.dateLabel}</Text>
               <View style={styles.benefitButton}><Text style={styles.benefitButtonText}>查看权益</Text></View>
             </View>
             <View style={styles.crownPanel}><IconSymbol name="crown.fill" size={70} color="#F4C75B" /></View>

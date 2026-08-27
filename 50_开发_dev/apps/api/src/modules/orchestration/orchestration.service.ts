@@ -7,6 +7,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import { safetyPrecheck } from '@family/principal-ai';
+import type { PrincipalRiskRoute } from '@family/principal-ai';
 import type {
   ContextReuseProjectionDto, FamilyDecisionType, GrowthCapabilityKey,
   ResourceOfferDto, ResourceRecommendationDto, SafeOrchestrationOutcome,
@@ -48,6 +49,8 @@ const SELF_STEWARD = 'family-steward:v1';
 export interface RequestHelpResult {
   signal_id: string; proposed_need_type: string | null; proposed_capability_keys: GrowthCapabilityKey[];
   confirm_prompt: string; supported: boolean;
+  safety_route: PrincipalRiskRoute;
+  next_action: 'CONFIRM_INTENT' | 'REFRAME_NEED' | 'HUMAN_REVIEW' | 'URGENT_HUMAN_SUPPORT';
 }
 export interface DecideResult {
   decision_id: string; outcome: 'SERVICE_STARTED' | SafeOrchestrationOutcome;
@@ -108,7 +111,7 @@ export class OrchestrationService {
   }
 
   /** ① 表达需求:先校验 subject(家庭/CHILD/12–15)+ SERVICE consent,再写服务层输入 + NON_CANONICAL NeedSignal。 */
-  async requestHelp(familyId: string, subjectPersonId: string, actorPersonId: string, rawText: string, source: 'MANUAL' | 'PRINCIPAL' | 'SERVICE_FOLLOWUP', _correlationId: string, idempotencyKey?: string): Promise<RequestHelpResult> {
+  async requestHelp(familyId: string, subjectPersonId: string, actorPersonId: string, rawText: string, source: 'MANUAL' | 'PRINCIPAL' | 'SERVICE_FOLLOWUP', correlationId: string, idempotencyKey?: string): Promise<RequestHelpResult> {
     return this.withIdempotency('RequestGrowthHelp', idempotencyKey, { familyId, subjectPersonId, actorPersonId, rawText, source }, async () => {
     if (!rawText?.trim()) throw new BadRequestException('raw_text_required');
     const subj = await this.repo.checkSubject(familyId, subjectPersonId);
@@ -118,6 +121,7 @@ export class OrchestrationService {
     const facts = await this.repo.loadEligibilityFacts(familyId, subjectPersonId);
     if (!facts.serviceConsentGranted) throw new ForbiddenException('service_consent_required'); // 无 SERVICE consent → 0 input / 0 signal
 
+    const safetyRoute = safetyPrecheck({ user_message: rawText });
     const cls = classifyNeed(rawText);
     return this.repo.withTransaction(async (c) => {
       const input = await c.query<{ input_id: string }>(
@@ -130,12 +134,40 @@ export class OrchestrationService {
          values ($1,$2,$3,$4,$5,$6,false) returning signal_id`,
         [familyId, subjectPersonId, source, input.rows[0].input_id, cls.need_type, cls.confidence],
       );
-      const supported = cls.need_type != null;
-      return {
-        signal_id: signal.rows[0].signal_id, proposed_need_type: cls.need_type, proposed_capability_keys: cls.required_capability_keys,
-        confirm_prompt: supported ? '你现在最想解决的是:先让冲突降下来,并找到今晚重新开口的方式?' : '我暂时没完全理解。要不要换句话描述你现在最想解决的问题?',
-        supported,
+      const proposedNeedType = safetyRoute === 'NORMAL' ? cls.need_type : null;
+      const proposedCapabilityKeys = safetyRoute === 'NORMAL' ? cls.required_capability_keys : [];
+      const supported = proposedNeedType != null;
+      const nextAction: RequestHelpResult['next_action'] = safetyRoute === 'HIGH_RISK'
+        ? 'URGENT_HUMAN_SUPPORT'
+        : safetyRoute === 'REVIEW'
+          ? 'HUMAN_REVIEW'
+          : supported
+            ? 'CONFIRM_INTENT'
+            : 'REFRAME_NEED';
+      const response = {
+        signal_id: signal.rows[0].signal_id, proposed_need_type: proposedNeedType, proposed_capability_keys: proposedCapabilityKeys,
+        confirm_prompt: safetyRoute === 'HIGH_RISK'
+          ? '现在先不要独自处理：请立即联系当地紧急服务、专业危机支持或可信赖的成年人，并确保孩子有人陪伴。'
+          : safetyRoute === 'REVIEW'
+            ? '这段情况需要先由专业人员复核。普通成长建议已暂停，请优先联系家庭顾问或当地专业支持。'
+            : supported
+              ? '你现在最想解决的是:先让冲突降下来,并找到今晚重新开口的方式?'
+              : '我暂时没完全理解。要不要换句话描述你现在最想解决的问题?',
+        supported, safety_route: safetyRoute, next_action: nextAction,
       };
+      const occurredAt = new Date().toISOString();
+      await c.query(
+        `insert into audit_logs(family_id,actor_type,actor_id,action_name,resource_type,resource_id,correlation_id,idempotency_key,result,metadata)
+         values ($1,'USER',$2,'RequestGrowthHelp','GrowthNeedSignal',$3,$4,$5,'SUCCESS',$6::jsonb)`,
+        [familyId, actorPersonId, response.signal_id, correlationId, idempotencyKey ?? null, JSON.stringify({ source, subject_person_id: subjectPersonId, supported, safety_route: safetyRoute, next_action: nextAction, proposed_need_type: proposedNeedType, raw_text_stored_separately: true })],
+      );
+      const eventId = randomUUID();
+      await c.query(
+        `insert into outbox_events(aggregate_type,aggregate_id,event_name,event_version,event_id,correlation_id,payload,occurred_at)
+         values ('GrowthNeedSignal',$1,'GrowthHelpRequested',1,$2,$3,$4::jsonb,$5)`,
+        [response.signal_id, eventId, correlationId, JSON.stringify({ event_id: eventId, family_id: familyId, subject_person_id: subjectPersonId, signal_id: response.signal_id, source, supported, safety_route: safetyRoute, next_action: nextAction, proposed_need_type: proposedNeedType }), occurredAt],
+      );
+      return response;
     });
     });
   }
@@ -143,10 +175,16 @@ export class OrchestrationService {
   /** ② 显式确认:subject 从 signal 派生(不信客户端);创建 GrowthIntent(OPEN)。不建 GrowthPriority。 */
   async confirmIntent(familyId: string, actorPersonId: string, signalId: string, goalText: string, idempotencyKey?: string): Promise<{ intent_id: string; subject_person_id: string; required_capability_keys: GrowthCapabilityKey[] }> {
     return this.withIdempotency('ConfirmGrowthIntent', idempotencyKey, { familyId, actorPersonId, signalId, goalText }, async () => {
-    const sig = await this.repo.query<{ subject_person_id: string; inferred_need_type: string | null }>(
-      `select subject_person_id, inferred_need_type from growth_need_signals where signal_id=$1 and family_id=$2`, [signalId, familyId],
+    const sig = await this.repo.query<{ subject_person_id: string; inferred_need_type: string | null; raw_text: string }>(
+      `select gns.subject_person_id, gns.inferred_need_type, gni.raw_text
+         from growth_need_signals gns
+         join growth_need_inputs gni on gni.input_id=gns.raw_ref
+        where gns.signal_id=$1 and gns.family_id=$2`, [signalId, familyId],
     );
     if ((sig.rowCount ?? 0) === 0) throw new BadRequestException('signal_not_found');
+    if (safetyPrecheck({ user_message: `${sig.rows[0].raw_text} ${goalText}` }) !== 'NORMAL') {
+      throw new ForbiddenException('safety_route_requires_human_support');
+    }
     const subjectPersonId = sig.rows[0].subject_person_id; // 服务端派生 subject
     const cls = classifyNeed(goalText);
     const needType = cls.need_type ?? sig.rows[0].inferred_need_type ?? null;

@@ -1,0 +1,107 @@
+{
+  "asset_ref": "DEVELOPMENT_FACTORY_RUN_REPORT",
+  "version": "0.2.0",
+  "generated_at": "2026-08-23T17:29:07.673Z",
+  "manifest_ref": "FAMILY_DEVELOPMENT_FACTORY_V0",
+  "target_id": "camp21-product-detail",
+  "mode": "fullstack",
+  "id": "camp21-product-detail",
+  "factory_ref": "CAMP21_FULLSTACK_FACTORY_V0",
+  "feature_ref": "CAMP21_PRODUCT_DETAIL",
+  "ui_ref": "UI-14",
+  "frontend_ref": "apps/mobile/app/ui/UI-14.tsx",
+  "backend_ref": "family-commerce-intent",
+  "product_ref": "PRODUCT_PARENT_CHILD_CAMP",
+  "report_base": "camp21-development-factory",
+  "baseline_assets": [
+    "apps/mobile/research/baselines/ui35-original/product-detail-reference-418x970.png",
+    "reports/factory/browser-evidence/camp21-product-detail-8081.latest.png"
+  ],
+  "boundaries": {
+    "allowed_mutations": [
+      "SubmitCommerceIntent",
+      "local bookmark/support no-op state"
+    ],
+    "forbidden_effects": [
+      "payment SDK invocation",
+      "external order placement",
+      "external support notification",
+      "automatic family ranking or total score"
+    ],
+    "authorization_boundary": {
+      "baseline_driven_ui": "AUTHORIZED",
+      "controlled_backend_intent": "AUTHORIZED_TESTDB_ONLY",
+      "payment_or_external_order": "NOT_AUTHORIZED",
+      "live_external_ai": "NOT_INVOKED"
+    }
+  },
+  "steps": [
+    {
+      "id": "camp21_ui_contract_harness",
+      "lane_refs": [
+        "UI_FACTORY_LANE",
+        "MOBILE_CONTRACT_LANE"
+      ],
+      "command": "pnpm run harness:camp21-ui",
+      "started_at": "2026-08-23T17:29:07.674Z",
+      "completed_at": "2026-08-23T17:29:19.455Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "PASS ui14_baseline_and_cross_page_regression :: pnpm --dir apps/mobile exec vitest run tests/ui14-product-detail-baseline.test.ts tests/ui13-ui18-cross-page-regression.test.ts\nPASS mobile_typecheck :: pnpm --dir apps/mobile check\nWROTE reports/ui-harness/camp21-ui-harness-run.latest.json\n",
+      "stderr": "$ node tools/run-camp21-ui-harness.mjs\n",
+      "ok": true
+    },
+    {
+      "id": "camp21_browser_visible_text_evidence",
+      "lane_refs": [
+        "UI_FACTORY_LANE",
+        "WEB_CONTRACT_LANE"
+      ],
+      "command": "browser evidence check reports/factory/browser-evidence/camp21-product-detail.latest.json",
+      "started_at": "2026-08-23T17:29:19.457Z",
+      "completed_at": "2026-08-23T17:29:19.457Z",
+      "evidence_file": "reports/factory/browser-evidence/camp21-product-detail.latest.json",
+      "evidence_url": "http://localhost:8081/ui/UI-14?productRef=PRODUCT_PARENT_CHILD_CAMP",
+      "missing_text": [],
+      "warnings": [
+        "shadow* style props are deprecated. Use boxShadow.",
+        "props.pointerEvents is deprecated. Use style.pointerEvents.",
+        "Disconnected from Metro (1006)."
+      ],
+      "ok": true
+    },
+    {
+      "id": "camp21_backend_commerce_intent_slice",
+      "lane_refs": [
+        "BACKEND_FACTORY_LANE",
+        "CONTROLLED_ACTION_LANE"
+      ],
+      "command": "node tools/testdb.mjs run --filter @family/api exec vitest run --config vitest.integration.config.ts src/modules/orchestration/family-commerce-intent.integration.spec.ts",
+      "started_at": "2026-08-23T17:29:19.457Z",
+      "completed_at": "2026-08-23T17:29:25.928Z",
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "\n\u001b[1m\u001b[7m\u001b[36m RUN \u001b[39m\u001b[27m\u001b[22m \u001b[36mv2.1.9 \u001b[39m\u001b[90mD:/family-ai/50_开发_dev/apps/api\u001b[39m\n\n \u001b[32m✓\u001b[39m src/modules/orchestration/family-commerce-intent.integration.spec.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 2088\u001b[2mms\u001b[22m\u001b[39m\n   \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m Family commerce intent -> entitlement DEV/TEST slice\u001b[2m > \u001b[22mcreates independent product, order-intent, entitlement and event facts with idempotent replay \u001b[33m685\u001b[2mms\u001b[22m\u001b[39m\n   \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m Family commerce intent -> entitlement DEV/TEST slice\u001b[2m > \u001b[22mcancels only the trusted family intent using row_version and revokes its local entitlement receipt \u001b[33m319\u001b[2mms\u001b[22m\u001b[39m\n   \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m Family commerce intent -> entitlement DEV/TEST slice\u001b[2m > \u001b[22mfails closed for missing SERVICE consent, non-admitted product, wrong page and cross-tenant catalog visibility \u001b[33m645\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m1 passed\u001b[39m\u001b[22m\u001b[90m (1)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m3 passed\u001b[39m\u001b[22m\u001b[90m (3)\u001b[39m\n\u001b[2m   Start at \u001b[22m 01:29:21\n\u001b[2m   Duration \u001b[22m 4.61s\u001b[2m (transform 953ms, setup 0ms, collect 2.16s, tests 2.09s, environment 0ms, prepare 110ms)\u001b[22m\n\n",
+      "stderr": "(node:10292) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n\u001b[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.\u001b[39m\n",
+      "ok": true
+    },
+    {
+      "id": "camp21_forbidden_effect_scan",
+      "lane_refs": [
+        "BOUNDARY_GATE_LANE"
+      ],
+      "command": "internal forbidden effect scan",
+      "started_at": "2026-08-23T17:29:25.928Z",
+      "completed_at": "2026-08-23T17:29:25.930Z",
+      "findings": [],
+      "ok": true
+    }
+  ],
+  "steps_planned": [
+    "camp21_ui_contract_harness",
+    "camp21_browser_visible_text_evidence",
+    "camp21_backend_commerce_intent_slice",
+    "camp21_forbidden_effect_scan"
+  ],
+  "ok": true
+}

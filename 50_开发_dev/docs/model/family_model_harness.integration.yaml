@@ -1,0 +1,212 @@
+version: 0.1.0
+asset_ref: FAMILY_MODEL_HARNESS_INTEGRATION
+status: draft
+owner: Family Model Evaluation
+purpose: >
+  Defines how Codex harness-style open architecture is connected to Family
+  Education Large Model construction. The harness is a model factory and test
+  bench around Family-owned assets; it is not the domain model itself.
+
+current_authorization_boundary:
+  business_runtime: NOT_AUTHORIZED
+  database_schema_change: NOT_AUTHORIZED
+  live_external_ai: NOT_AUTHORIZED
+
+positioning:
+  harness_role:
+    - generate_candidate_assets
+    - run_schema_validation
+    - run_safety_regression
+    - run_golden_scenario_eval
+    - produce_review_report
+    - register_accepted_assets
+  not_harness_role:
+    - define_family_domain_truth
+    - replace_expert_review
+    - write_core_ontology_directly
+    - call_external_models_without_gateway
+    - mutate_business_state
+
+family_owned_source_assets:
+  - FAMILY_EDUCATION_DOMAIN_REGISTRY
+  - FAMILY_EDUCATION_NEED_REGISTRY
+  - FAMILY_EDUCATION_CONSTRUCT_REGISTRY
+  - FAMILY_EDUCATION_SOURCE_REGISTRY
+  - FAMILY_UI02_ASSESSMENT_MODEL_SLICE
+  - FAMILY_UI02_ASSESSMENT_RESEARCH_CARDS
+  - FAMILY_SUPPORT_ACTION_CATALOG
+  - FAMILY_OUTCOME_SIGNAL_SCHEMA
+  - FAMILY_MEMORY_CONVERSATION_SCHEMA
+  - FAMILY_MULTIMODAL_ARTIFACT_SCHEMA
+  - FAMILY_MODEL_COMPONENT_REGISTRY
+  - FAMILY_MODEL_TECHNICAL_ARCHITECTURE_REGISTRY
+  - FAMILY_MODEL_RUNTIME_INTEGRATION_CONTRACT
+  - FAMILY_UI_MODEL_BINDING_REGISTRY
+
+harness_lanes:
+  - lane_ref: MODEL_ASSET_BUILD_LANE
+    role: Generate and update candidate registries, item banks, schemas, and model component contracts.
+    input_asset_refs:
+      - FAMILY_EDUCATION_MODEL_FOUNDATION_MANIFEST
+      - FAMILY_UI02_ASSESSMENT_MODEL_SLICE
+      - FAMILY_UI02_ASSESSMENT_RESEARCH_CARDS
+    output_asset_kinds:
+      - candidate_yaml_asset
+      - candidate_contract_asset
+      - review_report
+    required_gates:
+      - schema_parse_gate
+      - reference_integrity_gate
+      - family_hard_rule_gate
+
+  - lane_ref: EVAL_AND_SAFETY_LANE
+    role: Execute golden scenario, boundary, safety, and regression checks for model outputs.
+    input_asset_refs:
+      - FAMILY_UI02_ASSESSMENT_MODEL_SLICE
+      - FAMILY_UI02_ASSESSMENT_RESEARCH_CARDS
+      - FAMILY_MODEL_EVALUATION_SCENARIOS
+      - FAMILY_INTERPRETATION_SCHEMA
+    output_asset_kinds:
+      - eval_result_json
+      - safety_regression_report
+      - failure_case_patch_queue
+    required_gates:
+      - no_total_score_gate
+      - no_ranking_gate
+      - no_diagnosis_gate
+      - boundary_label_gate
+
+  - lane_ref: DISTILLATION_DATA_LANE
+    role: Transform approved registries and scenarios into structured training and evaluation records.
+    input_asset_refs:
+      - FAMILY_UI02_ASSESSMENT_MODEL_SLICE
+      - FAMILY_ASSESSMENT_ITEM_BANK_REGISTRY
+      - FAMILY_INTERPRETATION_SCHEMA
+      - FAMILY_MODEL_EVALUATION_SCENARIOS
+    output_asset_kinds:
+      - jsonl_distillation_dataset
+      - dataset_manifest
+      - model_card_seed
+    required_gates:
+      - source_provenance_gate
+      - evidence_boundary_gate
+      - pii_minimization_gate
+
+  - lane_ref: RUNTIME_PLAN_LANE
+    role: Convert product surfaces and flow refs into executable, non-mutating runtime integration plans.
+    input_asset_refs:
+      - FAMILY_MODEL_TECHNICAL_ARCHITECTURE_REGISTRY
+      - FAMILY_MODEL_RUNTIME_INTEGRATION_CONTRACT
+      - FAMILY_UI_MODEL_BINDING_REGISTRY
+    output_asset_kinds:
+      - architecture_plan_json
+      - integration_plan_json
+      - blocked_reason_report
+    required_gates:
+      - business_runtime_gate
+      - live_external_ai_gate
+      - gateway_policy_gate
+
+tool_entrypoints:
+  - command: pnpm run harness:family-model
+    lane_refs:
+      - MODEL_ASSET_BUILD_LANE
+      - EVAL_AND_SAFETY_LANE
+      - DISTILLATION_DATA_LANE
+      - RUNTIME_PLAN_LANE
+    current_gate_allowed: true
+
+  - command: pnpm run harness:family-model:distill-full
+    lane_refs:
+      - MODEL_ASSET_BUILD_LANE
+      - EVAL_AND_SAFETY_LANE
+      - DISTILLATION_DATA_LANE
+      - RUNTIME_PLAN_LANE
+    output_reports:
+      - reports/model-harness/family-model-harness-run.latest.json
+    output_datasets:
+      - docs/model/distilled/manifest.json
+      - docs/model/distilled/220k_staging/manifest.json
+      - docs/model/distilled/review_batch_v0_1/manifest.json
+      - docs/model/distilled/subsets_v0_1/manifest.json
+    current_gate_allowed: true
+    notes:
+      - Runs first-party baseline distillation, Family-ingested 220k staging, review-batch distillation, review-only subset distillation, post-distillation validation, deterministic evals, and runtime planning through the harness control plane.
+
+  - command: pnpm run validate:model-assets
+    lane_refs:
+      - MODEL_ASSET_BUILD_LANE
+      - EVAL_AND_SAFETY_LANE
+      - RUNTIME_PLAN_LANE
+    current_gate_allowed: true
+
+  - command: pnpm run eval:family-model
+    lane_refs:
+      - EVAL_AND_SAFETY_LANE
+    output_reports:
+      - reports/model-eval/family-model-eval.deterministic.latest.json
+      - reports/model-eval/family-model-eval.latest.json
+    current_gate_allowed: true
+
+  - command: pnpm run eval:family-memory
+    lane_refs:
+      - EVAL_AND_SAFETY_LANE
+    output_reports:
+      - reports/model-eval/family-memory-eval.latest.json
+    current_gate_allowed: true
+
+  - command: pnpm run distill:family-model
+    lane_refs:
+      - DISTILLATION_DATA_LANE
+    current_gate_allowed: true
+
+  - command: pnpm run distill:family-model-subsets
+    lane_refs:
+      - DISTILLATION_DATA_LANE
+    output_datasets:
+      - docs/model/distilled/subsets_v0_1/manifest.json
+    current_gate_allowed: true
+
+  - command: pnpm run distill:family-model-multi-api -- --live-authorized
+    lane_refs:
+      - DISTILLATION_DATA_LANE
+    output_reports:
+      - reports/multi-api-distillation/multi-api-distillation-run.latest.json
+    current_gate_allowed: false
+    blocked_until:
+      - LIVE_EXTERNAL_AI=AUTHORIZED
+      - local cc switch or multi-api route env configured
+      - run-scoped live authorization provided
+
+  - command: pnpm run plan:family-model-architecture -- --all
+    lane_refs:
+      - RUNTIME_PLAN_LANE
+    current_gate_allowed: true
+
+  - command: pnpm run smoke:family-model-live
+    lane_refs:
+      - RUNTIME_PLAN_LANE
+    current_gate_allowed: false
+    blocked_until:
+      - LIVE_EXTERNAL_AI=AUTHORIZED
+      - local cc switch env configured
+
+  - command: pnpm run eval:family-model-live -- --live-authorized
+    lane_refs:
+      - EVAL_AND_SAFETY_LANE
+    output_reports:
+      - reports/model-eval/family-model-eval.live.latest.json
+    current_gate_allowed: false
+    blocked_until:
+      - LIVE_EXTERNAL_AI=AUTHORIZED
+      - local cc switch env configured
+      - run-scoped live authorization provided
+
+acceptance:
+  - harness integration remains outside business runtime under current gate
+  - every harness lane declares input assets, output asset kinds, and gates
+  - deterministic golden scenario evaluation is part of the default harness run
+  - memory update candidate evaluation is part of the default harness run
+  - live golden scenario evaluation remains fail-closed without explicit authorization and provider config
+  - Family-owned source assets remain first-party and versioned
+  - live smoke remains blocked until explicit live AI authorization

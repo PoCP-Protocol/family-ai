@@ -92,7 +92,8 @@ describe('运营控制台家庭回执筛选', () => {
     root.querySelector<HTMLButtonElement>('#receiptNextPage')?.click();
     expect(root.textContent).toContain('第 2/2 页');
     root.querySelector<HTMLButtonElement>('#receiptRecent7')?.click();
-    expect(root.querySelector<HTMLInputElement>('#receiptFromDate')?.value).toBe('2026-08-15');
+    const expectedRecentFrom = new Date(); expectedRecentFrom.setDate(expectedRecentFrom.getDate() - 7);
+    expect(root.querySelector<HTMLInputElement>('#receiptFromDate')?.value).toBe(expectedRecentFrom.toISOString().slice(0, 10));
     root.querySelector<HTMLSelectElement>('#receiptPageFilter')!.value = 'UI-21';
     root.querySelector<HTMLSelectElement>('#receiptPageFilter')!.dispatchEvent(new Event('change'));
     root.querySelector<HTMLButtonElement>('#receiptSavePreset')?.click();

@@ -14,6 +14,40 @@ export function createTestPool(): pg.Pool {
   return new Pool({ connectionString: getTestDatabaseUrl() });
 }
 
+/**
+ * VS-00 test fixture helper: completes the same trusted Tenant chain required
+ * in production without weakening guards or adding an implicit runtime fallback.
+ */
+export async function bindTestAccountToFamilyTenant(pool: pg.Pool, accountId: string, familyId: string): Promise<string> {
+  const existing = await pool.query<{ tenant_id: string }>(
+    `select tenant_id from tenant_family_bindings
+      where family_id=$1 and status='ACTIVE'
+        and effective_from <= now() and (effective_to is null or effective_to > now())
+      limit 1`,
+    [familyId],
+  );
+  const tenantId = existing.rows[0]?.tenant_id ?? (await pool.query<{ tenant_id: string }>(
+    `insert into tenants(tenant_ref, display_name, tenant_type, status, region_ref, plan_ref)
+     values ('TEST_RUNTIME', 'Family Automated Test Tenant', 'INTERNAL_SANDBOX', 'ACTIVE', 'TEST', 'AUTOMATED_TEST')
+     on conflict (tenant_ref) do update set status='ACTIVE', updated_at=now()
+     returning tenant_id`,
+  )).rows[0].tenant_id;
+  if (!existing.rows[0]) {
+    await pool.query(
+      `insert into tenant_family_bindings(tenant_id, family_id, status, effective_from, migration_ref)
+       values ($1,$2,'ACTIVE',now(),'AUTOMATED_TEST_FIXTURE')`,
+      [tenantId, familyId],
+    );
+  }
+  await pool.query(
+    `insert into tenant_account_memberships(tenant_id, account_id, role, status, valid_from)
+     values ($1,$2,'TENANT_VIEWER','ACTIVE',now())
+     on conflict (tenant_id, account_id) do update set status='ACTIVE', valid_to=null, updated_at=now()`,
+    [tenantId, accountId],
+  );
+  return tenantId;
+}
+
 export async function cleanFamilyCoreTables(pool: pg.Pool): Promise<void> {
   // Principal 域(M3-101A-B)以 FK 引用 families —— 先清 principal_*/product_events,
   // 否则末尾 `delete from families` 会被 principal_sessions_family_id_fkey 挡住。
@@ -79,6 +113,8 @@ export async function seedAiConsentSubject(
 /** 清编排域表(FAMILY-GROWTH-VERTICAL-SLICE-001;children-first FK 序);to_regclass 守卫兼容未迁移 0020 的库。 */
 export async function cleanOrchestrationTablesIfPresent(pool: pg.Pool): Promise<void> {
   const tables = [
+    'family_growth_camp_operations', 'family_growth_camp_day_checkins', 'family_growth_camp_enrollments',
+    'family_growth_hypothesis_decisions', 'family_assessment_operations', 'family_assessment_responses', 'family_assessment_sessions',
     // Event and membership/booking/commerce facts must clear before Tenant/Family bases; supply masters remain fixture-only.
     'family_membership_benefit_ledger', 'family_membership_benefit_grants', 'family_membership_subscriptions',
     'family_membership_benefit_definitions', 'family_membership_plans',

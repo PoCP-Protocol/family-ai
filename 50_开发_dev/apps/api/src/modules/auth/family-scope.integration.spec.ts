@@ -11,6 +11,9 @@ import { FamilyScopeGuard } from './family-scope.guard';
  * 合法 ALLOW;跨家庭/撤销/LEFT/过期/伪造 DENY;零家庭 Account 认证成功且 contexts=[]。
  */
 const BACKFILL = `
+  INSERT INTO tenants (tenant_ref, display_name, tenant_type, status)
+    VALUES ('FAMILY_DIRECT', 'Family Direct Customer Tenant', 'DIRECT_CUSTOMER', 'ACTIVE')
+    ON CONFLICT (tenant_ref) DO UPDATE SET status='ACTIVE', updated_at=now();
   INSERT INTO accounts (external_ref) SELECT DISTINCT p.account_id FROM persons p
     WHERE p.account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM accounts a WHERE a.external_ref=p.account_id);
   INSERT INTO account_person_bindings (account_id, person_id)
@@ -23,7 +26,19 @@ const BACKFILL = `
            WHEN p.person_type='PARENT' THEN 'GUARDIAN'::family_role ELSE 'ADULT_MEMBER'::family_role END,
       'ACTIVE'::family_membership_status, p.created_at
     FROM persons p JOIN families f ON f.family_id=p.family_id
-    WHERE NOT EXISTS (SELECT 1 FROM family_memberships m WHERE m.family_id=p.family_id AND m.person_id=p.person_id);`;
+    WHERE NOT EXISTS (SELECT 1 FROM family_memberships m WHERE m.family_id=p.family_id AND m.person_id=p.person_id);
+  INSERT INTO tenant_family_bindings (tenant_id, family_id, status, effective_from, migration_ref)
+    SELECT t.tenant_id, f.family_id, 'ACTIVE'::tenant_binding_status, now(), 'TEST_VS00'
+    FROM tenants t CROSS JOIN families f
+    WHERE t.tenant_ref='FAMILY_DIRECT'
+      AND NOT EXISTS (SELECT 1 FROM tenant_family_bindings tfb WHERE tfb.family_id=f.family_id AND tfb.status='ACTIVE');
+  INSERT INTO tenant_account_memberships (tenant_id, account_id, role, status, valid_from)
+    SELECT DISTINCT tfb.tenant_id, b.account_id, 'TENANT_VIEWER'::tenant_membership_role, 'ACTIVE'::tenant_membership_status, now()
+    FROM account_person_bindings b
+    JOIN family_memberships fm ON fm.person_id=b.person_id AND fm.status='ACTIVE'
+    JOIN tenant_family_bindings tfb ON tfb.family_id=fm.family_id AND tfb.status='ACTIVE'
+    WHERE b.status='ACTIVE'
+    ON CONFLICT (tenant_id, account_id) DO UPDATE SET status='ACTIVE', valid_to=null, updated_at=now();`;
 
 describe('TENANCY-V2 T2 FamilyScopeGuard security matrix (integration)', () => {
   let pool: pg.Pool;
@@ -57,6 +72,7 @@ describe('TENANCY-V2 T2 FamilyScopeGuard security matrix (integration)', () => {
     const { token } = await auth.issueAccountSession('phone:A');
     const ctx = await guard.resolve(A, auth_(token));
     expect(ctx.familyId).toBe(A);
+    expect(ctx.tenantId).toBeTruthy();
     expect(ctx.familyRole).toBe('OWNER_GUARDIAN');
   });
 
@@ -78,6 +94,7 @@ describe('TENANCY-V2 T2 FamilyScopeGuard security matrix (integration)', () => {
     const ctxs = await auth.listContexts(acct.account_id);
     expect(ctxs.length).toBe(2);
     expect(new Set(ctxs.map((c) => c.family_id))).toEqual(new Set([A, B]));
+    expect(new Set(ctxs.map((c) => c.tenant_id)).size).toBe(1);
     // 两个都能解析
     const { token } = acct as unknown as { token: string; account_id: string };
     expect((await guard.resolve(A, auth_(token))).familyId).toBe(A);
@@ -106,6 +123,22 @@ describe('TENANCY-V2 T2 FamilyScopeGuard security matrix (integration)', () => {
     await pool.query(`update account_person_bindings set status='REVOKED', revoked_at=now()`);
     const { token } = await auth.issueAccountSession('phone:A');
     await expect(guard.resolve(A, auth_(token))).rejects.toThrow();
+  });
+
+  it('10a revoked TenantAccountMembership → DENY', async () => {
+    const A = await family('甲'); await guardian(A, '妈', 'phone:A');
+    await pool.query(BACKFILL);
+    await pool.query(`update tenant_account_memberships set status='REVOKED', valid_to=now()`);
+    const { token } = await auth.issueAccountSession('phone:A');
+    await expect(guard.resolve(A, auth_(token))).rejects.toThrow(/no_active_membership/);
+  });
+
+  it('10b suspended TenantFamilyBinding → DENY', async () => {
+    const A = await family('甲'); await guardian(A, '妈', 'phone:A');
+    await pool.query(BACKFILL);
+    await pool.query(`update tenant_family_bindings set status='SUSPENDED', effective_to=now()`);
+    const { token } = await auth.issueAccountSession('phone:A');
+    await expect(guard.resolve(A, auth_(token))).rejects.toThrow(/no_active_membership/);
   });
 
   it('11 expired session → DENY (401)', async () => {

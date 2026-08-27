@@ -45,7 +45,7 @@ export default function GrowthReviewScreen() {
       <ScrollView contentContainerStyle={styles.content} refreshControl={<FamilyRefreshControl />}>
         <View style={styles.topBar}>
           <Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><IconSymbol name="chevron.left" size={27} color="#23272C" /></Pressable>
-          <Text style={styles.topTitle}>家庭成长报告</Text>
+          <Text style={styles.topTitle}>家庭过程回顾</Text>
           <IconSymbol name="arrow.up.right.square" size={22} color="#23272C" />
         </View>
 
@@ -55,21 +55,21 @@ export default function GrowthReviewScreen() {
           <Text style={styles.sparkle}>✦</Text>
         </View>
 
-        <Text style={styles.sectionTitle}>成长综合评估</Text>
+        <Text style={styles.sectionTitle}>五个观察方向</Text>
         <View style={styles.radarPanel}>
           <Text style={[styles.radarLabel, styles.labelTop]}>亲子沟通</Text><Text style={[styles.radarLabel, styles.labelRightTop]}>学习习惯</Text><Text style={[styles.radarLabel, styles.labelRightBottom]}>情绪管理</Text><Text style={[styles.radarLabel, styles.labelLeftBottom]}>自律能力</Text><Text style={[styles.radarLabel, styles.labelLeftTop]}>手机依赖</Text>
           <Svg width={176} height={153} viewBox="0 0 176 153"><Polygon points="88,8 160,59 133,142 43,142 16,59" fill="#D9ECFF" stroke="#8CBFF4" strokeWidth="1.5" /><Polygon points="88,30 139,67 120,124 56,124 37,67" fill="#4B9AF560" stroke="#4B9AF5" strokeWidth="2" /><Line x1="88" y1="8" x2="88" y2="142" stroke="#B9D6F2" /><Line x1="16" y1="59" x2="160" y2="59" stroke="#B9D6F2" /><Line x1="16" y1="59" x2="133" y2="142" stroke="#B9D6F2" /><Line x1="160" y1="59" x2="43" y2="142" stroke="#B9D6F2" /></Svg>
           <View style={styles.radarCenter}><Text style={styles.centerSmall}>已记录</Text><Text style={styles.centerText}>{report.recorded}</Text><Text style={styles.centerSmall}>次行动</Text></View>
         </View>
 
-        <ReportRow tone="green" title="优势" text={report.advantage} />
-        <ReportRow tone="coral" title="待观察" text={report.attention} />
-        <ReportRow tone="gold" title="优先建议" text={report.suggestion} />
+        <ReportRow tone="green" title="已看见的行动" text={report.advantage} />
+        <ReportRow tone="coral" title="继续观察" text={report.attention} />
+        <ReportRow tone="gold" title="下一步可试" text={report.suggestion} />
 
-        <Text style={styles.pathTitle}>推荐成长路径</Text>
-        <View style={styles.pathRow}><PathStep duration="7天" label="修复期" color="#5B9FF4" /><Text style={styles.arrow}>→</Text><PathStep duration="30天" label="养成期" color="#568EE9" /><Text style={styles.arrow}>→</Text><PathStep duration="90天" label="成长计划" color="#2B74D8" /></View>
+        <Text style={styles.pathTitle}>可选行动路径</Text>
+        <View style={styles.pathRow}><PathStep duration="7天" label="先试一次" color="#5B9FF4" /><Text style={styles.arrow}>→</Text><PathStep duration="30天" label="持续记录" color="#568EE9" /><Text style={styles.arrow}>→</Text><PathStep duration="90天" label="回看调整" color="#2B74D8" /></View>
 
-        <Pressable onPress={() => router.push("/ui/UI-04" as Href)} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryText}>生成个性化方案</Text></Pressable>
+        <Pressable onPress={() => router.push("/ui/UI-04" as Href)} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryText}>查看可选支持方案</Text></Pressable>
         <Text style={styles.boundary}>这是一份家庭过程回顾，不是儿童诊断、家庭总分或效果结论。</Text>
       </ScrollView>
     </ScreenContainer>

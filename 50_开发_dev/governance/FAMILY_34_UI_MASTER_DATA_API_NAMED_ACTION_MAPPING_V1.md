@@ -18,15 +18,15 @@
 
 | UI | 页面 | 主数据 | 交易事实 | 读模型/API | Named Action | 状态上限 | 当前实现 |
 |---|---|---|---|---|---|---|---|
-| UI-01 | 家庭首页 | M-01 Family、M-02 Person、M-03 Membership、M-06 Consent | 无 | `FamilyHomeProjection` / `/home` | `ReadFamily` | `READ_ONLY_PRIVATE_FAMILY` | 首页路由已完成；对象投影接入中 |
-| UI-02 | 成长体检入口 | Family、Person、NeedType、Capability、PromptPolicy | 无 | `LLMContextSnapshot` / Gateway draft | `ReadFamily` | `EXPLANATION_OR_BLOCKED` | Gateway 已接入 |
-| UI-03 | 当前需要确认 | NeedType、Capability、Consent | NeedInput、NeedSignal、Intent | L0 need/intent DTO | `RequestGrowthHelp`、`ConfirmGrowthIntent` | `NEED/INTENT/NO_ACTION` | 后端已存在；UI 逐字段接入 |
+| UI-01 | 家庭首页 | M-01 Family、M-02 Person、M-03 Membership、M-06 Consent | `growth_actions`、`family_journey_plans`、已准入 Product/Service Offering、GrowthNeed/Intent/Decision | `UI01_FAMILY_HOME_V1` / `/families/:familyId/ui/01/home` | `ReadFamily`、`RequestGrowthHelp`、`ConfirmGrowthIntent`、`RecommendGrowthResources`、`DecideGrowthService` | `TRUSTED_TENANT_FAMILY_PROJECTION` | App/Web 已接统一投影与安全分流求助闭环；提醒基础设施仍待生产 Gate |
+| UI-02 | 成长体检入口 | Family、Person、Consent、AssessmentToolVersion | AssessmentSession、AssessmentResponse revisions、EvidenceRecord | `UI02_FAMILY_ASSESSMENT_V1` / `/families/:familyId/ui/02/assessment` | `START_ASSESSMENT`、`SAVE_ASSESSMENT_RESPONSE`、`SUBMIT_ASSESSMENT` | `FAMILY_PERSPECTIVE_NOT_SCORE_OR_DIAGNOSIS` | App/Web/API/PostgreSQL 已接；工具版本锁定、幂等、修订历史、提交不可变、Audit/Outbox与E2E已通过 |
+| UI-03 | 当前需要确认 | 版本化NeedType、Capability、Consent | Assessment Evidence、HypothesisDecision、GrowthIntent | `UI03_GROWTH_HYPOTHESIS_V1` / `/families/:familyId/ui/03/growth-hypothesis` | `CONFIRM_GROWTH_HYPOTHESIS`、`DISMISS_GROWTH_HYPOTHESIS` | `HYPOTHESIS/INTENT/NO_ACTION` | App/Web/API/PostgreSQL 已接；来源、局限、AI未调用、非诊断边界、确认后成Intent及幂等E2E已通过 |
 | UI-04 | 成长报告 | ResourceAsset、EvidenceSource、JourneyTemplate | SupportReportSnapshot | `GrowthJourneyProjection`、report projection | `ReadFamily`；撤回用 `ExecuteFamilyPageObjectAction` | `FAMILY_PRIVATE_REPORT` | 0023 对象已建立 |
 | UI-05 | 成长计划 | JourneyTemplate、TaskTemplate、Capability | FamilyDecision、OrchestrationPlan | `GrowthJourneyProjection` | `DecideGrowthService` 后受控创建 | `PLAN_ONLY` | Plan 主链已存在；页面投影待接入 |
 | UI-06 | 服务旅程 | ServiceOffering、Provider、Activity | ServiceCase、ServiceRecord | `ServiceJourneyProjection` | `ReadFamily` / 受控服务动作 | `SERVICE_RECORD_ONLY` | 现有 case 链可复用 |
 | UI-07 | 我的会员 | ProductOffering、PriceEntitlementPolicy | 无真实权益；仅测试资产 | CustomerAssetProjection | `ReadFamily` | `PRIVATE_ASSET_PROJECTION` | 真实会员/支付保持 Gate |
 | UI-08 | 成长报告/反馈 | EvidenceSource、JourneyTemplate | SupportReportSnapshot、ServiceRecord | Report/Service projection | `ReadFamily`、撤回动作 | `NO_SCORE_NO_DIAGNOSIS` | 0023 可承载；禁止成长分 |
-| UI-09 | 今日任务 | TaskTemplate、JourneyTemplate | TaskInstance | `page-objects.tasks` | `ExecuteFamilyPageObjectAction` | `OPEN/COMPLETED/PAUSED/CANCELLED` | API + DB + 集成已通过 |
+| UI-09 | 今日任务 | TaskTemplate、JourneyTemplate | `GrowthAction` TaskInstance | `UI01_UI09_FAMILY_TODAY_V1` / `/families/:familyId/today` | `Start/Pause/Resume/CancelGrowthAction`、`CompleteGrowthAction`（均受家庭动作授权） | `NOT_STARTED/IN_PROGRESS/PAUSED/COMPLETED/PARTIAL/NOT_COMPLETED/CANCELLED` | App/Web/API/PostgreSQL 已接；幂等、Audit/Outbox、row_version 与重启回读 E2E 已通过 |
 | UI-10 | 孩子侧页面 | Person、LifeStage、Consent | 无儿童直接作答事实 | 家庭私有只读投影 | `ReadFamily` | `READ_ONLY` | 儿童直接作答保持 HOLD |
 | UI-11 | 成长榜单 | 无跨家庭排名主数据 | 禁止写排名事实 | 仅个人/家庭自有记录 | 无 | `PRIVATE_PROGRESS_ONLY` | 跨家庭排名永久禁止 |
 | UI-12 | 成长海报 | EvidenceSource、JourneyTemplate | 私有成果记录 | Private report/progress projection | 仅私有记录动作 | `PRIVATE_ONLY` | 公开分享保持 HOLD |

@@ -1,7 +1,7 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -19,6 +19,13 @@ interface JourneyPlanProjection {
 }
 
 const WEEKLY_TASKS = ["完成3次亲子沟通练习", "孩子情绪记录 3/3 天", "学习计划执行 4/6 天"] as const;
+const SERVICE_CARD_ACCESSIBILITY_LABEL = "家庭顾问、班主任陪跑、AI提醒和专家答疑";
+const SERVICE_CARDS = [
+  { title: "家庭顾问", subtitle: "每周复盘", color: "#2F81F7", bg: "#EAF3FF", symbol: "顾" },
+  { title: "班主任陪跑", subtitle: "过程提醒", color: "#18AE76", bg: "#EAF9F1", symbol: "陪" },
+  { title: "AI提醒", subtitle: "打卡节奏", color: "#F5A11E", bg: "#FFF4DF", symbol: "AI" },
+  { title: "专家答疑", subtitle: "重点问题", color: "#8B65D9", bg: "#F3EEFF", symbol: "答" },
+] as const;
 
 export default function CompanionJourneyScreen() {
   const session = useFamilyApiSession();
@@ -46,7 +53,7 @@ export default function CompanionJourneyScreen() {
   }, [activeOnboardingId, session.selectedFamily, session.status, session.token]);
 
   const progress = useMemo(() => {
-    const completed = Math.max(0, Math.min(9, remote?.process_summary?.completed_actions ?? 7));
+    const completed = Math.max(0, Math.min(9, remote?.process_summary?.completed_actions ?? 0));
     return { completed, total: 9, percentage: Math.round((completed / 9) * 100) };
   }, [remote]);
   const thirdTaskDone = Boolean(lastReceipt) || campCompletedDays.length > 0;
@@ -109,7 +116,15 @@ export default function CompanionJourneyScreen() {
           </View>
 
           <Animated.View style={[styles.serviceCardsTransition, { opacity: serviceCardsOpacity, transform: [{ translateY: serviceCardsOffset }] }]}>
-            <Image onLoad={revealServiceCards} onError={revealServiceCards} source={require("@/assets/images/ui05-service-cards-baseline.png")} resizeMode="contain" style={styles.serviceCards} accessibilityLabel="家庭顾问、班主任陪跑、AI提醒和专家答疑" />
+            <View accessibilityLabel={SERVICE_CARD_ACCESSIBILITY_LABEL} style={styles.serviceCards}>
+              {SERVICE_CARDS.map((card) => (
+                <View key={card.title} style={styles.serviceCard}>
+                  <View style={[styles.serviceIcon, { backgroundColor: card.bg }]}><Text style={[styles.serviceIconText, { color: card.color }]}>{card.symbol}</Text></View>
+                  <Text style={styles.serviceCardTitle}>{card.title}</Text>
+                  <Text style={styles.serviceCardSubtitle}>{card.subtitle}</Text>
+                </View>
+              ))}
+            </View>
           </Animated.View>
 
           <View style={styles.progressCard}>
@@ -119,11 +134,11 @@ export default function CompanionJourneyScreen() {
             </View>
             <View style={styles.progressValueRow}>
               <Text style={styles.progressValue}>{progress.percentage}</Text><Text style={styles.progressPercent}>%</Text>
-              <View style={styles.progressCopy}><Text style={styles.progressCaption}>{remote?.process_summary?.label ?? "超过 78% 的伙伴"}</Text><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress.percentage}%` }]} /></View></View>
+              <View style={styles.progressCopy}><Text style={styles.progressCaption}>{remote?.process_summary?.label ?? "本周家庭过程记录"}</Text><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress.percentage}%` }]} /></View></View>
             </View>
             <View style={styles.weeklyList}>
               {WEEKLY_TASKS.map((task, index) => {
-                const done = index < 2 || thirdTaskDone;
+                const done = index < progress.completed || (index === 2 && thirdTaskDone);
                 return <WeeklyTaskLine key={task} text={task} done={done} />;
               })}
             </View>
@@ -138,14 +153,14 @@ export default function CompanionJourneyScreen() {
 
           <View style={styles.feedCard}>
             <View style={styles.feedHeader}><View style={[styles.avatar, { backgroundColor: "#F7D9CF" }]}><Text style={styles.avatarText}>慧</Text></View><View style={styles.feedAuthor}><Text style={styles.feedName}>慧慧妈妈</Text><Text style={styles.feedTime}>刚刚</Text></View><View style={styles.checkedPill}><Text style={styles.checkedPillText}>已打卡</Text></View></View>
-            <Text style={styles.feedText}>今天和孩子一起制定了学习计划，孩子很主动，棒棒哒！</Text>
-            <View style={styles.feedMeta}><Text style={styles.feedMetaText}>♧ 23</Text><Text style={styles.feedMetaText}>◯ 8</Text></View>
+            <Text style={styles.feedText}>今天和孩子一起制定了学习计划，我记录下这次互动中的一个积极信号。</Text>
+            <View style={styles.feedMeta}><Text style={styles.feedMetaText}>家庭私有记录</Text><Text style={styles.feedMetaText}>用于复盘</Text></View>
           </View>
 
           <View style={[styles.feedCard, styles.secondFeed]}>
             <View style={styles.feedHeader}><View style={[styles.avatar, { backgroundColor: "#DFE9F7" }]}><Text style={styles.avatarText}>乐</Text></View><View style={styles.feedAuthor}><Text style={styles.feedName}>乐乐爸爸</Text><Text style={styles.feedTime}>10分钟前</Text></View></View>
-            <Text style={styles.feedText}>坚持打卡第7天，看到孩子的变化！感谢平台的陪伴！</Text>
-            <View style={styles.feedMeta}><Text style={styles.feedMetaText}>♧ 18</Text><Text style={styles.feedMetaText}>◯ 5</Text></View>
+            <Text style={styles.feedText}>坚持打卡第7天，先把自己的观察和感受记录下来，方便下次复盘。</Text>
+            <View style={styles.feedMeta}><Text style={styles.feedMetaText}>家庭私有记录</Text><Text style={styles.feedMetaText}>用于复盘</Text></View>
           </View>
         </ScrollView>
 
@@ -172,8 +187,13 @@ const styles = StyleSheet.create({
   topActions: { width: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   moreText: { color: "#20242A", fontSize: 17, lineHeight: 19, fontWeight: "900", letterSpacing: 1 },
   circleText: { color: "#20242A", fontSize: 25, lineHeight: 25 },
-  serviceCardsTransition: { alignSelf: "center", width: "100%", height: 211, marginTop: 1 },
-  serviceCards: { width: "100%", height: 211 },
+  serviceCardsTransition: { alignSelf: "center", width: "100%", minHeight: 211, marginTop: 1, paddingHorizontal: 19, paddingTop: 14, paddingBottom: 12, backgroundColor: "#F6FAFF" },
+  serviceCards: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  serviceCard: { width: "48.5%", minHeight: 86, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 13, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#EDF1F7", shadowColor: "#1867C9", shadowOpacity: 0.07, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 1 },
+  serviceIcon: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  serviceIconText: { fontSize: 13, lineHeight: 18, fontWeight: "900" },
+  serviceCardTitle: { color: "#202A36", fontSize: 15, lineHeight: 20, fontWeight: "900" },
+  serviceCardSubtitle: { color: "#7A8594", fontSize: 11, lineHeight: 16, fontWeight: "700", marginTop: 2 },
   progressCard: { marginHorizontal: 19, marginTop: 8, padding: 17, backgroundColor: "#FFFFFF", borderRadius: 15, borderWidth: 1, borderColor: "#EDF0F5" },
   progressHeadline: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   progressTitle: { color: "#1E2732", fontSize: 16, lineHeight: 22, fontWeight: "900" },
