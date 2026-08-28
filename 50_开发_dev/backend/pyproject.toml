@@ -41,6 +41,7 @@ members = [
   "packages/testing",
   "domains/assessment",
   "domains/family",
+  "domains/consent",
   "intelligence",
 ]
 
