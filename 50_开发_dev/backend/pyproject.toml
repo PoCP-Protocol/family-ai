@@ -45,6 +45,7 @@ members = [
   "domains/growth_priority",
   "domains/growth_plan",
   "domains/intervention",
+  "domains/outcome",
   "intelligence",
 ]
 
