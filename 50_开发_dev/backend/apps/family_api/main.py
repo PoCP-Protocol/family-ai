@@ -22,13 +22,17 @@ from domains.assessment.api.routes import register_exception_handlers
 from domains.assessment.api.routes import router as assessment_router
 
 from .auth import extract_family_context
-from .db import dispose_engine, init_engine
+from .db import dispose_engine, get_engine, init_engine
 from .dependencies import get_command_handler, get_growth_hypothesis_handler, get_query_handler
+from .telemetry import configure_tracing, instrument_fastapi_app, instrument_sqlalchemy_engine
+
+configure_tracing()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_engine()
+    instrument_sqlalchemy_engine(get_engine())
     yield
     await dispose_engine()
 
@@ -38,6 +42,11 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# HTTP-request-level spans (method/path/status_code). See
+# `apps/family_api/telemetry.py` for exporter selection (console by default,
+# OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set).
+instrument_fastapi_app(app)
 
 # Wire the domain package's placeholder dependencies (which raise HTTP 500
 # by design when unwired — see domains/assessment/api/dependencies.py) to
