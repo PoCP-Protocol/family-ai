@@ -50,10 +50,20 @@ from ..domain.interpretation_boundary import assert_interpretation_boundary
 from ..domain.knowledge_grounding import grounded_card_ids, grounding_prompt_block
 from ..application.ports import AiRunLedgerPort, AssessmentInterpretationPort
 
+# 2026-08-29: Batch 1 admission — EMOTION_REGULATION_SUPPORT/PARENT_CAPACITY/
+# SCHOOL_FAMILY_COLLABORATION added after human review recorded in
+# governance/CONSTRUCT_ADMISSION_REGISTRY.yaml (project owner reviewed the
+# 12-candidate review table and confirmed this exact 3-admit/9-hold split via
+# AskUserQuestion — not a separate formal sign-off meeting; recorded as such,
+# not overstated). The other 9 reviewed candidates remain HOLD in that
+# registry — do not add them here without a new, separately recorded review.
 _LEGAL_CONSTRUCT_REFS = {
     "PARENT_CHILD_COMMUNICATION",
     "HOMEWORK_PROCESS",
     "DEVICE_USE_CONTEXT",
+    "EMOTION_REGULATION_SUPPORT",
+    "PARENT_CAPACITY",
+    "SCHOOL_FAMILY_COLLABORATION",
 }
 
 _DRAFT_OUTPUT_SCHEMA = {

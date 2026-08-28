@@ -1,0 +1,148 @@
+# Construct Admission Registry — 家庭测评/AI解读construct_ref白名单的唯一审核留痕
+#
+# 背景：2026-08-26曾发生模型编造construct_ref的真实事故(PARENT_CHILD_COMMUNICATION_QUALITY /
+# COMMUNICATION_RESPECT_TURN_TAKING，两个都没走过人工审核就出现在AI输出里)。此后
+# backend/domains/assessment/infrastructure/claude_interpretation.py 的
+# _LEGAL_CONSTRUCT_REFS 就是防这类事故的白名单——本文件是这个白名单每次扩容的
+# 唯一可追溯审核记录，仿照 governance/AUTHORIZATION_REGISTRY.yaml 的留痕原则：
+# 「AI Agent 不得自增授权」，扩大这个白名单必须有人工确认落记，不能因为某个construct
+# 已经"写在文档里"(如 docs/model/family_education_construct.registry.yaml，该文档
+# 整体status仍为draft)就自动视为审核通过。
+#
+# 每条记录字段：
+#   construct_ref        与 docs/model/family_education_construct.registry.yaml 的
+#                         construct_ref 完全一致
+#   status                ADMITTED / HOLD / REJECTED
+#   knowledge_backing     该construct在 20_知识_knowledge 证据库里有没有对应理论卡支撑
+#                         (none / weak / strong，供后续复审参考，不是审核唯一依据)
+#   risk_note             审核时识别的具体风险点(如贴近医疗判断边界、贴近能力画像、
+#                         学理本身存在争议等)
+#   admitted_by           人工确认者
+#   admission_ref         审核依据——如实记录实际发生的确认过程，不拨高过程的正式性
+#   admitted_at           日期
+#   legal_construct_refs_updated  该次admission是否已经把construct_ref写进了
+#                         claude_interpretation.py的_LEGAL_CONSTRUCT_REFS(true/false)——
+#                         记录本身与代码落地是两件事，本字段用于核对两者是否同步。
+
+schema_version: CONSTRUCT_ADMISSION_REGISTRY_V1
+maintained_by: family-chief-architect
+updated_at: "2026-08-29"
+
+admissions:
+  - construct_ref: EMOTION_REGULATION_SUPPORT
+    status: ADMITTED
+    knowledge_backing: strong
+    risk_note: 定义清晰(察觉情绪触发点/支持暂停恢复/不把情绪当指责或诊断依据)，与20_知识_knowledge的TH-001(Gottman情绪教练)直接对应，风险低。
+    admitted_by: project-owner
+    admission_ref: "2026-08-29：项目所有人审阅本次plan(含12个候选construct的审核表)并通过AskUserQuestion明确确认此3项ADMIT/其余9项HOLD，非独立逐条审批会议。"
+    admitted_at: "2026-08-29"
+    legal_construct_refs_updated: true
+
+  - construct_ref: PARENT_CAPACITY
+    status: ADMITTED
+    knowledge_backing: strong
+    risk_note: 定义具体可观察(压力/时间/情绪带宽/一致性容量)，与TH-004(家长教养自我效能感)+TH-005(自我分化)两条独立理论对应，风险低。
+    admitted_by: project-owner
+    admission_ref: "2026-08-29：项目所有人审阅本次plan(含12个候选construct的审核表)并通过AskUserQuestion明确确认此3项ADMIT/其余9项HOLD，非独立逐条审批会议。"
+    admitted_at: "2026-08-29"
+    legal_construct_refs_updated: true
+
+  - construct_ref: SCHOOL_FAMILY_COLLABORATION
+    status: ADMITTED
+    knowledge_backing: none
+    risk_note: 知识库无对应理论卡，但本质是客观协调事实(学校-家长-孩子反馈闭环是否清楚)，不涉及对孩子/家长的心理推断，风险低，可先admit再补证据。
+    admitted_by: project-owner
+    admission_ref: "2026-08-29：项目所有人审阅本次plan(含12个候选construct的审核表)并通过AskUserQuestion明确确认此3项ADMIT/其余9项HOLD，非独立逐条审批会议。"
+    admitted_at: "2026-08-29"
+    legal_construct_refs_updated: true
+
+  - construct_ref: LEARNING_STRATEGY_METACOGNITION
+    status: HOLD
+    knowledge_backing: weak
+    risk_note: 与已admit的HOMEWORK_PROCESS概念边界重叠未厘清；且与SELF_REGULATION_SUPPORT高度重叠，建议两个一起审。
+    admitted_by: null
+    admission_ref: null
+    admitted_at: null
+    legal_construct_refs_updated: false
+
+  - construct_ref: SELF_REGULATION_SUPPORT
+    status: HOLD
+    knowledge_backing: weak
+    risk_note: 与LEARNING_STRATEGY_METACOGNITION高度重叠，建议两个一起审。
+    admitted_by: null
+    admission_ref: null
+    admitted_at: null
+    legal_construct_refs_updated: false
+
+  - construct_ref: ACADEMIC_DEVELOPMENT
+    status: HOLD
+    knowledge_backing: weak
+    risk_note: 定义偏宽泛("学习"整体)，需要更precise边界才能避免变成事实上的"学业总评"，触及总分/排行类红线的精神。
+    admitted_by: null
+    admission_ref: null
+    admitted_at: null
+    legal_construct_refs_updated: false
+
+  - construct_ref: PHYSICAL_HEALTH_RHYTHM
+    status: HOLD
+    knowledge_backing: none
+    risk_note: 零证据支撑，贴近健康/医疗判断边界，建议先在知识库补相应理论卡再审。
+    admitted_by: null
+    admission_ref: null
+    admitted_at: null
+    legal_construct_refs_updated: false
+
+  - construct_ref: PSYCHOSOMATIC_STRESS_SIGNAL
+    status: HOLD
+    knowledge_backing: none
+    risk_note: >
+      风险较高——"psychosomatic"贴近身体化症状判断，容易被误用为医疗/健康诊断线索。
+      registry文档已标注safety_boundary: human_gate_if_health_risk，但代码里目前没有
+      任何地方真正读取/执行这个字段(纯文档意图，未落地)。建议连带把"safety_boundary
+      分支路由"这个已知独立缺口一起解决，才考虑开这个construct。
+    admitted_by: null
+    admission_ref: null
+    admitted_at: null
+    legal_construct_refs_updated: false
+
+  - construct_ref: AI_LITERACY_FLUENCY
+    status: HOLD
+    knowledge_backing: none
+    risk_note: 零证据支撑，是平台自己尚未有理论沉淀的全新领域，建议先在知识库补相应研究。
+    admitted_by: null
+    admission_ref: null
+    admitted_at: null
+    legal_construct_refs_updated: false
+
+  - construct_ref: MULTIMODAL_CREATION
+    status: HOLD
+    knowledge_backing: none
+    risk_note: 零证据支撑，同AI_LITERACY_FLUENCY。
+    admitted_by: null
+    admission_ref: null
+    admitted_at: null
+    legal_construct_refs_updated: false
+
+  - construct_ref: SUBJECT_LEARNING_PROFILE
+    status: HOLD
+    knowledge_backing: none
+    risk_note: >
+      风险较高——贴近"给孩子具体学科能力打标签"，即便字面不是分数，实质效果接近能力
+      画像，风险性质接近总分/排行红线想防的那类内容，建议暂不开。
+    admitted_by: null
+    admission_ref: null
+    admitted_at: null
+    legal_construct_refs_updated: false
+
+  - construct_ref: MULTIPLE_INTELLIGENCE_PROFILE
+    status: HOLD
+    knowledge_backing: none
+    risk_note: >
+      风险较高——多元智能理论(Gardner)本身在主流心理学界证据基础薄弱、存在争议，
+      直接采纳有把有争议理论当作既定事实呈现给家长的风险，建议知识库层面先做一次
+      学理核验(是否有meta分析级反驳证据，类似TH-006成长型思维那样如实标注争议)
+      再决定要不要收。
+    admitted_by: null
+    admission_ref: null
+    admitted_at: null
+    legal_construct_refs_updated: false

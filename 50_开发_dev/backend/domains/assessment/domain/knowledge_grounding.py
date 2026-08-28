@@ -29,6 +29,14 @@ CONSTRUCT_KNOWLEDGE_MAP: dict[str, list[str]] = {
     # 2026-08-29 填补:此前一直留空(知识库无对应卡片),现有TH-010家长媒体调节理论
     # (Nathanson 1999 + Fam et al. 2023 meta分析)。
     "DEVICE_USE_CONTEXT": ["TH-010", "CN-011", "MD-010"],
+    # 2026-08-29 Batch 1 admission(governance/CONSTRUCT_ADMISSION_REGISTRY.yaml)新增三条。
+    # EMOTION_REGULATION_SUPPORT直接对应TH-001情绪教练(Gottman)。
+    "EMOTION_REGULATION_SUPPORT": ["TH-001", "CN-001", "CN-002", "MD-001"],
+    # PARENT_CAPACITY对应TH-004家长教养自我效能感 + TH-005自我分化(两条独立理论支撑)。
+    "PARENT_CAPACITY": ["TH-004", "CN-005", "MD-004", "TH-005", "CN-006"],
+    # SCHOOL_FAMILY_COLLABORATION知识库无对应理论卡(本质是客观协调事实非心理推断),
+    # 如实留空,不臆造。
+    "SCHOOL_FAMILY_COLLABORATION": [],
 }
 
 _GROUNDING_FILE = Path(__file__).with_name("assessment_construct_grounding.json")
