@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FakeAiGateway } from '@family/ai-gateway';
 import {
   FAMILY_EDUCATION_ASSESSMENT_ITEM_BANK,
+  FAMILY_THEORY_REGISTRY,
   FamilyEducationModelRuntime,
   FamilyMemoryDialogueRuntime,
   FamilyModelRuntimeIntegrationRuntime,
@@ -506,6 +507,30 @@ describe('FamilyEducationModelRuntime', () => {
     } as unknown as typeof draft;
 
     expect(() => assertInterpretationBoundary(outputWithWrongActionBoundary)).toThrow(/action candidate boundary/);
+  });
+
+  it('populates theory_refs for constructs covered by the whitelist, and stays empty for uncovered constructs', () => {
+    const draft = new FamilyEducationModelRuntime({ itemBank, interpretationSchema }).interpretDeterministically(input);
+    const byConstruct = new Map(draft.construct_signals.map((signal) => [signal.construct_ref, signal.theory_refs]));
+    expect(byConstruct.get('PARENT_CHILD_COMMUNICATION')).toEqual(['CASEL_SEL_FRAMEWORK']);
+    expect(byConstruct.get('HOMEWORK_PROCESS')).toEqual(['HARVARD_EXECUTIVE_FUNCTION']);
+  });
+
+  it('rejects theory_refs outside the whitelist — this is the only real interception point for AI-invented theories', () => {
+    const draft = new FamilyEducationModelRuntime({ itemBank, interpretationSchema }).interpretDeterministically(input);
+    const outputWithFakeTheory = {
+      ...draft,
+      construct_signals: [{ ...draft.construct_signals[0], theory_refs: ['FAKE_THEORY_2026' as never] }],
+    } as unknown as typeof draft;
+
+    expect(() => assertInterpretationBoundary(outputWithFakeTheory)).toThrow(/theory_ref_not_whitelisted:FAKE_THEORY_2026/);
+  });
+
+  it('theory registry never contains product-invented "knowledge base" identifiers, only verifiable external sources', () => {
+    for (const entry of FAMILY_THEORY_REGISTRY) {
+      expect(entry.theory_ref).not.toMatch(/^(MD|CN)-\d/);
+      expect(['ACADEMIC_FRAMEWORK', 'PUBLIC_HEALTH_GUIDANCE']).toContain(entry.source_class);
+    }
   });
 
   it('plans platform capabilities from component dependencies', () => {

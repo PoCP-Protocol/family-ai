@@ -3,6 +3,18 @@ import type { GrowthFocusId } from "./core-growth";
 export type FamilyAssessmentMemoryKind = "DIMENSION" | "ITEM" | "EVIDENCE_ANCHOR" | "PRACTICE_PATTERN" | "OUTCOME_FEEDBACK";
 export type Ui02AssessmentAnswer = "OFTEN" | "SOMETIMES" | "RARELY" | "NOT_SURE";
 
+/**
+ * 与 @family/family-model 包(packages/family-model/src/index.ts)的 FamilyTheoryRef 保持字面量一致——
+ * apps/mobile 当前不依赖 @family/family-model,这里本地维护一份对齐的字面量类型,而不是引入包依赖。
+ * 新增/修改理论必须两边同步更新。只收录可验证的真实理论/公共卫生指南来源,不收录产品自造的
+ * "知识库编号"(如历史 theorySupport 文案里的"Family 知识库 MD-001/CN-001/CN-002")。
+ */
+export type FamilyTheoryRef =
+  | "HARVARD_EXECUTIVE_FUNCTION"
+  | "CASEL_SEL_FRAMEWORK"
+  | "CDC_POSITIVE_PARENTING"
+  | "AAP_HEALTHY_CHILDREN_MEDIA";
+
 export type FamilyAssessmentMemoryQuestion = {
   itemRef: string;
   text: string;
@@ -23,6 +35,7 @@ export type FamilyAssessmentDimensionMemory = {
   title: string;
   operationalDefinition: string;
   theorySupport: readonly string[];
+  theoryRefs: readonly FamilyTheoryRef[];
   familyTheorySupport: readonly string[];
   dataSupport: readonly string[];
   practiceSupport: readonly string[];
@@ -123,6 +136,7 @@ export const FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY: FamilyAssessmentCapabilityM
       title: "学习习惯",
       operationalDefinition: "家庭情境中孩子启动、维持、完成学习任务时获得结构支持的情况。",
       theorySupport: ["Harvard Executive Function：计划、注意、切换和任务管理能力依赖支持性环境，可通过实践发展。", "CDC Parenting：家庭 routines and rules 可作为家长支持儿童行为与学习节奏的实践入口。"],
+      theoryRefs: ["HARVARD_EXECUTIVE_FUNCTION", "CDC_POSITIVE_PARENTING"],
       familyTheorySupport: ["孩子开始学习、坚持完成任务，常常需要一个稳定、可预期的家庭节奏。", "比起反复催促，更有效的是把开始、休息、收尾这些步骤说清楚、做固定。"],
       dataSupport: ["只记录这次家长看到的三个情况，不给孩子打分。", "如果很多家长选了“不确定”，我们会优先把题目改得更清楚。", "后续只根据家庭自己确认的行动反馈改进建议。"],
       practiceSupport: ["每天用一个固定动作开始学习，比如喝水、摆好文具、打开作业。", "把作业先拆成最容易开始的一小步。", "结束后用一两句话回看今天哪里顺、哪里卡住。"],
@@ -140,6 +154,8 @@ export const FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY: FamilyAssessmentCapabilityM
       title: "情绪管理",
       operationalDefinition: "孩子情绪触发、表达、恢复，以及家长共同调节支持的家庭互动情况。",
       theorySupport: ["CASEL SEL：管理情绪是社会情绪学习核心能力之一。", "CDC Parenting：Noticing and Naming Emotions 可作为家长支持儿童情绪表达的实践方向。", "Family 知识库 MD-001：情绪教练式回应可作为低风险家庭沟通方法。"],
+      // "Family 知识库 MD-001"是产品自造的知识库编号,不是可验证的外部理论来源,不纳入 theoryRefs 白名单映射。
+      theoryRefs: ["CASEL_SEL_FRAMEWORK", "CDC_POSITIVE_PARENTING"],
       familyTheorySupport: ["孩子情绪上来时，先被理解，通常比马上讲道理更容易恢复。", "大人先稳住节奏，孩子才更容易学会把感受说出来、把事情说清楚。"],
       dataSupport: ["只记录情绪恢复、能不能先停一下、家长怎么回应这三类情况。", "常见的卡点会用来匹配更容易上手的沟通方法。", "如果出现高风险表达，需要人工介入，测评不会自动下判断。"],
       practiceSupport: ["先把孩子的感受说出来，比如“你现在很着急”。", "吵起来时先停一小会儿，再继续说。", "先接住孩子一句话，再讨论事情怎么处理。"],
@@ -157,6 +173,8 @@ export const FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY: FamilyAssessmentCapabilityM
       title: "亲子沟通",
       operationalDefinition: "孩子是否愿意表达、家长是否能倾听，以及冲突后关系修复的家庭循环。",
       theorySupport: ["CASEL SEL：支持性关系是儿童社会情绪发展和学习环境的重要部分。", "CDC Parenting：Connecting and Communicating 提供家长可用的连接与沟通原则。", "Family 知识库 CN-001/CN-002：被听见感与防御/强制互动循环可作为互动观察构念。"],
+      // "Family 知识库 CN-001/CN-002"是产品自造的知识库编号,不是可验证的外部理论来源,不纳入 theoryRefs 白名单映射。
+      theoryRefs: ["CASEL_SEL_FRAMEWORK", "CDC_POSITIVE_PARENTING"],
       familyTheorySupport: ["孩子愿意说，往往从“我说了会被听见”开始。", "亲子沟通不是一次说服，而是少一点纠正，多一点听见，再一起修复。"],
       dataSupport: ["只记录孩子愿不愿意说、对话会不会变成纠正、冲突后能不能修复这三类情况。", "结果只给出可尝试的支持方向，不给孩子贴标签。", "后续会看家庭自己反馈这些建议是否真的有用。"],
       practiceSupport: ["先重复一遍孩子在意的点，让孩子知道你听见了。", "少一点马上讲道理或纠正，多问一句“你最在意的是什么”。", "冲突后留一个重新说话、重新和好的小步骤。"],
@@ -174,6 +192,7 @@ export const FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY: FamilyAssessmentCapabilityM
       title: "手机依赖",
       operationalDefinition: "数字设备使用对睡眠、作业、家庭节奏与亲子规则协商的影响。",
       theorySupport: ["AAP HealthyChildren Media：儿童需要父母监测并帮助解释媒介影响。", "CDC Parenting：家庭 rules and routines 可用于建立可共同执行的日常边界。"],
+      theoryRefs: ["AAP_HEALTHY_CHILDREN_MEDIA", "CDC_POSITIVE_PARENTING"],
       familyTheorySupport: ["手机问题通常不是只靠没收解决，关键是全家把规则提前说清楚。", "规则越临时，越容易拉扯；规则越具体，孩子越知道怎么配合。"],
       dataSupport: ["只记录手机或平板是否影响作业、睡眠、家庭安排和规则执行。", "这些信息只用来帮助家庭把规则说清楚。", "不判断孩子是不是成瘾，也不输出风险等级。"],
       practiceSupport: ["一起说清楚什么时候能用、在哪里用、睡前什么时候放下。", "提前约定规则，少在临场反复讨价还价。", "大人和孩子尽量按同一套规则执行。"],
@@ -191,6 +210,7 @@ export const FAMILY_ASSESSMENT_AI_CAPABILITY_MEMORY: FamilyAssessmentCapabilityM
       title: "自律能力",
       operationalDefinition: "孩子在家庭支持下参与计划、执行、检查和复盘的自我管理过程。",
       theorySupport: ["Harvard Executive Function：自我调节包含计划、注意、任务管理等可发展能力。", "CASEL SEL：负责决策与目标达成需要家庭、学校、社区共同支持。"],
+      theoryRefs: ["HARVARD_EXECUTIVE_FUNCTION", "CASEL_SEL_FRAMEWORK"],
       familyTheorySupport: ["自律不是一句“你要自觉”就能长出来，需要孩子慢慢参与计划、执行和复盘。", "大人逐步放手，孩子才有机会练习自己安排、自己检查、自己调整。"],
       dataSupport: ["只记录孩子是否依赖监督、是否参与计划、是否会一起复盘方法。", "根据家庭选择，给出更容易执行的小步骤。", "不评价孩子自律强弱，也不做家庭排名。"],
       practiceSupport: ["让孩子一起参与定计划，而不是只接收安排。", "提前说好怎么检查完成情况。", "事情没做好时，先看方法哪里卡住，而不是只催着补救。"],
