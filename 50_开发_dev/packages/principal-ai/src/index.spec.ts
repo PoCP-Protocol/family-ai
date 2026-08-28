@@ -5,6 +5,8 @@ import {
   PRINCIPAL_AI_OUTPUT_SCHEMA,
   PRINCIPAL_AI_PROMPT_VERSION,
   PRINCIPAL_SOUL_PROFILE,
+  PRINCIPAL_SOUL_PROFILE_FIXTURE,
+  PrincipalSoulLoader,
   askPrincipal,
   buildPrincipalAiGatewayRequest,
   createActionCard,
@@ -178,14 +180,35 @@ describe('@family/principal-ai FP1 text intelligence MVP', () => {
     expect(exportPrincipalSoulTrainingJsonl()).toBe('');
   });
 
-  it('defines the Famili principal soul as a sisterly mentor profile', () => {
+  it('defines the Famili principal soul as a sisterly mentor profile, sourced from the soul YAML (W2R-SOUL-SYNC-001)', () => {
     const soul = getPrincipalSoulProfile();
 
-    expect(soul).toBe(PRINCIPAL_SOUL_PROFILE);
+    // 权威来源现在是 products/famili-principal/soul/*.yaml,不再是硬编码常量:
+    // 断言必须命中真实解析结果,而不是对象身份(toBe 固定常量已不成立)。
+    expect(soul.source_documents).toBeDefined();
     expect(soul.public_role).toBe('法咪莉校长');
     expect(soul.persona).toContain('知性邻家姐姐');
     expect(soul.never_do).toContain('不把 AI 文本写入核心事实或画像');
-    expect(soul.training_tags).toContain('sisterly_mentor');
+    expect(soul.never_do).toContain('不绕过人工门处理高风险场景');
+    // action-policy.yaml 里 YAML 独有、硬编码常量从未覆盖的禁止项,证明确实读到了 YAML 而不是回退到 fixture。
+    expect(soul.never_do).toContain('不擅自创建 Family GrowthAction');
+    expect(soul.training_tags).toContain('知性');
+    expect(soul.training_tags).toContain('warm_clear_sisterly_mentor');
+  });
+
+  it('PRINCIPAL_SOUL_PROFILE_FIXTURE remains a stable non-production fallback profile', () => {
+    expect(PRINCIPAL_SOUL_PROFILE.public_role).toBe('法咪莉校长');
+    expect(PRINCIPAL_SOUL_PROFILE.persona).toContain('知性邻家姐姐');
+    expect(PRINCIPAL_SOUL_PROFILE.training_tags).toContain('sisterly_mentor');
+  });
+
+  it('PrincipalSoulLoader.load() succeeds against the real YAML source without needing the fixture fallback', () => {
+    const loader = new PrincipalSoulLoader();
+    const soul = loader.load();
+
+    expect(loader.lastLoadWarning).toBeUndefined();
+    expect(soul.source_documents).toBeDefined();
+    expect(soul).not.toBe(PRINCIPAL_SOUL_PROFILE_FIXTURE);
   });
 
   it('M3-102: forwards images on the top-level images channel, not inside the text input', () => {

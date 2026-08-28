@@ -1,4 +1,7 @@
 import type { AiGateway, StructuredGenerationRequest, StructuredGenerationResult } from '@family/ai-gateway';
+import { existsSync, readFileSync } from 'fs';
+import { load as loadYaml } from 'js-yaml';
+import { join } from 'path';
 
 export type PrincipalAiEntryPoint = 'ASK_FAMILI_PRINCIPAL' | 'SAY_IT_TONIGHT' | 'ONE_SMALL_ACTION' | 'RESPONSE_FEEDBACK';
 export type PrincipalRiskRoute = 'NORMAL' | 'REVIEW' | 'HIGH_RISK';
@@ -149,6 +152,43 @@ export interface PrincipalSoulProfile {
   voice_principles: string[];
   never_do: string[];
   training_tags: string[];
+  /** W2R-SOUL-SYNC-001:soul YAML 六份源文件解析后的原始结构,供需要更细粒度字段(风格示例/思维准则/关系立场等)的调用方读取。 */
+  source_documents?: PrincipalSoulSourceDocuments;
+}
+
+/** products/famili-principal/soul/*.yaml 六份文件对应的最小 shape 校验类型(非全量字段,只约束 Loader 依赖的字段)。 */
+export interface PrincipalSoulSourceDocuments {
+  persona: {
+    version: string;
+    identity: { product_name_cn: string; target_persona: string; source_teacher: string };
+    core_dimensions: string[];
+    positive_examples: unknown[];
+    negative_examples: unknown[];
+    forbidden: string[];
+  };
+  values: {
+    version: string;
+    values: Record<string, { rule: string }>;
+  };
+  actionPolicy: {
+    version: string;
+    action_grammar: Record<string, { rule: string }>;
+    forbidden: string[];
+    note?: string;
+  };
+  languageStyle: {
+    version: string;
+    style: { sentence_shape: string[]; preferred_words: string[]; avoid: string[] };
+    examples: { positive: string[]; negative: string[] };
+  };
+  relationshipPolicy: {
+    version: string;
+    relationship_style: { stance: string; does: string[]; does_not: string[] };
+  };
+  thinkingPolicy: {
+    version: string;
+    principles: Array<{ name: string; rule: string }>;
+  };
 }
 
 export interface PrincipalEvalResult {
@@ -218,7 +258,15 @@ export const PRINCIPAL_ACTION_CARD_SCHEMA = {
   },
 } as const;
 
-export const PRINCIPAL_SOUL_PROFILE: PrincipalSoulProfile = {
+/**
+ * W2R-SOUL-SYNC-001 测试 fixture(非生产路径)。
+ *
+ * 历史上这是唯一的人格定义,PrincipalSoulLoader.load() 直接返回它,完全不读
+ * products/famili-principal/soul/*.yaml,导致两份定义漂移。现在生产路径已改为
+ * 从 YAML 解析(见 loadPrincipalSoulFromYaml/PrincipalSoulLoader),本常量只保留
+ * 作为"YAML 不可用时的降级 fixture"与单测基线,不再是权威来源。
+ */
+export const PRINCIPAL_SOUL_PROFILE_FIXTURE: PrincipalSoulProfile = {
   codename: 'FAMILI_PRINCIPAL_SISTERLY_MENTOR',
   public_role: '法咪莉校长',
   persona: '知性邻家姐姐: 温柔但不松散,有判断力但不居高临下,把复杂亲子冲突翻译成今晚能练的一件小事。',
@@ -237,6 +285,9 @@ export const PRINCIPAL_SOUL_PROFILE: PrincipalSoulProfile = {
   ],
   training_tags: ['sisterly_mentor', 'warm_clarity', 'one_small_action', 'non_diagnostic', 'human_gate_aware'],
 };
+
+/** 向后兼容别名:历史代码/外部包可能仍 import 旧名字。指向同一个降级 fixture。 */
+export const PRINCIPAL_SOUL_PROFILE: PrincipalSoulProfile = PRINCIPAL_SOUL_PROFILE_FIXTURE;
 
 export const FUTURE_ONLY_CAPABILITIES = {
   VOICE_RUNTIME: 'NO',
@@ -327,9 +378,130 @@ export const REVIEWED_KNOWLEDGE_CARDS: PrincipalKnowledgeCard[] = [
   },
 ];
 
+/**
+ * W2R-SOUL-SYNC-001:soul YAML 六份文件相对本包(编译后 dist/index.js 或 ts-node 下 src/index.ts)的候选目录。
+ * 依次尝试,兼容 vitest(从 src 运行)与 tsc 构建产物(从 dist 运行)两种 __dirname。
+ */
+function resolveSoulSourceDir(): string | undefined {
+  const candidates = [
+    join(__dirname, '..', '..', '..', 'products', 'famili-principal', 'soul'),
+    join(__dirname, '..', '..', '..', '..', 'products', 'famili-principal', 'soul'),
+  ];
+  return candidates.find((dir) => existsSync(dir));
+}
+
+function readYamlFile<T>(dir: string, filename: string): T {
+  const raw = readFileSync(join(dir, filename), 'utf8');
+  return loadYaml(raw) as T;
+}
+
+/** 最小 shape 校验:防止 YAML 被误改动后静默丢字段(未来 YAML 改坏时快速 fail-closed,而不是悄悄读到 undefined)。 */
+function assertPrincipalSoulShape(docs: PrincipalSoulSourceDocuments): void {
+  const problems: string[] = [];
+  if (!docs.persona?.identity?.product_name_cn) problems.push('persona.identity.product_name_cn missing');
+  if (!Array.isArray(docs.persona?.core_dimensions) || docs.persona.core_dimensions.length === 0) {
+    problems.push('persona.core_dimensions missing/empty');
+  }
+  if (!Array.isArray(docs.persona?.forbidden) || docs.persona.forbidden.length === 0) {
+    problems.push('persona.forbidden missing/empty');
+  }
+  if (!docs.values?.values || Object.keys(docs.values.values).length === 0) {
+    problems.push('values.values missing/empty');
+  }
+  if (!docs.actionPolicy?.action_grammar || Object.keys(docs.actionPolicy.action_grammar).length === 0) {
+    problems.push('actionPolicy.action_grammar missing/empty');
+  }
+  if (!Array.isArray(docs.actionPolicy?.forbidden) || docs.actionPolicy.forbidden.length === 0) {
+    problems.push('actionPolicy.forbidden missing/empty');
+  }
+  if (!Array.isArray(docs.languageStyle?.style?.sentence_shape) || docs.languageStyle.style.sentence_shape.length === 0) {
+    problems.push('languageStyle.style.sentence_shape missing/empty');
+  }
+  if (!docs.relationshipPolicy?.relationship_style?.stance) problems.push('relationshipPolicy.relationship_style.stance missing');
+  if (!Array.isArray(docs.thinkingPolicy?.principles) || docs.thinkingPolicy.principles.length === 0) {
+    problems.push('thinkingPolicy.principles missing/empty');
+  }
+  if (problems.length > 0) {
+    throw new Error(`PrincipalSoulLoader: YAML shape validation failed — ${problems.join('; ')}`);
+  }
+}
+
+function loadPrincipalSoulSourceDocuments(dir: string): PrincipalSoulSourceDocuments {
+  const docs: PrincipalSoulSourceDocuments = {
+    persona: readYamlFile(dir, 'persona.yaml'),
+    values: readYamlFile(dir, 'values.yaml'),
+    actionPolicy: readYamlFile(dir, 'action-policy.yaml'),
+    languageStyle: readYamlFile(dir, 'language-style.yaml'),
+    relationshipPolicy: readYamlFile(dir, 'relationship-policy.yaml'),
+    thinkingPolicy: readYamlFile(dir, 'thinking-policy.yaml'),
+  };
+  assertPrincipalSoulShape(docs);
+  return docs;
+}
+
+/** persona.yaml 的 forbidden 机器码 → never_do 中文短句(未覆盖到的机器码保留原样,不静默丢弃)。 */
+const FORBIDDEN_CODE_TO_PROSE: Record<string, string> = {
+  diagnose_child_or_parent: '不诊断孩子或家长',
+  guarantee_effect: '不承诺效果',
+  rank_family: '不制造家庭排名',
+  create_total_score: '不制造家庭总分',
+  write_free_text_to_core_ontology: '不把 AI 文本写入核心事实或画像',
+  bypass_human_gate: '不绕过人工门处理高风险场景',
+  direct_mutation_of_family_core_state: '不直接修改家庭核心状态',
+  creating_family_growth_action: '不擅自创建 Family GrowthAction',
+  claiming_outcome_without_followup_data: '不在没有回访数据前宣称有效',
+  coercive_parenting_scripts: '不使用胁迫式教养话术',
+  advice_that_increases_immediate_risk: '不给出会提高即时风险的建议',
+};
+
+/** 由 YAML 六份源文档派生出 PrincipalSoulProfile(唯一权威来源)。 */
+function derivePrincipalSoulProfile(docs: PrincipalSoulSourceDocuments): PrincipalSoulProfile {
+  const forbiddenCodes = [...docs.persona.forbidden, ...docs.actionPolicy.forbidden];
+  const never_do = forbiddenCodes.map((code) => FORBIDDEN_CODE_TO_PROSE[code] ?? code);
+
+  const voice_principles = [
+    ...docs.languageStyle.style.sentence_shape,
+    ...Object.values(docs.values.values).map((v) => v.rule),
+  ];
+
+  const training_tags = [
+    ...docs.persona.core_dimensions,
+    docs.relationshipPolicy.relationship_style.stance,
+    ...docs.thinkingPolicy.principles.map((p) => p.name),
+  ];
+
+  return {
+    codename: 'FAMILI_PRINCIPAL_SISTERLY_MENTOR',
+    public_role: docs.persona.identity.product_name_cn,
+    persona: `${docs.persona.identity.target_persona}: ${docs.actionPolicy.action_grammar.say_it_tonight?.rule ?? ''}`.trim(),
+    voice_principles,
+    never_do,
+    training_tags,
+    source_documents: docs,
+  };
+}
+
+/**
+ * PrincipalSoulLoader:唯一权威来源是 products/famili-principal/soul/*.yaml 六份文件。
+ * 找不到 YAML 目录、读取失败或 shape 校验失败时,fail-closed 降级为
+ * PRINCIPAL_SOUL_PROFILE_FIXTURE(不静默返回不完整数据),并把原因记录在 lastLoadWarning。
+ */
 export class PrincipalSoulLoader {
+  lastLoadWarning?: string;
+
   load(): PrincipalSoulProfile {
-    return PRINCIPAL_SOUL_PROFILE;
+    const dir = resolveSoulSourceDir();
+    if (!dir) {
+      this.lastLoadWarning = 'soul YAML directory not found; falling back to fixture profile';
+      return PRINCIPAL_SOUL_PROFILE_FIXTURE;
+    }
+    try {
+      const docs = loadPrincipalSoulSourceDocuments(dir);
+      return derivePrincipalSoulProfile(docs);
+    } catch (err) {
+      this.lastLoadWarning = `soul YAML load/validation failed (${(err as Error).message}); falling back to fixture profile`;
+      return PRINCIPAL_SOUL_PROFILE_FIXTURE;
+    }
   }
 }
 
