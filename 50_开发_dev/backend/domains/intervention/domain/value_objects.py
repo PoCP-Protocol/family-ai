@@ -14,6 +14,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
+from pydantic import BaseModel
+
 # The platform currently defines exactly one intervention (seed row
 # `INTERVENTION-001` in migration 0020) and hardcodes its code as a literal
 # string comparison in both the NestJS DTO and service layer — not an enum
@@ -133,3 +135,21 @@ JourneyPhase = Literal["SEE", "PARENT_FIRST", "CO_CREATE", "STABILIZE"]
 
 REFLECTION_BOUNDARY: Literal["REFLECTION_IS_RAW_MATERIAL_NOT_OUTCOME"] = "REFLECTION_IS_RAW_MATERIAL_NOT_OUTCOME"
 ACTION_BOUNDARY: Literal["ACTION_IS_NOT_OUTCOME"] = "ACTION_IS_NOT_OUTCOME"
+
+# Port of `reflection-safety.policy.ts` — `assertReflectionSafetyRoute`
+# (called from `completeGrowthAction` step 5, see
+# `architecture/notes/batch2-domain-research-v1.md` sections 5.3 point 5
+# and 7.3). Regex-scans `reflection` for 5 sensitive-signal categories and
+# raises 403 if the derived disposition isn't NORMAL.
+REFLECTION_SAFETY_POLICY_VERSION: Literal["M2_105_REFLECTION_DETERMINISTIC_V1"] = (
+    "M2_105_REFLECTION_DETERMINISTIC_V1"
+)
+
+ReflectionSafetySignal = Literal["SELF_HARM", "HARM_TO_OTHERS", "ABUSE", "VIOLENCE", "SEVERE_CRISIS"]
+
+
+class ReflectionSafetyDisposition(BaseModel):
+    severity: Literal["LOW", "HIGH", "CRITICAL"]
+    disposition: Literal["NORMAL", "SAFETY_ESCALATION"]
+    policy_version: Literal["M2_105_REFLECTION_DETERMINISTIC_V1"]
+    signals: list[ReflectionSafetySignal]

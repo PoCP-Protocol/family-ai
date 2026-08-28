@@ -315,6 +315,147 @@ class TestCompleteGrowthAction:
             )
 
 
+class TestReflectionSafetyRoute:
+    """Port of `assertReflectionSafetyRoute` (reflection-safety.policy.ts),
+    wired into `completeGrowthAction` step 5
+    (`architecture/notes/batch2-domain-research-v1.md` section 5.3 point 5
+    / section 7.3). A reflection that trips any of the 5 sensitive-signal
+    regexes must be rejected with 403, not silently persisted.
+    """
+
+    @pytest.mark.parametrize(
+        "reflection",
+        [
+            "我今天真的不想活了，感觉快撑不住了。",  # SELF_HARM
+            "我真的很想杀了他，气到发抖。",  # HARM_TO_OTHERS
+            "他总是虐待孩子，我很担心。",  # ABUSE
+            "昨晚又家暴了，场面很吓人。",  # VIOLENCE
+            "情况已经彻底失控，感觉要立即报警了。",  # SEVERE_CRISIS
+            "I don't want to kill myself but I feel awful.",  # SELF_HARM (English)
+        ],
+    )
+    async def test_complete_rejects_reflection_with_safety_signal(
+        self, intervention_commands, action_commands, repo, reflection: str
+    ):
+        receipt = await _start(intervention_commands, repo)
+        action_id = receipt["actions"][0]["action_id"]
+
+        with pytest.raises(InterventionForbiddenError) as excinfo:
+            await action_commands.complete(
+                CompleteGrowthActionCommand(
+                    family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                    actor_id=ACTOR_ID,
+                    action_id=action_id,
+                    completion_status="COMPLETED",
+                    reflection=reflection,
+                    occurred_at=None,
+                    meta=_meta(),
+                )
+            )
+        assert excinfo.value.code == "reflection_requires_safety_support"
+
+        # The rejected reflection must not have been persisted — the action
+        # stays PENDING, not silently completed with a flagged reflection.
+        action = repo.actions[action_id]
+        assert action.status.value == "PENDING"
+        assert action.reflection is None
+
+    async def test_complete_accepts_ordinary_reflection_text(
+        self, intervention_commands, action_commands, repo
+    ):
+        action_id = (await self._completable_action_id(intervention_commands, repo))
+
+        receipt = await action_commands.complete(
+            CompleteGrowthActionCommand(
+                family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                actor_id=ACTOR_ID,
+                action_id=action_id,
+                completion_status="COMPLETED",
+                reflection="今天我先听孩子说完，再回应，感觉好一些了。",
+                occurred_at=None,
+                meta=_meta(),
+            )
+        )
+        assert receipt["growth_action"]["reflection"] == "今天我先听孩子说完，再回应，感觉好一些了。"
+
+    async def _completable_action_id(self, intervention_commands, repo) -> str:
+        receipt = await _start(intervention_commands, repo)
+        return receipt["actions"][0]["action_id"]
+
+    async def test_complete_with_empty_or_none_reflection_is_not_blocked(
+        self, intervention_commands, action_commands, repo
+    ):
+        receipt = await _start(intervention_commands, repo)
+        action_id = receipt["actions"][0]["action_id"]
+
+        result = await action_commands.complete(
+            CompleteGrowthActionCommand(
+                family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                actor_id=ACTOR_ID,
+                action_id=action_id,
+                completion_status="COMPLETED",
+                reflection=None,
+                occurred_at=None,
+                meta=_meta(),
+            )
+        )
+        assert result["growth_action"]["completion_status"] == "COMPLETED"
+
+
+class TestJourneyPlanExecutionRefresh:
+    """`completeGrowthAction` step 7 (research note section 5.3 point 7 /
+    section 3.4 `refreshJourneyPlanExecution`): completing a
+    journey-plan-linked action (as opposed to an intervention-episode-linked
+    one) must call into the GrowthPlan-domain side effect. This domain does
+    not own `family_journey_plans` — see
+    `application/commands.py`'s `refresh_journey_plan_execution` port call
+    and `infrastructure/fake_repository.py`'s fake implementation, which
+    records the call on the outbox for this assertion instead of mutating
+    cross-domain state.
+    """
+
+    async def test_completing_a_journey_plan_action_triggers_refresh(self, action_commands, repo):
+        journey_plan_id = str(uuid.uuid4())
+        action = repo.seed_journey_plan_action(repo._test_family_id, journey_plan_id)  # type: ignore[attr-defined]
+
+        await action_commands.complete(
+            CompleteGrowthActionCommand(
+                family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                actor_id=ACTOR_ID,
+                action_id=action.action_id,
+                completion_status="COMPLETED",
+                reflection=None,
+                occurred_at=None,
+                meta=_meta(),
+            )
+        )
+
+        refresh_events = [event for event in repo.outbox if event.get("event") == "JourneyPlanExecutionRefreshRequested"]
+        assert len(refresh_events) == 1
+        assert refresh_events[0]["journey_plan_id"] == journey_plan_id
+
+    async def test_completing_an_intervention_action_does_not_trigger_journey_plan_refresh(
+        self, intervention_commands, action_commands, repo
+    ):
+        receipt = await _start(intervention_commands, repo)
+        action_id = receipt["actions"][0]["action_id"]
+
+        await action_commands.complete(
+            CompleteGrowthActionCommand(
+                family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                actor_id=ACTOR_ID,
+                action_id=action_id,
+                completion_status="COMPLETED",
+                reflection=None,
+                occurred_at=None,
+                meta=_meta(),
+            )
+        )
+
+        refresh_events = [event for event in repo.outbox if event.get("event") == "JourneyPlanExecutionRefreshRequested"]
+        assert refresh_events == []
+
+
 class TestExecutionTransitions:
     async def test_legal_transition_chain_start_pause_resume_and_terminal_cancel(
         self, intervention_commands, action_commands, repo

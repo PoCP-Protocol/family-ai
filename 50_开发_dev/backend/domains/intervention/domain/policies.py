@@ -9,18 +9,68 @@ the `assertExecutionTransition` function inlined in
 """
 from __future__ import annotations
 
+import re
 from datetime import date, timedelta
 
-from .errors import InterventionConflictError, InterventionValidationError
+from .errors import InterventionConflictError, InterventionForbiddenError, InterventionValidationError
 from .value_objects import (
     COMPLETABLE_STATUSES,
     EXECUTION_TERMINAL_STATES,
     EXECUTION_TRANSITIONS,
     LISTEN_BEFORE_RESPOND_ASSIGNMENTS,
     PLANNED_DAYS,
+    REFLECTION_SAFETY_POLICY_VERSION,
     CompletionStatus,
     ExecutionAction,
     ExecutionStatus,
+    ReflectionSafetyDisposition,
+    ReflectionSafetySignal,
+)
+
+# Port of `SIGNAL_PATTERNS` in `reflection-safety.policy.ts` — same 5
+# signal categories, same regexes, same case-insensitive matching, same
+# ordering. This is a deliberate local duplication (not an import) of the
+# regex set: `assessStructuredSafetySignals` itself
+# (`safety-assessment.policy.ts`) is duplicated per-domain the same way in
+# this Python migration (see `assessment/domain/policies.py`), and this
+# package has no dependency on the assessment domain's package — see
+# `pyproject.toml`. See `architecture/notes/batch2-domain-research-v1.md`
+# section 7.3.
+_REFLECTION_SIGNAL_PATTERNS: tuple[tuple[ReflectionSafetySignal, re.Pattern[str]], ...] = (
+    (
+        "SELF_HARM",
+        re.compile(
+            r"自杀|自伤|伤害自己|不想活|结束生命|轻生|suicid|self[- ]?harm|kill myself",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "HARM_TO_OTHERS",
+        re.compile(
+            r"杀了他|杀了她|伤害别人|伤害他人|打死|kill (him|her|them)|harm (him|her|them)",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "ABUSE",
+        re.compile(r"虐待|性侵|猥亵|侵害孩子|abuse|sexual assault|molest", re.IGNORECASE),
+    ),
+    (
+        "VIOLENCE",
+        re.compile(r"家暴|暴力殴打|拿刀|持刀|violent attack|domestic violence", re.IGNORECASE),
+    ),
+    (
+        "SEVERE_CRISIS",
+        re.compile(r"活不下去|彻底失控|立即报警|紧急危险|immediate danger|severe crisis", re.IGNORECASE),
+    ),
+)
+
+# Port of `assessStructuredSafetySignals`'s two escalation tiers, scoped to
+# the signal vocabulary this domain actually uses (all 5 reflection signals
+# are ESCALATION-tier; SELF_HARM/HARM_TO_OTHERS/SEVERE_CRISIS are the
+# CRITICAL subset) — same tiering as `safety-assessment.policy.ts`.
+_CRITICAL_REFLECTION_SIGNALS: frozenset[ReflectionSafetySignal] = frozenset(
+    {"SELF_HARM", "HARM_TO_OTHERS", "SEVERE_CRISIS"}
 )
 
 
@@ -87,3 +137,49 @@ def assert_execution_transition(current: ExecutionStatus, action: ExecutionActio
 
 def is_execution_terminal(status: ExecutionStatus) -> bool:
     return status in EXECUTION_TERMINAL_STATES
+
+
+def assess_reflection_safety(reflection: str) -> ReflectionSafetyDisposition:
+    """Port of `assessReflectionSafety` (reflection-safety.policy.ts).
+
+    Regex-scans `reflection` (case-insensitive) against the 5 signal
+    categories, then reduces to a disposition using the same
+    CRITICAL/ESCALATION/NORMAL tiering `assessStructuredSafetySignals` uses.
+    Pure function, no I/O — matches the NestJS source, which is also a
+    plain function, not a repository call.
+    """
+    signals: list[ReflectionSafetySignal] = [
+        signal for signal, pattern in _REFLECTION_SIGNAL_PATTERNS if pattern.search(reflection)
+    ]
+
+    if any(signal in _CRITICAL_REFLECTION_SIGNALS for signal in signals):
+        severity, disposition = "CRITICAL", "SAFETY_ESCALATION"
+    elif signals:
+        severity, disposition = "HIGH", "SAFETY_ESCALATION"
+    else:
+        severity, disposition = "LOW", "NORMAL"
+
+    return ReflectionSafetyDisposition(
+        severity=severity,  # type: ignore[arg-type]
+        disposition=disposition,  # type: ignore[arg-type]
+        policy_version=REFLECTION_SAFETY_POLICY_VERSION,
+        signals=signals,
+    )
+
+
+def assert_reflection_safety_route(reflection: str | None) -> None:
+    """Port of `assertReflectionSafetyRoute` (reflection-safety.policy.ts).
+
+    Called from `completeGrowthAction` step 5
+    (`architecture/notes/batch2-domain-research-v1.md` section 5.3 point 5):
+    if the reflection text trips any of the 5 sensitive-signal regexes,
+    raise 403 `reflection_requires_safety_support` instead of silently
+    accepting the check-in. Empty/None reflection is a no-op (matches the
+    NestJS source: `complete-growth-action.dto.ts` allows an empty string,
+    and an empty string never matches any of the regexes below either way).
+    """
+    if not reflection:
+        return
+    disposition = assess_reflection_safety(reflection)
+    if disposition.disposition != "NORMAL":
+        raise InterventionForbiddenError("reflection_requires_safety_support")

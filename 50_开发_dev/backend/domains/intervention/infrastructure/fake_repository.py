@@ -88,6 +88,39 @@ class FakeInterventionRepository:
     def seed_journey_plan(self, journey_plan_id: str) -> None:
         self.journey_plans_active.add(journey_plan_id)
 
+    def seed_journey_plan_action(
+        self,
+        family_id: str,
+        journey_plan_id: str,
+        journey_phase: str = "SEE",
+        day_index: int = 1,
+        action_id: str | None = None,
+    ) -> GrowthAction:
+        """Seed a single PENDING `growth_actions` row linked to a
+        (GrowthPlan-domain) journey plan instead of an intervention
+        episode — mirrors the `journey_plan_id`/`journey_phase` pairing
+        `createJourneyPlanActions` writes in journey-plan.service.ts
+        (research note section 3.4). Used to test that
+        `completeGrowthAction` still calls `refresh_journey_plan_execution`
+        for actions this domain doesn't own the lifecycle of, matching the
+        `updated.journey_plan_id` branch in `application/commands.py`.
+        """
+        self.journey_plans_active.add(journey_plan_id)
+        action = GrowthAction(
+            action_id=action_id or str(uuid.uuid4()),
+            family_id=family_id,
+            action_type="JOURNEY_90_DAY_PRACTICE",
+            instruction="90天计划练习",
+            status=GrowthActionStatus.PENDING,
+            day_index=day_index,
+            assignment_text="今天的练习。",
+            due_date=date.today(),
+            journey_plan_id=journey_plan_id,
+            journey_phase=journey_phase,  # type: ignore[arg-type]
+        )
+        self.actions[action.action_id] = action
+        return action
+
     # --- InterventionRepositoryPort ---
 
     async def ensure_family_exists(self, family_id: str) -> None:
