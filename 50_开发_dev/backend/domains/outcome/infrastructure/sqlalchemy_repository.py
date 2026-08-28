@@ -40,6 +40,7 @@ from ..domain.entities import (
     TimelineEntry,
 )
 from ..domain.errors import OutcomeConflictError, OutcomeForbiddenError
+from ..domain.value_objects import GrowthSubject
 
 
 def _decode_jsonb(raw):
@@ -109,7 +110,7 @@ class SqlAlchemyOutcomeRepository(OutcomeRepositoryPort):
         # section 0).
         raise NotImplementedError("assert_normal_safety_route: not yet ported — see research doc section 7.2")
 
-    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> tuple[str, set[str]]:
+    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> GrowthSubject:
         # TODO: full port of GrowthSubjectResolver.resolve including
         # guardian resolution (research doc section 7.1 steps 6-7) — Outcome
         # needs the guardian set (unlike GrowthPriority's narrower need) to

@@ -28,7 +28,7 @@ from ..domain.errors import (
     GrowthPriorityForbiddenError,
     GrowthPriorityNotFoundError,
 )
-from ..domain.value_objects import SafetyDisposition, SafetySeverity
+from ..domain.value_objects import GrowthSubject, SafetyDisposition, SafetySeverity
 
 CANONICAL_ONBOARDING_JOURNEY_TYPE = "PARENT_CHILD_COMMUNICATION_CONFLICT"
 
@@ -146,12 +146,19 @@ class SqlAlchemyGrowthPriorityRepository(GrowthPriorityRepositoryPort):
 
         return severity, disposition, perspective_dispositions
 
-    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> str:
+    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> GrowthSubject:
         # Port of GrowthSubjectResolver.resolve (research doc section 7.1),
         # steps 3-5 only (candidate collection + uniqueness + is_child) —
-        # this domain's port surface does not need the guardian-resolution
-        # steps (6-7), which belong to domains that write guardian-scoped
-        # records (Outcome/Intervention).
+        # this domain's own confirmGrowthPriority flow does not consume
+        # guardian_person_ids, so steps 6-7 (guardian resolution/mismatch)
+        # are deliberately NOT implemented here. The return type is the
+        # shared `GrowthSubject` shape (unified across
+        # growth_priority/intervention/outcome — see domain/value_objects.py),
+        # but `guardian_person_ids` is always an empty frozenset from this
+        # adapter specifically — do not read it as "this child has no
+        # guardians", read it as "this adapter never queried for guardians".
+        # Domains that need real guardian resolution (Outcome/Intervention)
+        # implement steps 6-7 in their own `resolve_growth_subject`.
         event_row = (
             await self._connection.execute(
                 text(
@@ -191,7 +198,7 @@ class SqlAlchemyGrowthPriorityRepository(GrowthPriorityRepositoryPort):
         ).first()
         if person_row is None or person_row.person_type != "CHILD":
             raise GrowthPriorityConflictError("growth_subject_is_not_child")
-        return child_id
+        return GrowthSubject(child_person_id=child_id, guardian_person_ids=frozenset())
 
     async def build_draft(self, family_id: str, onboarding_id: str) -> GrowthPriorityDraft:
         # TODO: Port of `buildGrowthPriorityDraft` (research doc section

@@ -33,6 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from ..application.ports import InterventionRepositoryPort
 from ..domain.entities import GrowthAction, InterventionEpisode
 from ..domain.errors import InterventionConflictError, InterventionForbiddenError, InterventionNotFoundError
+from ..domain.value_objects import GrowthSubject
 
 
 def _decode_jsonb(raw):
@@ -79,13 +80,17 @@ class SqlAlchemyInterventionRepository(InterventionRepositoryPort):
             return
         raise InterventionForbiddenError("actor_has_family_manage_permission")
 
-    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> dict:
+    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> GrowthSubject:
         # TODO: full port of GrowthSubjectResolver.resolve (research doc
         # section 7.1) including guardian resolution (steps 6-7) — the
-        # GrowthPriority domain's real repository in this same commit only
-        # needed steps 3-5 (no guardian set); Intervention's port signature
-        # requires {"child_person_id","guardian_person_ids"} so this needs
-        # the guardian-side family_relationships query added too.
+        # GrowthPriority domain's real repository only needed steps 3-5 (no
+        # guardian set); Intervention's `GrowthSubject.guardian_person_ids`
+        # field requires the guardian-side family_relationships query still
+        # to be added here. Return type unified to the shared `GrowthSubject`
+        # shape ahead of that -- this remains NotImplementedError until the
+        # guardian query itself is ported (changing the return type now,
+        # separately from filling in the query logic, per the narrow scope
+        # of this signature-unification pass).
         raise NotImplementedError(
             "resolve_growth_subject: guardian-resolution steps of GrowthSubjectResolver not yet ported — "
             "see architecture/notes/batch2-domain-research-v1.md section 7.1"

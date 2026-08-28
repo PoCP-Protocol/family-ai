@@ -13,7 +13,7 @@ from datetime import date
 from typing import Protocol
 
 from ..domain.entities import GrowthAction, InterventionEpisode
-from ..domain.value_objects import ExecutionAction
+from ..domain.value_objects import ExecutionAction, GrowthSubject
 
 
 class InterventionRepositoryPort(Protocol):
@@ -31,9 +31,11 @@ class InterventionRepositoryPort(Protocol):
 
     async def assert_family_manage_permission(self, family_id: str, actor_id: str) -> None: ...
 
-    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> dict: ...
-    """Returns {"child_person_id": str, "guardian_person_ids": list[str]} —
-    port of `GrowthSubjectResolver.resolve`."""
+    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> GrowthSubject: ...
+    """Port of `GrowthSubjectResolver.resolve`. Previously returned a bare
+    dict with `guardian_person_ids` as a `list[str]` -- unified to the shared
+    `GrowthSubject` shape (`guardian_person_ids: frozenset[str]`) across
+    growth_priority/intervention/outcome."""
 
     async def assert_required_growth_consents(self, family_id: str, subject_person_id: str) -> None: ...
 

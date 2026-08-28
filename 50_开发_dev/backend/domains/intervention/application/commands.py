@@ -137,7 +137,7 @@ class InterventionCommandHandler:
 
         onboarding_id = priority["onboarding_id"]
         subject = await self._repository.resolve_growth_subject(command.family_id, onboarding_id)
-        await self._repository.assert_required_growth_consents(command.family_id, subject["child_person_id"])
+        await self._repository.assert_required_growth_consents(command.family_id, subject.child_person_id)
         await self._repository.assert_normal_safety_route(command.family_id, onboarding_id)
         await self._repository.assert_no_active_intervention_episode(command.family_id, onboarding_id)
 
@@ -218,7 +218,7 @@ class GrowthActionCommandHandler:
 
         if action.onboarding_id:
             subject = await self._repository.resolve_growth_subject(command.family_id, action.onboarding_id)
-            await self._repository.assert_required_growth_consents(command.family_id, subject["child_person_id"])
+            await self._repository.assert_required_growth_consents(command.family_id, subject.child_person_id)
             await self._repository.assert_normal_safety_route(command.family_id, action.onboarding_id)
 
         # Step 5 of completeGrowthAction (`architecture/notes/batch2-domain-research-v1.md`
@@ -288,7 +288,7 @@ class GrowthActionCommandHandler:
 
         if action.onboarding_id:
             subject = await self._repository.resolve_growth_subject(command.family_id, action.onboarding_id)
-            await self._repository.assert_required_growth_consents(command.family_id, subject["child_person_id"])
+            await self._repository.assert_required_growth_consents(command.family_id, subject.child_person_id)
             await self._repository.assert_normal_safety_route(command.family_id, action.onboarding_id)
 
         next_status = assert_execution_transition(action.execution_status, command.execution_action)

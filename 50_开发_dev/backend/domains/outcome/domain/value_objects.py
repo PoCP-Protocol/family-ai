@@ -7,6 +7,8 @@ FastAPI / SQLAlchemy / provider-SDK dependency, per
 """
 from __future__ import annotations
 
+from pydantic import BaseModel
+
 from typing import Literal
 
 PerspectiveType = Literal["PARENT_OBSERVATION", "CHILD_OBSERVATION"]
@@ -69,3 +71,14 @@ TimelineEventType = Literal[
     "GROWTH_REVIEW_COMPLETED",
     "NEXT_STEP_DECISION_RECORDED",
 ]
+
+
+class GrowthSubject(BaseModel):
+    """Port of `GrowthSubjectResolver.resolve`'s return shape (research doc
+    section 7.1) -- the resolved child plus their guardian set. Shared shape
+    across growth_priority/intervention/outcome so `resolve_growth_subject`
+    return types don't diverge per domain.
+    """
+
+    child_person_id: str
+    guardian_person_ids: frozenset[str]

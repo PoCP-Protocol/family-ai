@@ -149,7 +149,8 @@ class GrowthPriorityCommandHandler:
         assert_decision_matches_draft(command.decision, draft.candidate)
 
         # Step 9: GrowthSubjectResolver.resolve.
-        subject_person_id = await self._repository.resolve_growth_subject(command.family_id, command.onboarding_id)
+        subject = await self._repository.resolve_growth_subject(command.family_id, command.onboarding_id)
+        subject_person_id = subject.child_person_id
 
         # Step 10: assertRequiredGrowthConsents — via the local ConsentCheckPort.
         await self._consent.assert_required_growth_consents(command.family_id, subject_person_id)

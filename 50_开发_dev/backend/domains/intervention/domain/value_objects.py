@@ -153,3 +153,14 @@ class ReflectionSafetyDisposition(BaseModel):
     disposition: Literal["NORMAL", "SAFETY_ESCALATION"]
     policy_version: Literal["M2_105_REFLECTION_DETERMINISTIC_V1"]
     signals: list[ReflectionSafetySignal]
+
+
+class GrowthSubject(BaseModel):
+    """Port of `GrowthSubjectResolver.resolve`'s return shape (research doc
+    section 7.1) -- the resolved child plus their guardian set. Shared shape
+    across growth_priority/intervention/outcome so `resolve_growth_subject`
+    return types don't diverge per domain.
+    """
+
+    child_person_id: str
+    guardian_person_ids: frozenset[str]

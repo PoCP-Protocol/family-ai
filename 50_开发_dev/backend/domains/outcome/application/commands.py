@@ -169,9 +169,8 @@ class OutcomeCommandHandler:
         if episode is None:
             raise OutcomeNotFoundError("intervention_episode_not_found")
 
-        child_person_id, guardian_person_ids = await self._repository.resolve_growth_subject(
-            command.family_id, command.onboarding_id
-        )
+        subject = await self._repository.resolve_growth_subject(command.family_id, command.onboarding_id)
+        child_person_id, guardian_person_ids = subject.child_person_id, subject.guardian_person_ids
         await self._repository.assert_required_growth_consents(command.family_id, child_person_id)
         await self._repository.assert_normal_safety_route(command.family_id, command.onboarding_id)
 
@@ -257,9 +256,8 @@ class OutcomeCommandHandler:
         if episode is None:
             raise OutcomeNotFoundError("intervention_episode_not_found")
 
-        child_person_id, _guardian_person_ids = await self._repository.resolve_growth_subject(
-            command.family_id, command.onboarding_id
-        )
+        subject = await self._repository.resolve_growth_subject(command.family_id, command.onboarding_id)
+        child_person_id = subject.child_person_id
         await self._repository.assert_required_growth_consents(command.family_id, child_person_id)
         await self._repository.assert_normal_safety_route(command.family_id, command.onboarding_id)
 

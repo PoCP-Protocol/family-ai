@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from ..domain.entities import GrowthPriority, GrowthPriorityCandidate, GrowthPriorityDraft
-from ..domain.value_objects import SafetyDisposition, SafetySeverity
+from ..domain.value_objects import GrowthSubject, SafetyDisposition, SafetySeverity
 
 
 class GrowthPriorityRepositoryPort(Protocol):
@@ -35,11 +35,15 @@ class GrowthPriorityRepositoryPort(Protocol):
         `domain.policies.assert_normal_safety_route` needs."""
         ...
 
-    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> str:
+    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> GrowthSubject:
         """Port of `GrowthSubjectResolver.resolve` (research doc section
-        7.1) — returns the resolved child `subject_person_id`, or raises a
-        `GrowthPriorityConflictError`/`GrowthPriorityNotFoundError` with one
-        of the ported `growth_subject_*` codes."""
+        7.1) — returns the resolved `GrowthSubject` (child + guardian set),
+        or raises a `GrowthPriorityConflictError`/`GrowthPriorityNotFoundError`
+        with one of the ported `growth_subject_*` codes. Previously returned
+        a bare `child_person_id: str`, dropping the resolver's own
+        guardian-set resolution/mismatch step (research doc 7.1 point 6) —
+        unified to the shared `GrowthSubject` shape across
+        growth_priority/intervention/outcome."""
         ...
 
     async def build_draft(self, family_id: str, onboarding_id: str) -> GrowthPriorityDraft:

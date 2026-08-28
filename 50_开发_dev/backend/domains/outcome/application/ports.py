@@ -40,6 +40,7 @@ from ..domain.entities import (
     OutcomeObservation,
     TimelineEntry,
 )
+from ..domain.value_objects import GrowthSubject
 
 
 class InterventionEpisodeReadPort(Protocol):
@@ -70,11 +71,11 @@ class OutcomeRepositoryPort(Protocol):
 
     async def assert_normal_safety_route(self, family_id: str, onboarding_id: str) -> None: ...
 
-    async def resolve_growth_subject(
-        self, family_id: str, onboarding_id: str
-    ) -> tuple[str, set[str]]:
-        """Port of `GrowthSubjectResolver.resolve` — returns
-        `(child_person_id, guardian_person_ids)`. Raises `OutcomeConflictError`
+    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> GrowthSubject:
+        """Port of `GrowthSubjectResolver.resolve` — returns the shared
+        `GrowthSubject` shape (unified across
+        growth_priority/intervention/outcome; previously this domain alone
+        returned a bare `tuple[str, set[str]]`). Raises `OutcomeConflictError`
         with the resolver's own error codes (`growth_subject_unresolved`,
         `growth_subject_ambiguous`, `growth_subject_is_not_child`,
         `growth_subject_guardian_unresolved`, `growth_subject_guardian_mismatch`)

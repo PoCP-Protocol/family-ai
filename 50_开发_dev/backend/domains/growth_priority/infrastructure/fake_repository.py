@@ -21,7 +21,7 @@ from ..domain.errors import (
     GrowthPriorityNotFoundError,
 )
 from ..domain.state_machine import supersede
-from ..domain.value_objects import GrowthPriorityStatus, SafetyDisposition, SafetySeverity
+from ..domain.value_objects import GrowthPriorityStatus, GrowthSubject, SafetyDisposition, SafetySeverity
 
 DEFAULT_TEST_ACTOR = "actor-1"
 FAMILY_MANAGE_ROLES = ("OWNER_GUARDIAN", "GUARDIAN")
@@ -38,7 +38,7 @@ class FakeGrowthPriorityRepository:
     onboardings: dict[tuple[str, str], dict] = field(default_factory=dict)  # (family_id, onboarding_id) -> row
     intervention_episodes: dict[str, list[dict]] = field(default_factory=dict)  # onboarding_id -> episodes
     perspective_dispositions: dict[str, list[SafetyDisposition | None]] = field(default_factory=dict)
-    resolved_subjects: dict[tuple[str, str], str] = field(default_factory=dict)  # (family_id, onboarding_id) -> child
+    resolved_subjects: dict[tuple[str, str], GrowthSubject] = field(default_factory=dict)  # (family_id, onboarding_id) -> GrowthSubject
     candidates: dict[tuple[str, str], GrowthPriorityCandidate | None] = field(default_factory=dict)
     priorities: dict[str, GrowthPriority] = field(default_factory=dict)  # priority_id -> row
     operations: dict[tuple[str, str, str], dict] = field(default_factory=dict)  # (family,action,key) -> {request_hash, response_body}
@@ -76,8 +76,12 @@ class FakeGrowthPriorityRepository:
         if perspective_dispositions is not None:
             self.perspective_dispositions[onboarding_id] = perspective_dispositions
 
-    def seed_resolved_subject(self, family_id: str, onboarding_id: str, subject_person_id: str) -> None:
-        self.resolved_subjects[(family_id, onboarding_id)] = subject_person_id
+    def seed_resolved_subject(
+        self, family_id: str, onboarding_id: str, subject_person_id: str, guardian_person_ids: frozenset[str] = frozenset()
+    ) -> None:
+        self.resolved_subjects[(family_id, onboarding_id)] = GrowthSubject(
+            child_person_id=subject_person_id, guardian_person_ids=guardian_person_ids
+        )
 
     def seed_candidate(
         self, family_id: str, onboarding_id: str, dimension_id: str, reason_codes: list[str] | None = None
@@ -128,7 +132,7 @@ class FakeGrowthPriorityRepository:
         )
         return severity, disposition, list(self.perspective_dispositions.get(onboarding_id, []))
 
-    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> str:
+    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> GrowthSubject:
         subject = self.resolved_subjects.get((family_id, onboarding_id))
         if subject is None:
             raise GrowthPriorityConflictError("growth_subject_unresolved")

@@ -30,6 +30,7 @@ from ..domain.value_objects import (
     POLICY_VERSION,
     ExecutionStatus,
     GrowthActionStatus,
+    GrowthSubject,
     InterventionEpisodeStatus,
 )
 
@@ -42,7 +43,7 @@ class FakeInterventionRepository:
     families: set[str] = field(default_factory=set)
     family_memberships: dict[tuple[str, str], str] = field(default_factory=dict)
     consents: set[tuple[str, str]] = field(default_factory=set)  # (family_id, subject_person_id)
-    growth_subjects: dict[tuple[str, str], dict] = field(default_factory=dict)  # (family, onboarding) -> {child, guardians}
+    growth_subjects: dict[tuple[str, str], GrowthSubject] = field(default_factory=dict)  # (family, onboarding) -> GrowthSubject
     safety_blocked: set[tuple[str, str]] = field(default_factory=set)  # (family, onboarding) blocked routes
     priorities: dict[str, dict] = field(default_factory=dict)  # priority_id -> {onboarding_id, dimension_id, status, ...}
     episodes: dict[str, InterventionEpisode] = field(default_factory=dict)  # episode_id -> episode
@@ -64,10 +65,9 @@ class FakeInterventionRepository:
     def seed_growth_subject(
         self, family_id: str, onboarding_id: str, child_person_id: str, guardian_person_ids: list[str]
     ) -> None:
-        self.growth_subjects[(family_id, onboarding_id)] = {
-            "child_person_id": child_person_id,
-            "guardian_person_ids": guardian_person_ids,
-        }
+        self.growth_subjects[(family_id, onboarding_id)] = GrowthSubject(
+            child_person_id=child_person_id, guardian_person_ids=frozenset(guardian_person_ids)
+        )
 
     def grant_consent(self, family_id: str, subject_person_id: str) -> None:
         self.consents.add((family_id, subject_person_id))
@@ -132,7 +132,7 @@ class FakeInterventionRepository:
         if role not in FAMILY_MANAGE_ROLES:
             raise InterventionForbiddenError("family_manage_permission_required")
 
-    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> dict:
+    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> GrowthSubject:
         subject = self.growth_subjects.get((family_id, onboarding_id))
         if subject is None:
             raise InterventionNotFoundError("growth_subject_not_resolved")

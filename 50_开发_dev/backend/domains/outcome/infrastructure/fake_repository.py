@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from ..domain.entities import GrowthReview, NextStepDecision, OutcomeObservation, TimelineEntry
 from ..domain.errors import OutcomeConflictError, OutcomeForbiddenError
 from ..domain.permission_policy import FAMILY_MANAGE_ROLES
+from ..domain.value_objects import GrowthSubject
 
 DEFAULT_TEST_ACTOR = "actor-1"
 
@@ -41,7 +42,7 @@ class FakeOutcomeRepository:
     family_memberships: dict[tuple[str, str], str] = field(default_factory=dict)
     consents: set[tuple[str, str, str]] = field(default_factory=set)  # (family_id, subject_person_id, purpose)
     safety_routes: dict[tuple[str, str], str] = field(default_factory=dict)  # (family_id, onboarding_id) -> route
-    growth_subjects: dict[tuple[str, str], tuple[str, set[str]]] = field(default_factory=dict)
+    growth_subjects: dict[tuple[str, str], GrowthSubject] = field(default_factory=dict)
     person_types: dict[str, str] = field(default_factory=dict)  # person_id -> PARENT/CHILD
 
     observations: dict[str, OutcomeObservation] = field(default_factory=dict)
@@ -85,7 +86,9 @@ class FakeOutcomeRepository:
     def seed_growth_subject(
         self, family_id: str, onboarding_id: str, child_person_id: str, guardian_person_ids: set[str]
     ) -> None:
-        self.growth_subjects[(family_id, onboarding_id)] = (child_person_id, guardian_person_ids)
+        self.growth_subjects[(family_id, onboarding_id)] = GrowthSubject(
+            child_person_id=child_person_id, guardian_person_ids=frozenset(guardian_person_ids)
+        )
 
     def seed_person_type(self, person_id: str, person_type: str) -> None:
         self.person_types[person_id] = person_type
@@ -113,7 +116,7 @@ class FakeOutcomeRepository:
         if self.safety_routes.get((family_id, onboarding_id)) != "NORMAL":
             raise OutcomeForbiddenError("normal_safety_route_required")
 
-    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> tuple[str, set[str]]:
+    async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> GrowthSubject:
         resolved = self.growth_subjects.get((family_id, onboarding_id))
         if resolved is None:
             raise OutcomeConflictError("growth_subject_unresolved")

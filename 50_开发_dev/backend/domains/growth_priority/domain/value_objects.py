@@ -11,6 +11,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
+from pydantic import BaseModel
+
 # Port of the four dimension_id values the `growth_priorities` table column
 # is constrained to (research doc section 3.3).
 GrowthPriorityDimensionId = Literal["P03", "R03", "R04", "R05"]
@@ -49,3 +51,18 @@ class SafetySeverity(str, Enum):
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
     CRITICAL = "CRITICAL"
+
+
+class GrowthSubject(BaseModel):
+    """Port of `GrowthSubjectResolver.resolve`'s return shape (research doc
+    section 7.1) -- the resolved child plus their guardian set. Shared shape
+    across growth_priority/intervention/outcome so `resolve_growth_subject`
+    return types don't diverge per domain (previously: growth_priority
+    returned a bare `str`, intervention a `dict`, outcome a
+    `tuple[str, set[str]]` -- three incompatible shapes for the same
+    cross-cutting resolver). `frozenset` guards against a caller
+    accidentally mutating a shared guardian set.
+    """
+
+    child_person_id: str
+    guardian_person_ids: frozenset[str]
