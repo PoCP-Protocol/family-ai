@@ -1,0 +1,68 @@
+name: Product Intelligence CI
+
+on:
+  pull_request:
+    paths:
+      - "50_开发_dev/backend/domains/product_intelligence/**"
+      - "50_开发_dev/backend/packages/contracts/**"
+      - "50_开发_dev/database/migrations/0058_product_intelligence_domain.sql"
+      - ".github/workflows/product-intelligence-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PI_POSTGRES_TEST_DSN: postgresql+asyncpg://postgres:postgres@localhost:5432/pi_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pydantic sqlalchemy aiosqlite asyncpg fastapi httpx pytest pytest-asyncio
+
+      - name: Create pi_test database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE pi_test;"
+
+      - name: Run product_intelligence test suite (SQLite fake + real Postgres)
+        working-directory: 50_开发_dev/backend
+        run: |
+          python -m pytest domains/product_intelligence/tests tests/test_architecture_ssot.py -v --asyncio-mode=auto | tee pytest-output.log
+
+      - name: Verify Postgres integration tests actually ran (not skipped)
+        working-directory: 50_开发_dev/backend
+        run: |
+          if grep -E "test_postgres_integration\.py.*(SKIPPED|skipped)" pytest-output.log; then
+            echo "::error::Postgres integration tests were SKIPPED — PI_POSTGRES_TEST_DSN must be honored, not skipped, in CI." >&2
+            exit 1
+          fi
+          if ! grep -q "test_postgres_integration.py::test_migration_applies_and_full_chain_creates_and_traces PASSED" pytest-output.log; then
+            echo "::error::Expected test_migration_applies_and_full_chain_creates_and_traces to PASS against real Postgres, but it did not appear as PASSED." >&2
+            exit 1
+          fi
+          if ! grep -q "test_postgres_integration.py::test_growth_strategy_check_constraint_rejects_empty_hypothesis_ids_at_db_level PASSED" pytest-output.log; then
+            echo "::error::Expected the DB CHECK-constraint test to PASS against real Postgres, but it did not appear as PASSED." >&2
+            exit 1
+          fi
+          echo "Postgres integration tests confirmed PASSED (not skipped)."

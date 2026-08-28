@@ -442,3 +442,38 @@ capabilities:
     authorized_at: "2026-08-16"
     supersedes: []
     notes: "仅输出材料-功能-治理边界-实施顺序映射与 App Gate 草案。两份自家 PPT 证据等级上限 E1，不证明效果或治理结论；不得改业务代码、DTO/API/数据库，不启动 HOME 或移动端 runtime。"
+
+  - capability_id: PRODUCT_INTELLIGENCE_DOMAIN_V0_1_PR001
+    stage: PR-001R
+    status: INTERNAL_LOCAL_ALLOWED   # 仅 domain + API-local + migration + test 范围;不含前端/真实模型调用/compiler/simulation/自动发布
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # 仅本地/内部确定性 domain+API runtime;非生产
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: "project-owner (Override #6, CURRENT_SPRINT.md) + family-chief-architect (PR-001R review, GitHub PR #33)"
+    authorization_ref: "CURRENT_SPRINT.md Override #6; GitHub PR #33 (PR-001R review, clean rebase); prior/history reference: GitHub PR #27 (superseded by PR #33's clean rebase, not the operative PR)"
+    authorized_at: "2026-08-28"
+    supersedes: []
+    scope:
+      domain: product_intelligence
+      acceptance_chain:
+        - MarketSignal
+        - CustomerInsight
+        - Opportunity
+        - GrowthProblem
+        - GrowthHypothesis
+        - GrowthStrategy
+        - ProductConcept
+      surfaces: []   # 不含前端
+      included_ranges: [domain, api_local, migration, test]
+    constraints:
+      frontend_authorized: false
+      live_model_call_authorized: false
+      compiler_authorized: false
+      simulation_authorized: false
+      automatic_publish_authorized: false
+      production_authorized: false
+      pilot_authorized: false
+    notes: "PR-001R 清理后唯一 canonical 的 Product Intelligence domain;对应 PR #33(clean rebase 分支 feat/product-intelligence-domain-v0-1-clean);PR #27 为前序 review/history reference,非当前操作 PR。"
