@@ -1,0 +1,10 @@
+[project]
+name = "family-growth-plan-domain"
+version = "0.1.0"
+description = "GrowthPlan / JourneyPlan domain (Batch 2) — ported from apps/api/src/modules/family/journey-plan.service.ts"
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.9", "sqlalchemy>=2.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

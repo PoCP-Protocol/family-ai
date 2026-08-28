@@ -40,6 +40,7 @@ members = [
   "packages/security",
   "packages/testing",
   "domains/assessment",
+  "domains/growth_plan",
   "intelligence",
 ]
 
@@ -55,3 +56,4 @@ warn_unused_ignores = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests", "domains"]
+addopts = "--import-mode=importlib"
