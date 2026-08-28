@@ -162,6 +162,27 @@ class FakeInterventionRepository:
                 return episode
         return None
 
+    async def load_episode_by_id(self, family_id: str, episode_id: str) -> InterventionEpisode | None:
+        episode = self.episodes.get(episode_id)
+        if episode is None or episode.family_id != family_id:
+            return None
+        return episode
+
+    async def load_priority_dimension(self, family_id: str, priority_id: str) -> str | None:
+        priority = self.priorities.get(priority_id)
+        if priority is None or priority["family_id"] != family_id:
+            return None
+        return priority["dimension_id"]
+
+    async def list_growth_actions_for_episode(self, intervention_episode_id: str) -> list[GrowthAction]:
+        matches = [
+            action
+            for action in self.actions.values()
+            if action.intervention_episode_id == intervention_episode_id
+        ]
+        matches.sort(key=lambda action: action.day_index)
+        return matches
+
     async def assert_no_active_intervention_episode(self, family_id: str, onboarding_id: str) -> None:
         active = await self.get_active_intervention(family_id, onboarding_id)
         if active is not None:

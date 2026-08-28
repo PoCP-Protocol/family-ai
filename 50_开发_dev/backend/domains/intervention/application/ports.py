@@ -50,6 +50,32 @@ class InterventionRepositoryPort(Protocol):
 
     async def get_active_intervention(self, family_id: str, onboarding_id: str) -> InterventionEpisode | None: ...
 
+    async def load_episode_by_id(self, family_id: str, episode_id: str) -> InterventionEpisode | None: ...
+    """Read-only lookup by primary key, independent of ACTIVE status —
+    added for the cross-domain `InterventionEpisodeReadPort` adapter Outcome
+    depends on (`domains/outcome/infrastructure/intervention_episode_reader_adapter.py`).
+    Not present in the original NestJS surface (which only ever looked up
+    episodes via `getActiveIntervention`'s onboarding-scoped query or via a
+    hand-rolled join inside `growth-review.service.ts`'s own `getEpisode`);
+    this is a narrow read-only addition to the Port, not a change to any
+    existing method's behavior."""
+
+    async def load_priority_dimension(self, family_id: str, priority_id: str) -> str | None: ...
+    """Returns the `dimension_id` for a priority, or None if the priority
+    does not exist / does not belong to `family_id`. Added for the same
+    cross-domain adapter — `getEpisode` in the NestJS source joins
+    `intervention_episodes` with `growth_priorities` to read this column;
+    `load_active_priority_for_start` already returns it for the ACTIVE-only
+    start flow, this variant serves the read-only episode-lookup path
+    regardless of priority status."""
+
+    async def list_growth_actions_for_episode(self, intervention_episode_id: str) -> list[GrowthAction]: ...
+    """Returns every `growth_actions` row under this episode, ordered by
+    `day_index` — port of the join `listEpisodeActionStatuses` (Outcome
+    domain) performs against this domain's table. Added for the same
+    cross-domain adapter; existing action-lookup methods above are all
+    scoped by `actor_id`/`action_id`, none list a whole episode's actions."""
+
     async def assert_no_active_intervention_episode(self, family_id: str, onboarding_id: str) -> None: ...
 
     async def insert_intervention_episode(
