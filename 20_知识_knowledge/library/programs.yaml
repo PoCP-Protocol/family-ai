@@ -3,7 +3,178 @@
 # licensing 直接决定能不能商用 —— 缺失会 warn,别把需要认证的项目当自有方法交付。
 # 最强证据不足时会 warn:不宜宣称为循证项目。
 
-programs: []
+programs:
+  - id: PG-001
+    name: Triple P (Positive Parenting Program)
+    summary: 澳大利亚昆士兰大学开发的分层级(通用到密集干预)结构化行为主义亲子教养训练体系。
+    origin: 澳大利亚昆士兰大学(Matthew Sanders团队)
+    target: 0-12岁儿童家长为主,分Level 1(通用媒体)到Level 5(密集家庭干预)五级,按需求强度分层
+    dose: 因层级而异;Group Triple P典型为8-10周,每周1次团体课+个别电话支持
+    delivery: 团体 / 个体 / 线上 / 自助手册,视层级不同
+    targets_constructs: [CN-003]
+    effect_note: >
+      Cochrane系统综述(Furlong et al. 2012)与meta分析(de Graaf et al. 2008)支持其对儿童行为问题的改善效应;
+      效应量因研究/层级不同存在异质性,长期随访效果需具体研究支撑,本平台未逐一核验效应量数值,不得引用具体d值。
+    licensing: 官方认证治疗师培训体系,Triple P International商业化运营,本土落地需走官方授权培训,不可自建同名项目直接商用
+    transferability: >
+      已有香港华人样本RCT(Leung et al. 2003针对早发行为问题家庭;Leung, Fan & Sanders 2013针对发展障碍儿童家庭),
+      是本清单里东亚适配证据最充分的一项,可作为"跨文化可迁移性"的参考基准,但本平台若要采用仍需走官方认证/授权路径。
+    mechanism: >
+      五层级分层递进设计(Level 1-5,按需求强度递增,而非所有家庭都要走满五级):
+      Level 1(通用媒体信息,面向所有家庭)→Level 2(简短课程,聚焦特定行为问题,如睡眠/如厕)→
+      Level 3(有针对性的技能训练,4次左右个别咨询)→Level 4(Group/Standard Triple P,8-10周结构化课程,本卡证据锚点)→
+      Level 5(密集家庭干预,针对高风险/共病家庭)。
+      Level 4核心内容是17项具体教养技巧,大致分两类:
+      (一)促进儿童发展的正向技巧——高质量陪伴时间、正向关注与表扬、给孩子机会自主解决问题、丰富的语言互动;
+      (二)管理不良行为的技巧——设定清晰一致的规则、明确的行为后果(如暂停/剥夺特权)、提前规划高风险场景(如出门前先约定行为预期)。
+      理论基础是社会学习理论(行为的正强化/负强化机制)与Baumrind的权威型教养取向结合:
+      核心逻辑是"教家长具体可执行的正向技巧+一致的行为管理程序"，而不是单纯讲道理或单纯惩罚。
+    tags: [亲子教养训练, 行为主义, Triple P, program]
+    open_questions:
+      - 具体效应量(Cohen's d等)数值未逐条核验来源期刊原文,当前只确认综述/meta分析文献真实存在,不确认其中数值。
+    evidence:
+      - claim: 团体形式的Triple P对3-12岁儿童行为问题有改善效应(meta分析,多研究汇总)。
+        grade: 6
+        provenance: third_party_real
+        source: "de Graaf I, Speetjens P, Smit F, de Wolff M, Tavecchio L. (2008). Effectiveness of the Triple P Positive Parenting Program on behavioral problems in children: a meta-analysis. Behav Modif, 32(5), 714-35. PMID: 18475003"
+        year: 2008
+        note: 2026-08-28经PubMed核验书目真实存在;未核验具体效应量数值,仅确认"存在改善效应"方向性结论。
+        tags: [meta-analysis, verified]
+      - claim: 针对3-12岁早发行为问题的团体育儿项目(含Triple P)系统综述支持其有效性。
+        grade: 7
+        provenance: third_party_real
+        source: "Furlong M, McGilloway S, Bywater T, Hutchings J, Smith SM, Donnelly M. (2012). Group-based parent training programmes for early-onset conduct problems in children aged 3 to 12 years. Cochrane Database Syst Rev, 2012(2):CD008225. PMID: 22336837"
+        year: 2012
+        note: Cochrane系统综述级别,2026-08-28经PubMed核验书目真实存在。
+        tags: [cochrane, systematic-review, verified]
+      - claim: Triple P在香港华人家庭(早发行为问题儿童)样本中的RCT显示可行且有效。
+        grade: 7
+        provenance: third_party_real
+        source: "Leung C, Sanders MR, Leung S, Mak R, Lau J. (2003). The implementation and evaluation of the Triple P-Positive Parenting Program in Hong Kong. Family Process, 42(4), 531-44. PMID: 14979223"
+        year: 2003
+        population: 香港华人家庭,早发行为/对立违抗问题儿童
+        note: CHINA_FIT_DIRECT_EVIDENCE;2026-08-28经PubMed核验书目真实存在。
+        tags: [RCT, china-fit, verified, hong-kong]
+      - claim: Triple P Level 4在香港华人发展障碍儿童家长样本中的RCT显示有效。
+        grade: 7
+        provenance: third_party_real
+        source: "Leung C, Fan A, Sanders MR. (2013). The effectiveness of Group Triple P with Chinese parents who have a preschool aged child with developmental disabilities: A randomized controlled trial. Res Dev Disabil, 34(3), 976-84. PMID: 23291515"
+        year: 2013
+        population: 香港华人家庭,学龄前发展障碍儿童
+        note: CHINA_FIT_DIRECT_EVIDENCE;2026-08-28经PubMed核验书目真实存在。
+        tags: [RCT, china-fit, verified, hong-kong, developmental-disability]
+
+  - id: PG-002
+    name: Incredible Years (IY)
+    summary: Webster-Stratton开发的分年龄段(婴幼儿/学龄前/学龄)结构化行为主义亲子训练项目,以录像示范教学为核心特色。
+    origin: 美国华盛顿大学(Carolyn Webster-Stratton团队)
+    target: 0-12岁儿童家长,分Baby/Toddler/Preschool/School-age等年龄段课程包;另有教师版与儿童版(Dinosaur School)
+    dose: 典型为12-20周,每周1次团体课(约2小时)
+    delivery: 团体形式为主,核心教学手段是结构化录像片段示范+小组讨论角色演练
+    targets_constructs: [CN-003]
+    effect_note: >
+      奠基性RCT(Webster-Stratton 1984)对比两种家长训练形式对行为障碍儿童的效果;
+      本平台仅核验该RCT书目真实存在,未逐一核验具体效应量数值,不得引用具体d值/百分比改善数据。
+    licensing: 官方认证培训体系(Incredible Years, Inc.),需走认证培训师资质,不可自建同名项目直接商用
+    transferability: >
+      本平台尚未核验IY在中国大陆/港台华人样本中的适配研究,东亚适配证据目前弱于PG-001(Triple P);列为待查。
+    mechanism: >
+      核心教学特色是"录像示范教学法(video modeling)"——用大量真实(非表演/非完美)家庭互动录像片段作为讨论起点,
+      让家长先观察示范行为,再小组讨论"这样做为什么有效/换个场景我会怎么处理",最后角色演练。
+      内容结构上分两条线:(一)促进正向关系的技巧(儿童引导式游戏、表扬与鼓励、有效使用奖励);
+      (二)行为管理技巧(设定清晰规则、忽略轻微不当行为、暂停技术、逻辑后果)。
+      与Triple P的核心差异在于教学形式(录像示范讨论 vs 个别咨询指导)而非底层行为主义理论本身。
+    tags: [亲子教养训练, 行为主义, 录像示范, Incredible Years, program]
+    open_questions:
+      - IY在东亚/中国样本的文化适配研究尚未核验,不得宣称本平台已确认其跨文化有效性。
+      - 具体效应量数值未逐条核验来源期刊原文。
+    evidence:
+      - claim: 针对行为障碍儿童的两种家长训练项目对比RCT,是IY项目的奠基性效果研究。
+        grade: 7
+        provenance: third_party_real
+        source: "Webster-Stratton C. (1984). Randomized trial of two parent-training programs for families with conduct-disordered children. Journal of Consulting and Clinical Psychology, 52(4), 666-678. doi:10.1037/0022-006x.52.4.666"
+        year: 1984
+        note: 2026-08-28经Crossref核验书目真实存在;奠基性RCT,未核验具体效应量数值。
+        tags: [RCT, verified, foundational]
+
+  - id: PG-003
+    name: PMTO (Parent Management Training - Oregon Model)
+    summary: 俄勒冈社会学习中心(Patterson团队)开发的行为主义亲子训练模型,理论核心是"强制家庭过程(coercive family process)",干预聚焦打破强制性亲子互动循环。
+    origin: 美国俄勒冈社会学习中心(Oregon Social Learning Center,Gerald Patterson团队)
+    target: 儿童行为问题(尤其对立违抗/品行问题)家庭,涵盖学龄前至青少年;衍生版本包括"Parenting Through Change"(面向离异/单亲家庭)
+    dose: 因具体衍生版本而异;Parenting Through Change典型为14周团体课程
+    delivery: 团体 / 个体咨询,视具体衍生项目而定
+    targets_constructs: [CN-002, CN-003]
+    effect_note: >
+      Forgatch & DeGarmo (1999)对单亲母亲的RCT显示该模型对教养行为与儿童适应有改善效应;
+      本平台未逐一核验效应量数值,不得引用具体d值。
+    licensing: 官方认证培训体系(PMTO International等机构),需走认证培训,不可自建同名项目直接商用
+    transferability: 本平台尚未核验PMTO在中国大陆/东亚样本中的适配研究,列为待查,弱于PG-001东亚适配证据。
+    mechanism: >
+      理论核心"强制家庭过程"描述的是一种恶性循环:孩子用不当行为(哭闹/顶撞)升级来逼退家长的管教要求,
+      家长在升级压力下让步或退让,孩子的不当行为因此被负强化(得到了想要的结果),循环下一次会用同样策略且强度可能升级;
+      反过来,家长如果用严厉/惊吓式的方式打断循环,孩子的不当行为可能短期被压制,但代价是攻击性示范和关系损伤。
+      PMTO的干预要点是教家长用五项核心技巧打破循环而不是被拖入循环:
+      (一)鼓励(对期望行为具体化表扬与正强化)、(二)设限(清晰、可执行、可预见的规则和后果,不靠情绪化威胁)、
+      (三)监督(知道孩子在做什么,不是监控式而是知情式参与)、(四)解决问题(共同商议应对具体冲突场景的方案)、
+      (五)积极参与(高质量共同活动时间,维持关系的正向基础,避免亲子互动只剩下管教)。
+      与MD-005(自我分化练习)在概念上互补:MD-005处理家长自身的情绪反应,PMTO处理具体的行为管理程序。
+    tags: [亲子教养训练, 行为主义, 强制家庭过程, PMTO, program]
+    open_questions:
+      - PMTO在东亚/中国样本的文化适配研究尚未核验。
+      - Patterson本人关于"强制家庭过程"理论的奠基专著(1982年专著,非期刊论文)未逐一核验,本卡以Forgatch & DeGarmo 1999 RCT作为可机器核验的效果证据锚点,理论渊源标注但非逐字核验原始专著。
+    evidence:
+      - claim: 针对单亲母亲的PMTO衍生项目(Parenting Through Change)RCT显示对教养行为与儿童适应有预防性改善效应。
+        grade: 7
+        provenance: third_party_real
+        source: "Forgatch MS, DeGarmo DS. (1999). Parenting through change: An effective prevention program for single mothers. Journal of Consulting and Clinical Psychology, 67(5), 711-724. doi:10.1037/0022-006x.67.5.711"
+        year: 1999
+        population: 离异单亲母亲家庭
+        note: 2026-08-28经Crossref核验书目真实存在;RCT级效果证据,未核验具体效应量数值。
+        tags: [RCT, verified]
+
+  - id: PG-004
+    name: Circle of Security (COS)
+    summary: 以依恋理论为直接理论基础的照养者-婴幼儿关系干预项目,聚焦提升照养者的敏感回应能力与反思功能,目标是改善儿童依恋安全性。
+    origin: 美国(Robert Marvin, Glen Cooper, Kent Hoffman, Bert Powell团队)
+    target: 婴幼儿/学龄前儿童(0-5岁)及其照养者,尤其适用于亲子关系存在依恋风险信号的家庭
+    dose: 典型为20周团体课程,每周1次,含录像反馈环节
+    delivery: 团体形式,核心技术是录制照养者-儿童互动片段并在团体中回顾反馈(video feedback)
+    targets_constructs: [CN-004]
+    effect_note: >
+      Hoffman et al. (2006)的效果研究显示该干预能改变部分幼儿的依恋分类(从不安全型转为安全型);
+      本平台仅核验书目真实存在,未逐一核验具体效应量/转化比例数值,不得引用具体百分比。
+    licensing: 官方认证培训体系(Circle of Security International),需走认证培训师资质,不可自建同名项目直接商用
+    transferability: 本平台尚未核验COS在中国大陆/东亚样本中的适配研究,列为待查。
+    mechanism: >
+      核心工具是"安全圈(Circle of Security)"图示模型,把儿童与照养者的关系需求描绘成一个循环:
+      儿童从照养者这个"安全基地"出发去探索(需要照养者"支持我的探索"),遇到压力/需要时回到照养者身边寻求安慰
+      (需要照养者"欢迎我回来"),形成"探索-回归"的循环。
+      干预的核心机制不是直接教家长"做什么动作",而是通过录像回顾帮助照养者:
+      (1)识别孩子在循环的哪个位置发出了什么信号(是需要探索空间还是需要安慰);
+      (2)识别自己在回应时的"防御性反应"(比如因为自己的焦虑而过度限制孩子探索,或因为疲惫而对安慰需求置若罔闻);
+      (3)在反思中逐步替换掉这些防御性反应,提升敏感回应能力(呼应TH-003的敏感回应四要素)。
+      与MD-003(敏感回应练习)的关系:MD-003是本平台从理论直接操作化的自助式练习,COS是经过验证的专业团体干预形式,
+      两者理论根相同(TH-003依恋理论),但COS需要专业带领者主持录像反馈环节,不是家庭可自行操作的方法。
+    tags: [依恋理论, 敏感回应, 录像反馈, Circle of Security, program]
+    open_questions:
+      - COS在东亚/中国样本的文化适配研究尚未核验。
+      - 具体效应量/依恋分类转化比例数值未逐条核验来源期刊原文。
+    evidence:
+      - claim: 该干预项目理论框架与临床应用方法的首次系统介绍(项目介绍性论文)。
+        grade: 3
+        provenance: third_party_real
+        source: "Marvin R, Cooper G, Hoffman K, Powell B. (2002). The Circle of Security project: Attachment-based intervention with caregiver-pre-school child dyads. Attachment & Human Development, 4(1), 107-124."
+        year: 2002
+        note: 2026-08-28经Crossref核验书目真实存在;PROGRAM_INTRODUCTION,非效果验证研究本身。
+        tags: [program-introduction, verified]
+      - claim: COS干预后,部分幼儿的依恋分类从不安全型转变为安全型(效果验证研究)。
+        grade: 6
+        provenance: third_party_real
+        source: "Hoffman KT, Marvin RS, Cooper G, Powell B. (2006). Changing toddlers' and preschoolers' attachment classifications: The circle of security intervention. Journal of Consulting and Clinical Psychology, 74(6), 1017-1026. doi:10.1037/0022-006x.74.6.1017"
+        year: 2006
+        note: 2026-08-28经Crossref核验书目真实存在;METHOD_EFFECT,未核验具体转化比例数值。
+        tags: [method-effect, verified]
 
 # 模板:
 #

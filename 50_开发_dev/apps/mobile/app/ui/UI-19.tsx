@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
@@ -18,15 +18,22 @@ export default function TeacherZoneScreen() {
   const [projection, setProjection] = useState<FamilyApiServiceSupplyProjection | null>(null);
   const [query, setQuery] = useState("");
   const [theme, setTheme] = useState<SupportThemeId>("ALL");
+  const [projectionState, setProjectionState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  useEffect(() => {
-    if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
+  const loadOfferings = useCallback(() => {
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      setProjectionState("idle");
+      return () => undefined;
+    }
     let active = true;
+    setProjectionState("loading");
     familyApi.getServiceOfferings<FamilyApiServiceSupplyProjection>(session.token, session.selectedFamily.family_id, {})
-      .then((result) => { if (active) setProjection(result); })
-      .catch(() => undefined);
+      .then((result) => { if (!active) return; setProjection(result); setProjectionState("ready"); })
+      .catch(() => { if (active) setProjectionState("error"); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
+
+  useEffect(() => loadOfferings(), [loadOfferings]);
 
   const offerings = useMemo(() => {
     const value = query.trim().toLowerCase();
@@ -51,7 +58,13 @@ export default function TeacherZoneScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
-            <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>名师专区</Text><Text style={styles.topHeart}>♡</Text></View>
+            <View style={styles.topBar}><Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>名师专区</Text><Text style={styles.topHeart}>♡</Text></View>
+
+            {projectionState === "error" ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="重新加载名师列表" onPress={loadOfferings} style={styles.inlineNotice}>
+                <Text style={[styles.inlineNoticeText, { color: colors.muted }]}>暂时无法读取名师列表，点击重试</Text>
+              </Pressable>
+            ) : null}
             <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <IconSymbol name="magnifyingglass" size={20} color={colors.muted} />
               <TextInput
@@ -68,7 +81,7 @@ export default function TeacherZoneScreen() {
               <View style={styles.heroCopy}>
                   <Text style={styles.heroTitle}>名师在线，帮您解决家庭教育难题</Text>
                 <Text style={styles.heroText}>专业 · 温暖 · 有方法</Text>
-                <Pressable onPress={() => router.push("/ui/UI-21" as Href)} style={({ pressed }) => [styles.heroAction, pressed && styles.pressed]}>
+                <Pressable accessibilityRole="button" accessibilityLabel="立即咨询" onPress={() => router.push("/ui/UI-21" as Href)} style={({ pressed }) => [styles.heroAction, pressed && styles.pressed]}>
                   <Text style={styles.heroActionText}>立即咨询</Text>
                 </Pressable>
               </View>
@@ -80,7 +93,7 @@ export default function TeacherZoneScreen() {
 
 
             {projection?.live_session ? (
-              <Pressable onPress={() => router.push("/ui/UI-20" as Href)} style={({ pressed }) => [styles.liveCard, { backgroundColor: "#FFF6F1", borderColor: "#F5C9B1" }, pressed && styles.pressed]}>
+              <Pressable accessibilityRole="button" accessibilityLabel={`查看直播：${projection.live_session.title}`} onPress={() => router.push("/ui/UI-20" as Href)} style={({ pressed }) => [styles.liveCard, { backgroundColor: "#FFF6F1", borderColor: "#F5C9B1" }, pressed && styles.pressed]}>
                 <View style={styles.liveIcon}><IconSymbol name="video.fill" size={23} color="#F28C45" /></View>
                 <View style={styles.liveCopy}>
                   <Text style={styles.liveLabel}>{projection.live_session.status === "LIVE" ? "正在进行" : projection.live_session.status === "ENDED" ? "本场已结束" : "近期直播"}</Text>
@@ -97,7 +110,7 @@ export default function TeacherZoneScreen() {
             </View>
             <View style={styles.themeGrid}>
               {SUPPORT_THEMES.filter((item) => item.id !== "ALL").map((item) => (
-                <Pressable key={item.id} onPress={() => setTheme(theme === item.id ? "ALL" : item.id)} style={({ pressed }) => [styles.themeTile, { backgroundColor: colors.surface, borderColor: theme === item.id ? item.color : colors.border }, pressed && styles.pressed]}>
+                <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`筛选领域：${item.label}`} accessibilityState={{ selected: theme === item.id }} onPress={() => setTheme(theme === item.id ? "ALL" : item.id)} style={({ pressed }) => [styles.themeTile, { backgroundColor: colors.surface, borderColor: theme === item.id ? item.color : colors.border }, pressed && styles.pressed]}>
                   <View style={[styles.themeIcon, { backgroundColor: `${item.color}18` }]}>
                     <IconSymbol name={item.id === "STUDY" ? "book.fill" : item.id === "FAMILY" ? "person.2.fill" : item.id === "FOCUS" ? "clock.fill" : "message.fill"} size={21} color={item.color} />
                   </View>
@@ -123,8 +136,8 @@ export default function TeacherZoneScreen() {
               <Text style={[styles.teacherRole, { color: colors.muted }]}>{item.title} · {item.ageBand}</Text>
               <View style={styles.tags}>{item.expertise.slice(0, 3).map((tag) => <Text key={tag} style={[styles.tag, { color: item.accent, borderColor: `${item.accent}50` }]}>{tag}</Text>)}</View>
               <View style={styles.teacherActions}>
-                <Pressable onPress={() => openOffering(item)} style={({ pressed }) => [styles.secondaryAction, { borderColor: colors.border }, pressed && styles.pressed]}><Text style={[styles.secondaryText, { color: colors.text }]}>查看详情</Text></Pressable>
-                <Pressable onPress={() => router.push(`/ui/UI-21?offeringRef=${encodeURIComponent(item.offeringRef)}` as Href)} style={({ pressed }) => [styles.primaryAction, { backgroundColor: colors.tint }, pressed && styles.pressed]}><Text style={styles.primaryText}>立即咨询</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={`查看${item.providerName}详情`} onPress={() => openOffering(item)} style={({ pressed }) => [styles.secondaryAction, { borderColor: colors.border }, pressed && styles.pressed]}><Text style={[styles.secondaryText, { color: colors.text }]}>查看详情</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={`向${item.providerName}发起咨询`} onPress={() => router.push(`/ui/UI-21?offeringRef=${encodeURIComponent(item.offeringRef)}` as Href)} style={({ pressed }) => [styles.primaryAction, { backgroundColor: colors.tint }, pressed && styles.pressed]}><Text style={styles.primaryText}>立即咨询</Text></Pressable>
               </View>
             </View>
           </View>
@@ -173,5 +186,6 @@ const styles = StyleSheet.create({
   primaryAction: { flex: 1, minHeight: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" }, primaryText: { color: "#FFFFFF", fontSize: 12, lineHeight: 17, fontWeight: "900" },
   empty: { minHeight: 150, alignItems: "center", justifyContent: "center", gap: 5 }, emptyTitle: { fontSize: 16, lineHeight: 22, fontWeight: "900" }, emptyText: { fontSize: 12, lineHeight: 18 },
   boundary: { minHeight: 70, borderTopWidth: 1, marginTop: 4, paddingTop: 14, flexDirection: "row", alignItems: "flex-start", gap: 9 }, boundaryText: { flex: 1, fontSize: 11, lineHeight: 17 },
+  inlineNotice: { marginTop: -2 }, inlineNoticeText: { fontSize: 12, lineHeight: 18, textAlign: "center" },
   pressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
 });

@@ -14,6 +14,7 @@ export * from './family-34ui';
 export * from './platform-v4-1';
 export * from './journey-plan';
 export * from './growth-episode';
+export * from './i18n-locale';
 
 export type FamilyStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 export type PersonType = 'PARENT' | 'CHILD';

@@ -31,6 +31,7 @@ interface FamilyMobileContextValue extends FamilyMobileState {
   cancelStudyGroupDraft(): void;
   saveConsultationNeedDraft(offeringRef: string, offeringVersion: number, offeringTitle: string, providerName: string, channel: ConsultationChannel, slotRef: string | null, timePreference: string, ageBand: string, needFocus: string): void;
   syncConsultationNeedReceipt(bookingRequestId: string, serviceRecordId: string): void;
+  cancelConsultationNeedDraft(): void;
   saveActivityInterestDraft(activityRef: string, activityTitle: string): void;
   saveCommunityPostDraft(kind: CommunityPostKind, title: string, body: string, topic: string, aiTagDraft?: CommunityAiTagDraft): void;
   toggleCommunityBookmark(exchangeRef: string): void;
@@ -108,6 +109,7 @@ export function FamilyMobileProvider({ children }: PropsWithChildren) {
     cancelStudyGroupDraft: () => dispatch({ type: "cancel_study_group_draft" }),
     saveConsultationNeedDraft: (offeringRef, offeringVersion, offeringTitle, providerName, channel, slotRef, timePreference, ageBand, needFocus) => dispatch({ type: "save_consultation_need_draft", offeringRef, offeringVersion, offeringTitle, providerName, channel, slotRef, timePreference, ageBand, needFocus }),
     syncConsultationNeedReceipt: (bookingRequestId, serviceRecordId) => dispatch({ type: "sync_consultation_need_receipt", bookingRequestId, serviceRecordId }),
+    cancelConsultationNeedDraft: () => dispatch({ type: "cancel_consultation_need_draft" }),
     saveActivityInterestDraft: (activityRef, activityTitle) => dispatch({ type: "save_activity_interest_draft", activityRef, activityTitle }),
     saveCommunityPostDraft: (kind, title, body, topic, aiTagDraft) => dispatch({ type: "save_community_post_draft", kind, title, body, topic, aiTagDraft }),
     toggleCommunityBookmark: (exchangeRef) => dispatch({ type: "toggle_community_bookmark", exchangeRef }),

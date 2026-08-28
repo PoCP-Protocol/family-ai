@@ -71,6 +71,7 @@ export type FamilyMobileAction =
   | { type: "cancel_study_group_draft" }
   | { type: "save_consultation_need_draft"; offeringRef: string; offeringVersion: number; offeringTitle: string; providerName: string; channel: ConsultationChannel; slotRef: string | null; timePreference: string; ageBand: string; needFocus: string }
   | { type: "sync_consultation_need_receipt"; bookingRequestId: string; serviceRecordId: string }
+  | { type: "cancel_consultation_need_draft" }
   | { type: "save_activity_interest_draft"; activityRef: string; activityTitle: string }
   | { type: "save_community_post_draft"; kind: CommunityPostKind; title: string; body: string; topic: string; aiTagDraft?: CommunityAiTagDraft }
   | { type: "toggle_community_bookmark"; exchangeRef: string }
@@ -291,6 +292,9 @@ export function familyMobileReducer(state: FamilyMobileState, action: FamilyMobi
         serviceRecordId: action.serviceRecordId,
       },
     };
+  }
+  if (action.type === "cancel_consultation_need_draft" && state.consultationNeedDraft) {
+    return { ...state, consultationNeedDraft: { ...state.consultationNeedDraft, state: "CANCELLED" } };
   }
   if (action.type === "save_activity_interest_draft") {
     return {

@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
@@ -16,15 +16,22 @@ export default function FamilyGrowthMallScreen() {
   const colors = useColors();
   const session = useFamilyApiSession();
   const [remoteCatalog, setRemoteCatalog] = useState<FamilyApiCommerceProductsProjection | null>(null);
+  const [projectionState, setProjectionState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  useEffect(() => {
-    if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
+  const loadCatalog = useCallback(() => {
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      setProjectionState("idle");
+      return () => undefined;
+    }
     let active = true;
+    setProjectionState("loading");
     familyApi.getCommerceProducts<FamilyApiCommerceProductsProjection>(session.token, session.selectedFamily.family_id)
-      .then((result) => { if (active) setRemoteCatalog(result); })
-      .catch(() => undefined);
+      .then((result) => { if (!active) return; setRemoteCatalog(result); setProjectionState("ready"); })
+      .catch(() => { if (active) setProjectionState("error"); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
+
+  useEffect(() => loadCatalog(), [loadCatalog]);
 
   const products = useMemo(() => commerceProductsForDisplay(remoteCatalog?.products), [remoteCatalog?.products]);
   const openProduct = (product: CommercePresentationProduct) => {
@@ -47,7 +54,7 @@ export default function FamilyGrowthMallScreen() {
             <Text style={[styles.greeting, { color: colors.text }]}>早上好，乐乐妈妈 👋</Text>
             <Text style={[styles.subtitle, { color: colors.muted }]}>一起成长，一起成为更好的父母</Text>
 
-            <Pressable onPress={() => router.push("/ui/UI-15" as Href)} style={({ pressed }) => [styles.inviteBanner, pressed && styles.pressed]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="邀请好友领成长礼包" onPress={() => router.push("/ui/UI-15" as Href)} style={({ pressed }) => [styles.inviteBanner, pressed && styles.pressed]}>
               <View style={styles.inviteCopy}>
                 <Text style={styles.inviteTitle}>邀请好友领成长礼包</Text>
                 <Text style={styles.inviteLabel}>邀请越多，奖励越多</Text>
@@ -60,6 +67,12 @@ export default function FamilyGrowthMallScreen() {
                 <IconSymbol name="person.2.fill" size={42} color="#FFFFFF" />
               </View>
             </Pressable>
+
+            {projectionState === "error" ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="重新加载商城商品" onPress={loadCatalog} style={styles.inlineNotice}>
+                <Text style={[styles.inlineNoticeText, { color: colors.muted }]}>暂时无法读取商城商品，点击重试</Text>
+              </Pressable>
+            ) : null}
 
             <View style={styles.categoryGrid}>
               <CategoryTile label="拼团专区" detail="多人更优惠" icon="person.2.fill" color="#F06D61" target="UI-16" />
@@ -77,7 +90,7 @@ export default function FamilyGrowthMallScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <Pressable onPress={() => openProduct(item)} style={({ pressed }) => [styles.productCard, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`查看${item.title}详情`} onPress={() => openProduct(item)} style={({ pressed }) => [styles.productCard, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}>
             <View style={[styles.productVisual, { backgroundColor: `${item.accent}18` }]}>
               <IconSymbol name={item.category === "COURSE" ? "book.fill" : item.category === "ASSESSMENT" ? "chart.bar.fill" : "gift.fill"} size={30} color={item.accent} />
             </View>
@@ -102,7 +115,7 @@ type CommerceIcon = "person.2.fill" | "book.fill" | "star.fill" | "crown.fill" |
 function CategoryTile({ label, detail, icon, color, target }: { label: string; detail: string; icon: CommerceIcon; color: string; target: string }) {
   const colors = useColors();
   return (
-    <Pressable onPress={() => router.push(`/ui/${target}` as Href)} style={({ pressed }) => [styles.categoryTile, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`进入${label}`} onPress={() => router.push(`/ui/${target}` as Href)} style={({ pressed }) => [styles.categoryTile, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}>
       <View style={[styles.categoryIcon, { backgroundColor: `${color}18` }]}>
         <IconSymbol name={icon} size={23} color={color} />
       </View>
@@ -144,5 +157,7 @@ const styles = StyleSheet.create({
   productSource: { fontSize: 10, lineHeight: 14 },
   footerNote: { minHeight: 74, borderWidth: 1, borderRadius: 19, padding: 14, flexDirection: "row", alignItems: "center", gap: 10, marginTop: 2 },
   footerText: { flex: 1, fontSize: 12, lineHeight: 18 },
+  inlineNotice: { marginTop: 2 },
+  inlineNoticeText: { fontSize: 12, lineHeight: 18, textAlign: "center" },
   pressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
 });

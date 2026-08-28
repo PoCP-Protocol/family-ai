@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
@@ -26,22 +26,32 @@ export default function MyMembershipScreen() {
   const [plans, setPlans] = useState<FamilyApiMembershipPlansProjection | null>(null);
   const [membership, setMembership] = useState<FamilyApiMembershipProjection | null>(null);
   const [commerce, setCommerce] = useState<FamilyApiCommerceCustomerProjection | null>(null);
+  const [projectionState, setProjectionState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  useEffect(() => {
-    if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
+  const loadMembership = useCallback(() => {
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      setProjectionState("idle");
+      return () => undefined;
+    }
+    const token = session.token;
+    const familyId = session.selectedFamily.family_id;
     let active = true;
+    setProjectionState("loading");
     Promise.all([
-      familyApi.getMembershipPlans<FamilyApiMembershipPlansProjection>(session.token, session.selectedFamily.family_id),
-      familyApi.getMembershipCustomerProjection<FamilyApiMembershipProjection>(session.token, session.selectedFamily.family_id),
-      familyApi.getCommerceCustomerProjection<FamilyApiCommerceCustomerProjection>(session.token, session.selectedFamily.family_id),
+      familyApi.getMembershipPlans<FamilyApiMembershipPlansProjection>(token, familyId),
+      familyApi.getMembershipCustomerProjection<FamilyApiMembershipProjection>(token, familyId),
+      familyApi.getCommerceCustomerProjection<FamilyApiCommerceCustomerProjection>(token, familyId),
     ]).then(([nextPlans, nextMembership, nextCommerce]) => {
       if (!active) return;
       setPlans(nextPlans);
       setMembership(nextMembership);
       setCommerce(nextCommerce);
-    }).catch(() => undefined);
+      setProjectionState("ready");
+    }).catch(() => { if (active) setProjectionState("error"); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
+
+  useEffect(() => loadMembership(), [loadMembership]);
 
   const summary = useMemo(() => {
     const activeSubscription = membership?.subscriptions.find((item) => item.status === "ACTIVE");
@@ -92,7 +102,7 @@ export default function MyMembershipScreen() {
               </View>
             </View>
 
-            <Pressable onPress={() => router.push("/ui/UI-15" as Href)} style={({ pressed }) => [styles.inviteCard, pressed && styles.pressed]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={`邀请家庭解锁会员权益，已邀请${invitedCount}/3`} onPress={() => router.push("/ui/UI-15" as Href)} style={({ pressed }) => [styles.inviteCard, pressed && styles.pressed]}>
               <View style={styles.inviteCopy}>
                 <Text style={styles.inviteTitle}>邀请 3 个家庭，解锁会员权益</Text>
                 <Text style={styles.inviteProgress}>已邀请 {invitedCount}/3</Text>
@@ -100,17 +110,23 @@ export default function MyMembershipScreen() {
               </View>
               <View style={styles.inviteAction}><Text style={styles.inviteActionText}>去邀请</Text></View>
             </Pressable>
+
+            {projectionState === "error" ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="重新加载会员信息" onPress={loadMembership} style={styles.inlineNotice}>
+                <Text style={styles.inlineNoticeText}>暂时无法读取会员信息，点击重试</Text>
+              </Pressable>
+            ) : null}
           </View>
         }
         renderItem={({ item }) => (
-          <Pressable onPress={() => router.push(`/ui/${item.target}` as Href)} style={({ pressed }) => [styles.menuRow, pressed && styles.rowPressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`查看${item.label}`} onPress={() => router.push(`/ui/${item.target}` as Href)} style={({ pressed }) => [styles.menuRow, pressed && styles.rowPressed]}>
             <View style={styles.menuIcon}><IconSymbol name={item.icon} size={22} color={MENU_ICON_COLORS[item.id]} /></View>
             <Text style={styles.menuLabel}>{item.label}</Text>
             <IconSymbol name="chevron.right" size={21} color="#A8B0BA" />
           </Pressable>
         )}
         ListFooterComponent={
-          <Pressable onPress={() => router.push("/ui/UI-30" as Href)} style={({ pressed }) => [styles.annualCard, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`查看${summary.planTitle}权益`} onPress={() => router.push("/ui/UI-30" as Href)} style={({ pressed }) => [styles.annualCard, pressed && styles.pressed]}>
             <View style={styles.annualCopy}>
               <Text style={styles.annualTitle}>{summary.planTitle}</Text>
               <Text style={styles.annualDate}>{summary.dateLabel}</Text>
@@ -172,4 +188,6 @@ const styles = StyleSheet.create({
   crownPanel: { width: 105, alignItems: "center", justifyContent: "center" },
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   rowPressed: { opacity: 0.66 },
+  inlineNotice: { marginHorizontal: 17, marginTop: 12 },
+  inlineNoticeText: { color: "#8794A5", fontSize: 12, lineHeight: 18, textAlign: "center" },
 });

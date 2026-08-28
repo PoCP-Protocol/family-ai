@@ -1,0 +1,9 @@
+{
+  "common": {
+    "back": "Back",
+    "confirm": "Confirm",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "loading": "Loading..."
+  }
+}

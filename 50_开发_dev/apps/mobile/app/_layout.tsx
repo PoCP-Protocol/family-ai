@@ -8,6 +8,7 @@ import "react-native-reanimated";
 import { Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { I18nProvider } from "@/lib/i18n-provider";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -120,21 +121,25 @@ export default function RootLayout() {
 
   if (shouldOverrideSafeArea) {
     return (
-      <ThemeProvider>
-        <SafeAreaProvider initialMetrics={providerInitialMetrics}>
-          <SafeAreaFrameContext.Provider value={frame}>
-            <SafeAreaInsetsContext.Provider value={insets}>
-              {content}
-            </SafeAreaInsetsContext.Provider>
-          </SafeAreaFrameContext.Provider>
-        </SafeAreaProvider>
-      </ThemeProvider>
+      <I18nProvider>
+        <ThemeProvider>
+          <SafeAreaProvider initialMetrics={providerInitialMetrics}>
+            <SafeAreaFrameContext.Provider value={frame}>
+              <SafeAreaInsetsContext.Provider value={insets}>
+                {content}
+              </SafeAreaInsetsContext.Provider>
+            </SafeAreaFrameContext.Provider>
+          </SafeAreaProvider>
+        </ThemeProvider>
+      </I18nProvider>
     );
   }
 
   return (
-    <ThemeProvider>
-      <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
+      </ThemeProvider>
+    </I18nProvider>
   );
 }
