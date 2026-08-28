@@ -47,6 +47,7 @@ from ..domain.ai_run import AiRunRecord
 from ..domain.entities import GrowthHypothesisEvidence
 from ..domain.errors import AssessmentValidationError
 from ..domain.interpretation_boundary import assert_interpretation_boundary
+from ..domain.knowledge_grounding import grounded_card_ids, grounding_prompt_block
 from ..application.ports import AiRunLedgerPort, AssessmentInterpretationPort
 
 _LEGAL_CONSTRUCT_REFS = {
@@ -69,6 +70,11 @@ _DRAFT_OUTPUT_SCHEMA = {
                 "properties": {
                     "construct_ref": {"type": "string", "enum": sorted(_LEGAL_CONSTRUCT_REFS)},
                     "boundary": {"type": "string", "const": "signal_not_diagnosis"},
+                    # 可选溯源字段:引用 20_知识_knowledge 卡片 id(如 "TH-001"),供审计/人工复核。
+                    # 非分数/非诊断字段,不触发 assert_no_forbidden_output_fields 黑名单。
+                    # 模型自己不知道哪些 id 合法 —— 由 _sanitize_grounding_sources() 在收到输出后
+                    # 逐条核对 grounded_card_ids(),不在此 whitelist 的一律清空,不信任模型自报的 id。
+                    "grounding_source": {"type": "string"},
                 },
                 "required": ["construct_ref", "boundary"],
                 "additionalProperties": False,
@@ -110,26 +116,67 @@ _DRAFT_OUTPUT_SCHEMA = {
     "additionalProperties": False,
 }
 
-_SYSTEM_PROMPT = (
-    "You interpret family assessment evidence into a structured support-direction draft. "
-    "This is NOT a diagnosis, NOT a score, and NOT a ranking — you may only propose hypotheses "
-    "(explicitly not-fact) and action candidates (explicitly not-decisions). "
-    "construct_ref values you use MUST come only from this reviewed whitelist: "
-    f"{sorted(_LEGAL_CONSTRUCT_REFS)}. Do not invent new construct_ref values under any circumstance — "
-    "a prior incident involved a model fabricating unreviewed construct names, which is exactly what "
-    "this whitelist exists to prevent. Every construct_signal must have boundary='signal_not_diagnosis'. "
-    "Every hypothesis must have boundary='hypothesis_not_fact'. Every action_candidate must have "
-    "boundary='recommendation_not_decision'. Never include any field resembling a total score, a "
-    "ranking, or a diagnosis label. "
-    "Among the hypotheses you output, judge which ones represent the primary contradiction — the "
-    "1 to 3 hypotheses that, if addressed, would most unblock progress right now — and set "
-    "is_primary_contradiction=true on ONLY those (at most 3, never more). Set contradiction_rank "
-    "to 1, 2, 3... in priority order (1 = most urgent) on the ones you marked true, and set "
-    "contradiction_rank=null on every hypothesis you did NOT mark as a primary contradiction. All "
-    "remaining hypotheses are secondary and must have is_primary_contradiction=false. This "
-    "judgment is itself a hypothesis about priority, not a fact — it does not change the "
-    "hypothesis_not_fact boundary."
-)
+def _build_system_prompt() -> str:
+    """在基础安全提示后,追加知识库 grounding 区块(若有内容)。
+
+    grounding 来自构建时固化的 `assessment_construct_grounding.json`
+    (`domain/knowledge_grounding.py`),不是运行时查询——本函数每次调用重新拼一次
+    字符串是廉价操作,不是重新加载知识库。
+    """
+    base = (
+        "You interpret family assessment evidence into a structured support-direction draft. "
+        "This is NOT a diagnosis, NOT a score, and NOT a ranking — you may only propose hypotheses "
+        "(explicitly not-fact) and action candidates (explicitly not-decisions). "
+        "construct_ref values you use MUST come only from this reviewed whitelist: "
+        f"{sorted(_LEGAL_CONSTRUCT_REFS)}. Do not invent new construct_ref values under any circumstance — "
+        "a prior incident involved a model fabricating unreviewed construct names, which is exactly what "
+        "this whitelist exists to prevent. Every construct_signal must have boundary='signal_not_diagnosis'. "
+        "Every hypothesis must have boundary='hypothesis_not_fact'. Every action_candidate must have "
+        "boundary='recommendation_not_decision'. Never include any field resembling a total score, a "
+        "ranking, or a diagnosis label. "
+        "Among the hypotheses you output, judge which ones represent the primary contradiction — the "
+        "1 to 3 hypotheses that, if addressed, would most unblock progress right now — and set "
+        "is_primary_contradiction=true on ONLY those (at most 3, never more). Set contradiction_rank "
+        "to 1, 2, 3... in priority order (1 = most urgent) on the ones you marked true, and set "
+        "contradiction_rank=null on every hypothesis you did NOT mark as a primary contradiction. All "
+        "remaining hypotheses are secondary and must have is_primary_contradiction=false. This "
+        "judgment is itself a hypothesis about priority, not a fact — it does not change the "
+        "hypothesis_not_fact boundary."
+    )
+    grounding = grounding_prompt_block(_LEGAL_CONSTRUCT_REFS)
+    if not grounding:
+        return base
+    return (
+        base
+        + "\n\nVERIFIED THEORETICAL GROUNDING (from the family-ai evidence library, evidence-graded, "
+        "NOT a directive — use it to inform hypotheses, do not treat it as decisive proof for this "
+        "specific family):\n"
+        + grounding
+        + "\n\nIf a construct_signal's reasoning draws on one of the cards above, set its optional "
+        "grounding_source field to that card's id (e.g. \"TH-001\"). Only use an id that appears above — "
+        "do not invent one. Omit grounding_source entirely if none of the cards above informed that signal."
+    )
+
+
+_SYSTEM_PROMPT = _build_system_prompt()
+
+
+def _sanitize_grounding_sources(construct_signals: list[dict]) -> list[dict]:
+    """模型自报的 grounding_source 不可信 —— 逐条核对它是否真的在
+    `assessment_construct_grounding.json` 里该 construct_ref 名下存在;
+    不在名单里的一律清空(fail-safe:宁可没有溯源,不可让一个编造的卡片 id
+    看起来像是有据可查)。这一步不依赖 assert_interpretation_boundary(那是
+    黑名单/边界标签/construct_ref 白名单的通用校验,不知道 grounding_source
+    这个字段的语义),独立做,保持职责单一。
+    """
+    sanitized: list[dict] = []
+    for signal in construct_signals:
+        signal = dict(signal)
+        source = signal.get("grounding_source")
+        if source and source not in grounded_card_ids(signal.get("construct_ref", "")):
+            signal.pop("grounding_source", None)
+        sanitized.append(signal)
+    return sanitized
 
 
 class ClaudeInterpretationAdapter(AssessmentInterpretationPort):
@@ -227,7 +274,7 @@ class ClaudeInterpretationAdapter(AssessmentInterpretationPort):
             "assessment_ref": evidence.assessment_session_id,
             "boundary_labels": ["hypothesis_not_fact", "recommendation_not_decision"],
             "need_summary": model_output["need_summary"],
-            "construct_signals": model_output["construct_signals"],
+            "construct_signals": _sanitize_grounding_sources(model_output["construct_signals"]),
             "hypotheses": model_output["hypotheses"],
             "action_candidates": model_output["action_candidates"],
             "human_gate": {"required": False, "reason_refs": []},
