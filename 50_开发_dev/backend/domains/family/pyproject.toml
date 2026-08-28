@@ -1,0 +1,10 @@
+[project]
+name = "family-family-domain"
+version = "0.1.0"
+description = "Family domain (createFamily/addParent/addChild/createRelationship/assignLifeStage) — ported from apps/api/src/modules/family/family.service.ts + family-permission.ts"
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.9", "sqlalchemy>=2.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
