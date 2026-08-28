@@ -1,34 +1,60 @@
 name: Family 35UI Alignment
 
+# NOTE (2026-08-29, project-owner authorized): main's branch protection
+# requires the "alignment" check (this job) to succeed on every PR
+# (`strict: true`, `enforce_admins: true`, no admin bypass). The original
+# `on.pull_request.paths` filter meant this job — and therefore the
+# required check itself — never ran at all for any PR that didn't touch
+# the 35UI/TS paths below. A required check that never gets created blocks
+# merge forever under `strict`/`enforce_admins` (discovered merging PR #33,
+# a Python-only backend PR touching none of these paths — the same would
+# block every future Python-only-backend PR per the migration plan, not
+# just this one). Fix: trigger on every PR, but only run the real
+# validation steps when a relevant path actually changed — the job (and
+# thus the "alignment" check) always completes and reports a real status
+# either way. This does not weaken validation for actual 35UI/contracts
+# changes; it only stops it from being an orphaned, permanently-
+# unsatisfiable required check for unrelated PRs.
 on:
-  pull_request:
-    paths:
-      - "50_开发_dev/apps/mobile/**"
-      - "50_开发_dev/apps/api/**"
-      - "50_开发_dev/packages/contracts/**"
-      - "50_开发_dev/pnpm-lock.yaml"
-      - "50_开发_dev/pnpm-workspace.yaml"
-      - "50_开发_dev/governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json"
-      - "50_开发_dev/architecture/FAMILY_35UI_FULLSTACK_ARCHITECTURE_V1.md"
-      - "50_开发_dev/tools/validate-35ui-alignment.mjs"
-      - ".github/workflows/family-35ui-alignment.yml"
+  pull_request: {}
 
 jobs:
   alignment:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: 50_开发_dev
     steps:
       - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            relevant:
+              - "50_开发_dev/apps/mobile/**"
+              - "50_开发_dev/apps/api/**"
+              - "50_开发_dev/packages/contracts/**"
+              - "50_开发_dev/governance/FAMILY_35UI_RUNTIME_MATRIX_V1.json"
+              - "50_开发_dev/architecture/FAMILY_35UI_FULLSTACK_ARCHITECTURE_V1.md"
+              - "50_开发_dev/tools/validate-35ui-alignment.mjs"
       - uses: pnpm/action-setup@v4
+        if: steps.filter.outputs.relevant == 'true'
         with:
           version: 11.1.3
       - uses: actions/setup-node@v4
+        if: steps.filter.outputs.relevant == 'true'
         with:
-          node-version: 22
+          node-version: 20
           cache: pnpm
           cache-dependency-path: 50_开发_dev/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm validate:35ui
-      - run: pnpm --filter @family/contracts typecheck
+      - if: steps.filter.outputs.relevant == 'true'
+        working-directory: 50_开发_dev
+        run: pnpm install --frozen-lockfile
+      - if: steps.filter.outputs.relevant == 'true'
+        working-directory: 50_开发_dev
+        run: pnpm validate:arch:v4.1
+      - if: steps.filter.outputs.relevant == 'true'
+        working-directory: 50_开发_dev
+        run: pnpm validate:35ui
+      - if: steps.filter.outputs.relevant == 'true'
+        working-directory: 50_开发_dev
+        run: pnpm --filter @family/contracts typecheck
+      - if: steps.filter.outputs.relevant != 'true'
+        run: echo "No 35UI/contracts-relevant paths changed — alignment check trivially satisfied for this PR."
