@@ -1,0 +1,143 @@
+schema_version: AI_USE_CASE_CODE_MAPPING_V1
+architecture_id: FAMILY_AI_PLATFORM_V4_1
+purpose: >
+  Bridges two independently-evolved vocabularies that currently have no explicit
+  mapping: the business-level AI Use Case Registry (governance/FAMILY_AI_USE_CASE_REGISTRY_V1.yaml,
+  7 entries) and the page-level Family LLM Gateway use cases (apps/api/src/modules/orchestration/llm-gateway/family-llm-page-policy.ts,
+  8 entries covering UI-01..UI-34). Per architecture/GENERATIVE_AI_SYSTEM_ASSESSMENT_2026-08-28.md
+  section 4, this mapping did not exist before this file — audit coverage could not be confirmed.
+status: ASSESSMENT_DERIVED_MAPPING
+notes:
+  - This file records CURRENT REALITY (what code actually calls, what registry status actually is).
+    It does not itself authorize anything. Runtime authorization remains governed solely by
+    governance/AUTHORIZATION_REGISTRY.yaml and governance/FAMILY_AI_USE_CASE_REGISTRY_V1.yaml.
+  - "registry_use_case_id values with no code_paths entry mean no implementation found in this
+    codebase as of 2026-08-28 (see gaps section)."
+  - page_use_case_id values are FamilyLlmUseCase literals from family-llm.contract.ts, consumed by
+    family-llm-page-policy.ts across UI-01..UI-34.
+
+mappings:
+  - registry_use_case_id: ASSESSMENT_INTERPRETATION
+    domain: GROWTH_INTELLIGENCE
+    runtime_authorization: NOT_YET_AUTHORIZED
+    page_use_case_ids: []
+    code_paths:
+      - path: packages/family-model/src/index.ts
+        symbols: [generateUi02AssessmentGatewayDraft, generateUi02AssessmentSubsystemOutput, assessUi02ResponseSet]
+      - path: apps/api/src/modules/family/growth-hypothesis.service.ts
+        symbols: [] # consumes family-model output, writes family_growth_hypotheses with fact_boundary
+    live_provider_verification: NONE
+    note: >
+      Implemented but never verified against a real provider end-to-end (see assessment doc section 2, row 1).
+      Not reachable via Family LLM Gateway page policy — it is a standalone call path, not one of the 8
+      page_use_case_ids below.
+
+  - registry_use_case_id: REPORT_EXPLANATION
+    domain: GROWTH_INTELLIGENCE
+    runtime_authorization: NOT_YET_AUTHORIZED
+    page_use_case_ids:
+      - family.dev.explain_report
+    code_paths:
+      - path: apps/api/src/modules/orchestration/llm-gateway/family-llm-gateway.service.ts
+        symbols: [] # explain_report branch
+    live_provider_verification: NONE
+    served_pages: [UI-04, UI-05, UI-10]
+    note: family-llm-page-policy.ts maps UI-04/UI-05 to explain_report at READ_ONLY_ADMITTED_CANDIDATES; UI-10 also uses explain_task (see below), listed once per distinct use_case only.
+
+  - registry_use_case_id: AI_DIAGNOSIS
+    domain: GROWTH_INTELLIGENCE
+    runtime_authorization: NOT_YET_AUTHORIZED
+    page_use_case_ids: []
+    code_paths:
+      - path: apps/api/src/modules/principal/principal.service.ts
+        symbols: [] # partial: risk-flagging output resembles diagnosis-shaped hypothesis, no dedicated skill module
+    live_provider_verification: PARTIAL # Principal has *.livecheck.ts pattern (default-skip), not AI_DIAGNOSIS-specific
+    note: >
+      Assessment doc section 4 marks this "有雏形，无独立skill" — Principal's coaching output partially
+      overlaps in shape but is not a dedicated AI_DIAGNOSIS skill implementation.
+
+  - registry_use_case_id: GROWTH_PLAN_DRAFT
+    domain: GROWTH_JOURNEY
+    runtime_authorization: NOT_YET_AUTHORIZED
+    page_use_case_ids: []
+    code_paths: []
+    live_provider_verification: NONE
+    note: No implementation found in this codebase as of 2026-08-28.
+
+  - registry_use_case_id: PRIVATE_NOTE_TAGGING
+    domain: CONTENT_COMMUNITY
+    runtime_authorization: MIGRATION_ONLY
+    page_use_case_ids: []
+    code_paths:
+      - path: apps/mobile/server/private-note-tags.ts
+        symbols: []
+      - path: apps/mobile/server/_core/llm.ts
+        symbols: []
+    live_provider_verification: LEGACY_UNVERIFIED_BY_THIS_ASSESSMENT
+    note: >
+      Legacy path, does NOT go through @family/ai-gateway. Registry marks live_external_authorization:
+      NO_NEW_DIRECT_CALLS. Known tech debt, not on the main runtime authorization line.
+
+  - registry_use_case_id: RESOURCE_RECOMMENDATION
+    domain: RESOURCE_NETWORK
+    runtime_authorization: NOT_YET_AUTHORIZED
+    page_use_case_ids: []
+    code_paths: []
+    live_provider_verification: NONE
+    note: No implementation found in this codebase as of 2026-08-28.
+
+  - registry_use_case_id: EXPERT_ROUTING
+    domain: SERVICE_OS
+    runtime_authorization: NOT_YET_AUTHORIZED
+    page_use_case_ids: []
+    code_paths: []
+    live_provider_verification: NONE
+    note: No implementation found in this codebase as of 2026-08-28.
+
+  - registry_use_case_id: DAILY_COACH
+    domain: GROWTH_JOURNEY
+    runtime_authorization: NOT_YET_AUTHORIZED
+    page_use_case_ids: []
+    code_paths:
+      - path: apps/api/src/modules/principal/principal.service.ts
+        symbols: [] # "one_small_action" output is adjacent but not a strict match
+    live_provider_verification: PARTIAL
+    note: Assessment doc section 4 — "与Principal'one_small_action'接近但非严格对应"，not a dedicated DAILY_COACH skill.
+
+# Family LLM Gateway page_use_case_ids that have NO corresponding registry_use_case_id entry.
+# These 6 (plus text_equivalent/safety_stop, which are structural/non-substantive use cases) are the
+# gap the assessment doc (section 4) flags: "registry是业务语义分类，代码是页面语义分类，两套体系无显式映射表"。
+unmapped_page_use_cases:
+  - page_use_case_id: family.dev.explain_need
+    served_pages: [UI-03, UI-08]
+    reason: No registry entry represents "explain a need to the family" at this granularity.
+  - page_use_case_id: family.dev.explain_task
+    served_pages: [UI-06, UI-09, UI-10]
+    reason: Closest registry concept is DAILY_COACH, but DAILY_COACH is itself NOT_YET_AUTHORIZED and not implemented as a distinct skill from this page use case.
+  - page_use_case_id: family.dev.explain_mock_commerce
+    served_pages: [UI-13, UI-14, UI-15, UI-16, UI-17]
+    reason: No registry entry covers COMMERCE_ENTITLEMENT-domain explanation use cases.
+  - page_use_case_id: family.dev.explain_mock_service
+    served_pages: [UI-19, UI-20, UI-21, UI-23, UI-30, UI-31, UI-33]
+    reason: Closest registry concept is EXPERT_ROUTING, but EXPERT_ROUTING is NOT_YET_AUTHORIZED and not implemented; this page use case is a broader SERVICE_OS explanation surface, not routing itself.
+  - page_use_case_id: family.dev.explain_mock_community
+    served_pages: [UI-25, UI-26, UI-28]
+    reason: No registry entry covers CONTENT_COMMUNITY-domain explanation use cases (PRIVATE_NOTE_TAGGING is a distinct, narrower use case).
+  - page_use_case_id: family.dev.text_equivalent
+    served_pages: [UI-01, UI-02, UI-07, UI-11, UI-12, UI-18, UI-22, UI-24, UI-27, UI-29, UI-32, UI-34]
+    reason: Structural fallback use case (accessibility text-equivalent rendering), not a business AI capability — intentionally out of registry scope, listed here only for completeness.
+  - page_use_case_id: family.dev.safety_stop
+    served_pages: []
+    reason: Structural safety-circuit-breaker use case, not a business AI capability — intentionally out of registry scope, listed here only for completeness.
+
+# Summary counts, derived from the mappings/unmapped sections above — recompute if either section changes.
+summary:
+  registry_use_cases_total: 7
+  registry_use_cases_with_code: 5 # ASSESSMENT_INTERPRETATION, REPORT_EXPLANATION, AI_DIAGNOSIS(partial), DAILY_COACH(partial), PRIVATE_NOTE_TAGGING(legacy)
+  registry_use_cases_fully_implemented: 2 # ASSESSMENT_INTERPRETATION, REPORT_EXPLANATION
+  registry_use_cases_partial: 2 # AI_DIAGNOSIS, DAILY_COACH (Principal-adjacent, not dedicated skill)
+  registry_use_cases_legacy: 1 # PRIVATE_NOTE_TAGGING
+  registry_use_cases_missing: 3 # GROWTH_PLAN_DRAFT, RESOURCE_RECOMMENDATION, EXPERT_ROUTING
+  page_use_cases_total: 8
+  page_use_cases_unmapped_to_registry: 6 # excludes text_equivalent/safety_stop as structural, counts explain_need/explain_task/explain_mock_commerce/explain_mock_service/explain_mock_community + partial-only DAILY_COACH/EXPERT_ROUTING overlap
+  live_provider_verification_none_count: 5
