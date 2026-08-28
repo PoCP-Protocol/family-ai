@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from ..domain.entities import Family, FamilyRelationship, LifeStageAssignment, Person
 from ..domain.errors import FamilyForbiddenError, FamilyNotFoundError
@@ -143,7 +143,7 @@ class FakeFamilyRepository:
             person_a_id=person_a_id,
             person_b_id=person_b_id,
             relationship_type=relationship_type,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
         self.relationships.append(relationship)
         return relationship

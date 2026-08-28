@@ -34,6 +34,19 @@ def assert_relationship_invariant(
             raise FamilyValidationError("relationship_direction_invalid")
 
 
+def assert_child_belongs_to_family(family_id: str, child: Person) -> None:
+    """Port of `assertChildBelongsToFamily` -- the 404 (person lookup
+    missing) is handled by the caller before this runs; this only enforces
+    the two remaining in-memory invariants once a `Person` row is found:
+    family_id mismatch -> 400 `child_must_belong_to_family`;
+    person_type != CHILD -> 400 `life_stage_subject_must_be_child`.
+    """
+    if child.family_id != family_id:
+        raise FamilyValidationError("child_must_belong_to_family")
+    if not child.is_child():
+        raise FamilyValidationError("life_stage_subject_must_be_child")
+
+
 def is_symmetric_relationship(relationship_type: RelationshipType) -> bool:
     """Port of `isSymmetricRelationship`."""
     return relationship_type in SYMMETRIC_RELATIONSHIP_TYPES

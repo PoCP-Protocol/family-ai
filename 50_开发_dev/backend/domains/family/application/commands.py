@@ -108,6 +108,8 @@ class FamilyCommandHandler:
 
     async def create_family(self, command: CreateFamilyCommand) -> dict:
         command.meta.require_idempotency_key()
+        if not (command.display_name or "").strip():
+            raise FamilyValidationError("valid_display_name_required")
         request_hash = _hash_request(
             {
                 "display_name": command.display_name,
