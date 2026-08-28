@@ -183,3 +183,29 @@ def assert_reflection_safety_route(reflection: str | None) -> None:
     disposition = assess_reflection_safety(reflection)
     if disposition.disposition != "NORMAL":
         raise InterventionForbiddenError("reflection_requires_safety_support")
+
+
+def assert_normal_safety_route_placement_note() -> None:
+    """Placement marker, not a real check — intentionally a no-op.
+
+    Per `architecture/notes/batch2-cross-cutting-integration-check-v1.md`,
+    the real `assertNormalSafetyRoute` judgment (research doc section 7.2:
+    onboarding severity=LOW AND disposition=NORMAL, AND every perspective's
+    disposition=NORMAL) currently lives only in the GrowthPriority domain's
+    `domain/policies.py::assert_normal_safety_route` as a pure function.
+    This domain's own `assert_normal_safety_route` (still on
+    `InterventionRepositoryPort`, implemented in `infrastructure/`) is
+    currently a SIMPLIFIED boolean check ("is this (family_id,
+    onboarding_id) in a blocked set"), not an equivalent port of the full
+    rule -- it does not distinguish severity from disposition, and does not
+    check every perspective individually.
+
+    Do NOT read this module having a `policies.py` file as evidence the
+    full rule has been ported here — it has not. This marker exists so a
+    future pass that ports the complete rule (alongside filling in this
+    domain's `sqlalchemy_repository.py` `NotImplementedError` for the same
+    method) has an obvious place to land it, matching GrowthPriority's
+    domain-layer-pure-function placement rather than leaving it in
+    infrastructure. Until then, this domain's existing simplified check is
+    UNCHANGED -- this is a placement note, not a behavior change.
+    """
