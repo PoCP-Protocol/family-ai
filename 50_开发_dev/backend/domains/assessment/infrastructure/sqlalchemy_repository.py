@@ -25,9 +25,27 @@ from ..domain.errors import AssessmentConflictError, AssessmentForbiddenError, A
 from ..domain.value_objects import AssessmentSessionStatus, AssessmentTool, AssessmentToolBoundary, AssessmentToolItem
 
 
+def _decode_jsonb(raw):
+    """SQLAlchemy `text()` queries with asyncpg return jsonb columns as raw
+    JSON text (not pre-decoded, unlike some ORM-mapped column types) — but
+    a jsonb scalar string value like `"COMMUNICATION"` round-trips through
+    Postgres as the bare text `COMMUNICATION` (asyncpg strips the JSON
+    string quoting for jsonb scalars in some codec paths), which is not
+    valid JSON on its own. Try strict JSON decode first (covers objects/
+    arrays/numbers/booleans); fall back to the raw string for bare jsonb
+    string scalars. Used for every jsonb column this repository reads.
+    """
+    if not isinstance(raw, str):
+        return raw
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return raw
+
+
 def _map_tool_row(row) -> AssessmentTool:
-    item_schema = row.item_schema if isinstance(row.item_schema, dict) else json.loads(row.item_schema)
-    boundary = row.boundary if isinstance(row.boundary, dict) else json.loads(row.boundary)
+    item_schema = _decode_jsonb(row.item_schema)
+    boundary = _decode_jsonb(row.boundary)
     return AssessmentTool(
         tool_ref=row.tool_ref,
         version_no=row.version_no,
@@ -40,7 +58,7 @@ def _map_tool_row(row) -> AssessmentTool:
 
 
 def _map_response_row(row) -> AssessmentResponse:
-    value = row.response_value if not isinstance(row.response_value, str) else json.loads(row.response_value)
+    value = _decode_jsonb(row.response_value)
     return AssessmentResponse(
         assessment_response_id=str(row.assessment_response_id),
         item_ref=row.item_ref,
@@ -339,7 +357,7 @@ class SqlAlchemyAssessmentRepository(AssessmentRepositoryPort):
             return None
         if row.request_hash != request_hash:
             raise AssessmentConflictError("idempotency_key_payload_mismatch")
-        body = row.response_body if isinstance(row.response_body, dict) else json.loads(row.response_body)
+        body = _decode_jsonb(row.response_body)
         return body
 
     async def persist_operation(self, tenant_id, family_id, session_id, actor_id, action, request_hash, receipt, correlation_id, idempotency_key) -> None:
@@ -441,7 +459,7 @@ class SqlAlchemyAssessmentRepository(AssessmentRepositoryPort):
         row = result.first()
         if row is None:
             return None
-        response_set = row.response_set if isinstance(row.response_set, list) else json.loads(row.response_set)
+        response_set = _decode_jsonb(row.response_set)
         return GrowthHypothesisEvidence(
             assessment_session_id=str(row.assessment_session_id),
             subject_person_id=str(row.subject_person_id),
@@ -512,7 +530,7 @@ class SqlAlchemyAssessmentRepository(AssessmentRepositoryPort):
         row = result.first()
         if row is None:
             return None
-        body = row.response_body if isinstance(row.response_body, dict) else json.loads(row.response_body)
+        body = _decode_jsonb(row.response_body)
         return {"request_hash": row.request_hash, "response_body": body}
 
     async def persist_hypothesis_decision(
