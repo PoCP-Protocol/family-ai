@@ -40,6 +40,7 @@ members = [
   "packages/security",
   "packages/testing",
   "domains/assessment",
+  "domains/outcome",
   "intelligence",
 ]
 
@@ -55,3 +56,9 @@ warn_unused_ignores = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests", "domains"]
+# Each domain's `tests/` package uses the same relative name ("tests") — the
+# default "prepend" import mode registers the first one it collects as the
+# top-level `tests` module and then errors on every subsequent domain's
+# `tests` package as a conflicting import. `importlib` mode imports each
+# test module by its actual file path instead, so domains never collide.
+addopts = "--import-mode=importlib"
