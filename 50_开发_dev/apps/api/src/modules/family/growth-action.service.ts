@@ -1,5 +1,6 @@
 import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { assertFamilyManagePermission as sharedAssertFamilyManagePermission } from './family-permission';
+import { assertRequiredGrowthConsents } from './consent-guard';
 import { createHash, randomUUID } from 'node:crypto';
 import type pg from 'pg';
 import type { AuditMeta, CompleteGrowthActionRequest, CompleteGrowthActionResponse, GrowthActionDto } from '@family/contracts';
@@ -258,24 +259,6 @@ async function ensureFamilyExists(client: pg.PoolClient, familyId: string): Prom
 // 桥接:委托共享 family-permission(创建者 或 ACTIVE OWNER/GUARDIAN 成员)。
 async function assertFamilyManagePermission(client: pg.PoolClient, familyId: string, actorId: string): Promise<void> {
   return sharedAssertFamilyManagePermission(client, familyId, actorId);
-}
-
-async function assertRequiredGrowthConsents(client: pg.PoolClient, familyId: string, childId: string): Promise<void> {
-  const result = await client.query<{ purpose: string }>(
-    `select purpose
-     from consents
-     where family_id = $1
-       and subject_person_id = $2
-       and purpose = any($3::consent_purpose[])
-       and status = 'GRANTED'
-     for share`,
-    [familyId, childId, ['SERVICE', 'ASSESSMENT', 'GROWTH_TRACKING']],
-  );
-  const granted = new Set(result.rows.map((row) => row.purpose));
-  const missing = ['SERVICE', 'ASSESSMENT', 'GROWTH_TRACKING'].filter((purpose) => !granted.has(purpose));
-  if (missing.length > 0) {
-    throw new ForbiddenException(`missing_required_consent:${missing.join(',')}`);
-  }
 }
 
 async function getCompletableGrowthAction(client: pg.PoolClient, familyId: string, actionId: string): Promise<{ action_id: string; subject_person_id: string | null; onboarding_id: string; priority_id: string; status: string }> {

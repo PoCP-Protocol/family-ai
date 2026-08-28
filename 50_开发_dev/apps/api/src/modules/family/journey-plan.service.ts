@@ -1,6 +1,7 @@
 import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import type pg from 'pg';
+import { assertRequiredGrowthConsents } from './consent-guard';
 import type {
   AuditMeta,
   ConfirmJourneyPlanRequest,
@@ -279,17 +280,6 @@ async function getPriorityDimension(client: pg.PoolClient, familyId: string, onb
   );
   if (!result.rows[0]) throw new NotFoundException('active_growth_priority_not_found');
   return result.rows[0];
-}
-
-async function assertRequiredGrowthConsents(client: pg.PoolClient, familyId: string, childId: string): Promise<void> {
-  const result = await client.query<{ purpose: string }>(
-    `select purpose from consents where family_id = $1 and subject_person_id = $2
-       and purpose = any($3::consent_purpose[]) and status = 'GRANTED' for share`,
-    [familyId, childId, ['SERVICE', 'ASSESSMENT', 'GROWTH_TRACKING']],
-  );
-  const granted = new Set(result.rows.map((row) => row.purpose));
-  const missing = ['SERVICE', 'ASSESSMENT', 'GROWTH_TRACKING'].filter((purpose) => !granted.has(purpose));
-  if (missing.length) throw new ForbiddenException(`missing_required_consent:${missing.join(',')}`);
 }
 
 async function getCurrentPlan(client: pg.PoolClient, familyId: string): Promise<JourneyPlanRow | null> {

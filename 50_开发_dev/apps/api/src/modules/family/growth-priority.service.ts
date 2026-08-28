@@ -1,5 +1,6 @@
 import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { assertFamilyManagePermission as sharedAssertFamilyManagePermission } from './family-permission';
+import { assertRequiredGrowthConsents } from './consent-guard';
 import { createHash, randomUUID } from 'node:crypto';
 import type pg from 'pg';
 import type {
@@ -219,24 +220,6 @@ async function assertActiveOnboarding(client: pg.PoolClient, familyId: string, o
   );
   if (result.rowCount !== 1) {
     throw new NotFoundException('active_growth_onboarding_not_found');
-  }
-}
-
-async function assertRequiredGrowthConsents(client: pg.PoolClient, familyId: string, childId: string): Promise<void> {
-  const result = await client.query<{ purpose: string }>(
-    `select purpose
-     from consents
-     where family_id = $1
-       and subject_person_id = $2
-       and purpose = any($3::consent_purpose[])
-       and status = 'GRANTED'
-     for share`,
-    [familyId, childId, ['SERVICE', 'ASSESSMENT', 'GROWTH_TRACKING']],
-  );
-  const granted = new Set(result.rows.map((row) => row.purpose));
-  const missing = ['SERVICE', 'ASSESSMENT', 'GROWTH_TRACKING'].filter((purpose) => !granted.has(purpose));
-  if (missing.length > 0) {
-    throw new ForbiddenException(`missing_required_consent:${missing.join(',')}`);
   }
 }
 

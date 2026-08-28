@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { assertFamilyManagePermission as sharedAssertFamilyManagePermission } from './family-permission';
+import { assertRequiredGrowthConsents } from './consent-guard';
 import { createHash, randomUUID } from 'node:crypto';
 import type { AddChildRequest, AddChildResponse, AddParentRequest, AddParentResponse, AssignLifeStageRequest, AssignLifeStageResponse, AuditMeta, BuildGrowthProfileDraftsRequest, BuildGrowthProfileDraftsResponse, ConfirmGrowthProfileRequest, ConfirmGrowthProfileResponse, ConsentDto, ConsentPurpose, ConsentStatus, CreateFamilyRelationshipRequest, CreateFamilyRelationshipResponse, CreateFamilyRequest, CreateFamilyResponse, EvidenceRecordDto, EvidenceSnapshotDto, EvidenceSynthesisDto, FamilyAggregateResponse, FamilyDto, FamilyRelationshipDto, GrantConsentRequest, GrantConsentResponse, GrowthInsightResponse, GrowthOnboardingDto, GrowthProfileDraftDto, GrowthProfileDto, LifeStageAssignmentDto, LifeStageCode, M2GrowthDimensionId, PersonDto, PerspectiveDto, PerspectiveSummaryResponse, RecordPerspectiveRequest, RecordPerspectiveResponse, RelationshipType, SafetyDispositionDto, StartGrowthOnboardingRequest, StartGrowthOnboardingResponse } from '@family/contracts';
 import type pg from 'pg';
@@ -966,24 +967,6 @@ async function assertOnboardingGuardianAuthorized(client: pg.PoolClient, request
 
   if (result.rowCount !== 1) {
     throw new ForbiddenException('guardian_not_authorized');
-  }
-}
-
-async function assertRequiredGrowthConsents(client: pg.PoolClient, familyId: string, childId: string): Promise<void> {
-  const result = await client.query<{ purpose: ConsentPurpose }>(
-    `select purpose
-     from consents
-     where family_id = $1
-       and subject_person_id = $2
-       and purpose = any($3::consent_purpose[])
-       and status = 'GRANTED'
-     for share`,
-    [familyId, childId, ['SERVICE', 'ASSESSMENT', 'GROWTH_TRACKING']],
-  );
-  const granted = new Set(result.rows.map((row) => row.purpose));
-  const missing = ['SERVICE', 'ASSESSMENT', 'GROWTH_TRACKING'].filter((purpose) => !granted.has(purpose as ConsentPurpose));
-  if (missing.length > 0) {
-    throw new ForbiddenException(`missing_required_consent:${missing.join(',')}`);
   }
 }
 
