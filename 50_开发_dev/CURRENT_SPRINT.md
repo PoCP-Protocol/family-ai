@@ -12,12 +12,13 @@ GATE               = G1-A ARCHITECTURE_AND_CONTRACT_CONVERGENCE
 BASE_SHA           = f2eeacc69fff78b17f45b78a7ab631543ee8cf2a
 WORK_BRANCH        = architecture/family-ai-v4-1-convergence-001
 TECH_ARCHITECTURE  = FAMILY_AI_PLATFORM_V4_1 TARGET_FROZEN
-35_UI_BASELINE     = KEEP
+CONSUMER_UI_BASELINE     = KEEP
+UI35_DELETED       = YES
 AI_DIAGNOSIS       = KEEP
 G1_A_AUTHORIZED    = YES
-G1_B_PLUS          = NOT_AUTHORIZED
+G1_B_PLUS          = AUTHORIZED  # 2026-08-26, Project Owner override (not Chief Architect) — see note below
 BUSINESS_RUNTIME   = INTERNAL_LOCAL_AUTHORIZED_FOR_FAMILY_ASSESSMENT_MODEL
-DB_SCHEMA_CHANGE   = NOT_AUTHORIZED
+DB_SCHEMA_CHANGE   = AUTHORIZED  # 2026-08-26, Project Owner override (not Chief Architect) — see note below
 LIVE_EXTERNAL_AI   = INTERNAL_LOCAL_AUTHORIZED_FOR_UI02_FAMILY_MODEL_GATEWAY
 DIRECT_PUSH_MAIN   = NO
 AUTO_MERGE         = NO
@@ -30,10 +31,58 @@ Authorization scope:
 - Authorization source: `governance/AUTHORIZATION_REGISTRY.yaml` capability `G1A_FAMILY_EDUCATION_ASSESSMENT_MODEL_INTERNAL`.
 - Allowed now: package/API-local wiring for UI-02/UI-03 Family Education Assessment Model runtime, through `@family/family-model` and `@family/ai-gateway` only.
 - Live external model call: allowed only in local/internal explicitly configured environments; default `.env.example` remains mock and fail-closed.
-- Still forbidden: DB schema change, direct provider calls, client-side model calls, pilot exposure, production default enablement, and AI direct canonical Family/Growth state mutation.
+- Still forbidden: direct provider calls, client-side model calls, pilot exposure, production default enablement, and AI direct canonical Family/Growth state mutation.
 
-Program: `governance/FAMILY_35UI_PROGRAM_V1.yaml`
-Architecture: `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md`
+**2026-08-26 Project Owner Override (not a Chief Architect ruling — recorded separately, original G1-A block above left unmodified in substance):**
+The project owner explicitly authorized `G1_B_PLUS` and `DB_SCHEMA_CHANGE` for the pre-existing service-collaboration-allocation feature line (`feat/service-collab-allocation-p0-002` and its history: `9d9de4d`→`e84a919`→`a0ea305`→`8427997`→`6eef592`), plus the 4 branches built on top of it today (`feat/theory-whitelist-registry-001`, `feat/academic-need-classification-g1a-001`, `feat/service-product-registry-001`, `feat/growth-priority-theory-basis-001`). This override was requested verbally in-session by the project owner, not by the Chief Architect who signed the G1-A block above — recorded here for traceability, not silently merged into the original ruling. `governance/AUTHORIZATION_REGISTRY.yaml` has no corresponding entry yet; a formal registry entry should still be added before treating this as durable (this note is the interim record). `AUTO_MERGE` and `DIRECT_PUSH_MAIN` remain `NO` — this override unblocks PR creation and review, not unreviewed merge.
+
+**2026-08-27 Project Owner Override #2 (GOLDEN_GROWTH_LOOP UI-02 real-content closure — confirmed after concrete-plan review):**
+The project owner reviewed a concrete implementation plan (per-file breakdown of the 8 hardcoded `M2GrowthDimensionId` sites across 6 files + 2 DB CHECK constraints, and the family-model package's actual dependency footprint) and explicitly authorized:
+1. Bringing `@family/family-model`'s `FAMILY_EDUCATION_ASSESSMENT_ITEM_BANK` constant data (not the LLM runtime — `FamilyEducationModelRuntime`/`assertInterpretationBoundary` and any live external model call remain out of scope, unaffected by G1-A's existing mock/fail-closed default) into `main`, sourced fresh from `packages/family-model/` on `feat/family-memory-p0-subject-scope-001` as standalone files in a new commit — not a cherry-pick of `c53a040` or `44aa11c`, both of which carry unrelated changes.
+2. Widening `M2GrowthDimensionId` by exactly two values: `C_HOMEWORK_PROCESS`, `C_DEVICE_USE_CONTEXT` (confirmed naming, not the full 16-construct item-bank vocabulary).
+3. A new `family.service.ts` orchestration method that, on UI-02 assessment submission, auto-chains `recordPerspective`(per item) → `buildGrowthProfileDrafts` → `confirmGrowthPriority` → `startIntervention` — i.e. all the way through to real `growth_actions` creation, so UI-09 shows a real today-task after a parent submits the assessment. This is a wider automation than the original plan draft (which stopped at priority-confirm); the project owner explicitly extended it to `startIntervention` in this confirmation round.
+Excluded (unchanged from the original G1-A scope and from `confirmGrowthPriority`'s DB-level evidence rule): `assertRequiredGrowthConsents` is not bypassed; perspectives must still originate from the onboarding they're confirmed against; no live external model call. `AUTO_MERGE`/`DIRECT_PUSH_MAIN` remain `NO`. `governance/AUTHORIZATION_REGISTRY.yaml` needs a corresponding formal entry (capability `G1A_FAMILY_EDUCATION_ASSESSMENT_MODEL_INTERNAL` was never registered on `main` at all — this is being added, not amended) before this is durable; this note is the interim record.
+
+Program: 21-Day Program is carried by UI-14/UI-09/UI-31/UI-34; UI-35 is deleted from the product baseline.
+Architecture: `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md` — **SUPERSEDED as of 2026-08-28, see below.**
+
+---
+
+## 2026-08-28 Project Owner Override #3 — ARCHITECTURE BASELINE REPLACEMENT: Python-only backend (SUPERSEDES V4.1 `TARGET_FROZEN`)
+
+**This is a project-owner architectural override, not a Chief Architect ruling.** It replaces the frozen target of `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md` (business=TypeScript/NestJS, intelligence=Python split) with a new target:
+
+```text
+NEW_TARGET_ARCHITECTURE = PYTHON_ONLY_BACKEND
+FRONTEND                = TypeScript (React Native app / React-Next.js web / ops web / OpenAPI-generated SDK) — UNCHANGED
+BACKEND                 = Python (API, identity/tenancy, all business domains, AI runtime, workflow, data access, migrations)
+MIGRATION_MODE          = ONE_WAY_DOMAIN_TAKEOVER  # per domain: NEST_ACTIVE → PYTHON_READY → CUTOVER → PYTHON_ACTIVE → NEST_REMOVED
+DUAL_WRITE              = FORBIDDEN
+DUAL_PRIMARY            = FORBIDDEN
+V4_1_STATUS             = SUPERSEDED_NOT_DELETED  # kept as historical record of the prior frozen target
+FIRST_TASK              = FAMILY-AI-PYTHON-ONLY-VERTICAL-P0-001 (assessment domain full vertical migration)
+```
+
+**Decision recorded (project owner, in-session, 2026-08-28):**
+1. New frozen architecture baseline is Python-only backend + TypeScript frontend, per the plan authored this session (`50_开发_dev/architecture/FAMILY_AI_PYTHON_ONLY_MIGRATION_PLAN_V1.md` — committed as part of this override's paper trail).
+2. Migration is one-way domain takeover, not a big-bang rewrite — one domain has exactly one active runtime owner at any time; NestJS/Python dual-write and dual-primary are explicitly forbidden for any domain during transition.
+3. First development task authorized: `FAMILY-AI-PYTHON-ONLY-VERTICAL-P0-001` — build the Python workspace (`backend/` under `50_开发_dev/`) and migrate the Assessment domain (UI-02/UI-03, AssessmentSession/Response/Evidence/Interpretation, GrowthHypothesis, GrowthIntent bridging) as the first full vertical slice, **including** deregistering/removing the NestJS assessment Controller once the Python path is verified end-to-end. This is a wider authorization than a workspace-skeleton-only start — deregistration/removal of the NestJS assessment module is explicitly in scope for this first task, not deferred to a later confirmation round.
+4. Three PRs opened earlier today under the now-superseded V4.1 target (`#19` communication-conflict closed loop, `#10` `@family/family-model` package, `#21` AI use case ↔ code mapping) are **paused** — no further development or merge review continues on them while this migration is in flight. They remain open (not closed) as a record of validated NestJS-era work; whether their domain logic is ported into the Python migration or left to lapse is a decision for when their respective domains are reached in the migration order below, not now.
+
+**Migration order (per the plan; first batch only is currently authorized to start):**
+```text
+Batch 1 (AUTHORIZED, IN_PROGRESS) = Platform foundation + Assessment domain (UI-02/UI-03)
+Batch 2 (NOT YET AUTHORIZED)      = Family/Relationship/Consent/GrowthIntent/GrowthPlan/Intervention/Action/Outcome
+Batch 3 (NOT YET AUTHORIZED)      = Principal/Conversation/Agent Runtime/Human Handoff
+Batch 4 (NOT YET AUTHORIZED)      = 21-Day Program
+Batch 5 (NOT YET AUTHORIZED)      = Resource/Service/Expert/Organization
+Batch 6 (NOT YET AUTHORIZED)      = Content/Community/Commerce
+Batch 7 (NOT YET AUTHORIZED)      = Design/Product Blueprint platform
+Batch 8 (NOT YET AUTHORIZED)      = Full NestJS deletion + production hardening
+```
+Only Batch 1 is authorized to begin. Each subsequent batch requires its own explicit project-owner confirmation before starting, following the same pattern as this override (concrete plan review, not verbal blanket delegation).
+
+**Unchanged from prior governance (still binding):** `AUTO_MERGE=NO`, `DIRECT_PUSH_MAIN=NO`, `AGENT_SELF_AUTH=NO`, `EXACT_HEAD_REVIEW=REQUIRED`. Consent/safety/human-confirmation/fact-boundary rules carried over from the NestJS implementation must be preserved in the Python port, not weakened in translation. `governance/AUTHORIZATION_REGISTRY.yaml` needs a corresponding formal entry (new capability id, e.g. `PYTHON_ONLY_ARCHITECTURE_MIGRATION_BATCH_1`) before this override is durable; this note is the interim record.
 
 All older sprint/M2/M3/G0 sections below are historical context, not current execution truth.
 
