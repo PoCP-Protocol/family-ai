@@ -103,6 +103,17 @@ async def _seed_family(conn) -> tuple[str, str, str, str]:
         ),
         {"family_id": family_id, "subject_id": child_id, "guardian_id": guardian_id},
     )
+    # `assertFamilyManagePermission` (ported in permission_policy.py /
+    # sqlalchemy_repository.py) requires an ACTIVE OWNER_GUARDIAN/GUARDIAN
+    # family_membership row for the actor — without this every command call
+    # in this suite fails closed with `actor_has_family_manage_permission`.
+    await conn.execute(
+        text(
+            "insert into family_memberships(family_id, person_id, role, status, joined_at) "
+            "values (:family_id, :person_id, 'GUARDIAN', 'ACTIVE', now())"
+        ),
+        {"family_id": family_id, "person_id": guardian_id},
+    )
     await conn.execute(
         text(
             "insert into tenant_policy_profiles(tenant_id, policy_version, status, allowed_pages) "
