@@ -22,9 +22,13 @@ from functools import lru_cache
 from pathlib import Path
 
 CONSTRUCT_KNOWLEDGE_MAP: dict[str, list[str]] = {
-    "PARENT_CHILD_COMMUNICATION": ["TH-001", "CN-001", "CN-002"],
-    "HOMEWORK_PROCESS": ["TH-006", "CN-007", "MD-006"],
-    "DEVICE_USE_CONTEXT": [],  # 知识库目前无对应卡片 —— 显式留空,不臆造
+    # 情绪教练(核心) + 自我分化(解释"为什么家长学了话术还是会被冲突带情绪") + 对应方法卡。
+    "PARENT_CHILD_COMMUNICATION": ["TH-001", "CN-001", "CN-002", "MD-001", "TH-005", "CN-006", "MD-005"],
+    # 成长型思维/努力归因(核心) + 家长自身教养效能感(家长支持作业时的信心也是变量) + SDT胜任感/自主性。
+    "HOMEWORK_PROCESS": ["TH-006", "CN-007", "MD-006", "TH-004", "CN-005", "MD-004", "TH-007", "CN-008"],
+    # 2026-08-29 填补:此前一直留空(知识库无对应卡片),现有TH-010家长媒体调节理论
+    # (Nathanson 1999 + Fam et al. 2023 meta分析)。
+    "DEVICE_USE_CONTEXT": ["TH-010", "CN-011", "MD-010"],
 }
 
 _GROUNDING_FILE = Path(__file__).with_name("assessment_construct_grounding.json")

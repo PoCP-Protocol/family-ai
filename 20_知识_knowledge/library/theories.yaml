@@ -465,3 +465,51 @@ theories:
           本文标题即"review and reformulation",整合大量实证但非单一效应研究)。
           2026-08-28复核:原先误标grade 5(E5误用),纠正为E3,与Jones & Prinz/Dweck & Leggett/Deci & Ryan等同类叙述性综述保持同一等级基准。
         tags: [theory-foundation, verified, social-information-processing]
+
+  - id: TH-010
+    name: 家长媒体调节理论(Parental Mediation Theory)
+    summary: 家长应对孩子媒体/设备使用的方式可归为几类调节策略,不同策略与孩子的问题性媒体使用/媒体负面影响程度存在系统性差异——这是本库唯一直接对应"设备使用场景(DEVICE_USE_CONTEXT)"的理论,填补此前一直留空的缺口。
+    core_claim: 家长采用"限制型(restrictive)"单纯禁止/限时,或"共同使用但不讨论(co-use)"，效果弱于"主动型(active mediation)"——在使用媒体/设备的同时与孩子讨论内容、共同评价、解释规则背后的理由；主动型调节与更低的问题性媒体使用/负面影响相关(meta分析支持)。
+    originators: [Nathanson]
+    year: "1999"
+    defines: [CN-011]
+    boundary: >
+      原始框架(Nathanson 1999)针对电视场景提出,后续研究(如智能手机/网络)证明框架本身可迁移但具体行为表现不同
+      (如"共同观看"对智能手机场景意义有限，"主动型"更多体现为讨论使用规则/内容而非坐在一起看);
+      meta分析(Fam et al. 2023)证明的是"调节策略与问题性使用的关联"，不是"某种策略必然导致孩子设备使用健康"的强因果证明。
+    china_fit: >
+      本平台未核验中国家庭样本中的媒体调节研究;中国家庭常见的"完全禁止+严格时长"式限制型策略,
+      与本理论"限制型效果弱于主动型"的结论可能存在张力，需要谨慎给建议，不能直接照搬西方研究结论说"限制没用"。
+    mechanism: >
+      Nathanson提出三种家长媒体调节风格:
+      (1)限制型(restrictive mediation)——设定规则限制使用时长/内容/时段,但较少解释规则理由或讨论内容本身;
+      (2)共同使用型(co-use)——家长和孩子一起使用/观看媒体,但不主动讨论内容、不评价、不引导;
+      (3)主动型(active mediation)——家长在孩子使用媒体/设备前后或过程中,主动讨论内容的真实性/价值观、
+      引导孩子批判性看待内容、解释使用规则背后的理由(不是单纯下命令)。
+      Fam等(2023)的meta分析发现:主动型调节与更低的问题性媒体使用负相关最稳定;
+      单纯限制型的效果不稳定，在部分研究中甚至与更高的问题性使用相关(可能因为"单纯禁止"激发逆反心理，
+      或因为家长限制往往发生在问题已经出现之后而非预防性介入，因果方向需谨慎解读，不宜简单理解为"限制有害")。
+      对家庭教育实践的含义:比起"允许玩多久/几点前必须交手机"这类纯限制型规则,更值得投入的是
+      "使用前/使用中/使用后跟孩子聊他在玩什么/看什么"这类主动型互动——这与MD-002(权威型教养解释理由)、
+      MD-007(自主支持式规则协商)的机制是一致的,设备使用只是这套一般性教养原则的一个具体应用场景。
+    tags: [媒体调节, 设备使用, 屏幕时间, theory]
+    open_questions:
+      - 中国家庭样本、智能手机/短视频等新媒体场景下的调节研究尚未核验，本卡目前的证据锚点(Nathanson 1999)是电视时代研究，跨媒介外推需谨慎。
+      - 限制型效果不稳定这一发现的因果方向(是限制导致问题,还是问题导致限制)本平台未核验具体机制研究，不得作为不该限制的依据。
+    evidence:
+      - claim: >
+          家长媒体调节可归为限制型/共同使用型/主动型三类,不同调节风格与孩子的攻击性等结果存在不同关联模式(奠基性实证研究)。
+        grade: 6
+        provenance: third_party_real
+        source: "Nathanson AJ. (1999). Identifying and Explaining the Relationship Between Parental Mediation and Children's Aggression. Communication Research, 26(2), 124-143. doi:10.1177/009365099026002002"
+        year: 1999
+        note: 2026-08-28经Crossref核验书目真实存在;真实实证研究(非纯理论),按rubric属E6(观察性/准实验)。
+        tags: [observational, verified, foundational]
+      - claim: >
+          主动型媒体调节与更低的儿童/青少年问题性媒体使用相关,限制型调节的效果在不同研究间不一致(系统综述+meta分析)。
+        grade: 7
+        provenance: third_party_real
+        source: "Fam JY, Männikkö N, Juhari R, Kääriäinen M. (2023). Is parental mediation negatively associated with problematic media use among children and adolescents? A systematic review and meta-analysis. Canadian Journal of Behavioural Science, 55(2), 89-99. doi:10.1037/cbs0000320"
+        year: 2023
+        note: 2026-08-28经Crossref核验书目真实存在;meta分析级别,本卡证据强度最高的条目。
+        tags: [meta-analysis, systematic-review, verified]
