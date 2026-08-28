@@ -18,7 +18,13 @@ def _valid_draft() -> dict:
         "boundary_labels": ["hypothesis_not_fact", "recommendation_not_decision"],
         "construct_signals": [{"construct_ref": "PARENT_CHILD_COMMUNICATION", "boundary": "signal_not_diagnosis"}],
         "hypotheses": [
-            {"hypothesis_ref": "H1", "boundary": "hypothesis_not_fact", "construct_refs": ["PARENT_CHILD_COMMUNICATION"]}
+            {
+                "hypothesis_ref": "H1",
+                "boundary": "hypothesis_not_fact",
+                "construct_refs": ["PARENT_CHILD_COMMUNICATION"],
+                "is_primary_contradiction": True,
+                "contradiction_rank": 1,
+            }
         ],
         "action_candidates": [{"action_ref": "SUPPORT_ACTION", "boundary": "recommendation_not_decision"}],
         "prohibited_outputs": [],
@@ -99,6 +105,37 @@ class TestInterpretationBoundary:
         """
         draft = _valid_draft()
         draft["prohibited_outputs"] = ["ranking"]  # a string VALUE, not a key — always fine
+        assert_interpretation_boundary(draft, LEGAL_REFS)  # does not raise
+
+    def test_up_to_three_primary_contradictions_are_allowed(self):
+        draft = _valid_draft()
+        base = draft["hypotheses"][0]
+        draft["hypotheses"] = [
+            {**base, "hypothesis_ref": f"H{i}", "contradiction_rank": i, "is_primary_contradiction": True}
+            for i in range(1, 4)
+        ]
+        assert_interpretation_boundary(draft, LEGAL_REFS)  # does not raise
+
+    def test_more_than_three_primary_contradictions_is_rejected(self):
+        draft = _valid_draft()
+        base = draft["hypotheses"][0]
+        draft["hypotheses"] = [
+            {**base, "hypothesis_ref": f"H{i}", "contradiction_rank": i, "is_primary_contradiction": True}
+            for i in range(1, 5)
+        ]
+        with pytest.raises(AssessmentValidationError) as exc:
+            assert_interpretation_boundary(draft, LEGAL_REFS)
+        assert exc.value.code == "too_many_primary_contradictions:4"
+
+    def test_zero_primary_contradictions_is_allowed(self):
+        """is_primary_contradiction is optional-in-spirit (default false) —
+        a draft where every hypothesis is secondary is structurally valid;
+        this function has no opinion on WHETHER a primary contradiction was
+        identified, only on the upper bound.
+        """
+        draft = _valid_draft()
+        draft["hypotheses"][0]["is_primary_contradiction"] = False
+        draft["hypotheses"][0]["contradiction_rank"] = None
         assert_interpretation_boundary(draft, LEGAL_REFS)  # does not raise
 
     def test_action_ref_has_no_whitelist_check(self):

@@ -82,8 +82,14 @@ _DRAFT_OUTPUT_SCHEMA = {
                     "hypothesis_ref": {"type": "string"},
                     "boundary": {"type": "string", "const": "hypothesis_not_fact"},
                     "construct_refs": {"type": "array", "items": {"type": "string", "enum": sorted(_LEGAL_CONSTRUCT_REFS)}},
+                    # Primary-contradiction marking — the minimal field-level increment
+                    # architecture/FAMILY_COMMERCIAL_VALUE_STRATEGY_V2.md section 8.3/8.4
+                    # calls for (problem -> primary_contradiction -> plan), added onto the
+                    # existing hypothesis item rather than a new top-level object.
+                    "is_primary_contradiction": {"type": "boolean"},
+                    "contradiction_rank": {"type": ["integer", "null"], "minimum": 1},
                 },
-                "required": ["hypothesis_ref", "boundary", "construct_refs"],
+                "required": ["hypothesis_ref", "boundary", "construct_refs", "is_primary_contradiction", "contradiction_rank"],
                 "additionalProperties": False,
             },
         },
@@ -114,7 +120,15 @@ _SYSTEM_PROMPT = (
     "this whitelist exists to prevent. Every construct_signal must have boundary='signal_not_diagnosis'. "
     "Every hypothesis must have boundary='hypothesis_not_fact'. Every action_candidate must have "
     "boundary='recommendation_not_decision'. Never include any field resembling a total score, a "
-    "ranking, or a diagnosis label."
+    "ranking, or a diagnosis label. "
+    "Among the hypotheses you output, judge which ones represent the primary contradiction — the "
+    "1 to 3 hypotheses that, if addressed, would most unblock progress right now — and set "
+    "is_primary_contradiction=true on ONLY those (at most 3, never more). Set contradiction_rank "
+    "to 1, 2, 3... in priority order (1 = most urgent) on the ones you marked true, and set "
+    "contradiction_rank=null on every hypothesis you did NOT mark as a primary contradiction. All "
+    "remaining hypotheses are secondary and must have is_primary_contradiction=false. This "
+    "judgment is itself a hypothesis about priority, not a fact — it does not change the "
+    "hypothesis_not_fact boundary."
 )
 
 

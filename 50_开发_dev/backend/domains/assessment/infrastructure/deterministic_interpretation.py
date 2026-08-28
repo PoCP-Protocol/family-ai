@@ -84,6 +84,13 @@ class DeterministicInterpretationAdapter(AssessmentInterpretationPort):
                     "hypothesis_ref": hypothesis_ref,
                     "boundary": "hypothesis_not_fact",
                     "construct_refs": [construct_ref] if construct_ref else [],
+                    # Deterministic fallback only ever produces a single hypothesis
+                    # (H1 above), so it is trivially "the" primary contradiction —
+                    # rank 1, no ambiguity to resolve without a model. Mirrors the
+                    # same field ClaudeInterpretationAdapter's structured output
+                    # carries, per the adapters' shared-shape requirement.
+                    "is_primary_contradiction": True,
+                    "contradiction_rank": 1,
                 }
             ],
             "action_candidates": [

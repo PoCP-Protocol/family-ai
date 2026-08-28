@@ -14,6 +14,7 @@ import pytest
 from domains.assessment.domain.entities import GrowthHypothesisEvidence
 from domains.assessment.domain.errors import AssessmentValidationError
 from domains.assessment.infrastructure.claude_interpretation import (
+    _DRAFT_OUTPUT_SCHEMA,
     ClaudeInterpretationAdapter,
     is_live_external_ai_authorized,
 )
@@ -56,7 +57,13 @@ def _valid_model_output() -> dict:
         "need_summary": [{"need_ref": "PARENT_CHILD_COMMUNICATION_CONFLICT"}],
         "construct_signals": [{"construct_ref": "PARENT_CHILD_COMMUNICATION", "boundary": "signal_not_diagnosis"}],
         "hypotheses": [
-            {"hypothesis_ref": "sess-1:H1", "boundary": "hypothesis_not_fact", "construct_refs": ["PARENT_CHILD_COMMUNICATION"]}
+            {
+                "hypothesis_ref": "sess-1:H1",
+                "boundary": "hypothesis_not_fact",
+                "construct_refs": ["PARENT_CHILD_COMMUNICATION"],
+                "is_primary_contradiction": True,
+                "contradiction_rank": 1,
+            }
         ],
         "action_candidates": [{"action_ref": "PARENT_CHILD_COMMUNICATION_CONFLICT:SUPPORT_ACTION", "boundary": "recommendation_not_decision"}],
     }
@@ -120,6 +127,46 @@ class TestClaudeInterpretationAdapter:
         with pytest.raises(AssessmentValidationError) as exc:
             await adapter.interpret("family-1", _evidence())
         assert exc.value.code == "hypothesis_missing_boundary"
+
+    async def test_too_many_primary_contradictions_in_model_output_fails_closed(self):
+        """4 hypotheses all marked is_primary_contradiction=True should be
+        rejected by the boundary re-validation, even though the JSON schema
+        itself has no way to express "at most 3 items across the array have
+        property X true" — this is exactly why the boundary check exists as
+        a second layer, not just the schema.
+        """
+        bad_output = _valid_model_output()
+        base_hypothesis = bad_output["hypotheses"][0]
+        bad_output["hypotheses"] = [
+            {**base_hypothesis, "hypothesis_ref": f"sess-1:H{i}", "contradiction_rank": i, "is_primary_contradiction": True}
+            for i in range(1, 5)
+        ]
+        mock_client = MagicMock()
+        mock_client.messages.create = AsyncMock(return_value=_fake_response(bad_output))
+        adapter = ClaudeInterpretationAdapter(client=mock_client)
+
+        with pytest.raises(AssessmentValidationError) as exc:
+            await adapter.interpret("family-1", _evidence())
+        assert "too_many_primary_contradictions" in exc.value.code
+
+    async def test_draft_schema_declares_primary_contradiction_fields(self):
+        hypothesis_schema = _DRAFT_OUTPUT_SCHEMA["properties"]["hypotheses"]["items"]
+        assert "is_primary_contradiction" in hypothesis_schema["properties"]
+        assert hypothesis_schema["properties"]["is_primary_contradiction"]["type"] == "boolean"
+        assert "contradiction_rank" in hypothesis_schema["properties"]
+        assert "is_primary_contradiction" in hypothesis_schema["required"]
+        assert "contradiction_rank" in hypothesis_schema["required"]
+
+    async def test_system_prompt_instructs_primary_contradiction_judgment(self):
+        mock_client = MagicMock()
+        mock_client.messages.create = AsyncMock(return_value=_fake_response(_valid_model_output()))
+        adapter = ClaudeInterpretationAdapter(client=mock_client)
+
+        await adapter.interpret("family-1", _evidence())
+
+        system_prompt = mock_client.messages.create.call_args.kwargs["system"]
+        assert "primary contradiction" in system_prompt
+        assert "1 to 3" in system_prompt
 
 
 class TestLiveExternalAiGating:
