@@ -11,8 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from domains.assessment.application.commands import AssessmentCommandHandler
 from domains.assessment.application.growth_hypothesis_commands import GrowthHypothesisCommandHandler
+from domains.assessment.application.ports import AssessmentInterpretationPort
 from domains.assessment.application.queries import AssessmentQueryHandler
 from domains.assessment.infrastructure.cached_query_handler import CachedAssessmentQueryHandler
+from domains.assessment.infrastructure.claude_interpretation import (
+    ClaudeInterpretationAdapter,
+    is_live_external_ai_authorized,
+)
 from domains.assessment.infrastructure.deterministic_interpretation import DeterministicInterpretationAdapter
 from domains.assessment.infrastructure.fake_cache import FakeQueryCache
 from domains.assessment.infrastructure.sqlalchemy_repository import SqlAlchemyAssessmentRepository
@@ -32,11 +37,19 @@ def get_repository(connection: AsyncConnection = Depends(get_connection)) -> Sql
     return SqlAlchemyAssessmentRepository(connection)
 
 
-def get_interpretation_adapter() -> DeterministicInterpretationAdapter:
-    # Always the deterministic/mock adapter for now — a live AI Runtime
-    # provider adapter is separate, un-implemented follow-up work (see task
-    # report). This is G1-A's binding fail-closed default, not a shortcut.
-    return DeterministicInterpretationAdapter()
+# Constructed once, at import time, not per-request — matches
+# DeterministicInterpretationAdapter's statelessness and avoids constructing
+# a fresh anthropic.AsyncAnthropic() per request if the live path is on.
+# `is_live_external_ai_authorized()` is the ONLY switch: both
+# FAMILY_MODEL_GATEWAY_MODE=live and FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI=true
+# must be explicitly set (G1-A's binding default is neither set, i.e. mock).
+_interpretation_adapter: AssessmentInterpretationPort = (
+    ClaudeInterpretationAdapter() if is_live_external_ai_authorized() else DeterministicInterpretationAdapter()
+)
+
+
+def get_interpretation_adapter() -> AssessmentInterpretationPort:
+    return _interpretation_adapter
 
 
 def get_command_handler(repository: SqlAlchemyAssessmentRepository = Depends(get_repository)) -> AssessmentCommandHandler:
@@ -45,13 +58,13 @@ def get_command_handler(repository: SqlAlchemyAssessmentRepository = Depends(get
 
 def get_query_handler(
     repository: SqlAlchemyAssessmentRepository = Depends(get_repository),
-    interpretation: DeterministicInterpretationAdapter = Depends(get_interpretation_adapter),
+    interpretation: AssessmentInterpretationPort = Depends(get_interpretation_adapter),
 ) -> CachedAssessmentQueryHandler:
     return CachedAssessmentQueryHandler(repository, interpretation, _query_cache)
 
 
 def get_growth_hypothesis_handler(
     repository: SqlAlchemyAssessmentRepository = Depends(get_repository),
-    interpretation: DeterministicInterpretationAdapter = Depends(get_interpretation_adapter),
+    interpretation: AssessmentInterpretationPort = Depends(get_interpretation_adapter),
 ) -> GrowthHypothesisCommandHandler:
     return GrowthHypothesisCommandHandler(repository, interpretation)
