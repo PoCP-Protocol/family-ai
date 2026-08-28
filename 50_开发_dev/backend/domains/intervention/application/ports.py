@@ -29,7 +29,12 @@ class InterventionRepositoryPort(Protocol):
 
     async def ensure_family_exists(self, family_id: str) -> None: ...
 
-    async def assert_family_manage_permission(self, family_id: str, actor_id: str) -> None: ...
+    async def assert_tenant_family_scope(self, tenant_id: str, family_id: str, actor_id: str) -> None:
+        """Canonical tenancy check unified across Batch 2's six domains
+        (project owner-authorized capability expansion, not a TS-parity
+        port — see `growth_priority/application/ports.py`'s docstring on
+        this same method for the full rationale)."""
+        ...
 
     async def resolve_growth_subject(self, family_id: str, onboarding_id: str) -> GrowthSubject: ...
     """Port of `GrowthSubjectResolver.resolve`. Previously returned a bare

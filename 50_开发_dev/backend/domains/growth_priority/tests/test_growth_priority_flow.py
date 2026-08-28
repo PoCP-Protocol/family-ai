@@ -33,6 +33,7 @@ from domains.growth_priority.infrastructure.fake_consent_port import FakeConsent
 from domains.growth_priority.infrastructure.fake_repository import FakeGrowthPriorityRepository
 
 ACTOR = "actor-1"
+TENANT = "tenant-1"
 
 
 def _meta(key: str = "idem-1") -> MutationMeta:
@@ -77,7 +78,7 @@ def command_handler(
 class TestGrowthPriorityDraft:
     async def test_get_draft_returns_candidate(self, repo, query_handler):
         family_id, onboarding_id = repo._test_family_id, repo._test_onboarding_id
-        draft = await query_handler.get_draft(GetGrowthPriorityDraftQuery(family_id, ACTOR, onboarding_id))
+        draft = await query_handler.get_draft(GetGrowthPriorityDraftQuery(family_id, TENANT, ACTOR, onboarding_id))
         assert draft.candidate is not None
         assert draft.candidate.dimension_id == "P03"
         assert draft.draft_id.startswith("draft:")
@@ -87,7 +88,7 @@ class TestGrowthPriorityDraft:
 
         family_id = repo._test_family_id
         with pytest.raises(GrowthPriorityNotFoundError) as exc:
-            await query_handler.get_draft(GetGrowthPriorityDraftQuery(family_id, ACTOR, str(uuid.uuid4())))
+            await query_handler.get_draft(GetGrowthPriorityDraftQuery(family_id, TENANT, ACTOR, str(uuid.uuid4())))
         assert exc.value.code == "active_growth_onboarding_not_found"
 
 
@@ -97,7 +98,7 @@ class TestConfirmGrowthPriority:
         draft_id = f"draft:{family_id}:{onboarding_id}:0"
 
         receipt = await command_handler.confirm(
-            ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, draft_id, "P03", _meta())
+            ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, draft_id, "P03", _meta())
         )
         assert receipt["action"] == "CONFIRM_GROWTH_PRIORITY"
         assert receipt["replayed"] is False
@@ -112,10 +113,10 @@ class TestConfirmGrowthPriority:
         meta = _meta("idem-replay")
 
         first = await command_handler.confirm(
-            ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, draft_id, "P03", meta)
+            ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, draft_id, "P03", meta)
         )
         second = await command_handler.confirm(
-            ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, draft_id, "P03", meta)
+            ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, draft_id, "P03", meta)
         )
         assert second["replayed"] is True
         assert second["priority"]["priority_id"] == first["priority"]["priority_id"]
@@ -124,7 +125,7 @@ class TestConfirmGrowthPriority:
         family_id, onboarding_id = repo._test_family_id, repo._test_onboarding_id
         draft_id = f"draft:{family_id}:{onboarding_id}:0"
         first = await command_handler.confirm(
-            ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, draft_id, "P03", _meta("c1"))
+            ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, draft_id, "P03", _meta("c1"))
         )
         first_priority_id = first["priority"]["priority_id"]
 
@@ -134,7 +135,7 @@ class TestConfirmGrowthPriority:
         new_draft_id = f"draft:{family_id}:{onboarding_id}:1"
 
         second = await command_handler.confirm(
-            ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, new_draft_id, "R03", _meta("c2"))
+            ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, new_draft_id, "R03", _meta("c2"))
         )
         assert second["priority"]["dimension_id"] == "R03"
         assert second["priority"]["version"] == 2
@@ -150,7 +151,7 @@ class TestConfirmGrowthPriority:
         family_id, onboarding_id = repo._test_family_id, repo._test_onboarding_id
         with pytest.raises(GrowthPriorityConflictError) as exc:
             await command_handler.confirm(
-                ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, "draft:stale:0", "P03", _meta())
+                ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, "draft:stale:0", "P03", _meta())
             )
         assert exc.value.code == "growth_priority_draft_stale"
 
@@ -159,7 +160,7 @@ class TestConfirmGrowthPriority:
         draft_id = f"draft:{family_id}:{onboarding_id}:0"
         with pytest.raises(GrowthPriorityConflictError) as exc:
             await command_handler.confirm(
-                ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, draft_id, "R05", _meta())
+                ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, draft_id, "R05", _meta())
             )
         assert exc.value.code == "growth_priority_decision_not_eligible"
 
@@ -169,7 +170,7 @@ class TestConfirmGrowthPriority:
         draft_id = f"draft:{family_id}:{onboarding_id}:0"
         with pytest.raises(GrowthPriorityConflictError) as exc:
             await command_handler.confirm(
-                ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, draft_id, "P03", _meta())
+                ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, draft_id, "P03", _meta())
             )
         assert exc.value.code == "active_intervention_episode_exists"
 
@@ -179,7 +180,7 @@ class TestConfirmGrowthPriority:
         draft_id = f"draft:{family_id}:{onboarding_id}:0"
         with pytest.raises(GrowthPriorityForbiddenError) as exc:
             await command_handler.confirm(
-                ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, draft_id, "P03", _meta())
+                ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, draft_id, "P03", _meta())
             )
         assert exc.value.code == "normal_safety_route_not_verified"
 
@@ -197,7 +198,7 @@ class TestConfirmGrowthPriority:
         draft_id = f"draft:{family_id}:{onboarding_id}:0"
         with pytest.raises(GrowthPriorityForbiddenError) as exc:
             await command_handler.confirm(
-                ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, draft_id, "P03", _meta())
+                ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, draft_id, "P03", _meta())
             )
         assert exc.value.code == "normal_safety_route_not_verified"
 
@@ -209,7 +210,7 @@ class TestConfirmGrowthPriority:
         draft_id = f"draft:{family_id}:{onboarding_id}:0"
         with pytest.raises(GrowthPriorityForbiddenError) as exc:
             await command_handler.confirm(
-                ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, draft_id, "P03", _meta())
+                ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, draft_id, "P03", _meta())
             )
         assert exc.value.code == "growth_consent_required"
 
@@ -218,15 +219,31 @@ class TestConfirmGrowthPriority:
         draft_id = f"draft:{family_id}:{onboarding_id}:0"
         with pytest.raises(GrowthPriorityForbiddenError) as exc:
             await command_handler.confirm(
-                ConfirmGrowthPriorityCommand(family_id, "unauthorized-actor", onboarding_id, draft_id, "P03", _meta())
+                ConfirmGrowthPriorityCommand(family_id, TENANT, "unauthorized-actor", onboarding_id, draft_id, "P03", _meta())
             )
         assert exc.value.code == "actor_has_family_manage_permission"
+
+    async def test_confirm_with_wrong_tenant_is_forbidden_before_permission_check(self, repo, command_handler):
+        """Proves `assert_tenant_family_scope`'s tenant check actually runs
+        (not a no-op) — a tenant that never had this family bound must be
+        rejected even for an actor who otherwise has manage permission
+        (ACTOR is granted OWNER_GUARDIAN by `seed_family` in the `repo`
+        fixture), and the rejection code is the tenancy-scope code, not the
+        manage-permission code (proves the tenant check runs, and runs
+        first)."""
+        family_id, onboarding_id = repo._test_family_id, repo._test_onboarding_id
+        draft_id = f"draft:{family_id}:{onboarding_id}:0"
+        with pytest.raises(GrowthPriorityForbiddenError) as exc:
+            await command_handler.confirm(
+                ConfirmGrowthPriorityCommand(family_id, "tenant-that-never-owned-this-family", ACTOR, onboarding_id, draft_id, "P03", _meta())
+            )
+        assert exc.value.code == "tenant_family_scope_denied"
 
     async def test_no_priority_yet_decision_produces_no_priority_row(self, repo, command_handler):
         family_id, onboarding_id = repo._test_family_id, repo._test_onboarding_id
         draft_id = f"draft:{family_id}:{onboarding_id}:0"
         receipt = await command_handler.confirm(
-            ConfirmGrowthPriorityCommand(family_id, ACTOR, onboarding_id, draft_id, "NO_PRIORITY_YET", _meta())
+            ConfirmGrowthPriorityCommand(family_id, TENANT, ACTOR, onboarding_id, draft_id, "NO_PRIORITY_YET", _meta())
         )
         assert receipt["priority"] is None
         assert receipt["decision"] == "NO_PRIORITY_YET"

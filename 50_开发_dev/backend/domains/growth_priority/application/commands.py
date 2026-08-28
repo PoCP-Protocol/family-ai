@@ -55,6 +55,7 @@ class MutationMeta:
 @dataclass(frozen=True)
 class GetGrowthPriorityDraftQuery:
     family_id: str
+    tenant_id: str
     actor_id: str
     onboarding_id: str
 
@@ -62,6 +63,7 @@ class GetGrowthPriorityDraftQuery:
 @dataclass(frozen=True)
 class ConfirmGrowthPriorityCommand:
     family_id: str
+    tenant_id: str
     actor_id: str
     onboarding_id: str
     draft_id: str
@@ -82,7 +84,7 @@ class GrowthPriorityQueryHandler:
 
     async def get_draft(self, query: GetGrowthPriorityDraftQuery) -> GrowthPriorityDraft:
         await self._repository.assert_family_exists(query.family_id)
-        await self._repository.assert_family_manage_permission(query.family_id, query.actor_id)
+        await self._repository.assert_tenant_family_scope(query.tenant_id, query.family_id, query.actor_id)
         await self._repository.assert_active_onboarding(query.family_id, query.onboarding_id)
         return await self._repository.build_draft(query.family_id, query.onboarding_id)
 
@@ -124,7 +126,7 @@ class GrowthPriorityCommandHandler:
             return {**replay, "replayed": True}
 
         await self._repository.assert_family_exists(command.family_id)
-        await self._repository.assert_family_manage_permission(command.family_id, command.actor_id)
+        await self._repository.assert_tenant_family_scope(command.tenant_id, command.family_id, command.actor_id)
 
         # Step 2: assertActiveOnboarding.
         await self._repository.assert_active_onboarding(command.family_id, command.onboarding_id)

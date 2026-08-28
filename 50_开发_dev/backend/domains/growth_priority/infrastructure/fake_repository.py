@@ -24,6 +24,7 @@ from ..domain.state_machine import supersede
 from ..domain.value_objects import GrowthPriorityStatus, GrowthSubject, SafetyDisposition, SafetySeverity
 
 DEFAULT_TEST_ACTOR = "actor-1"
+DEFAULT_TEST_TENANT = "tenant-1"
 FAMILY_MANAGE_ROLES = ("OWNER_GUARDIAN", "GUARDIAN")
 
 
@@ -35,6 +36,8 @@ class FakeGrowthPriorityRepository:
 
     families: set[str] = field(default_factory=set)
     family_memberships: dict[tuple[str, str], str] = field(default_factory=dict)
+    tenant_family_bindings: set[tuple[str, str]] = field(default_factory=set)
+    create_family_audit: set[tuple[str, str]] = field(default_factory=set)
     onboardings: dict[tuple[str, str], dict] = field(default_factory=dict)  # (family_id, onboarding_id) -> row
     intervention_episodes: dict[str, list[dict]] = field(default_factory=dict)  # onboarding_id -> episodes
     perspective_dispositions: dict[str, list[SafetyDisposition | None]] = field(default_factory=dict)
@@ -48,8 +51,9 @@ class FakeGrowthPriorityRepository:
 
     # --- seeding helpers -------------------------------------------------
 
-    def seed_family(self, family_id: str) -> None:
+    def seed_family(self, family_id: str, tenant_id: str = DEFAULT_TEST_TENANT) -> None:
         self.families.add(family_id)
+        self.tenant_family_bindings.add((tenant_id, family_id))
         self.grant_family_manage_permission(family_id, DEFAULT_TEST_ACTOR, role="OWNER_GUARDIAN")
 
     def grant_family_manage_permission(self, family_id: str, actor_id: str, role: str = "OWNER_GUARDIAN") -> None:
@@ -112,9 +116,19 @@ class FakeGrowthPriorityRepository:
         if family_id not in self.families:
             raise GrowthPriorityNotFoundError("family_not_found")
 
-    async def assert_family_manage_permission(self, family_id: str, actor_id: str) -> None:
-        if self.family_memberships.get((family_id, actor_id)) not in FAMILY_MANAGE_ROLES:
-            raise GrowthPriorityForbiddenError("actor_has_family_manage_permission")
+    async def assert_tenant_family_scope(self, tenant_id: str, family_id: str, actor_id: str) -> None:
+        if (tenant_id, family_id) not in self.tenant_family_bindings:
+            raise GrowthPriorityForbiddenError("tenant_family_scope_denied")
+
+        # Port of `assertFamilyManagePermission` — legacy CreateFamily-audit
+        # OR tenancy-membership, matching the authoritative semantics unified
+        # from the Outcome domain's `assert_tenant_family_scope` (see
+        # `domain/permission_policy.py` there for the documented rationale).
+        if (family_id, actor_id) in self.create_family_audit:
+            return
+        if self.family_memberships.get((family_id, actor_id)) in FAMILY_MANAGE_ROLES:
+            return
+        raise GrowthPriorityForbiddenError("actor_has_family_manage_permission")
 
     async def assert_active_onboarding(self, family_id: str, onboarding_id: str) -> None:
         row = self.onboardings.get((family_id, onboarding_id))

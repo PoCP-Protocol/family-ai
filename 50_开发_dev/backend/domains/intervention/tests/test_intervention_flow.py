@@ -38,9 +38,14 @@ from domains.intervention.domain.value_objects import (
     ExecutionStatus,
     InterventionEpisodeStatus,
 )
-from domains.intervention.infrastructure.fake_repository import DEFAULT_TEST_ACTOR, FakeInterventionRepository
+from domains.intervention.infrastructure.fake_repository import (
+    DEFAULT_TEST_ACTOR,
+    DEFAULT_TEST_TENANT,
+    FakeInterventionRepository,
+)
 
 ACTOR_ID = DEFAULT_TEST_ACTOR
+TENANT_ID = DEFAULT_TEST_TENANT
 
 
 def _meta(key: str = "idem-1") -> MutationMeta:
@@ -89,6 +94,7 @@ async def _start(intervention_commands: InterventionCommandHandler, repo: FakeIn
     return await intervention_commands.start(
         StartInterventionCommand(
             family_id=repo._test_family_id,  # type: ignore[attr-defined]
+            tenant_id=TENANT_ID,
             actor_id=ACTOR_ID,
             priority_id=repo._test_priority_id,  # type: ignore[attr-defined]
             intervention_code="LISTEN_BEFORE_RESPOND",
@@ -134,6 +140,7 @@ class TestStartIntervention:
             await intervention_commands.start(
                 StartInterventionCommand(
                     family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                    tenant_id=TENANT_ID,
                     actor_id=ACTOR_ID,
                     priority_id=repo._test_priority_id,  # type: ignore[attr-defined]
                     intervention_code="SOMETHING_ELSE",
@@ -153,6 +160,7 @@ class TestStartIntervention:
             await intervention_commands.start(
                 StartInterventionCommand(
                     family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                    tenant_id=TENANT_ID,
                     actor_id=ACTOR_ID,
                     priority_id=other_priority_id,
                     intervention_code="LISTEN_BEFORE_RESPOND",
@@ -183,12 +191,34 @@ class TestStartIntervention:
             await intervention_commands.start(
                 StartInterventionCommand(
                     family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                    tenant_id=TENANT_ID,
                     actor_id="not-a-guardian",
                     priority_id=repo._test_priority_id,  # type: ignore[attr-defined]
                     intervention_code="LISTEN_BEFORE_RESPOND",
                     meta=_meta(),
                 )
             )
+
+    async def test_start_with_wrong_tenant_is_forbidden_before_permission_check(
+        self, intervention_commands: InterventionCommandHandler, repo: FakeInterventionRepository
+    ):
+        """Proves `assert_tenant_family_scope`'s tenant check actually runs
+        (not a no-op) — ACTOR_ID has manage permission on this family (per
+        `seed_family` in the `repo` fixture), but a tenant that never had
+        this family bound must still be rejected, with the tenancy-scope
+        code, not the manage-permission code."""
+        with pytest.raises(InterventionForbiddenError) as excinfo:
+            await intervention_commands.start(
+                StartInterventionCommand(
+                    family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                    tenant_id="tenant-that-never-owned-this-family",
+                    actor_id=ACTOR_ID,
+                    priority_id=repo._test_priority_id,  # type: ignore[attr-defined]
+                    intervention_code="LISTEN_BEFORE_RESPOND",
+                    meta=_meta(),
+                )
+            )
+        assert excinfo.value.code == "tenant_family_scope_denied"
 
 
 # --- 2. 7天 GrowthAction 生成正确性 ---
@@ -236,6 +266,7 @@ class TestCompleteGrowthAction:
         receipt = await action_commands.complete(
             CompleteGrowthActionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action_id,
                 completion_status="COMPLETED",
@@ -253,6 +284,7 @@ class TestCompleteGrowthAction:
             await action_commands.complete(
                 CompleteGrowthActionCommand(
                     family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                    tenant_id=TENANT_ID,
                     actor_id=ACTOR_ID,
                     action_id=action_id,
                     completion_status="PARTIAL",
@@ -272,6 +304,7 @@ class TestCompleteGrowthAction:
         result = await action_commands.complete(
             CompleteGrowthActionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action_id,
                 completion_status=valid_status,
@@ -290,6 +323,7 @@ class TestCompleteGrowthAction:
             await action_commands.complete(
                 CompleteGrowthActionCommand(
                     family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                    tenant_id=TENANT_ID,
                     actor_id=ACTOR_ID,
                     action_id=action_id,
                     completion_status="IN_PROGRESS",
@@ -305,6 +339,7 @@ class TestCompleteGrowthAction:
             await action_commands.complete(
                 CompleteGrowthActionCommand(
                     family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                    tenant_id=TENANT_ID,
                     actor_id=ACTOR_ID,
                     action_id=str(uuid.uuid4()),
                     completion_status="COMPLETED",
@@ -344,6 +379,7 @@ class TestReflectionSafetyRoute:
             await action_commands.complete(
                 CompleteGrowthActionCommand(
                     family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                    tenant_id=TENANT_ID,
                     actor_id=ACTOR_ID,
                     action_id=action_id,
                     completion_status="COMPLETED",
@@ -368,6 +404,7 @@ class TestReflectionSafetyRoute:
         receipt = await action_commands.complete(
             CompleteGrowthActionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action_id,
                 completion_status="COMPLETED",
@@ -391,6 +428,7 @@ class TestReflectionSafetyRoute:
         result = await action_commands.complete(
             CompleteGrowthActionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action_id,
                 completion_status="COMPLETED",
@@ -421,6 +459,7 @@ class TestJourneyPlanExecutionRefresh:
         await action_commands.complete(
             CompleteGrowthActionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action.action_id,
                 completion_status="COMPLETED",
@@ -443,6 +482,7 @@ class TestJourneyPlanExecutionRefresh:
         await action_commands.complete(
             CompleteGrowthActionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action_id,
                 completion_status="COMPLETED",
@@ -466,6 +506,7 @@ class TestExecutionTransitions:
         started = await action_commands.transition_execution(
             TransitionTaskExecutionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action_id,
                 execution_action="START",
@@ -477,6 +518,7 @@ class TestExecutionTransitions:
         paused = await action_commands.transition_execution(
             TransitionTaskExecutionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action_id,
                 execution_action="PAUSE",
@@ -488,6 +530,7 @@ class TestExecutionTransitions:
         resumed = await action_commands.transition_execution(
             TransitionTaskExecutionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action_id,
                 execution_action="RESUME",
@@ -499,6 +542,7 @@ class TestExecutionTransitions:
         cancelled = await action_commands.transition_execution(
             TransitionTaskExecutionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action_id,
                 execution_action="CANCEL",
@@ -518,6 +562,7 @@ class TestExecutionTransitions:
             await action_commands.transition_execution(
                 TransitionTaskExecutionCommand(
                     family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                    tenant_id=TENANT_ID,
                     actor_id=ACTOR_ID,
                     action_id=action_id,
                     execution_action="PAUSE",
@@ -593,6 +638,7 @@ class TestTodayActionDateBoundary:
         await action_commands.complete(
             CompleteGrowthActionCommand(
                 family_id=repo._test_family_id,  # type: ignore[attr-defined]
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 action_id=action_id,
                 completion_status="COMPLETED",

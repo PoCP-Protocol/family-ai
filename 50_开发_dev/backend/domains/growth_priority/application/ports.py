@@ -21,7 +21,20 @@ class GrowthPriorityRepositoryPort(Protocol):
 
     async def assert_family_exists(self, family_id: str) -> None: ...
 
-    async def assert_family_manage_permission(self, family_id: str, actor_id: str) -> None: ...
+    async def assert_tenant_family_scope(self, tenant_id: str, family_id: str, actor_id: str) -> None:
+        """Canonical tenancy check across Batch 2's six domains (project
+        owner-authorized capability expansion, not a TS-parity port — the
+        NestJS `assertFamilyManagePermission` this replaces takes only
+        `(family_id, actor_id)` and has no real row-level tenant isolation).
+        `tenant_id` is supplied by the caller from request context (the
+        auth-middleware-resolved tenant scope), not re-derived by an extra
+        DB round-trip inside this check. Implementations must verify BOTH
+        that `tenant_id` actually owns `family_id`, AND the legacy-audit-OR-
+        tenancy-membership manage-permission condition (see
+        `domain/permission_policy.py` if this domain has one, or
+        `outcome/domain/permission_policy.py` for the reference
+        implementation this signature is unified from)."""
+        ...
 
     async def assert_active_onboarding(self, family_id: str, onboarding_id: str) -> None: ...
 

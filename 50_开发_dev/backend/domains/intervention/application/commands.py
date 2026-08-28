@@ -61,6 +61,7 @@ def _hash_request(value: dict) -> str:
 @dataclass(frozen=True)
 class StartInterventionCommand:
     family_id: str
+    tenant_id: str
     actor_id: str
     priority_id: str
     intervention_code: str
@@ -70,6 +71,7 @@ class StartInterventionCommand:
 @dataclass(frozen=True)
 class CompleteGrowthActionCommand:
     family_id: str
+    tenant_id: str
     actor_id: str
     action_id: str
     completion_status: str
@@ -81,6 +83,7 @@ class CompleteGrowthActionCommand:
 @dataclass(frozen=True)
 class TransitionTaskExecutionCommand:
     family_id: str
+    tenant_id: str
     actor_id: str
     action_id: str
     execution_action: ExecutionAction
@@ -125,7 +128,7 @@ class InterventionCommandHandler:
             return {**replay, "replayed": True}
 
         await self._repository.ensure_family_exists(command.family_id)
-        await self._repository.assert_family_manage_permission(command.family_id, command.actor_id)
+        await self._repository.assert_tenant_family_scope(command.tenant_id, command.family_id, command.actor_id)
 
         priority = await self._repository.load_active_priority_for_start(command.family_id, command.priority_id)
         if priority is None or priority.get("dimension_id") != SUPPORTED_PRIORITY_DIMENSION:
@@ -212,7 +215,7 @@ class GrowthActionCommandHandler:
             return {**replay, "replayed": True}
 
         await self._repository.ensure_family_exists(command.family_id)
-        await self._repository.assert_family_manage_permission(command.family_id, command.actor_id)
+        await self._repository.assert_tenant_family_scope(command.tenant_id, command.family_id, command.actor_id)
 
         action = await self._repository.load_completable_action_for_update(command.family_id, command.action_id)
 
@@ -280,7 +283,7 @@ class GrowthActionCommandHandler:
             return {**replay, "replayed": True}
 
         await self._repository.ensure_family_exists(command.family_id)
-        await self._repository.assert_family_manage_permission(command.family_id, command.actor_id)
+        await self._repository.assert_tenant_family_scope(command.tenant_id, command.family_id, command.actor_id)
 
         action = await self._repository.load_action(command.family_id, command.action_id)
         if action is None:

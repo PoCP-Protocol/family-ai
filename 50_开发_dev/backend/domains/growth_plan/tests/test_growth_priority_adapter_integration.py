@@ -131,6 +131,7 @@ class TestGrowthPriorityAdapterIntegration:
         confirm_receipt = await priority_handler.confirm(
             ConfirmGrowthPriorityCommand(
                 family_id=family_id,
+                tenant_id=TENANT_ID,
                 actor_id=ACTOR_ID,
                 onboarding_id=onboarding_id,
                 draft_id=draft.draft_id,
@@ -169,6 +170,7 @@ class TestGrowthPriorityAdapterIntegration:
             await priority_handler.confirm(
                 ConfirmGrowthPriorityCommand(
                     family_id=family_id,
+                    tenant_id=TENANT_ID,
                     actor_id=ACTOR_ID,
                     onboarding_id=onboarding_id,
                     draft_id=draft.draft_id,

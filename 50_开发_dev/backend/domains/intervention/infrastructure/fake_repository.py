@@ -35,6 +35,7 @@ from ..domain.value_objects import (
 )
 
 DEFAULT_TEST_ACTOR = "actor-1"
+DEFAULT_TEST_TENANT = "tenant-1"
 FAMILY_MANAGE_ROLES = ("OWNER_GUARDIAN", "GUARDIAN")
 
 
@@ -42,6 +43,8 @@ FAMILY_MANAGE_ROLES = ("OWNER_GUARDIAN", "GUARDIAN")
 class FakeInterventionRepository:
     families: set[str] = field(default_factory=set)
     family_memberships: dict[tuple[str, str], str] = field(default_factory=dict)
+    tenant_family_bindings: set[tuple[str, str]] = field(default_factory=set)
+    create_family_audit: set[tuple[str, str]] = field(default_factory=set)
     consents: set[tuple[str, str]] = field(default_factory=set)  # (family_id, subject_person_id)
     growth_subjects: dict[tuple[str, str], GrowthSubject] = field(default_factory=dict)  # (family, onboarding) -> GrowthSubject
     safety_blocked: set[tuple[str, str]] = field(default_factory=set)  # (family, onboarding) blocked routes
@@ -55,8 +58,9 @@ class FakeInterventionRepository:
 
     # --- seeding helpers ---
 
-    def seed_family(self, family_id: str) -> None:
+    def seed_family(self, family_id: str, tenant_id: str = DEFAULT_TEST_TENANT) -> None:
         self.families.add(family_id)
+        self.tenant_family_bindings.add((tenant_id, family_id))
         self.family_memberships[(family_id, DEFAULT_TEST_ACTOR)] = "OWNER_GUARDIAN"
 
     def grant_family_manage_permission(self, family_id: str, person_id: str, role: str = "OWNER_GUARDIAN") -> None:
@@ -127,7 +131,11 @@ class FakeInterventionRepository:
         if family_id not in self.families:
             raise InterventionNotFoundError("family_not_found")
 
-    async def assert_family_manage_permission(self, family_id: str, actor_id: str) -> None:
+    async def assert_tenant_family_scope(self, tenant_id: str, family_id: str, actor_id: str) -> None:
+        if (tenant_id, family_id) not in self.tenant_family_bindings:
+            raise InterventionForbiddenError("tenant_family_scope_denied")
+        if (family_id, actor_id) in self.create_family_audit:
+            return
         role = self.family_memberships.get((family_id, actor_id))
         if role not in FAMILY_MANAGE_ROLES:
             raise InterventionForbiddenError("family_manage_permission_required")

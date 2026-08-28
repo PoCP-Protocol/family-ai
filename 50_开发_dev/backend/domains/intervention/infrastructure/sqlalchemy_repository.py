@@ -59,7 +59,24 @@ class SqlAlchemyInterventionRepository(InterventionRepositoryPort):
         if result.first() is None:
             raise InterventionNotFoundError("family_not_found")
 
-    async def assert_family_manage_permission(self, family_id: str, actor_id: str) -> None:
+    async def assert_tenant_family_scope(self, tenant_id: str, family_id: str, actor_id: str) -> None:
+        # Real tenant isolation (project owner-authorized capability
+        # expansion, not a TS-parity port — see Port docstring). Same query
+        # shape as SqlAlchemyOutcomeRepository/SqlAlchemyGrowthPriorityRepository.
+        tenancy = await self._connection.execute(
+            text(
+                """
+                select 1 from tenant_family_bindings
+                where tenant_id=:tenant_id and family_id=:family_id and status='ACTIVE'
+                  and effective_from<=now() and (effective_to is null or effective_to>now())
+                limit 1
+                """
+            ),
+            {"tenant_id": tenant_id, "family_id": family_id},
+        )
+        if tenancy.first() is None:
+            raise InterventionForbiddenError("tenant_family_scope_denied")
+
         audit = await self._connection.execute(
             text(
                 "select 1 from audit_logs where family_id=:family_id and actor_id=:actor_id "

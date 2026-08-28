@@ -98,6 +98,7 @@ async def _start_real_episode(
     result = await handler.start(
         StartInterventionCommand(
             family_id=family_id,
+            tenant_id=TENANT_ID,
             actor_id=DEFAULT_TEST_ACTOR,
             priority_id=priority_id,
             intervention_code=INTERVENTION_CODE,
