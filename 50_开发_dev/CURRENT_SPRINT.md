@@ -125,6 +125,35 @@ Recorded under Override #4's relaxed-velocity regime (parallel Batch-2 work, uni
 
 ---
 
+## 2026-08-28 Project Owner Override #5 — PRODUCT INTELLIGENCE PLATFORM SKELETON (structure-only, no data-dependent parameters)
+
+**This is a project-owner override, not a Chief Architect ruling.** The project owner presented a full "Family AI Product OS" proposal (six-layer architecture, four engines: Market Intelligence / Product Strategy / Composable Product Factory / Product Learning, FPDL/Compiler/Simulation Lab, ten workbenches). After joint review against the existing SSOTs (`architecture/FAMILY_COMMERCIAL_VALUE_STRATEGY_V2.md` §8 three-zone method, `architecture/FAMILY_AI_PYTHON_ONLY_MIGRATION_PLAN_V1.md` §8 batch list), the proposal was reconciled into `architecture/FAMILY_PRODUCT_INTELLIGENCE_PLATFORM_TARGET_ARCHITECTURE_DRAFT_001.md` (still `DRAFT`, not `TARGET_FROZEN`).
+
+**Decision recorded (project owner, in-session, 2026-08-28):**
+
+1. **Authorized now**: build a structure-only skeleton for `packages/contracts/` (versioned.py/evidence.py/product_strategy.py/product_factory.py/product_learning.py), `domains/product_strategy/` (four-layer, Fake-repository only, no real routes), `domains/market_intelligence/` (domain-layer-only, empty-shell entities), and `intelligence/design_copilot/` (`compiler.py` with 12 `NotImplementedError` check stubs, `simulation.py` with the evidence-guardrail encoded but `run()` unimplemented). Rationale: the project owner's position is "build the platform first, real data comes from testing the platform" — accepted as valid for *structure* (schemas/interfaces/state machines don't need real data and won't need rework once real data arrives), rejected for *content* (signal weights, simulation calibration parameters, contradiction-confidence thresholds remain unfilled — inventing these now risks costly rework once real data contradicts them).
+2. **Market Intelligence Engine has no reserved slot** in the Python-only migration plan's Batch 1-8 list — this override is the paper trail for treating it as a candidate new Batch 9, not silently folding it into Batch 7.
+3. **Explicitly NOT authorized**: any real business logic inside the compiler checks or simulation model; any routes/app wiring for `product_strategy`/`market_intelligence`; any database migration; any filled-in weight/parameter that isn't backed by real family data; treating this DRAFT architecture doc as `TARGET_FROZEN`.
+4. **Governance discipline preserved despite the "build first" framing**: every new file carries a `STRUCTURE_ONLY` marker (module docstring or directory `README.md`) forbidding import from real business code until the corresponding batch is formally authorized in `governance/AUTHORIZATION_REGISTRY.yaml`. This override is the interim record; `governance/AUTHORIZATION_REGISTRY.yaml` has no corresponding entry yet, per the same pattern as Overrides #1–#4.
+5. **`AUTO_MERGE`/`DIRECT_PUSH_MAIN` unchanged.** This override authorizes skeleton creation, not merge-to-main policy.
+
+---
+
+## 2026-08-28 Project Owner Override #6 — PRODUCT INTELLIGENCE DOMAIN V0.1, PR-001 (supersedes Override #5 item 3's "no DB/no routes" restriction, scoped to this PR only)
+
+**This is a project-owner override, not a Chief Architect ruling.** The project owner issued a detailed nine-instruction 30/60/90-day build plan for a "Family AI Product OS V0.1" and directed proceeding with the first instruction now: **PR-001, Product Intelligence Domain V0.1**. This explicitly moves past Override #5's structure-only restriction for the specific object set and acceptance chain below — it does not reopen the rest of the nine-instruction plan (Component Registry / Pattern Library / FPDL / Compiler / AI Use Case Registry / Simulation Runner remain **not** authorized, each requires its own future override per this same pattern).
+
+**Decision recorded (project owner, in-session, 2026-08-28):**
+
+1. **Authorized now**: a single new domain `domains/product_intelligence/` (project owner's explicit naming — supersedes the DRAFT architecture doc's earlier decision not to open a `product_intelligence` top-level namespace; that earlier decision is overridden for this domain name specifically, not for the rest of the DRAFT doc's batch-mapping). Real SQLAlchemy models, a real DB migration (this repo's actual convention is numbered raw-SQL files under `50_开发_dev/database/migrations/`, not Alembic — Alembic was aspirational in the migration plan but never bootstrapped by Batch 1; this PR follows the repo's real convention instead of introducing a second, unused one), real repository implementation, real FastAPI routes, and pytest.
+2. **Object set** (per the project owner's instruction 01): `MarketSignal, SignalCluster, MarketTrend, CustomerSegment, CustomerInsight, Evidence, UnmetNeed, Opportunity, GrowthProblem, GrowthHypothesis, ContradictionModel, GrowthStrategy, ProductZoneAssessment, ProductConcept, ProductComponent, ProductPattern, ProductDefinition, ServiceBlueprintVersion`. **Acceptance chain scoped for this PR**: `MarketSignal → CustomerInsight → Opportunity → GrowthProblem → GrowthHypothesis → GrowthStrategy → ProductConcept` must be creatable end-to-end via API with full backward traceability. The remaining objects in the list get model + migration + minimal create/read only in this PR; their full application-service behaviour is out of scope until the corresponding future instruction (02–10) is separately authorized.
+3. **Hard guardrails carried over from Override #5 and the project owner's own instruction 01, encoded as domain rules, not just documentation**: AI-generated `GrowthHypothesis`/`ContradictionModel`/`GrowthStrategy` records are created with `status=DRAFT`/`PROPOSED` and **no code path may set them to `VALIDATED`/`APPROVED` automatically** — only an explicit human-actor application-service call may do so. Every AI-generated record carries `generated_by`/`model_ref`/`prompt_use_case_version`/`confidence`. This PR does not wire any real model provider — `generated_by` fields are populated by test/manual callers only (no AI Use Case Registry yet, per item 2's scope cut of instruction 08).
+4. **No real Postgres integration test in this PR** — same known, accepted gap as Batch 2 (Override #4 item 4). Tests use an in-memory SQLite engine against the same SQLAlchemy models (closer to "real" than the Fake-dict repositories used in Override #5's skeleton, but not a real-PG guarantee). Upgrading to real PG integration tests is a follow-up, not blocking this PR.
+5. **Explicitly NOT authorized in this PR**: Component/Pattern/FPDL/Compiler real logic, AI Use Case Registry, Simulation Runner, any frontend, any NestJS addition, any model-provider wiring, publishing a `ServiceBlueprintVersion` automatically from a `ProductDefinition`.
+6. `governance/AUTHORIZATION_REGISTRY.yaml` needs a corresponding formal entry before treating this as durable; this note is the interim record, per the same pattern as Overrides #1–#5.
+
+---
+
 All older sprint/M2/M3/G0 sections below are historical context, not current execution truth.
 
 ---
