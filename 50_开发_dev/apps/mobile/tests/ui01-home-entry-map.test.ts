@@ -53,4 +53,23 @@ describe("UI-01 original-home hotspot contract", () => {
     expect(homeSource).toContain('onPress={() => open(`/ui/${UI01_HOME_TARGETS.recommendations}` as Href)}');
     expect(homeSource).toContain('open((item.target_ui === "UI-19" ? "/ui/UI-19" : "/ui/UI-13") as Href)');
   });
+
+  it("21天营和90天成长计划在首页仍是两个并列独立入口,各自补充产品身份感知而不是合并", () => {
+    const homeSource = readFileSync(resolve(process.cwd(), "app/(tabs)/index.tsx"), "utf8");
+
+    // 两个入口仍各自指向自己的技术栈(UI-14 commerce商品详情 / UI-04 journey-plan执行页),不是同一个target。
+    expect(homeSource).toContain('featureId: "challenge_camp"');
+    expect(homeSource).toContain('featureId: "plan_90"');
+    expect(homeSource).toContain('target: `/ui/${UI01_HOME_TARGETS.plan90}` as Href');
+    expect(homeSource).toContain('target: CHALLENGE_CAMP_TARGET');
+
+    // 21天营已开营时,入口文案带真实进度,复用UI-31已在用的campStarted/campCompletedDays,不新造状态。
+    expect(homeSource).toContain("campStarted, campCompletedDays");
+    expect(homeSource).toContain('entry.featureId === "challenge_camp" && campStarted');
+    expect(homeSource).toContain("已进行${campCompletedDays.length}天");
+
+    // 90天方案卡片补充平台通用三阶段词汇(建共识/执行调整/复盘沉淀),来自后端product_stage投影,不替换4阶段专业术语。
+    expect(homeSource).toContain("home.journey.product_stage");
+    expect(homeSource).toContain("productStageLabel");
+  });
 });

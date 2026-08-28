@@ -33,6 +33,7 @@ describe('FamilyHomeService', () => {
     expect(projection.family.display_name).toBe('林家');
     expect(projection.primary_action?.assignment_text).toBe('今晚先倾听十分钟');
     expect(projection.journey?.current_day).toBe(6);
+    expect(projection.journey).toMatchObject({ product_ref: 'FAMILY_90_DAY_JOURNEY', product_stage: 'CONSENSUS' });
     expect(projection.recommendations.map((item) => item.source_type)).toEqual(['PRODUCT_OFFERING', 'SERVICE_OFFERING']);
     expect(projection.feature_availability).toHaveLength(25);
     expect(new Set(projection.feature_availability.map((item) => item.feature_id)).size).toBe(25);

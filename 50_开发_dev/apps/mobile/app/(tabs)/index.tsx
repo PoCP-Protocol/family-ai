@@ -49,7 +49,7 @@ type RemoteHome = {
   };
   primary_action: { assignment_text: string; task_state: "NOT_STARTED" | "CHECKED_IN" | "ARCHIVED" } | null;
   today_tasks: { task_id: string; assignment_text: string; task_state: "NOT_STARTED" | "CHECKED_IN" | "ARCHIVED" }[];
-  journey: { title: string; current_phase: string; current_day: number; total_days: number } | null;
+  journey: { title: string; current_phase: string; current_day: number; total_days: number; product_stage?: "CONSENSUS" | "EXECUTION" | "RETROSPECTIVE" } | null;
   recommendations: { recommendation_id: string; title: string; source_type: "PRODUCT_OFFERING" | "SERVICE_OFFERING"; target_ui: string }[];
 };
 
@@ -82,7 +82,7 @@ type GrowthDecision = {
 export default function TodayScreen() {
   const colors = useColors();
   const session = useFamilyApiSession();
-  const { todayAction } = useFamilyMobile();
+  const { todayAction, campStarted, campCompletedDays } = useFamilyMobile();
   const [home, setHome] = useState<RemoteHome | null>(null);
   const [homeLoading, setHomeLoading] = useState(false);
   const [homeError, setHomeError] = useState<string | null>(null);
@@ -250,10 +250,14 @@ export default function TodayScreen() {
               {QUICK_ENTRIES.map((entry) => {
                 const remoteEntry = home?.quick_entries.find((candidate) => candidate.feature_id === entry.featureId);
                 const availability = remoteEntry?.availability ?? "AVAILABLE";
+                // 21天营已开营:入口从"21天挑战营"变为带进度提示,而不是每次都当作全新起点(复用UI-31已在用的campStarted/campCompletedDays,不新造一套状态)。
+                const label = entry.featureId === "challenge_camp" && campStarted
+                  ? `继续21天挑战营 · 已进行${campCompletedDays.length}天`
+                  : remoteEntry?.title ?? entry.label;
                 return (
-                  <Pressable disabled={availability !== "AVAILABLE"} key={entry.label} accessibilityRole="button" accessibilityLabel={entry.label} accessibilityHint={availability === "AVAILABLE" ? undefined : "当前租户策略或服务供给暂不可用"} onPress={() => open(entry.target)} style={({ pressed }) => [styles.quickEntry, availability !== "AVAILABLE" && styles.disabled, pressed && styles.pressed]}>
+                  <Pressable disabled={availability !== "AVAILABLE"} key={entry.label} accessibilityRole="button" accessibilityLabel={label} accessibilityHint={availability === "AVAILABLE" ? undefined : "当前租户策略或服务供给暂不可用"} onPress={() => open(entry.target)} style={({ pressed }) => [styles.quickEntry, availability !== "AVAILABLE" && styles.disabled, pressed && styles.pressed]}>
                     <IconSymbol name={entry.icon} size={29} color={entry.color} />
-                  <Text style={[styles.quickLabel, { color: colors.text }]}>{remoteEntry?.title ?? entry.label}</Text>
+                  <Text style={[styles.quickLabel, { color: colors.text }]}>{label}</Text>
                 </Pressable>
               )})}
             </View>
@@ -299,7 +303,7 @@ export default function TodayScreen() {
               </View> : null}
             </View> : null}
 
-            {home?.journey ? <Pressable accessibilityRole="button" accessibilityLabel="查看当前90天成长旅程" onPress={() => open(`/ui/${UI01_HOME_TARGETS.plan90}` as Href)} style={[styles.journeyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}><Text style={[styles.journeyTitle, { color: colors.text }]}>{home.journey.title}</Text><Text style={[styles.journeyMeta, { color: colors.muted }]}>第 {home.journey.current_day}/{home.journey.total_days} 天 · {home.journey.current_phase}</Text></Pressable> : null}
+            {home?.journey ? <Pressable accessibilityRole="button" accessibilityLabel="查看当前90天成长旅程" onPress={() => open(`/ui/${UI01_HOME_TARGETS.plan90}` as Href)} style={[styles.journeyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}><Text style={[styles.journeyTitle, { color: colors.text }]}>{home.journey.title}</Text><Text style={[styles.journeyMeta, { color: colors.muted }]}>第 {home.journey.current_day}/{home.journey.total_days} 天 · {home.journey.current_phase}{home.journey.product_stage ? ` · ${productStageLabel(home.journey.product_stage)}` : ""}</Text></Pressable> : null}
             {home?.primary_action ? <Pressable accessibilityRole="button" accessibilityLabel="今晚一件事" onPress={() => open(`/ui/${UI01_HOME_TARGETS.dailyTasks}` as Href)} style={[styles.primaryAction, { backgroundColor: `${colors.tint}10`, borderColor: `${colors.tint}40` }]}><Text style={[styles.primaryEyebrow, { color: colors.tint }]}>今晚一件事</Text><Text style={[styles.primaryText, { color: colors.text }]}>{home.primary_action.assignment_text}</Text></Pressable> : null}
 
             <SectionTitle title="今日成长任务" action="查看全部" onPress={() => open(`/ui/${UI01_HOME_TARGETS.dailyTasks}` as Href)} colors={colors} />
@@ -329,6 +333,13 @@ export default function TodayScreen() {
       />
     </ScreenContainer>
   );
+}
+
+/** 平台通用三阶段词汇(见 @family/contracts ServiceProductStage),供90天方案/21天营共享的进度身份展示。 */
+function productStageLabel(stage: "CONSENSUS" | "EXECUTION" | "RETROSPECTIVE") {
+  if (stage === "CONSENSUS") return "建共识阶段";
+  if (stage === "EXECUTION") return "执行调整阶段";
+  return "复盘沉淀阶段";
 }
 
 function offerLabel(offerRef: string) {

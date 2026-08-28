@@ -14,6 +14,7 @@ export * from './consumer-ui-baseline';
 export * from './platform-v4-1';
 export * from './journey-plan';
 export * from './growth-episode';
+export * from './service-product';
 
 export type FamilyStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 export type PersonType = 'PARENT' | 'CHILD';
