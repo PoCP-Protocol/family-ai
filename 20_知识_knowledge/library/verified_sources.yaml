@@ -189,3 +189,15 @@ sources:
     verification_status: VERIFIED
     verified_at: "2026-08-28"
     evidence_role: THEORY_FOUNDATION
+
+  - source_id: NATHANSON_1999_PARENTAL_MEDIATION
+    doi: "10.1177/009365099026002002"
+    verification_status: VERIFIED
+    verified_at: "2026-08-29"
+    evidence_role: THEORY_FOUNDATION
+
+  - source_id: FAM_ET_AL_2023_MEDIATION_METAANALYSIS
+    doi: "10.1037/cbs0000320"
+    verification_status: VERIFIED
+    verified_at: "2026-08-29"
+    evidence_role: METHOD_EFFECT

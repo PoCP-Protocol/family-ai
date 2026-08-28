@@ -110,6 +110,20 @@ class TestClaudeInterpretationAdapter:
         assert "TH-001" in system_prompt
         assert "情绪教练式回应" in system_prompt  # TH-001 core_claim 的关键片段
 
+    async def test_system_prompt_includes_device_use_context_grounding(self):
+        """DEVICE_USE_CONTEXT 此前在 CONSTRUCT_KNOWLEDGE_MAP 里一直是空列表(知识库无对应卡片)。
+        2026-08-29 补上 TH-010(家长媒体调节理论)后,验证它也真的进了 system prompt,
+        不是加了映射但忘了重新生成 grounding JSON。"""
+        mock_client = MagicMock()
+        mock_client.messages.create = AsyncMock(return_value=_fake_response(_valid_model_output()))
+        adapter = ClaudeInterpretationAdapter(client=mock_client)
+
+        await adapter.interpret("family-1", _evidence())
+
+        system_prompt = mock_client.messages.create.call_args.kwargs["system"]
+        assert "TH-010" in system_prompt
+        assert "DEVICE_USE_CONTEXT" in system_prompt
+
     async def test_grounding_source_is_sanitized_against_known_card_ids(self):
         """模型自报一个不在 CONSTRUCT_KNOWLEDGE_MAP 名单里的 grounding_source(编造的卡片id)
         —— 必须被清空,不能原样透传出去看起来像是有据可查。"""
