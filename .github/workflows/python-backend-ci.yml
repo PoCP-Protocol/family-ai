@@ -1,0 +1,55 @@
+name: Family Python Backend CI
+
+# Batch 1 scope (FAMILY-AI-PYTHON-ONLY-VERTICAL-P0-001): covers the Python
+# backend workspace under 50_开发_dev/backend/ (Assessment domain only).
+# This does NOT replace the existing NestJS CI — see family-35ui-alignment.yml
+# for that stack. This workflow has not been verified to actually run green
+# on GitHub Actions (no push was made to trigger it) — only `docker build`
+# and the pytest command it runs were verified locally. See migrations/README.md
+# and this task's commit message for what was/wasn't verified.
+
+on:
+  pull_request:
+    paths:
+      - "50_开发_dev/backend/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "50_开发_dev/backend/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 50_开发_dev/backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" || pip install \
+            fastapi pydantic sqlalchemy alembic asyncpg httpx python-dotenv \
+            "uvicorn[standard]" anthropic "psycopg[binary]" \
+            pytest pytest-asyncio ruff mypy
+
+      - name: Run Assessment domain tests (excluding real-Postgres integration test)
+        run: |
+          python -m pytest domains/assessment/tests -v \
+            --ignore=domains/assessment/tests/test_sqlalchemy_repository_integration.py
+
+  docker-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 50_开发_dev/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build family_api image
+        run: docker build -t family-api:ci .
