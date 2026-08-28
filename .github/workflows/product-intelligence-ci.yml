@@ -6,6 +6,7 @@ on:
       - "50_开发_dev/backend/domains/product_intelligence/**"
       - "50_开发_dev/backend/packages/contracts/**"
       - "50_开发_dev/database/migrations/0058_product_intelligence_domain.sql"
+      - "50_开发_dev/database/migrations/0059_product_zone_engine_v0.sql"
       - ".github/workflows/product-intelligence-ci.yml"
 
 jobs:
