@@ -10,6 +10,22 @@ from request parameters. Every parent load is tenant-scoped
 raises `ProductIntelligenceNotFoundError` before any child row can be
 created. `generated_by`/`model_ref`/`prompt_use_case_version`/`confidence`
 are required together when `context.actor_type == "AI"`.
+
+Permission Pattern (chief-architect review on PR #33): state-transition
+guardrails are split across two deliberately separate layers, and this is
+not accidental duplication —
+  - `domain/entities.py` (e.g. `GrowthHypothesis.mark_validated`) owns
+    *state-machine legality*: is this transition ever a legal move for this
+    kind of actor, independent of who specifically is calling. It has no
+    notion of permissions/roles.
+  - `application/commands.py` (here) owns *actor eligibility*: given a real,
+    specific caller, is *this* actor allowed to invoke *this* transition
+    right now (checked via `context.permissions`). This is where
+    fine-grained authorization (e.g.
+    `product_intelligence.hypothesis.review`) lives, because permissions are
+    an application/authorization concern, not a domain invariant.
+Both checks running is intentional defense in depth, not redundancy to be
+collapsed into one.
 """
 from __future__ import annotations
 
@@ -25,9 +41,11 @@ from ..domain.entities import (
     Opportunity,
     ProductConcept,
 )
-from ..domain.errors import ProductIntelligenceValidationError
+from ..domain.errors import ProductIntelligenceForbiddenError, ProductIntelligenceValidationError
 from .context import ActorContext
 from .ports import ProductIntelligenceRepositoryPort
+
+HYPOTHESIS_REVIEW_PERMISSION = "product_intelligence.hypothesis.review"
 
 
 def _new_id(prefix: str) -> str:
@@ -178,7 +196,17 @@ async def validate_growth_hypothesis(
     VALIDATED — requires `context.actor_type == "HUMAN"`, enforced inside
     `GrowthHypothesis.mark_validated`, not by inspecting a client-supplied
     field.
+
+    Application Policy gate (added on top of the domain check, see module
+    docstring): the caller must additionally hold the
+    `product_intelligence.hypothesis.review` permission. `mark_validated`
+    still independently re-checks `actor_type == "HUMAN"` below — that is
+    intentional, not dead code to remove; see the "Permission Pattern" note
+    at the top of this file.
     """
+    if context.actor_type != "HUMAN" or HYPOTHESIS_REVIEW_PERMISSION not in context.permissions:
+        raise ProductIntelligenceForbiddenError("hypothesis_review_permission_required")
+
     hypothesis = await repo.load_growth_hypothesis(hypothesis_id, context.tenant_scope)
     validated = hypothesis.mark_validated(actor_id=context.actor_id, actor_type=context.actor_type, reason=reason)
     await repo.save_growth_hypothesis(validated)

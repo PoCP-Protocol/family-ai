@@ -26,3 +26,11 @@ class ActorContext:
     actor_type: ActorType
     tenant_scope: str
     roles: tuple[str, ...] = field(default_factory=tuple)
+    # `roles` (above) classifies who the actor is (identity classification);
+    # `permissions` is a separate concept — the specific actions this actor
+    # has been explicitly granted, e.g. "product_intelligence.hypothesis.
+    # review". Application-layer policy checks (see `application/commands.py`)
+    # consult `permissions`, not `roles`. Kept as a `frozenset` (not
+    # list/set) so `ActorContext` stays hashable/immutable.
+    permissions: frozenset[str] = field(default_factory=frozenset)
+    trace_id: str | None = None

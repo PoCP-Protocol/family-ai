@@ -32,8 +32,18 @@ def fake_repo():
 
 @pytest.fixture
 def human_context():
+    """Carries `product_intelligence.hypothesis.review` by default so
+    existing tests that just need "a human who can validate" don't all
+    need updating for the PR-001R->PR-033-review permission gate
+    (`application/commands.py::HYPOTHESIS_REVIEW_PERMISSION`). Tests that
+    specifically want to exercise the "human without permission" case
+    construct their own `ActorContext` with `permissions=frozenset()`.
+    """
     from ..application.context import ActorContext
-    return ActorContext(actor_id="human-reviewer-1", actor_type="HUMAN", tenant_scope="tenant-a")
+    return ActorContext(
+        actor_id="human-reviewer-1", actor_type="HUMAN", tenant_scope="tenant-a",
+        permissions=frozenset({"product_intelligence.hypothesis.review"}),
+    )
 
 
 @pytest.fixture
@@ -45,4 +55,7 @@ def ai_context():
 @pytest.fixture
 def other_tenant_human_context():
     from ..application.context import ActorContext
-    return ActorContext(actor_id="human-reviewer-2", actor_type="HUMAN", tenant_scope="tenant-b")
+    return ActorContext(
+        actor_id="human-reviewer-2", actor_type="HUMAN", tenant_scope="tenant-b",
+        permissions=frozenset({"product_intelligence.hypothesis.review"}),
+    )

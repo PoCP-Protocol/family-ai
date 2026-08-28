@@ -42,7 +42,10 @@ def repo():
 
 @pytest.fixture
 def context_slot():
-    return [ActorContext(actor_id="human-1", actor_type="HUMAN", tenant_scope="tenant-a")]
+    return [ActorContext(
+        actor_id="human-1", actor_type="HUMAN", tenant_scope="tenant-a",
+        permissions=frozenset({"product_intelligence.hypothesis.review"}),
+    )]
 
 
 @pytest.fixture
@@ -101,7 +104,10 @@ def test_ai_actor_validate_rejected_human_accepted_via_http(client, context_slot
     r = client.post(f"/product-intelligence/growth-hypotheses/{hyp_id}/validate", json={"reason": "auto-approve"})
     assert r.status_code == 403
 
-    context_slot[0] = ActorContext(actor_id="human-1", actor_type="HUMAN", tenant_scope="tenant-a")
+    context_slot[0] = ActorContext(
+        actor_id="human-1", actor_type="HUMAN", tenant_scope="tenant-a",
+        permissions=frozenset({"product_intelligence.hypothesis.review"}),
+    )
     r = client.post(f"/product-intelligence/growth-hypotheses/{hyp_id}/validate", json={"reason": "reviewed"})
     assert r.status_code == 200
     assert r.json()["status"] == "VALIDATED"

@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from .errors import ProductIntelligenceForbiddenError, ProductIntelligenceValidationError
 from .value_objects import (
@@ -48,6 +48,20 @@ class _CommonFields(BaseModel):
     updated_at: datetime
     created_by: str
     tenant_scope: str
+
+    @field_validator("version")
+    @classmethod
+    def _version_at_least_one(cls, value: int) -> int:
+        if value < 1:
+            raise ProductIntelligenceValidationError("version_must_be_at_least_one")
+        return value
+
+    @field_validator("id", "created_by", "tenant_scope")
+    @classmethod
+    def _non_empty_after_trim(cls, value: str, info) -> str:
+        if not value or not value.strip():
+            raise ProductIntelligenceValidationError(f"{info.field_name}_must_not_be_empty")
+        return value
 
 
 class _AiProvenanceFields(BaseModel):
@@ -78,6 +92,12 @@ class _AiProvenanceFields(BaseModel):
         return self
 
 
+def _require_non_empty(value: str, field_name: str) -> str:
+    if not value or not value.strip():
+        raise ProductIntelligenceValidationError(f"{field_name}_must_not_be_empty")
+    return value
+
+
 class Evidence(_CommonFields):
     status: GenericRecordStatus = "ACTIVE"
     description: str
@@ -88,21 +108,26 @@ class MarketSignal(_CommonFields):
     status: GenericRecordStatus = "ACTIVE"
     raw_text: str
     source_ref: str | None = None
-    evidence_refs: list[str] = []
+    evidence_refs: list[str] = Field(default_factory=list)
+
+    @field_validator("raw_text")
+    @classmethod
+    def _raw_text_non_empty(cls, value: str) -> str:
+        return _require_non_empty(value, "raw_text")
 
 
 class SignalCluster(_CommonFields):
     status: GenericRecordStatus = "ACTIVE"
     label: str
     signal_ids: list[str]
-    evidence_refs: list[str] = []
+    evidence_refs: list[str] = Field(default_factory=list)
 
 
 class MarketTrend(_CommonFields):
     status: GenericRecordStatus = "ACTIVE"
     description: str
-    cluster_ids: list[str] = []
-    evidence_refs: list[str] = []
+    cluster_ids: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
 
 
 class CustomerSegment(_CommonFields):
@@ -116,42 +141,52 @@ class CustomerInsight(_CommonFields, _AiProvenanceFields):
     statement: str
     signal_id: str | None = None
     segment_id: str | None = None
-    evidence_refs: list[str] = []
+    evidence_refs: list[str] = Field(default_factory=list)
 
 
 class UnmetNeed(_CommonFields):
     status: GenericRecordStatus = "ACTIVE"
     statement: str
     insight_id: str | None = None
-    evidence_refs: list[str] = []
+    evidence_refs: list[str] = Field(default_factory=list)
 
 
 class Opportunity(_CommonFields, _AiProvenanceFields):
     status: OpportunityStatus = "WATCH"
     insight_id: str
     statement: str
-    evidence_refs: list[str] = []
+    evidence_refs: list[str] = Field(default_factory=list)
 
 
 class GrowthProblem(_CommonFields):
     status: GenericRecordStatus = "ACTIVE"
     symptom: str
     opportunity_id: str | None = None
-    evidence_refs: list[str] = []
+    evidence_refs: list[str] = Field(default_factory=list)
+
+    @field_validator("symptom")
+    @classmethod
+    def _symptom_non_empty(cls, value: str) -> str:
+        return _require_non_empty(value, "symptom")
 
 
 class GrowthHypothesis(_CommonFields, _AiProvenanceFields):
     status: HypothesisStatus = "DRAFT"
     problem_id: str
     statement: str
-    supporting_evidence_refs: list[str] = []
-    counter_evidence_refs: list[str] = []
-    assumptions: list[str] = []
-    expected_observations: list[str] = []
-    falsification_conditions: list[str] = []
+    supporting_evidence_refs: list[str] = Field(default_factory=list)
+    counter_evidence_refs: list[str] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+    expected_observations: list[str] = Field(default_factory=list)
+    falsification_conditions: list[str] = Field(default_factory=list)
     validated_by: str | None = None
     validated_at: datetime | None = None
     validation_reason: str | None = None
+
+    @field_validator("statement")
+    @classmethod
+    def _statement_non_empty(cls, value: str) -> str:
+        return _require_non_empty(value, "statement")
 
     def mark_validated(self, *, actor_id: str, actor_type: ActorType, reason: str) -> "GrowthHypothesis":
         """Only a `HUMAN` actor may validate a hypothesis — `actor_type` is
@@ -190,18 +225,23 @@ class ContradictionModel(_CommonFields, _AiProvenanceFields):
     primary_factor_b: str
     relationship: str
     description: str | None = None
-    supporting_hypothesis_ids: list[str] = []
-    evidence_refs: list[str] = []
+    supporting_hypothesis_ids: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
 
 
 class GrowthStrategy(_CommonFields, _AiProvenanceFields):
     status: StrategyStatus = "DRAFT"
     problem_id: str
-    hypothesis_ids: list[str] = []
+    hypothesis_ids: list[str] = Field(default_factory=list)
     contradiction_id: str | None = None
     statement: str
     applicable_segment_ref: str | None = None
-    exclusion_conditions: list[str] = []
+    exclusion_conditions: list[str] = Field(default_factory=list)
+
+    @field_validator("statement")
+    @classmethod
+    def _statement_non_empty(cls, value: str) -> str:
+        return _require_non_empty(value, "statement")
 
     @model_validator(mode="after")
     def _requires_at_least_one_hypothesis(self) -> "GrowthStrategy":
@@ -225,7 +265,7 @@ class ProductZoneAssessment(_CommonFields):
     unique_score: float
     zone: str
     assessment_reason: str | None = None
-    evidence_refs: list[str] = []
+    evidence_refs: list[str] = Field(default_factory=list)
     assessor: str
 
 
@@ -234,6 +274,11 @@ class ProductConcept(_CommonFields, _AiProvenanceFields):
     strategy_id: str
     title: str
     description: str | None = None
+
+    @field_validator("title")
+    @classmethod
+    def _title_non_empty(cls, value: str) -> str:
+        return _require_non_empty(value, "title")
 
 
 class ProductComponent(_CommonFields):
@@ -245,14 +290,14 @@ class ProductComponent(_CommonFields):
 class ProductPattern(_CommonFields):
     status: GenericRecordStatus = "DRAFT"
     title: str
-    component_ids: list[str] = []
+    component_ids: list[str] = Field(default_factory=list)
 
 
 class ProductDefinition(_CommonFields):
     status: GenericRecordStatus = "DRAFT"
     concept_id: str
     pattern_id: str | None = None
-    component_ids: list[str] = []
+    component_ids: list[str] = Field(default_factory=list)
 
 
 class ServiceBlueprintVersion(_CommonFields):

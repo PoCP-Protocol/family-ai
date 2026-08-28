@@ -107,7 +107,10 @@ async def pg_repo():
 
 
 def _human_ctx(tenant: str = "tenant-pg-1") -> ActorContext:
-    return ActorContext(actor_id="pm-1", actor_type="HUMAN", tenant_scope=tenant)
+    return ActorContext(
+        actor_id="pm-1", actor_type="HUMAN", tenant_scope=tenant,
+        permissions=frozenset({"product_intelligence.hypothesis.review"}),
+    )
 
 
 def _ai_ctx(tenant: str = "tenant-pg-1") -> ActorContext:
