@@ -477,3 +477,33 @@ capabilities:
       production_authorized: false
       pilot_authorized: false
     notes: "PR-001R 清理后唯一 canonical 的 Product Intelligence domain;对应 PR #33(clean rebase 分支 feat/product-intelligence-domain-v0-1-clean);PR #27 为前序 review/history reference,非当前操作 PR。"
+
+  - capability_id: PRODUCT_ZONE_ENGINE_V0_PR002
+    stage: PR-002
+    status: INTERNAL_LOCAL_ALLOWED   # 仅内部确定性三区战略引擎 V0;不含前端/真实模型调用/试点/生产/自动发布/FPDL/Compiler/Simulation/Component Registry
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # 仅本地/内部确定性 runtime(non-generative,non-live-model);非生产
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: "project-owner (PR-002 MASTER TASK instruction) + family-chief-architect (approval of PR #33 as precondition)"
+    authorization_ref: "architecture/ADR_PRODUCT_ZONE_SCORING_V0.md; architecture/ADR_PRODUCT_ZONE_GOVERNANCE_V0.md"
+    authorized_at: "2026-08-29"
+    supersedes: []
+    scope:
+      domain: product_intelligence
+      subject: ProductConcept
+      surfaces: []   # 不含前端
+      included_ranges: [domain, api_local, migration, test]
+    constraints:
+      frontend_authorized: false
+      live_model_call_authorized: false
+      pilot_authorized: false
+      production_authorized: false
+      automatic_publish_authorized: false
+      fpdl_authorized: false
+      compiler_authorized: false
+      simulation_authorized: false
+      component_registry_authorized: false
+    notes: "三区战略引擎 V0(Three-Zone Strategy Engine);仅对 ProductConcept 做内部确定性评分/分区,契约与范围以两份 ADR 为准,本条目不重复展开细节。"
