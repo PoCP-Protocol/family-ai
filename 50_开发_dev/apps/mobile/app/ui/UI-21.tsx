@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
@@ -34,25 +34,33 @@ export default function ConsultationBookingScreen() {
   const [needFocus, setNeedFocus] = useState("");
   const [expectation, setExpectation] = useState("");
   const [submitState, setSubmitState] = useState<"idle" | "submitting" | "saved" | "error">("idle");
+  const [projectionState, setProjectionState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  useEffect(() => {
-    if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
+  const loadBookingContext = useCallback(() => {
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      setProjectionState("idle");
+      return () => undefined;
+    }
     let active = true;
+    setProjectionState("loading");
     familyApi.getServiceOfferings<FamilyApiServiceSupplyProjection>(session.token, session.selectedFamily.family_id, {})
       .then(async (result) => {
         if (!active) return;
         setSupply(result);
         const selected = result.offerings.find((item) => item.service_offering_ref === offeringRef) ?? result.offerings[0];
-        if (!selected) return;
+        if (!selected) { setProjectionState("ready"); return; }
         const slotResult = await familyApi.getServiceSlots<FamilyApiServiceSlotsProjection>(session.token!, session.selectedFamily!.family_id, selected.service_offering_ref, selected.version_no);
         if (!active) return;
         setSlots(slotResult);
         const preferred = slotResult.slots.find((item) => item.availability_slot_ref === slotRef) ?? slotResult.slots.find((item) => item.status === "AVAILABLE");
         setSelectedSlot(preferred?.availability_slot_ref ?? null);
         if (preferred) setChannel(preferred.channel);
-      }).catch(() => undefined);
+        setProjectionState("ready");
+      }).catch(() => { if (active) setProjectionState("error"); });
     return () => { active = false; };
   }, [offeringRef, session.selectedFamily, session.status, session.token, slotRef]);
+
+  useEffect(() => loadBookingContext(), [loadBookingContext]);
 
   const offerings = useMemo(() => serviceOfferingsForDisplay(supply?.offerings), [supply?.offerings]);
   const offering = offerings.find((item) => item.offeringRef === offeringRef) ?? offerings[0];
@@ -93,24 +101,30 @@ export default function ConsultationBookingScreen() {
     <ScreenContainer edges={["left", "right", "bottom"]}>
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>在线咨询 / 预约</Text><Text style={styles.topMore}>↗</Text></View>
+        <View style={styles.topBar}><Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>在线咨询 / 预约</Text><Text style={styles.topMore}>↗</Text></View>
         <View style={styles.steps}>
           {["选择方式", "选择时间", "填写信息", "确认需求"].map((label, index) => <View key={label} style={styles.step}><View style={[styles.stepCircle, { backgroundColor: index === 0 ? colors.tint : colors.surface, borderColor: index === 0 ? colors.tint : colors.border }]}><Text style={[styles.stepNumber, { color: index === 0 ? "#FFFFFF" : colors.muted }]}>{index + 1}</Text></View><Text style={[styles.stepLabel, { color: index === 0 ? colors.text : colors.muted }]}>{label}</Text></View>)}
         </View>
 
+        {projectionState === "error" ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="重新加载预约信息" onPress={loadBookingContext} style={styles.inlineNotice}>
+            <Text style={[styles.inlineNoticeText, { color: colors.muted }]}>暂时无法读取预约信息，点击重试</Text>
+          </Pressable>
+        ) : null}
+
         <Text style={[styles.sectionTitle, { color: colors.text }]}>选择咨询方式</Text>
-        <View style={styles.channelGrid}>{CHANNELS.map((item) => <Pressable key={item.id} onPress={() => setChannel(item.id)} style={({ pressed }) => [styles.channelCard, { backgroundColor: colors.surface, borderColor: channel === item.id ? colors.tint : colors.border }, pressed && styles.pressed]}><View style={[styles.channelIcon, { backgroundColor: channel === item.id ? "#2563EB18" : "#8794A515" }]}><IconSymbol name={item.icon} size={24} color={channel === item.id ? colors.tint : colors.muted} /></View><View style={styles.channelCopy}><Text style={[styles.channelLabel, { color: colors.text }]}>{item.label}</Text><Text style={[styles.channelDetail, { color: colors.muted }]}>{item.detail}</Text></View></Pressable>)}</View>
+        <View style={styles.channelGrid}>{CHANNELS.map((item) => <Pressable key={item.id} accessibilityRole="radio" accessibilityLabel={`选择${item.label}`} accessibilityState={{ selected: channel === item.id }} onPress={() => setChannel(item.id)} style={({ pressed }) => [styles.channelCard, { backgroundColor: colors.surface, borderColor: channel === item.id ? colors.tint : colors.border }, pressed && styles.pressed]}><View style={[styles.channelIcon, { backgroundColor: channel === item.id ? "#2563EB18" : "#8794A515" }]}><IconSymbol name={item.icon} size={24} color={channel === item.id ? colors.tint : colors.muted} /></View><View style={styles.channelCopy}><Text style={[styles.channelLabel, { color: colors.text }]}>{item.label}</Text><Text style={[styles.channelDetail, { color: colors.muted }]}>{item.detail}</Text></View></Pressable>)}</View>
 
         <View style={styles.sectionHeading}><Text style={[styles.sectionTitle, { color: colors.text }]}>选择时间</Text><Text style={[styles.sectionMeta, { color: colors.muted }]}>也可以稍后确认</Text></View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.slotRow}>
-          {(slots?.slots ?? []).map((item) => { const selected = selectedSlot === item.availability_slot_ref; return <Pressable key={item.availability_slot_ref} onPress={() => { setSelectedSlot(item.availability_slot_ref); setChannel(item.channel); }} style={({ pressed }) => [styles.slotChip, { backgroundColor: selected ? "#EAF1FF" : colors.surface, borderColor: selected ? colors.tint : colors.border }, pressed && styles.pressed]}><Text style={[styles.slotText, { color: selected ? colors.tint : colors.text }]}>{formatSlot(item.starts_at)}</Text><Text style={[styles.slotChannel, { color: colors.muted }]}>{channelLabel(item.channel)}</Text></Pressable>; })}
+          {(slots?.slots ?? []).map((item) => { const selected = selectedSlot === item.availability_slot_ref; const timeLabel = formatSlot(item.starts_at); return <Pressable key={item.availability_slot_ref} accessibilityRole="radio" accessibilityLabel={`选择时段 ${timeLabel}`} accessibilityState={{ selected }} onPress={() => { setSelectedSlot(item.availability_slot_ref); setChannel(item.channel); }} style={({ pressed }) => [styles.slotChip, { backgroundColor: selected ? "#EAF1FF" : colors.surface, borderColor: selected ? colors.tint : colors.border }, pressed && styles.pressed]}><Text style={[styles.slotText, { color: selected ? colors.tint : colors.text }]}>{timeLabel}</Text><Text style={[styles.slotChannel, { color: colors.muted }]}>{channelLabel(item.channel)}</Text></Pressable>; })}
           {!slots?.slots.length ? <View style={[styles.slotChip, { backgroundColor: colors.surface, borderColor: colors.border }]}><Text style={[styles.slotText, { color: colors.text }]}>时间待确认</Text><Text style={[styles.slotChannel, { color: colors.muted }]}>先保存家庭偏好</Text></View> : null}
         </ScrollView>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>家庭需求</Text>
         <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.fieldLabel, { color: colors.text }]}>孩子年龄阶段</Text>
-          <View style={styles.ageRow}>{AGE_BANDS.map((item) => <Pressable key={item} onPress={() => setAgeBand(item)} style={({ pressed }) => [styles.ageChip, { borderColor: ageBand === item ? colors.tint : colors.border, backgroundColor: ageBand === item ? "#EAF1FF" : colors.background }, pressed && styles.pressed]}><Text style={[styles.ageText, { color: ageBand === item ? colors.tint : colors.muted }]}>{item}</Text></Pressable>)}</View>
+          <View style={styles.ageRow}>{AGE_BANDS.map((item) => <Pressable key={item} accessibilityRole="radio" accessibilityLabel={`选择孩子年龄阶段：${item}`} accessibilityState={{ selected: ageBand === item }} onPress={() => setAgeBand(item)} style={({ pressed }) => [styles.ageChip, { borderColor: ageBand === item ? colors.tint : colors.border, backgroundColor: ageBand === item ? "#EAF1FF" : colors.background }, pressed && styles.pressed]}><Text style={[styles.ageText, { color: ageBand === item ? colors.tint : colors.muted }]}>{item}</Text></Pressable>)}</View>
           <Text style={[styles.fieldLabel, { color: colors.text }]}>想先了解的问题</Text>
           <TextInput value={needFocus} onChangeText={setNeedFocus} multiline maxLength={180} placeholder="例如：最近写作业容易分心，沟通时双方都很着急" placeholderTextColor={colors.muted} style={[styles.textArea, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} textAlignVertical="top" />
           <Text style={[styles.perspectiveHint, { color: colors.muted }]}>这里记录的是家长当前的观察和感受，不会被当作对孩子的事实或诊断。</Text>
@@ -122,9 +136,9 @@ export default function ConsultationBookingScreen() {
 
         {submitState === "saved" || state.consultationNeedDraft?.offeringRef === offering.offeringRef ? <View style={[styles.receipt, { backgroundColor: "#16866D12", borderColor: colors.success }]}><IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} /><View style={styles.receiptCopy}><Text style={[styles.receiptTitle, { color: colors.success }]}>咨询需求已记下</Text><Text style={[styles.receiptText, { color: colors.muted }]}>当前没有向外部联系人发消息；你可以在“我的咨询与活动”里回看。</Text></View></View> : submitState === "error" ? <Text style={[styles.error, { color: colors.error }]}>暂时无法同步，但本机的家庭私有草稿已经保留。</Text> : null}
 
-        <Pressable disabled={submitState === "submitting"} onPress={saveConsultationNeed} style={({ pressed }) => [styles.confirmAction, { backgroundColor: colors.tint }, pressed && styles.pressed, submitState === "submitting" && styles.disabled]}>{submitState === "submitting" ? <View style={styles.loadingContent}><ActivityIndicator size="small" color="#FFFFFF" /><Text style={styles.confirmText}>正在保存</Text></View> : <Text style={styles.confirmText}>确认预约</Text>}</Pressable>
-        <Pressable onPress={() => router.push("/ui/UI-24" as Href)} style={({ pressed }) => [styles.recordsAction, pressed && styles.pressed]}><Text style={[styles.recordsText, { color: colors.tint }]}>查看我的咨询与活动</Text><IconSymbol name="chevron.right" size={18} color={colors.tint} /></Pressable>
-        <Modal transparent visible={submitState === "saved"} animationType="fade" onRequestClose={() => setSubmitState("idle")}><View style={styles.modalScrim}><View style={styles.successModal}><IconSymbol name="checkmark.circle.fill" size={44} color={colors.success} /><Text style={styles.successTitle}>咨询需求已保存</Text><Text style={styles.successText}>已记录在家庭私有空间。当前没有联系专家、确认时段或发送通知。</Text><Pressable onPress={() => setSubmitState("idle")} style={styles.successAction}><Text style={styles.successActionText}>我知道了</Text></Pressable></View></View></Modal>
+        <Pressable accessibilityRole="button" accessibilityLabel="确认预约" disabled={submitState === "submitting"} onPress={saveConsultationNeed} style={({ pressed }) => [styles.confirmAction, { backgroundColor: colors.tint }, pressed && styles.pressed, submitState === "submitting" && styles.disabled]}>{submitState === "submitting" ? <View style={styles.loadingContent}><ActivityIndicator size="small" color="#FFFFFF" /><Text style={styles.confirmText}>正在保存</Text></View> : <Text style={styles.confirmText}>确认预约</Text>}</Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="查看我的咨询与活动" onPress={() => router.push("/ui/UI-24" as Href)} style={({ pressed }) => [styles.recordsAction, pressed && styles.pressed]}><Text style={[styles.recordsText, { color: colors.tint }]}>查看我的咨询与活动</Text><IconSymbol name="chevron.right" size={18} color={colors.tint} /></Pressable>
+        <Modal transparent visible={submitState === "saved"} animationType="fade" onRequestClose={() => setSubmitState("idle")}><View style={styles.modalScrim}><View style={styles.successModal}><IconSymbol name="checkmark.circle.fill" size={44} color={colors.success} /><Text style={styles.successTitle}>咨询需求已保存</Text><Text style={styles.successText}>已记录在家庭私有空间。当前没有联系专家、确认时段或发送通知。</Text><Pressable accessibilityRole="button" accessibilityLabel="我知道了" onPress={() => setSubmitState("idle")} style={styles.successAction}><Text style={styles.successActionText}>我知道了</Text></Pressable></View></View></Modal>
       </ScrollView>
     </ScreenContainer>
   );
@@ -142,5 +156,6 @@ const styles = StyleSheet.create({
   slotRow: { gap: 8 }, slotChip: { minWidth: 128, minHeight: 62, borderWidth: 1, borderRadius: 15, paddingHorizontal: 12, paddingVertical: 9, gap: 2 }, slotText: { fontSize: 11, lineHeight: 16, fontWeight: "900" }, slotChannel: { fontSize: 9, lineHeight: 13 },
   formCard: { borderWidth: 1, borderRadius: 20, padding: 14, gap: 10 }, fieldLabel: { fontSize: 13, lineHeight: 18, fontWeight: "900" }, ageRow: { flexDirection: "row", flexWrap: "wrap", gap: 7 }, ageChip: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 9, paddingVertical: 6 }, ageText: { fontSize: 10, lineHeight: 15, fontWeight: "800" }, textArea: { minHeight: 94, borderWidth: 1, borderRadius: 14, padding: 11, fontSize: 13, lineHeight: 20 }, textAreaSmall: { minHeight: 72, borderWidth: 1, borderRadius: 14, padding: 11, fontSize: 13, lineHeight: 20 }, perspectiveHint: { fontSize: 10, lineHeight: 16 },
   consent: { minHeight: 70, borderWidth: 1, borderRadius: 17, padding: 12, flexDirection: "row", alignItems: "flex-start", gap: 8 }, consentText: { flex: 1, fontSize: 11, lineHeight: 17 }, receipt: { minHeight: 80, borderWidth: 1, borderRadius: 18, padding: 13, flexDirection: "row", alignItems: "center", gap: 9 }, receiptCopy: { flex: 1, gap: 3 }, receiptTitle: { fontSize: 14, lineHeight: 20, fontWeight: "900" }, receiptText: { fontSize: 11, lineHeight: 17 }, error: { fontSize: 12, lineHeight: 18 },
+  inlineNotice: { marginTop: -4 }, inlineNoticeText: { fontSize: 12, lineHeight: 18, textAlign: "center" },
   confirmAction: { minHeight: 54, borderRadius: 18, alignItems: "center", justifyContent: "center" }, loadingContent: { flexDirection: "row", alignItems: "center", gap: 8 }, disabled: { opacity: 0.78 }, confirmText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "900" }, recordsAction: { minHeight: 42, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 2 }, recordsText: { fontSize: 12, lineHeight: 17, fontWeight: "800" }, modalScrim: { flex: 1, backgroundColor: "#09295A66", alignItems: "center", justifyContent: "center", paddingHorizontal: 34 }, successModal: { width: "100%", borderRadius: 24, backgroundColor: "#FFFFFF", padding: 24, alignItems: "center", gap: 12 }, successTitle: { color: "#09295A", fontSize: 20, lineHeight: 28, fontWeight: "900" }, successText: { color: "#5D6D84", fontSize: 13, lineHeight: 20, textAlign: "center" }, successAction: { alignSelf: "stretch", minHeight: 48, borderRadius: 18, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center", marginTop: 4 }, successActionText: { color: "#FFFFFF", fontSize: 15, lineHeight: 21, fontWeight: "900" }, pressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
 });

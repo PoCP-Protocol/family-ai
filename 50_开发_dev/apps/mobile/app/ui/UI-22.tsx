@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
@@ -21,15 +21,22 @@ export default function SalonListScreen() {
   const [projection, setProjection] = useState<FamilyApiPlatformSurfacesProjection | null>(null);
   const [query, setQuery] = useState("");
   const [theme, setTheme] = useState<(typeof THEMES)[number]>("全部");
+  const [projectionState, setProjectionState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  useEffect(() => {
-    if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
+  const loadSurfaces = useCallback(() => {
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      setProjectionState("idle");
+      return () => undefined;
+    }
     let active = true;
+    setProjectionState("loading");
     familyApi.getDevPlatformSurfaces<FamilyApiPlatformSurfacesProjection>(session.token, session.selectedFamily.family_id)
-      .then((result) => { if (active) setProjection(result); })
-      .catch(() => undefined);
+      .then((result) => { if (!active) return; setProjection(result); setProjectionState("ready"); })
+      .catch(() => { if (active) setProjectionState("error"); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
+
+  useEffect(() => loadSurfaces(), [loadSurfaces]);
 
   const catalog = selectGrowthActivityCatalog(projection);
   const activities = useMemo(() => {
@@ -53,20 +60,27 @@ export default function SalonListScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
-            <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>线下沙龙</Text><Text style={styles.topMore}>•••</Text></View>
+            <View style={styles.topBar}><Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>线下沙龙</Text><Text style={styles.topMore}>•••</Text></View>
             <View style={styles.hero}>
               <View style={styles.heroCopy}><Text style={styles.heroTitle}>走进家庭成长沙龙，与同阶段家长交流</Text><Text style={styles.heroText}>学习 · 交流 · 成长</Text></View>
               <View style={styles.heroIllustration}><IconSymbol name="person.2.fill" size={45} color="#FFFFFF" /></View>
             </View>
+
+            {projectionState === "error" ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="重新加载沙龙活动" onPress={loadSurfaces} style={styles.inlineNotice}>
+                <Text style={[styles.inlineNoticeText, { color: colors.muted }]}>暂时无法读取沙龙活动，点击重试</Text>
+              </Pressable>
+            ) : null}
+
             <View style={styles.searchRow}>
               <View style={[styles.cityChip, { backgroundColor: colors.surface, borderColor: colors.border }]}><Text style={[styles.cityText, { color: colors.text }]}>北京市⌄</Text></View>
               <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}><IconSymbol name="magnifyingglass" size={19} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} placeholder="搜索沙龙主题 / 讲师 / 场地" placeholderTextColor={colors.muted} style={[styles.searchInput, { color: colors.text }]} returnKeyType="search" /></View>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.themeRow}>{THEMES.map((item) => <Pressable key={item} onPress={() => setTheme(item)} style={({ pressed }) => [styles.themeChip, { backgroundColor: theme === item ? colors.tint : colors.surface, borderColor: theme === item ? colors.tint : colors.border }, pressed && styles.pressed]}><Text style={[styles.themeText, { color: theme === item ? "#FFFFFF" : colors.muted }]}>{item}</Text></Pressable>)}</ScrollView>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.themeRow}>{THEMES.map((item) => <Pressable key={item} accessibilityRole="button" accessibilityLabel={`筛选主题：${item}`} accessibilityState={{ selected: theme === item }} onPress={() => setTheme(item)} style={({ pressed }) => [styles.themeChip, { backgroundColor: theme === item ? colors.tint : colors.surface, borderColor: theme === item ? colors.tint : colors.border }, pressed && styles.pressed]}><Text style={[styles.themeText, { color: theme === item ? "#FFFFFF" : colors.muted }]}>{item}</Text></Pressable>)}</ScrollView>
           </View>
         }
         renderItem={({ item, index }) => (
-          <Pressable onPress={() => openActivity(item)} style={({ pressed }) => [styles.activityCard, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`查看${item.title}活动详情`} onPress={() => openActivity(item)} style={({ pressed }) => [styles.activityCard, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}>
             <View style={[styles.activityVisual, { backgroundColor: `${item.accent}18` }]}><IconSymbol name={index % 2 === 0 ? "person.2.fill" : "book.fill"} size={38} color={item.accent} /></View>
             <View style={styles.activityCopy}>
               <View style={styles.activityTopline}><Text style={[styles.activityTag, { color: item.accent, backgroundColor: `${item.accent}15` }]}>{item.theme}</Text><Text style={[styles.sourceText, { color: colors.muted }]}>{item.source === "FAMILY_API" ? "家庭活动目录" : "活动资料"}</Text></View>
@@ -91,4 +105,5 @@ const styles = StyleSheet.create({
   themeRow: { gap: 8 }, themeChip: { minHeight: 36, borderWidth: 1, borderRadius: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 14 }, themeText: { fontSize: 11, lineHeight: 16, fontWeight: "800" },
   activityCard: { minHeight: 188, borderWidth: 1, borderRadius: 21, padding: 12, flexDirection: "row", gap: 12, marginBottom: 9 }, activityVisual: { width: 112, borderRadius: 18, alignItems: "center", justifyContent: "center" }, activityCopy: { flex: 1, gap: 6 }, activityTopline: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 5 }, activityTag: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, fontSize: 9, lineHeight: 13, fontWeight: "900" }, sourceText: { fontSize: 8, lineHeight: 12 }, activityTitle: { fontSize: 16, lineHeight: 22, fontWeight: "900" }, metaLine: { flexDirection: "row", alignItems: "center", gap: 4 }, metaText: { flex: 1, fontSize: 10, lineHeight: 15 }, cardBottom: { marginTop: "auto", flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 6 }, ageHint: { flex: 1, fontSize: 9, lineHeight: 13, fontWeight: "800" }, detailButton: { minHeight: 32, borderRadius: 16, paddingHorizontal: 10, alignItems: "center", justifyContent: "center" }, detailButtonText: { color: "#FFFFFF", fontSize: 10, lineHeight: 14, fontWeight: "900" },
   empty: { minHeight: 150, alignItems: "center", justifyContent: "center", gap: 5 }, emptyTitle: { fontSize: 16, lineHeight: 22, fontWeight: "900" }, emptyText: { fontSize: 12, lineHeight: 18 }, boundary: { minHeight: 68, borderTopWidth: 1, paddingTop: 14, flexDirection: "row", alignItems: "flex-start", gap: 8 }, boundaryText: { flex: 1, fontSize: 11, lineHeight: 17 }, pressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
+  inlineNotice: { marginTop: -2 }, inlineNoticeText: { fontSize: 12, lineHeight: 18, textAlign: "center" },
 });

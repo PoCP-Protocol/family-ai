@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
@@ -36,10 +36,15 @@ export default function GrowthProductDetailScreen() {
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [bookmarked, setBookmarked] = useState(false);
   const [activeTab, setActiveTab] = useState<(typeof BASELINE_INFO_TABS)[number]>("商品详情");
+  const [projectionState, setProjectionState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  useEffect(() => {
-    if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
+  const loadProduct = useCallback(() => {
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      setProjectionState("idle");
+      return () => undefined;
+    }
     let active = true;
+    setProjectionState("loading");
     Promise.all([
       familyApi.getCommerceProducts<FamilyApiCommerceProductsProjection>(session.token, session.selectedFamily.family_id),
       familyApi.getCommerceCustomerProjection<FamilyApiCommerceCustomerProjection>(session.token, session.selectedFamily.family_id),
@@ -47,9 +52,12 @@ export default function GrowthProductDetailScreen() {
       if (!active) return;
       setCatalog(catalogResult);
       setCommerceProjection(projectionResult);
-    }).catch(() => undefined);
+      setProjectionState("ready");
+    }).catch(() => { if (active) setProjectionState("error"); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
+
+  useEffect(() => loadProduct(), [loadProduct]);
 
   const products = useMemo(() => commerceProductsForDisplay(catalog?.products), [catalog?.products]);
   const product = products.find((item) => item.productRef === productRef)
@@ -104,7 +112,7 @@ export default function GrowthProductDetailScreen() {
         </View>
 
         <View style={styles.topBar}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.navButton}>
+          <Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} hitSlop={12} style={styles.navButton}>
             <IconSymbol name="chevron.left" size={26} color="#1E2630" />
           </Pressable>
           <Text style={styles.topTitle}>商品详情</Text>
@@ -156,7 +164,7 @@ export default function GrowthProductDetailScreen() {
           ))}
         </View>
 
-        <Pressable onPress={() => router.push("/ui/UI-15" as Href)} style={({ pressed }) => [styles.shareCard, pressed && styles.pressed]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="分享给3位家长，领取专属优惠券" onPress={() => router.push("/ui/UI-15" as Href)} style={({ pressed }) => [styles.shareCard, pressed && styles.pressed]}>
           <View style={styles.shareIcon}><Text style={styles.shareIconText}>礼</Text></View>
           <View style={styles.shareCopy}>
             <Text style={styles.shareTitle}>分享给3位家长，领取专属优惠券</Text>
@@ -168,7 +176,7 @@ export default function GrowthProductDetailScreen() {
         <View style={styles.infoCard}>
           <View style={styles.tabBar}>
             {BASELINE_INFO_TABS.map((tab) => (
-              <Pressable key={tab} onPress={() => setActiveTab(tab)} style={styles.tabItem}>
+              <Pressable key={tab} accessibilityRole="tab" accessibilityLabel={`切换到${tab}`} accessibilityState={{ selected: activeTab === tab }} onPress={() => setActiveTab(tab)} style={styles.tabItem}>
                 <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
                 {activeTab === tab ? <View style={styles.tabLine} /> : null}
               </Pressable>
@@ -182,24 +190,29 @@ export default function GrowthProductDetailScreen() {
           </View>
         </View>
 
+        {projectionState === "error" ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="重新加载商品详情" onPress={loadProduct} style={styles.inlineNotice}>
+            <Text style={styles.errorText}>暂时无法读取商品详情，点击重试</Text>
+          </Pressable>
+        ) : null}
         {submitState === "error" ? <Text style={styles.errorText}>暂时无法同步，本机意向草稿已经保留</Text> : null}
       </ScrollView>
 
       <View style={styles.actionDock}>
         <View style={styles.actionTools}>
-          <Pressable accessibilityRole="button" accessibilityLabel={bookmarked ? "取消收藏" : "收藏"} onPress={toggleBookmark} style={({ pressed }) => [styles.toolButton, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={bookmarked ? "取消收藏" : "收藏"} accessibilityState={{ selected: bookmarked }} onPress={toggleBookmark} style={({ pressed }) => [styles.toolButton, pressed && styles.pressed]}>
             <IconSymbol name={bookmarked ? "bookmark.fill" : "star.fill"} size={22} color={bookmarked ? "#2F80ED" : "#7B8794"} />
             <Text style={[styles.toolText, bookmarked && styles.toolTextActive]}>收藏</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="客服" onPress={contactSupport} style={({ pressed }) => [styles.toolButton, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="联系客服" onPress={contactSupport} style={({ pressed }) => [styles.toolButton, pressed && styles.pressed]}>
             <IconSymbol name="headphones.fill" size={22} color="#7B8794" />
             <Text style={styles.toolText}>客服</Text>
           </Pressable>
         </View>
-        <Pressable disabled={submitState === "submitting"} onPress={saveIntent} style={({ pressed }) => [styles.buyButton, pressed && styles.pressed]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="立即购买" disabled={submitState === "submitting"} onPress={saveIntent} style={({ pressed }) => [styles.buyButton, pressed && styles.pressed]}>
           <Text style={styles.buttonText}>{submitState === "submitting" ? "正在保存" : "立即购买"}</Text>
         </Pressable>
-        <Pressable onPress={() => router.push(`/ui/UI-16?productRef=${encodeURIComponent(product.productRef)}` as Href)} style={({ pressed }) => [styles.groupButton, pressed && styles.pressed]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="发起拼团" onPress={() => router.push(`/ui/UI-16?productRef=${encodeURIComponent(product.productRef)}` as Href)} style={({ pressed }) => [styles.groupButton, pressed && styles.pressed]}>
           <Text style={styles.buttonText}>发起拼团</Text>
         </Pressable>
       </View>
@@ -304,6 +317,7 @@ const styles = StyleSheet.create({
   courseDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#2F80ED" },
   courseText: { color: "#64748B", fontSize: 13, lineHeight: 18, fontWeight: "700" },
   errorText: { color: "#D14343", fontSize: 12, lineHeight: 18, marginTop: 12 },
+  inlineNotice: { marginTop: 4 },
   actionDock: { position: "absolute", left: 0, right: 0, bottom: 0, minHeight: 82, paddingHorizontal: 12, paddingTop: 9, paddingBottom: 13, borderTopWidth: 1, borderTopColor: "#E7EBF0", backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", gap: 8 },
   actionTools: { width: 96, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   toolButton: { width: 45, minHeight: 54, alignItems: "center", justifyContent: "center", gap: 3 },

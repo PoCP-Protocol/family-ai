@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
@@ -19,23 +19,31 @@ export default function TeacherDetailScreen() {
   const [projection, setProjection] = useState<FamilyApiServiceSupplyProjection | null>(null);
   const [slots, setSlots] = useState<FamilyApiServiceSlotsProjection | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [projectionState, setProjectionState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  useEffect(() => {
-    if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
+  const loadOfferingDetail = useCallback(() => {
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      setProjectionState("idle");
+      return () => undefined;
+    }
     let active = true;
+    setProjectionState("loading");
     familyApi.getServiceOfferings<FamilyApiServiceSupplyProjection>(session.token, session.selectedFamily.family_id, {})
       .then(async (result) => {
         if (!active) return;
         setProjection(result);
         const selected = result.offerings.find((item) => item.service_offering_ref === offeringRef) ?? result.offerings[0];
-        if (!selected) return;
+        if (!selected) { setProjectionState("ready"); return; }
         const slotResult = await familyApi.getServiceSlots<FamilyApiServiceSlotsProjection>(session.token!, session.selectedFamily!.family_id, selected.service_offering_ref, selected.version_no);
         if (!active) return;
         setSlots(slotResult);
         setSelectedSlot(slotResult.slots.find((item) => item.status === "AVAILABLE")?.availability_slot_ref ?? null);
-      }).catch(() => undefined);
+        setProjectionState("ready");
+      }).catch(() => { if (active) setProjectionState("error"); });
     return () => { active = false; };
   }, [offeringRef, session.selectedFamily, session.status, session.token]);
+
+  useEffect(() => loadOfferingDetail(), [loadOfferingDetail]);
 
   const offerings = useMemo(() => serviceOfferingsForDisplay(projection?.offerings), [projection?.offerings]);
   const offering = offerings.find((item) => item.offeringRef === offeringRef) ?? offerings[0];
@@ -52,7 +60,13 @@ export default function TeacherDetailScreen() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View style={styles.header}>
-            <View style={styles.topBar}><Pressable onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>名师详情</Text><IconSymbol name="ellipsis" size={22} color="#22272D" /></View>
+            <View style={styles.topBar}><Pressable accessibilityRole="button" accessibilityLabel="返回" onPress={() => router.back()} style={styles.topBack}><IconSymbol name="chevron.left" size={26} color="#22272D" /></Pressable><Text style={styles.topTitle}>名师详情</Text><IconSymbol name="ellipsis" size={22} color="#22272D" /></View>
+
+            {projectionState === "error" ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="重新加载名师详情" onPress={loadOfferingDetail} style={styles.inlineNotice}>
+                <Text style={[styles.inlineNoticeText, { color: colors.muted }]}>暂时无法读取名师详情，点击重试</Text>
+              </Pressable>
+            ) : null}
             <View style={styles.hero}>
               <View style={styles.heroCopy}>
                 <View style={styles.nameRow}><Text style={styles.name}>{offering.providerName}</Text><Text style={styles.dataBadge}>服务资料</Text></View>
@@ -86,15 +100,15 @@ export default function TeacherDetailScreen() {
         renderItem={({ item }) => {
           const selected = selectedSlot === item.availability_slot_ref;
           const time = formatSlotTime(item.starts_at);
-          return <Pressable onPress={() => setSelectedSlot(item.availability_slot_ref)} style={({ pressed }) => [styles.slotCard, { backgroundColor: colors.surface, borderColor: selected ? colors.tint : colors.border }, pressed && styles.pressed]}><View><Text style={[styles.slotDate, { color: colors.text }]}>{time.date}</Text><Text style={[styles.slotTime, { color: selected ? colors.tint : colors.muted }]}>{time.time} · {channelLabel(item.channel)}</Text></View>{selected ? <IconSymbol name="checkmark.circle.fill" size={22} color={colors.tint} /> : null}</Pressable>;
+          return <Pressable accessibilityRole="radio" accessibilityLabel={`选择时段 ${time.date} ${time.time}`} accessibilityState={{ selected }} onPress={() => setSelectedSlot(item.availability_slot_ref)} style={({ pressed }) => [styles.slotCard, { backgroundColor: colors.surface, borderColor: selected ? colors.tint : colors.border }, pressed && styles.pressed]}><View><Text style={[styles.slotDate, { color: colors.text }]}>{time.date}</Text><Text style={[styles.slotTime, { color: selected ? colors.tint : colors.muted }]}>{time.time} · {channelLabel(item.channel)}</Text></View>{selected ? <IconSymbol name="checkmark.circle.fill" size={22} color={colors.tint} /> : null}</Pressable>;
         }}
         ListEmptyComponent={<View style={[styles.emptySlot, { backgroundColor: colors.surface, borderColor: colors.border }]}><IconSymbol name="calendar.fill" size={24} color={colors.muted} /><View style={styles.emptySlotCopy}><Text style={[styles.slotDate, { color: colors.text }]}>暂无可选时段</Text><Text style={[styles.slotTime, { color: colors.muted }]}>仍可先准备咨询需求，具体安排稍后确认。</Text></View></View>}
         ListFooterComponent={
           <View style={styles.footer}>
             <View style={[styles.review, { backgroundColor: "#FFF9EE", borderColor: "#F0D8A5" }]}><Text style={styles.reviewLabel}>家庭体验说明</Text><Text style={[styles.reviewText, { color: colors.muted }]}>先听清家庭需要，再一起讨论可尝试的行动；过程记录不代表教育结果。</Text></View>
             <View style={styles.actionRow}>
-              <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.textAction, { borderColor: colors.border }, pressed && styles.pressed]}><IconSymbol name="message.fill" size={20} color={colors.tint} /><Text style={[styles.textActionLabel, { color: colors.tint }]}>在线咨询</Text></Pressable>
-              <Pressable onPress={() => router.push(`/ui/UI-21?offeringRef=${encodeURIComponent(offering.offeringRef)}&slotRef=${encodeURIComponent(selectedSlot ?? "")}` as Href)} style={({ pressed }) => [styles.bookAction, pressed && styles.pressed]}><Text style={styles.bookActionLabel}>预约 1 对 1</Text></Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="在线咨询" onPress={() => router.back()} style={({ pressed }) => [styles.textAction, { borderColor: colors.border }, pressed && styles.pressed]}><IconSymbol name="message.fill" size={20} color={colors.tint} /><Text style={[styles.textActionLabel, { color: colors.tint }]}>在线咨询</Text></Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel={`预约与${offering.providerName}的1对1咨询`} onPress={() => router.push(`/ui/UI-21?offeringRef=${encodeURIComponent(offering.offeringRef)}&slotRef=${encodeURIComponent(selectedSlot ?? "")}` as Href)} style={({ pressed }) => [styles.bookAction, pressed && styles.pressed]}><Text style={styles.bookActionLabel}>预约 1 对 1</Text></Pressable>
             </View>
           </View>
         }
@@ -128,4 +142,5 @@ const styles = StyleSheet.create({
   emptySlot: { minHeight: 76, borderWidth: 1, borderRadius: 17, padding: 13, flexDirection: "row", alignItems: "center", gap: 10 }, emptySlotCopy: { flex: 1 },
   footer: { gap: 13, marginTop: 4 }, review: { minHeight: 78, borderWidth: 1, borderRadius: 17, padding: 13, gap: 4 }, reviewLabel: { color: "#B87500", fontSize: 11, lineHeight: 16, fontWeight: "900" }, reviewText: { fontSize: 11, lineHeight: 17 }, actionRow: { flexDirection: "row", gap: 9 },
   textAction: { width: 108, minHeight: 52, borderWidth: 1, borderRadius: 18, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 5 }, textActionLabel: { fontSize: 11, lineHeight: 16, fontWeight: "800" }, bookAction: { flex: 1, minHeight: 52, borderRadius: 18, backgroundColor: "#F28C45", alignItems: "center", justifyContent: "center" }, bookActionLabel: { color: "#FFFFFF", fontSize: 15, lineHeight: 21, fontWeight: "900" }, pressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
+  inlineNotice: { marginTop: -3 }, inlineNoticeText: { fontSize: 12, lineHeight: 18, textAlign: "center" },
 });

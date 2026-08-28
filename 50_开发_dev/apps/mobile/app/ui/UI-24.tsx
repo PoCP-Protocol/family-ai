@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { FamilyRefreshControl } from "@/components/family/family-refresh-control";
@@ -19,16 +19,28 @@ export default function MyConsultationsAndActivitiesScreen() {
   const state = useFamilyMobile();
   const [supply, setSupply] = useState<FamilyApiServiceSupplyProjection | null>(null);
   const [projection, setProjection] = useState<FamilyApiServiceCustomerProjection | null>(null);
+  const [projectionState, setProjectionState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  useEffect(() => {
-    if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
+  const loadRecords = useCallback(() => {
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      setProjectionState("idle");
+      return () => undefined;
+    }
     let active = true;
+    setProjectionState("loading");
     Promise.all([
       familyApi.getServiceOfferings<FamilyApiServiceSupplyProjection>(session.token, session.selectedFamily.family_id, {}),
       familyApi.getServiceCustomerProjection<FamilyApiServiceCustomerProjection>(session.token, session.selectedFamily.family_id),
-    ]).then(([supplyResult, customerResult]) => { if (!active) return; setSupply(supplyResult); setProjection(customerResult); }).catch(() => undefined);
+    ]).then(([supplyResult, customerResult]) => {
+      if (!active) return;
+      setSupply(supplyResult);
+      setProjection(customerResult);
+      setProjectionState("ready");
+    }).catch(() => { if (active) setProjectionState("error"); });
     return () => { active = false; };
   }, [session.selectedFamily, session.status, session.token]);
+
+  useEffect(() => loadRecords(), [loadRecords]);
 
   const offerings = useMemo(() => serviceOfferingsForDisplay(supply?.offerings), [supply?.offerings]);
   const remoteBookings = projection?.bookings ?? [];
@@ -46,19 +58,25 @@ export default function MyConsultationsAndActivitiesScreen() {
         <View style={styles.profileRow}><View style={styles.avatar}><Text style={styles.avatarText}>家</Text></View><View style={styles.profileCopy}><Text style={[styles.profileName, { color: colors.text }]}>我们的家庭</Text><Text style={[styles.profileLevel, { color: colors.muted }]}>家庭支持记录 · 私有可见</Text></View><View style={styles.memberBadge}><IconSymbol name="star.fill" size={15} color="#B87500" /><Text style={styles.memberText}>成长中心</Text></View></View>
         <View style={[styles.stats, { backgroundColor: colors.surface, borderColor: colors.border }]}><Stat value={consultationCount} label="我的咨询" /><Stat value={activityCount} label="我的活动" /><Stat value={recordCount} label="过程记录" /><Stat value={state.uiActionReceipts.length} label="家庭小记" /></View>
 
-        <View style={styles.sectionHeading}><Text style={[styles.sectionTitle, { color: colors.text }]}>我的咨询</Text><Pressable onPress={() => router.push("/ui/UI-19" as Href)}><Text style={[styles.sectionAction, { color: colors.tint }]}>继续了解</Text></Pressable></View>
+        {projectionState === "error" ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="重新加载咨询与活动记录" onPress={loadRecords} style={styles.inlineNotice}>
+            <Text style={[styles.inlineNoticeText, { color: colors.muted }]}>暂时无法读取咨询与活动记录，点击重试</Text>
+          </Pressable>
+        ) : null}
+
+        <View style={styles.sectionHeading}><Text style={[styles.sectionTitle, { color: colors.text }]}>我的咨询</Text><Pressable accessibilityRole="button" accessibilityLabel="继续了解名师专区" onPress={() => router.push("/ui/UI-19" as Href)}><Text style={[styles.sectionAction, { color: colors.tint }]}>继续了解</Text></Pressable></View>
         {remoteBookings.length ? remoteBookings.slice(0, 3).map((item) => {
           const offering = offerings.find((candidate) => candidate.offeringRef === item.service_offering_ref);
           return <View key={item.booking_request_id} style={[styles.recordCard, { backgroundColor: colors.surface, borderColor: colors.border }]}><View style={[styles.recordAvatar, { backgroundColor: "#2563EB18" }]}><IconSymbol name="person.crop.circle.fill" size={29} color={colors.tint} /></View><View style={styles.recordCopy}><Text style={[styles.recordTitle, { color: colors.text }]}>{offering?.providerName || "家庭成长顾问"} · {offering?.title || "家庭支持"}</Text><Text style={[styles.recordMeta, { color: colors.muted }]}>{formatDate(item.starts_at)} · {channelLabel(item.channel)}</Text></View><StatusBadge status={item.status} /></View>;
         }) : localDraft ? <View style={[styles.recordCard, { backgroundColor: colors.surface, borderColor: colors.border }]}><View style={[styles.recordAvatar, { backgroundColor: "#2563EB18" }]}><IconSymbol name="person.crop.circle.fill" size={29} color={colors.tint} /></View><View style={styles.recordCopy}><Text style={[styles.recordTitle, { color: colors.text }]}>{localDraft.providerName} · {localDraft.offeringTitle}</Text><Text style={[styles.recordMeta, { color: colors.muted }]}>{localDraft.timePreference} · {channelLabel(localDraft.channel)}</Text></View><StatusBadge status={localDraft.state === "SYNCED_RECEIPT" ? "REQUESTED" : "DRAFT"} /></View> : <EmptyPanel title="还没有咨询记录" text="可以先从名师专区了解支持主题，不需要现在作决定。" target="UI-19" />}
 
-        <View style={styles.sectionHeading}><Text style={[styles.sectionTitle, { color: colors.text }]}>我的活动</Text><Pressable onPress={() => router.push("/ui/UI-22" as Href)}><Text style={[styles.sectionAction, { color: colors.tint }]}>发现活动</Text></Pressable></View>
+        <View style={styles.sectionHeading}><Text style={[styles.sectionTitle, { color: colors.text }]}>我的活动</Text><Pressable accessibilityRole="button" accessibilityLabel="发现更多活动" onPress={() => router.push("/ui/UI-22" as Href)}><Text style={[styles.sectionAction, { color: colors.tint }]}>发现活动</Text></Pressable></View>
         {activityDraft ? <View style={[styles.recordCard, { backgroundColor: colors.surface, borderColor: colors.border }]}><View style={[styles.recordAvatar, { backgroundColor: "#F28C4518" }]}><IconSymbol name="calendar.fill" size={27} color="#F28C45" /></View><View style={styles.recordCopy}><Text style={[styles.recordTitle, { color: colors.text }]}>{activityDraft.activityTitle}</Text><Text style={[styles.recordMeta, { color: colors.muted }]}>活动想法已保存在家庭空间，时间与方式待确认</Text></View><StatusBadge status="DRAFT" /></View> : <EmptyPanel title="还没有活动想法" text="可以先看看适合当前家庭阶段的活动主题。" target="UI-22" />}
 
-        <Pressable onPress={() => router.push("/ui/UI-18" as Href)} style={({ pressed }) => [styles.memberBanner, pressed && styles.pressed]}><View style={styles.memberCopy}><Text style={styles.memberLabel}>成长会员年卡</Text><Text style={styles.memberTitle}>专家支持、活动和家庭成长服务统一回看</Text><View style={styles.memberBenefits}><Text style={styles.memberBenefit}>专家服务</Text><Text style={styles.memberBenefit}>成长活动</Text><Text style={styles.memberBenefit}>家庭记录</Text></View></View><View style={styles.memberAction}><Text style={styles.memberActionText}>查看权益</Text></View></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="查看成长会员年卡权益" onPress={() => router.push("/ui/UI-18" as Href)} style={({ pressed }) => [styles.memberBanner, pressed && styles.pressed]}><View style={styles.memberCopy}><Text style={styles.memberLabel}>成长会员年卡</Text><Text style={styles.memberTitle}>专家支持、活动和家庭成长服务统一回看</Text><View style={styles.memberBenefits}><Text style={styles.memberBenefit}>专家服务</Text><Text style={styles.memberBenefit}>成长活动</Text><Text style={styles.memberBenefit}>家庭记录</Text></View></View><View style={styles.memberAction}><Text style={styles.memberActionText}>查看权益</Text></View></Pressable>
 
         <View style={[styles.boundary, { borderColor: colors.border }]}><IconSymbol name="lock.fill" size={20} color={colors.success} /><Text style={[styles.boundaryText, { color: colors.muted }]}>这里回看的咨询、活动和服务记录只说明家庭曾经记下过一个过程，不代表服务效果或孩子变化。</Text></View>
-        <Pressable onPress={() => router.push("/ui/UI-34" as Href)} style={({ pressed }) => [styles.recordsButton, { borderColor: colors.tint }, pressed && styles.pressed]}><Text style={[styles.recordsButtonText, { color: colors.tint }]}>查看完整服务记录</Text><IconSymbol name="chevron.right" size={19} color={colors.tint} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="查看完整服务记录" onPress={() => router.push("/ui/UI-34" as Href)} style={({ pressed }) => [styles.recordsButton, { borderColor: colors.tint }, pressed && styles.pressed]}><Text style={[styles.recordsButtonText, { color: colors.tint }]}>查看完整服务记录</Text><IconSymbol name="chevron.right" size={19} color={colors.tint} /></Pressable>
       </ScrollView>
     </ScreenContainer>
   );
@@ -66,11 +84,12 @@ export default function MyConsultationsAndActivitiesScreen() {
 
 function Stat({ value, label }: { value: number; label: string }) { const colors = useColors(); return <View style={styles.stat}><Text style={[styles.statValue, { color: colors.text }]}>{value}</Text><Text style={[styles.statLabel, { color: colors.muted }]}>{label}</Text></View>; }
 function StatusBadge({ status }: { status: string }) { const label = status === "CONFIRMED" ? "已确认" : status === "CANCELLED" ? "已暂停" : status === "REQUESTED" ? "需求已记下" : status === "COMPLETED" ? "已完成" : "家庭草稿"; const color = status === "CANCELLED" ? "#8794A5" : status === "CONFIRMED" || status === "COMPLETED" ? "#16866D" : "#F28C45"; return <View style={[styles.statusBadge, { backgroundColor: `${color}15` }]}><Text style={[styles.statusText, { color }]}>{label}</Text></View>; }
-function EmptyPanel({ title, text, target }: { title: string; text: string; target: string }) { const colors = useColors(); return <Pressable onPress={() => router.push(`/ui/${target}` as Href)} style={({ pressed }) => [styles.emptyPanel, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}><View style={styles.emptyCopy}><Text style={[styles.recordTitle, { color: colors.text }]}>{title}</Text><Text style={[styles.recordMeta, { color: colors.muted }]}>{text}</Text></View><IconSymbol name="chevron.right" size={20} color={colors.tint} /></Pressable>; }
+function EmptyPanel({ title, text, target }: { title: string; text: string; target: string }) { const colors = useColors(); return <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={() => router.push(`/ui/${target}` as Href)} style={({ pressed }) => [styles.emptyPanel, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.pressed]}><View style={styles.emptyCopy}><Text style={[styles.recordTitle, { color: colors.text }]}>{title}</Text><Text style={[styles.recordMeta, { color: colors.muted }]}>{text}</Text></View><IconSymbol name="chevron.right" size={20} color={colors.tint} /></Pressable>; }
 function formatDate(value: string) { const date = new Date(value); return Number.isNaN(date.valueOf()) ? "时间待确认" : date.toLocaleString("zh-CN", { month: "numeric", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit" }); }
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 38, gap: 14 }, topBar: { minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, topSpacer: { width: 42 }, topTitle: { color: "#22272D", fontSize: 19, lineHeight: 26, fontWeight: "900" }, topMore: { color: "#22272D", fontSize: 18, lineHeight: 20, fontWeight: "900" }, profileRow: { flexDirection: "row", alignItems: "center", gap: 11 }, avatar: { width: 62, height: 62, borderRadius: 31, backgroundColor: "#DCE8FF", alignItems: "center", justifyContent: "center" }, avatarText: { color: "#09295A", fontSize: 24, fontWeight: "900" }, profileCopy: { flex: 1, gap: 2 }, profileName: { fontSize: 20, lineHeight: 27, fontWeight: "900" }, profileLevel: { fontSize: 11, lineHeight: 16 }, memberBadge: { minHeight: 32, borderRadius: 16, backgroundColor: "#FFF2D8", paddingHorizontal: 10, flexDirection: "row", alignItems: "center", gap: 3 }, memberText: { color: "#B87500", fontSize: 10, lineHeight: 14, fontWeight: "900" },
+  inlineNotice: { marginTop: -4 }, inlineNoticeText: { fontSize: 12, lineHeight: 18, textAlign: "center" },
   stats: { minHeight: 84, borderWidth: 1, borderRadius: 19, flexDirection: "row", alignItems: "center" }, stat: { flex: 1, alignItems: "center", gap: 3 }, statValue: { fontSize: 21, lineHeight: 27, fontWeight: "900" }, statLabel: { fontSize: 9, lineHeight: 13, textAlign: "center" }, sectionHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 2 }, sectionTitle: { fontSize: 19, lineHeight: 26, fontWeight: "900" }, sectionAction: { fontSize: 11, lineHeight: 16, fontWeight: "800" },
   recordCard: { minHeight: 90, borderWidth: 1, borderRadius: 19, padding: 12, flexDirection: "row", alignItems: "center", gap: 9 }, recordAvatar: { width: 50, height: 50, borderRadius: 16, alignItems: "center", justifyContent: "center" }, recordCopy: { flex: 1, gap: 4 }, recordTitle: { fontSize: 13, lineHeight: 19, fontWeight: "900" }, recordMeta: { fontSize: 10, lineHeight: 15 }, statusBadge: { borderRadius: 9, paddingHorizontal: 7, paddingVertical: 4 }, statusText: { fontSize: 9, lineHeight: 13, fontWeight: "900" },
   emptyPanel: { minHeight: 82, borderWidth: 1, borderRadius: 19, padding: 13, flexDirection: "row", alignItems: "center", gap: 8 }, emptyCopy: { flex: 1, gap: 4 }, memberBanner: { minHeight: 148, borderRadius: 23, backgroundColor: "#09295A", padding: 17, flexDirection: "row", alignItems: "center", gap: 12 }, memberCopy: { flex: 1, gap: 7 }, memberLabel: { color: "#F5C568", fontSize: 13, lineHeight: 18, fontWeight: "900" }, memberTitle: { color: "#FFFFFF", fontSize: 17, lineHeight: 23, fontWeight: "900" }, memberBenefits: { flexDirection: "row", flexWrap: "wrap", gap: 5 }, memberBenefit: { color: "#D7E5FF", backgroundColor: "#FFFFFF14", borderRadius: 9, paddingHorizontal: 7, paddingVertical: 4, fontSize: 9, lineHeight: 13, fontWeight: "700" }, memberAction: { minHeight: 38, borderRadius: 19, backgroundColor: "#F5D99B", paddingHorizontal: 12, alignItems: "center", justifyContent: "center" }, memberActionText: { color: "#714800", fontSize: 10, lineHeight: 14, fontWeight: "900" },
