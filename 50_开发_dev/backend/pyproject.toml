@@ -1,0 +1,52 @@
+[project]
+name = "family-ai-backend"
+version = "0.1.0"
+description = "Family AI Python-only backend workspace (FAMILY-AI-PYTHON-ONLY-VERTICAL-P0-001, Batch 1: Assessment domain)"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "pydantic>=2.9",
+  "sqlalchemy>=2.0",
+  "alembic>=1.13",
+  "asyncpg>=0.29",
+  "httpx>=0.27",
+  "python-dotenv>=1.0",
+  "uvicorn[standard]>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "ruff>=0.6",
+  "mypy>=1.11",
+]
+
+[tool.uv.workspace]
+members = [
+  "apps/family_api",
+  "apps/ai_runtime",
+  "apps/workflow_worker",
+  "packages/contracts",
+  "packages/platform_kernel",
+  "packages/persistence",
+  "packages/events",
+  "packages/observability",
+  "packages/security",
+  "packages/testing",
+  "domains/assessment",
+  "intelligence",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests", "domains"]

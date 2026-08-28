@@ -1,0 +1,179 @@
+"""FastAPI routes — port of the assessment-related endpoints in
+`family.controller.ts`:
+  GET  :familyId/ui/02/assessment
+  POST :familyId/assessments/sessions
+  POST :familyId/assessments/sessions/:sessionId/responses
+  POST :familyId/assessments/sessions/:sessionId/submit
+  GET  :familyId/ui/03/growth-hypothesis
+  POST :familyId/growth-hypotheses/decisions
+
+Auth/family-context extraction is a thin FastAPI dependency
+(`get_family_context`) mirroring the `@FamilyContext()`/`@ActorId()`
+decorators — actual JWT/session verification is wired in `apps/family_api`,
+not duplicated here.
+"""
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, HTTPException, Header
+
+from ..application.commands import (
+    AssessmentCommandHandler,
+    MutationMeta,
+    SaveAssessmentResponseCommand,
+    StartAssessmentCommand,
+    SubmitAssessmentCommand,
+)
+from ..application.growth_hypothesis_commands import DecideGrowthHypothesisCommand, GrowthHypothesisCommandHandler
+from ..application.queries import AssessmentQueryHandler, GetUi02ProjectionQuery, GetUi03ProjectionQuery
+from ..domain.errors import (
+    AssessmentConflictError,
+    AssessmentDomainError,
+    AssessmentForbiddenError,
+    AssessmentNotFoundError,
+    AssessmentValidationError,
+)
+from .dependencies import FamilyContext, get_command_handler, get_family_context, get_growth_hypothesis_handler, get_query_handler
+from .requests import DecideGrowthHypothesisRequestBody, SaveAssessmentResponseRequestBody, StartAssessmentRequestBody
+
+router = APIRouter()
+
+_ERROR_STATUS = {
+    AssessmentValidationError: 400,
+    AssessmentForbiddenError: 403,
+    AssessmentNotFoundError: 404,
+    AssessmentConflictError: 409,
+}
+
+
+def _raise_as_http(error: AssessmentDomainError) -> None:
+    status_code = _ERROR_STATUS.get(type(error), 400)
+    raise HTTPException(status_code=status_code, detail=error.code) from error
+
+
+@router.get("/{family_id}/ui/02/assessment")
+async def get_ui02_projection(
+    family_id: str,
+    context: FamilyContext = Depends(get_family_context),
+    handler: AssessmentQueryHandler = Depends(get_query_handler),
+):
+    if context.family_id != family_id:
+        raise HTTPException(status_code=401, detail="real_family_session_required")
+    try:
+        return await handler.get_ui02_projection(GetUi02ProjectionQuery(family_id, context.tenant_id, context.person_id))
+    except AssessmentDomainError as error:
+        _raise_as_http(error)
+
+
+@router.post("/{family_id}/assessments/sessions")
+async def start_assessment(
+    family_id: str,
+    body: StartAssessmentRequestBody,
+    context: FamilyContext = Depends(get_family_context),
+    handler: AssessmentCommandHandler = Depends(get_command_handler),
+    x_correlation_id: str | None = Header(default=None),
+    idempotency_key: str | None = Header(default=None),
+    x_source: str | None = Header(default=None),
+):
+    if context.family_id != family_id:
+        raise HTTPException(status_code=401, detail="real_family_session_required")
+    meta = MutationMeta(x_correlation_id or "", idempotency_key or "", x_source or "")
+    try:
+        return await handler.start(
+            StartAssessmentCommand(
+                family_id, context.tenant_id, context.person_id, body.subject_person_id, body.tool_ref, meta
+            )
+        )
+    except AssessmentDomainError as error:
+        _raise_as_http(error)
+
+
+@router.post("/{family_id}/assessments/sessions/{session_id}/responses")
+async def save_assessment_response(
+    family_id: str,
+    session_id: str,
+    body: SaveAssessmentResponseRequestBody,
+    context: FamilyContext = Depends(get_family_context),
+    handler: AssessmentCommandHandler = Depends(get_command_handler),
+    x_correlation_id: str | None = Header(default=None),
+    idempotency_key: str | None = Header(default=None),
+    x_source: str | None = Header(default=None),
+):
+    if context.family_id != family_id:
+        raise HTTPException(status_code=401, detail="real_family_session_required")
+    meta = MutationMeta(x_correlation_id or "", idempotency_key or "", x_source or "")
+    try:
+        return await handler.save_response(
+            SaveAssessmentResponseCommand(
+                family_id,
+                context.tenant_id,
+                context.person_id,
+                session_id,
+                body.item_ref,
+                body.response_type,
+                body.response_value,
+                meta,
+            )
+        )
+    except AssessmentDomainError as error:
+        _raise_as_http(error)
+
+
+@router.post("/{family_id}/assessments/sessions/{session_id}/submit")
+async def submit_assessment(
+    family_id: str,
+    session_id: str,
+    context: FamilyContext = Depends(get_family_context),
+    handler: AssessmentCommandHandler = Depends(get_command_handler),
+    x_correlation_id: str | None = Header(default=None),
+    idempotency_key: str | None = Header(default=None),
+    x_source: str | None = Header(default=None),
+):
+    if context.family_id != family_id:
+        raise HTTPException(status_code=401, detail="real_family_session_required")
+    meta = MutationMeta(x_correlation_id or "", idempotency_key or "", x_source or "")
+    try:
+        return await handler.submit(SubmitAssessmentCommand(family_id, context.tenant_id, context.person_id, session_id, meta))
+    except AssessmentDomainError as error:
+        _raise_as_http(error)
+
+
+@router.get("/{family_id}/ui/03/growth-hypothesis")
+async def get_ui03_projection(
+    family_id: str,
+    context: FamilyContext = Depends(get_family_context),
+    handler: AssessmentQueryHandler = Depends(get_query_handler),
+):
+    if context.family_id != family_id:
+        raise HTTPException(status_code=401, detail="real_family_session_required")
+    try:
+        return await handler.get_ui03_projection(GetUi03ProjectionQuery(family_id, context.tenant_id, context.person_id))
+    except AssessmentDomainError as error:
+        _raise_as_http(error)
+
+
+@router.post("/{family_id}/growth-hypotheses/decisions")
+async def decide_growth_hypothesis(
+    family_id: str,
+    body: DecideGrowthHypothesisRequestBody,
+    context: FamilyContext = Depends(get_family_context),
+    handler: GrowthHypothesisCommandHandler = Depends(get_growth_hypothesis_handler),
+    x_correlation_id: str | None = Header(default=None),
+    idempotency_key: str | None = Header(default=None),
+):
+    if context.family_id != family_id:
+        raise HTTPException(status_code=401, detail="real_family_session_required")
+    try:
+        return await handler.decide(
+            DecideGrowthHypothesisCommand(
+                family_id,
+                context.tenant_id,
+                context.person_id,
+                body.assessment_session_id,
+                body.hypothesis_ref,
+                body.decision_type,
+                x_correlation_id or "",
+                idempotency_key or "",
+            )
+        )
+    except AssessmentDomainError as error:
+        _raise_as_http(error)
