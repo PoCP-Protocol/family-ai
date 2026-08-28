@@ -87,3 +87,79 @@ async def test_load_granted_purposes_only_returns_granted_status(connection):
     )
 
     assert granted == {ConsentPurpose.SERVICE}
+
+
+async def _grant(conn, family_id: str, child_id: str, purpose: str, status: str = "GRANTED") -> None:
+    guardian_id = str(uuid.uuid4())
+    await conn.execute(
+        text(
+            "insert into persons(person_id, family_id, person_type, parent_role, display_name) "
+            "values (:id, :family_id, 'PARENT', 'MOTHER', '监护人')"
+        ),
+        {"id": guardian_id, "family_id": family_id},
+    )
+    # EXPIRED/WITHDRAWN rows must not violate the partial-unique index on
+    # active (family, subject, purpose) GRANTED consents (migration 0005),
+    # so non-GRANTED statuses are allowed to coexist with a later GRANTED row.
+    withdrawn_at = "now()" if status == "WITHDRAWN" else "null"
+    await conn.execute(
+        text(
+            f"""
+            insert into consents(family_id, subject_person_id, guardian_person_id, purpose, status, policy_version, granted_at, withdrawn_at)
+            values (:family_id, :child_id, :guardian_id, :purpose, :status, 'v1', now(), {withdrawn_at})
+            """
+        ),
+        {"family_id": family_id, "child_id": child_id, "guardian_id": guardian_id, "purpose": purpose, "status": status},
+    )
+
+
+async def test_all_three_required_purposes_granted_returns_full_set(connection):
+    """The happy path the assertRequiredGrowthConsents three-purpose check
+    depends on — all of SERVICE/ASSESSMENT/GROWTH_TRACKING GRANTED must be
+    returned as the full set (real-DB parity with the Fake double)."""
+    family_id, child_id = await _seed_family_with_child(connection)
+    for purpose in ("SERVICE", "ASSESSMENT", "GROWTH_TRACKING"):
+        await _grant(connection, family_id, child_id, purpose)
+
+    repo = SqlAlchemyConsentRepository(connection)
+    granted = await repo.load_granted_purposes(
+        family_id, child_id, (ConsentPurpose.SERVICE, ConsentPurpose.ASSESSMENT, ConsentPurpose.GROWTH_TRACKING)
+    )
+    assert granted == {ConsentPurpose.SERVICE, ConsentPurpose.ASSESSMENT, ConsentPurpose.GROWTH_TRACKING}
+
+
+async def test_withdrawn_and_expired_consents_are_not_counted(connection):
+    """A WITHDRAWN or EXPIRED consent row must not satisfy the check — only
+    status='GRANTED' counts. This is the real-DB equivalent of the Fake's
+    status filter, and the exact fail-open risk a real integration test
+    exists to catch."""
+    family_id, child_id = await _seed_family_with_child(connection)
+    await _grant(connection, family_id, child_id, "SERVICE", status="WITHDRAWN")
+    await _grant(connection, family_id, child_id, "ASSESSMENT", status="EXPIRED")
+    await _grant(connection, family_id, child_id, "GROWTH_TRACKING", status="GRANTED")
+
+    repo = SqlAlchemyConsentRepository(connection)
+    granted = await repo.load_granted_purposes(
+        family_id, child_id, (ConsentPurpose.SERVICE, ConsentPurpose.ASSESSMENT, ConsentPurpose.GROWTH_TRACKING)
+    )
+    assert granted == {ConsentPurpose.GROWTH_TRACKING}
+
+
+async def test_query_handler_fail_closed_end_to_end(connection):
+    """End-to-end through the real `ConsentQueryHandler` (the port other
+    domains depend on): with only SERVICE granted, the three-purpose assert
+    must raise fail-closed, naming the two missing purposes — proves the
+    domain policy + real repository compose correctly against Postgres, not
+    just the raw row read."""
+    from domains.consent.application.queries import ConsentQueryHandler
+    from domains.consent.domain.errors import ConsentForbiddenError
+
+    family_id, child_id = await _seed_family_with_child(connection)
+    await _grant(connection, family_id, child_id, "SERVICE")
+
+    handler = ConsentQueryHandler(SqlAlchemyConsentRepository(connection))
+    with pytest.raises(ConsentForbiddenError) as exc:
+        await handler.assert_required_growth_consents(family_id, child_id)
+    # Missing ASSESSMENT and GROWTH_TRACKING should both be named.
+    assert "ASSESSMENT" in exc.value.code
+    assert "GROWTH_TRACKING" in exc.value.code

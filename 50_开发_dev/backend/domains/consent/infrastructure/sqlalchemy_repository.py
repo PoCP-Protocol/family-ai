@@ -15,7 +15,7 @@ sole writer. Same convention as
 """
 from __future__ import annotations
 
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from ..application.ports import ConsentRepositoryPort
@@ -41,6 +41,17 @@ class SqlAlchemyConsentRepository(ConsentRepositoryPort):
         # is sufficient here -- this is a read-before-write guard, not the
         # write itself, so it must not block concurrent readers of the same
         # rows, only writers who would change status away from GRANTED).
+        # NOTE: use an `IN (...)` expanding bindparam rather than
+        # `= any(:purposes::consent_purpose[])`. The `::consent_purpose[]`
+        # cast immediately after `:purposes` defeats SQLAlchemy's named-param
+        # parser (it fails to recognize `:purposes` as a bind and passes a
+        # literal `:` through to asyncpg → "syntax error at or near :"). A
+        # real-Postgres integration test caught this; the Fake repository
+        # never executes SQL so it could not. `expanding=True` renders one
+        # placeholder per element, and Postgres compares the text `purpose`
+        # column against the string values directly (no explicit array cast
+        # needed). Same `bindparam(expanding=True)` pattern the Family
+        # domain's SqlAlchemy repository already uses for its role list.
         result = await self._connection.execute(
             text(
                 """
@@ -48,11 +59,11 @@ class SqlAlchemyConsentRepository(ConsentRepositoryPort):
                 from consents
                 where family_id = :family_id
                   and subject_person_id = :subject_person_id
-                  and purpose = any(:purposes::consent_purpose[])
+                  and purpose in :purposes
                   and status = 'GRANTED'
                 for share
                 """
-            ),
+            ).bindparams(bindparam("purposes", expanding=True)),
             {
                 "family_id": family_id,
                 "subject_person_id": subject_person_id,
