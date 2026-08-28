@@ -15,7 +15,7 @@ interface ServiceJourney {
 }
 
 interface JourneyPlanProjection {
-  plan?: { plan_id?: string; current_phase?: string; phases?: { phase: string; status: string }[] } | null;
+  plan?: { plan_id?: string; status?: string; current_phase?: string; phases?: { phase: string; status: string }[] } | null;
 }
 
 const WEEKLY_TASKS = ["完成3次亲子沟通练习", "孩子情绪记录 3/3 天", "学习计划执行 4/6 天"] as const;
@@ -34,6 +34,8 @@ export default function CompanionJourneyScreen() {
   const [journeyPlan, setJourneyPlan] = useState<JourneyPlanProjection | null>(null);
   const [reviewState, setReviewState] = useState<"idle" | "submitting">("idle");
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
+  const [pauseState, setPauseState] = useState<"idle" | "submitting">("idle");
+  const [pauseMessage, setPauseMessage] = useState<string | null>(null);
   const serviceCardsOpacity = useRef(new Animated.Value(0.62)).current;
   const serviceCardsOffset = useRef(new Animated.Value(5)).current;
   const serviceCardsRevealed = useRef(false);
@@ -59,6 +61,22 @@ export default function CompanionJourneyScreen() {
   const thirdTaskDone = Boolean(lastReceipt) || campCompletedDays.length > 0;
   const plan = journeyPlan?.plan;
   const reviewDue = plan?.phases?.find((phase) => phase.phase === plan.current_phase)?.status === "REVIEW_DUE";
+  const canPausePlan = plan?.status === "ACTIVE";
+
+  const pausePlan = async () => {
+    if (pauseState === "submitting" || !plan?.plan_id || session.status !== "connected" || !session.token || !session.selectedFamily) return;
+    setPauseState("submitting");
+    setPauseMessage(null);
+    try {
+      const result = await familyApi.pauseJourneyPlan<JourneyPlanProjection>(session.token, session.selectedFamily.family_id, plan.plan_id, `ui05-pause-${plan.plan_id}`);
+      setJourneyPlan(result);
+      setPauseMessage("计划已暂停，随时可以在准备好后继续。");
+    } catch {
+      setPauseMessage("暂时无法暂停计划，请稍后重试。");
+    } finally {
+      setPauseState("idle");
+    }
+  };
 
   const reviewPhase = async (decision: "CONTINUE" | "ADJUST") => {
     if (reviewState === "submitting" || !plan?.plan_id || session.status !== "connected" || !session.token || !session.selectedFamily) return;
@@ -143,6 +161,7 @@ export default function CompanionJourneyScreen() {
               })}
             </View>
             {reviewDue ? <View style={styles.reviewPanel}><Text style={styles.reviewTitle}>这一阶段可以回顾了</Text><Text style={styles.reviewText}>一起决定继续下一阶段，或先调整节奏。</Text>{reviewMessage ? <Text style={styles.reviewText}>{reviewMessage}</Text> : null}<View style={styles.reviewActions}><Pressable disabled={reviewState === "submitting"} onPress={() => reviewPhase("CONTINUE")} style={({ pressed }) => [styles.reviewPrimary, pressed && styles.pressed]}><Text style={styles.reviewPrimaryText}>{reviewState === "submitting" ? "正在记录" : "继续下一阶段"}</Text></Pressable><Pressable disabled={reviewState === "submitting"} onPress={() => reviewPhase("ADJUST")} style={({ pressed }) => [styles.reviewSecondary, pressed && styles.pressed]}><Text style={styles.reviewSecondaryText}>先调整节奏</Text></Pressable></View></View> : null}
+            {canPausePlan ? <View style={styles.pausePanel}>{pauseMessage ? <Text style={styles.reviewText}>{pauseMessage}</Text> : null}<Pressable disabled={pauseState === "submitting"} onPress={pausePlan} style={({ pressed }) => [styles.pauseButton, pressed && styles.pressed]}><Text style={styles.pauseButtonText}>{pauseState === "submitting" ? "正在暂停" : "暂停计划"}</Text></Pressable></View> : null}
           </View>
 
           <View style={styles.segmentBar}>
@@ -231,4 +250,5 @@ const styles = StyleSheet.create({
   fabPlus: { color: "#FFFFFF", fontSize: 25, lineHeight: 29, fontWeight: "500" },
   fabText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "900" },
   reviewPanel: { marginTop: 13, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#EDF0F5", gap: 6 }, reviewTitle: { color: "#1E2732", fontSize: 14, lineHeight: 20, fontWeight: "900" }, reviewText: { color: "#697585", fontSize: 12, lineHeight: 17, fontWeight: "700" }, reviewActions: { flexDirection: "row", gap: 8, marginTop: 3 }, reviewPrimary: { flex: 1, minHeight: 36, borderRadius: 18, backgroundColor: "#247DF0", alignItems: "center", justifyContent: "center" }, reviewPrimaryText: { color: "#FFFFFF", fontSize: 12, lineHeight: 17, fontWeight: "900" }, reviewSecondary: { flex: 1, minHeight: 36, borderRadius: 18, borderWidth: 1, borderColor: "#CFD8E4", alignItems: "center", justifyContent: "center" }, reviewSecondaryText: { color: "#596878", fontSize: 12, lineHeight: 17, fontWeight: "900" }, pressed: { opacity: 0.86, transform: [{ scale: 0.98 }] },
+  pausePanel: { marginTop: 13, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#EDF0F5", gap: 6 }, pauseButton: { minHeight: 36, borderRadius: 18, borderWidth: 1, borderColor: "#CFD8E4", alignItems: "center", justifyContent: "center" }, pauseButtonText: { color: "#596878", fontSize: 12, lineHeight: 17, fontWeight: "900" },
 });

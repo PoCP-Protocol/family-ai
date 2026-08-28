@@ -35,6 +35,7 @@ export default function ConsultationBookingScreen() {
   const [expectation, setExpectation] = useState("");
   const [submitState, setSubmitState] = useState<"idle" | "submitting" | "saved" | "error">("idle");
   const [projectionState, setProjectionState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [cancelState, setCancelState] = useState<"idle" | "submitting" | "error">("idle");
 
   const loadBookingContext = useCallback(() => {
     if (session.status !== "connected" || !session.token || !session.selectedFamily) {
@@ -97,6 +98,28 @@ export default function ConsultationBookingScreen() {
     }
   };
 
+  const cancelBooking = async () => {
+    const bookingRequestId = state.consultationNeedDraft?.bookingRequestId;
+    if (cancelState === "submitting" || !bookingRequestId) return;
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) {
+      setCancelState("error");
+      return;
+    }
+    setCancelState("submitting");
+    try {
+      await familyApi.cancelServiceBooking(session.token, session.selectedFamily.family_id, {
+        page_id: "UI-21",
+        booking_request_id: bookingRequestId,
+      });
+      state.cancelConsultationNeedDraft();
+      setSubmitState("idle");
+      setCancelState("idle");
+      haptic.light();
+    } catch {
+      setCancelState("error");
+    }
+  };
+
   return (
     <ScreenContainer edges={["left", "right", "bottom"]}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -134,7 +157,23 @@ export default function ConsultationBookingScreen() {
 
         <View style={[styles.consent, { backgroundColor: "#F2F7FF", borderColor: "#CADBFA" }]}><IconSymbol name="checkmark.circle.fill" size={21} color={colors.tint} /><Text style={[styles.consentText, { color: colors.muted }]}>我理解这只是保存咨询需求；是否安排真人服务、具体时间和方式，之后仍需家庭确认。</Text></View>
 
-        {submitState === "saved" || state.consultationNeedDraft?.offeringRef === offering.offeringRef ? <View style={[styles.receipt, { backgroundColor: "#16866D12", borderColor: colors.success }]}><IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} /><View style={styles.receiptCopy}><Text style={[styles.receiptTitle, { color: colors.success }]}>咨询需求已记下</Text><Text style={[styles.receiptText, { color: colors.muted }]}>当前没有向外部联系人发消息；你可以在“我的咨询与活动”里回看。</Text></View></View> : submitState === "error" ? <Text style={[styles.error, { color: colors.error }]}>暂时无法同步，但本机的家庭私有草稿已经保留。</Text> : null}
+        {state.consultationNeedDraft?.state === "CANCELLED" && state.consultationNeedDraft?.offeringRef === offering.offeringRef ? (
+          <View style={[styles.receipt, { backgroundColor: "#8794A512", borderColor: colors.border }]}><IconSymbol name="pause.circle.fill" size={24} color={colors.muted} /><View style={styles.receiptCopy}><Text style={[styles.receiptTitle, { color: colors.muted }]}>预约已取消</Text><Text style={[styles.receiptText, { color: colors.muted }]}>这个时段已释放，你可以重新选择时间再次预约。</Text></View></View>
+        ) : submitState === "saved" || state.consultationNeedDraft?.offeringRef === offering.offeringRef ? (
+          <View style={[styles.receipt, { backgroundColor: "#16866D12", borderColor: colors.success }]}>
+            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
+            <View style={styles.receiptCopy}>
+              <Text style={[styles.receiptTitle, { color: colors.success }]}>咨询需求已记下</Text>
+              <Text style={[styles.receiptText, { color: colors.muted }]}>当前没有向外部联系人发消息；你可以在"我的咨询与活动"里回看。</Text>
+              {cancelState === "error" ? <Text style={[styles.receiptText, { color: colors.error }]}>暂时无法取消预约，请稍后重试。</Text> : null}
+            </View>
+            {state.consultationNeedDraft?.bookingRequestId ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="取消预约" disabled={cancelState === "submitting"} onPress={cancelBooking} style={({ pressed }) => [styles.cancelBookingAction, pressed && styles.pressed]}>
+                <Text style={[styles.cancelBookingText, { color: colors.error }]}>{cancelState === "submitting" ? "正在取消" : "取消预约"}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : submitState === "error" ? <Text style={[styles.error, { color: colors.error }]}>暂时无法同步，但本机的家庭私有草稿已经保留。</Text> : null}
 
         <Pressable accessibilityRole="button" accessibilityLabel="确认预约" disabled={submitState === "submitting"} onPress={saveConsultationNeed} style={({ pressed }) => [styles.confirmAction, { backgroundColor: colors.tint }, pressed && styles.pressed, submitState === "submitting" && styles.disabled]}>{submitState === "submitting" ? <View style={styles.loadingContent}><ActivityIndicator size="small" color="#FFFFFF" /><Text style={styles.confirmText}>正在保存</Text></View> : <Text style={styles.confirmText}>确认预约</Text>}</Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="查看我的咨询与活动" onPress={() => router.push("/ui/UI-24" as Href)} style={({ pressed }) => [styles.recordsAction, pressed && styles.pressed]}><Text style={[styles.recordsText, { color: colors.tint }]}>查看我的咨询与活动</Text><IconSymbol name="chevron.right" size={18} color={colors.tint} /></Pressable>
@@ -155,7 +194,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 19, lineHeight: 26, fontWeight: "900" }, sectionHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, sectionMeta: { fontSize: 11, lineHeight: 16 }, channelGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 }, channelCard: { width: "48%", minHeight: 88, borderWidth: 1, borderRadius: 17, padding: 11, flexDirection: "row", alignItems: "center", gap: 8 }, channelIcon: { width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center" }, channelCopy: { flex: 1, gap: 2 }, channelLabel: { fontSize: 13, lineHeight: 18, fontWeight: "900" }, channelDetail: { fontSize: 9, lineHeight: 14 },
   slotRow: { gap: 8 }, slotChip: { minWidth: 128, minHeight: 62, borderWidth: 1, borderRadius: 15, paddingHorizontal: 12, paddingVertical: 9, gap: 2 }, slotText: { fontSize: 11, lineHeight: 16, fontWeight: "900" }, slotChannel: { fontSize: 9, lineHeight: 13 },
   formCard: { borderWidth: 1, borderRadius: 20, padding: 14, gap: 10 }, fieldLabel: { fontSize: 13, lineHeight: 18, fontWeight: "900" }, ageRow: { flexDirection: "row", flexWrap: "wrap", gap: 7 }, ageChip: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 9, paddingVertical: 6 }, ageText: { fontSize: 10, lineHeight: 15, fontWeight: "800" }, textArea: { minHeight: 94, borderWidth: 1, borderRadius: 14, padding: 11, fontSize: 13, lineHeight: 20 }, textAreaSmall: { minHeight: 72, borderWidth: 1, borderRadius: 14, padding: 11, fontSize: 13, lineHeight: 20 }, perspectiveHint: { fontSize: 10, lineHeight: 16 },
-  consent: { minHeight: 70, borderWidth: 1, borderRadius: 17, padding: 12, flexDirection: "row", alignItems: "flex-start", gap: 8 }, consentText: { flex: 1, fontSize: 11, lineHeight: 17 }, receipt: { minHeight: 80, borderWidth: 1, borderRadius: 18, padding: 13, flexDirection: "row", alignItems: "center", gap: 9 }, receiptCopy: { flex: 1, gap: 3 }, receiptTitle: { fontSize: 14, lineHeight: 20, fontWeight: "900" }, receiptText: { fontSize: 11, lineHeight: 17 }, error: { fontSize: 12, lineHeight: 18 },
+  consent: { minHeight: 70, borderWidth: 1, borderRadius: 17, padding: 12, flexDirection: "row", alignItems: "flex-start", gap: 8 }, consentText: { flex: 1, fontSize: 11, lineHeight: 17 }, receipt: { minHeight: 80, borderWidth: 1, borderRadius: 18, padding: 13, flexDirection: "row", alignItems: "center", gap: 9 }, receiptCopy: { flex: 1, gap: 3 }, receiptTitle: { fontSize: 14, lineHeight: 20, fontWeight: "900" }, receiptText: { fontSize: 11, lineHeight: 17 }, error: { fontSize: 12, lineHeight: 18 }, cancelBookingAction: { minHeight: 32, paddingHorizontal: 10, alignItems: "center", justifyContent: "center" }, cancelBookingText: { fontSize: 12, lineHeight: 17, fontWeight: "900" },
   inlineNotice: { marginTop: -4 }, inlineNoticeText: { fontSize: 12, lineHeight: 18, textAlign: "center" },
   confirmAction: { minHeight: 54, borderRadius: 18, alignItems: "center", justifyContent: "center" }, loadingContent: { flexDirection: "row", alignItems: "center", gap: 8 }, disabled: { opacity: 0.78 }, confirmText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "900" }, recordsAction: { minHeight: 42, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 2 }, recordsText: { fontSize: 12, lineHeight: 17, fontWeight: "800" }, modalScrim: { flex: 1, backgroundColor: "#09295A66", alignItems: "center", justifyContent: "center", paddingHorizontal: 34 }, successModal: { width: "100%", borderRadius: 24, backgroundColor: "#FFFFFF", padding: 24, alignItems: "center", gap: 12 }, successTitle: { color: "#09295A", fontSize: 20, lineHeight: 28, fontWeight: "900" }, successText: { color: "#5D6D84", fontSize: 13, lineHeight: 20, textAlign: "center" }, successAction: { alignSelf: "stretch", minHeight: 48, borderRadius: 18, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center", marginTop: 4 }, successActionText: { color: "#FFFFFF", fontSize: 15, lineHeight: 21, fontWeight: "900" }, pressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
 });

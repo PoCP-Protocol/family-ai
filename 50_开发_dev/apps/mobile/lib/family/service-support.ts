@@ -51,7 +51,7 @@ export interface ConsultationNeedDraft {
   ageBand: string;
   needFocus: string;
   consentAcknowledged: true;
-  state: "LOCAL_DRAFT" | "SYNCED_RECEIPT";
+  state: "LOCAL_DRAFT" | "SYNCED_RECEIPT" | "CANCELLED";
   bookingRequestId: string | null;
   serviceRecordId: string | null;
   visibility: "FAMILY_PRIVATE";

@@ -246,6 +246,18 @@ export class FamilyApiClient {
     });
   }
 
+  cancelServiceBooking<T>(token: string, familyId: string, body: { page_id: "UI-21"; booking_request_id: string; expected_row_version?: number }) {
+    return this.request<T>(`/families/${familyId}/orchestration/test-loop/services/booking-requests/cancel`, {
+      method: "POST",
+      token,
+      body,
+      headers: {
+        "x-correlation-id": createMobileRequestId("family-mobile-service-cancel"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
   getServiceCustomerProjection<T>(token: string, familyId: string) {
     return this.request<T>(`/families/${familyId}/orchestration/test-loop/services/customer-projection`, { token });
   }
@@ -337,6 +349,19 @@ export class FamilyApiClient {
       headers: {
         "idempotency-key": idempotencyKey,
         "x-correlation-id": createMobileRequestId("family-mobile-journey-plan-confirm"),
+        "x-source": "family-ai-mobile",
+      },
+    });
+  }
+
+  pauseJourneyPlan<T>(token: string, familyId: string, planId: string, idempotencyKey: string) {
+    return this.request<T>(`/families/${familyId}/growth/journey-plans/${planId}/pause`, {
+      method: "POST",
+      token,
+      body: {},
+      headers: {
+        "idempotency-key": idempotencyKey,
+        "x-correlation-id": createMobileRequestId("family-mobile-journey-plan-pause"),
         "x-source": "family-ai-mobile",
       },
     });
