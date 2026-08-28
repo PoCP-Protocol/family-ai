@@ -1,10 +1,13 @@
 """SimulationLab — STRUCTURE_ONLY.
 
 Encodes the same "simulated data cannot self-certify" guardrail as
-`domains/product_strategy/domain/entities.py` `Opportunity.promote_to_invest`,
-deliberately duplicated here rather than sharing one gate function. Two
-independent enforcement points mean a bug in one doesn't silently let
-simulated evidence through the other — see `CLAUDE.md` section 4 and
+`domains/product_intelligence/domain/entities.py` `GrowthHypothesis.mark_validated`
+(the sole canonical Product Intelligence domain per the chief-architect
+PR-001R ruling on PR #27 — `domains/product_strategy` was removed, not just
+this module's docstring reference to it), deliberately duplicated here
+rather than sharing one gate function. Two independent enforcement points
+mean a bug in one doesn't silently let simulated evidence through the other
+— see `CLAUDE.md` section 4 and
 `architecture/FAMILY_PRODUCT_INTELLIGENCE_PLATFORM_TARGET_ARCHITECTURE_DRAFT_001.md`
 §2.
 
@@ -15,12 +18,12 @@ guessed parameters never).
 """
 from __future__ import annotations
 
+from domains.product_intelligence.domain.entities import ProductDefinition
 from packages.contracts.evidence import NON_ESTABLISHING_LEVELS, Provenance
-from packages.contracts.product_factory import ProductDefinition
 
 
-class ProductStrategyValidationError(Exception):
-    """Mirrors `domains.product_strategy.domain.errors.ProductStrategyValidationError`
+class ProductIntelligenceValidationError(Exception):
+    """Mirrors `domains.product_intelligence.domain.errors.ProductIntelligenceValidationError`
     without importing across domain boundaries — `intelligence/` is not a
     domain and should not depend on a specific domain's error hierarchy.
     """
@@ -55,4 +58,4 @@ class SimulationLab:
         authorize moving to a real family pilot.
         """
         if real_evidence.level in NON_ESTABLISHING_LEVELS:
-            raise ProductStrategyValidationError("pilot_promotion_requires_establishing_evidence")
+            raise ProductIntelligenceValidationError("pilot_promotion_requires_establishing_evidence")

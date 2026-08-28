@@ -5,9 +5,13 @@ DOC_KIND        = TARGET_ARCHITECTURE_DRAFT (NOT FROZEN — pending project-owne
 RELATION        = EXTENDS FAMILY_COMMERCIAL_VALUE_STRATEGY_V2.md §8 (三区方法论/独占区候选)
                   SLOTS INTO FAMILY_AI_PYTHON_ONLY_MIGRATION_PLAN_V1.md Batch 7
                   (Design/Product Blueprint/Service Blueprint/Curriculum Design/Content Generation/Design Experiment)
-DATE            = 2026-08-28
-STATUS          = DRAFT — no Approved Task exists yet; no code/directories created under this doc
-AUTHORIZED_BY   = NOT YET — requires explicit project-owner sign-off per CLAUDE.md（一次一个 Approved Task）
+DATE            = 2026-08-28 (originally); updated 2026-08-28 after chief-architect PR-001R review of PR #27
+STATUS          = DRAFT — the "no Approved Task / no code yet" statement below is superseded by
+                  CURRENT_SPRINT.md Override #6: PR-001 (the acceptance-chain slice) is real, authorized,
+                  and is now the sole canonical `domains/product_intelligence` domain. The rest of this
+                  doc's six-layer vision remains DRAFT/unauthorized.
+AUTHORIZED_BY   = PR-001 scope only: project-owner (Override #6) + chief-architect PR-001R review (PR #27).
+                  Everything beyond the acceptance chain still requires explicit sign-off per CLAUDE.md（一次一个 Approved Task）
 SOURCE          = 项目负责人本次会话提出的"Family AI Product OS"提案（六层架构/四发动机/FPDL/Compiler/Simulation Lab）,
                   经与现有SSOT核对后改写为本文档
 ```
@@ -73,6 +77,8 @@ Batch 7 本身尚未被授权(见 `CURRENT_SPRINT.md`)。本文档写成后**不
 
 ## 5. 下一步
 
-1. **已执行(2026-08-28,`CURRENT_SPRINT.md` Override #5)**:项目负责人评审后明确"先建结构、内容留给真实数据"的折中方案,已落地 `packages/contracts/`、`domains/product_strategy/`、`domains/market_intelligence/`、`intelligence/design_copilot/` 四处结构骨架(状态 `STRUCTURE_ONLY`,见各目录 `README.md`)。骨架不含任何猜测出的业务参数,Simulation/Compiler 的护栏方法已编码但未实现真实逻辑。
-2. 骨架不接入任何 app/路由/workflow,不构成对 Batch 7 或新 Batch 9 的正式授权——正式授权仍需在 `governance/AUTHORIZATION_REGISTRY.yaml` 补登记。
-3. 若批准范围仅限"Service Blueprint 接入 primary_contradiction 输入"(第1节已列入 P1),可直接作为下一个 Approved Task 提交,与骨架的授权状态无关。
+1. **已执行(2026-08-28,`CURRENT_SPRINT.md` Override #5)**:先落地 `packages/contracts/`、`domains/product_strategy/`、`domains/market_intelligence/`、`intelligence/design_copilot/` 四处结构骨架(状态 `STRUCTURE_ONLY`)。骨架不含任何猜测出的业务参数。
+2. **已执行(2026-08-28,`CURRENT_SPRINT.md` Override #6,PR-001)**:项目负责人授权把 Signal→Insight→Opportunity→GrowthProblem→GrowthHypothesis→GrowthStrategy→ProductConcept 这条验收链做成真实实现,落地为 `domains/product_intelligence/`。
+3. **已执行(2026-08-28,PR-001R,chief-architect review on PR #27)**:审查发现 (1) 结构骨架里的 `domains/product_strategy/`、`domains/market_intelligence/` 与新落地的 `domains/product_intelligence/` 出现三套重复的 `MarketSignal`/`GrowthProblem`/`Opportunity` 业务真相,已裁决 **`domains/product_intelligence/` 是这条产品智能链唯一的 canonical 业务 Domain**,`domains/product_strategy/`、`domains/market_intelligence/` 已删除(其骨架内容从未被任何 app 引用,删除零成本);(2) `packages/contracts/product_strategy.py`、`packages/contracts/product_factory.py` 同样与 domain 层重复,已删除——`packages/contracts` 现在只保留 `versioned.py`/`evidence.py`(通用版本化与证据词汇机制)+ `product_learning.py`(尚未被任何 domain 实现,暂不冲突),不再是"第二份 domain truth"。`50_开发_dev/backend/tests/test_architecture_ssot.py` 新增架构测试,防止同类重复再次出现而不被发现。
+4. 骨架/PR-001 均不接入任何 app 挂载(`apps/family_api` 尚不存在),不构成对 Batch 7 或新 Batch 9 的整体正式授权——正式授权仍需在 `governance/AUTHORIZATION_REGISTRY.yaml` 补登记(PR-001R 已新增 `PRODUCT_INTELLIGENCE_DOMAIN_V0_1_PR001` 条目,范围仅限本 PR)。
+5. 若批准范围仅限"Service Blueprint 接入 primary_contradiction 输入"(第1节已列入 P1),可直接作为下一个 Approved Task 提交,与本文档其余部分的授权状态无关。

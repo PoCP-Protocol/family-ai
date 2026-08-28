@@ -146,7 +146,10 @@ CREATE TABLE IF NOT EXISTS product_intelligence_growth_hypotheses (
   generated_by varchar(160),
   model_ref varchar(160),
   prompt_use_case_version varchar(160),
-  confidence double precision
+  confidence double precision,
+  validated_by varchar(160),
+  validated_at timestamptz,
+  validation_reason text
 );
 
 CREATE TABLE IF NOT EXISTS product_intelligence_contradiction_models (

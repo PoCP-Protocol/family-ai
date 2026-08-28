@@ -28,3 +28,21 @@ async def sqlalchemy_repo():
 def fake_repo():
     from ..infrastructure.fake_repository import FakeProductIntelligenceRepository
     return FakeProductIntelligenceRepository()
+
+
+@pytest.fixture
+def human_context():
+    from ..application.context import ActorContext
+    return ActorContext(actor_id="human-reviewer-1", actor_type="HUMAN", tenant_scope="tenant-a")
+
+
+@pytest.fixture
+def ai_context():
+    from ..application.context import ActorContext
+    return ActorContext(actor_id="ai-use-case:market.insight.generate", actor_type="AI", tenant_scope="tenant-a")
+
+
+@pytest.fixture
+def other_tenant_human_context():
+    from ..application.context import ActorContext
+    return ActorContext(actor_id="human-reviewer-2", actor_type="HUMAN", tenant_scope="tenant-b")

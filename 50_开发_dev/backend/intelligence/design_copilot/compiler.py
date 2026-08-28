@@ -7,10 +7,16 @@ proposal's compiler-check table (reconciled in
 this class is not called from anywhere; it exists so the 12-check surface is
 agreed on in code before any check is actually implemented, which requires
 Batch 7 authorization.
+
+Imports `ProductDefinition` from `domains.product_intelligence` — the sole
+canonical Product Intelligence domain per the chief-architect PR-001R
+ruling (PR #27 review). `packages/contracts/product_factory.py` was removed
+as a duplicate business-entity source; `packages/contracts` now holds only
+generic version/evidence machinery, not a second domain truth.
 """
 from __future__ import annotations
 
-from packages.contracts.product_factory import ProductDefinition
+from domains.product_intelligence.domain.entities import ProductDefinition
 
 
 class CompilerCheckResult:

@@ -10,11 +10,24 @@ Postgres and the SQLite engine used by this PR's tests (Override #6 item 4
 """
 from __future__ import annotations
 
-from sqlalchemy import Column, DateTime, Float, Integer, String, Text
+from sqlalchemy import Column, Float, Integer, String, Text
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.types import DateTime as _DateTime
 from sqlalchemy.types import JSON
 
 Base = declarative_base()
+
+# PR-001R item 7 (real-Postgres integration test): entities always produce
+# timezone-aware UTC datetimes (`domain/entities.py`, PR-001R item 6), and
+# the migration's columns are `timestamptz`. Passing the bare `DateTime`
+# class to `Column()` defaults to `timezone=False`, which SQLite silently
+# accepts (it has no real datetime type) but real Postgres rejects with
+# "can't subtract offset-naive and offset-aware datetimes" on the very
+# first insert. Every `Column(DateTime, ...)` below uses this
+# pre-constructed `timezone=True` instance instead, so SQLAlchemy maps it
+# to Postgres `TIMESTAMP WITH TIME ZONE` (matching the migration) while
+# remaining a no-op for SQLite.
+DateTime = _DateTime(timezone=True)
 
 
 class MarketSignalRow(Base):
@@ -170,6 +183,9 @@ class GrowthHypothesisRow(Base):
     model_ref = Column(String, nullable=True)
     prompt_use_case_version = Column(String, nullable=True)
     confidence = Column(Float, nullable=True)
+    validated_by = Column(String, nullable=True)
+    validated_at = Column(DateTime, nullable=True)
+    validation_reason = Column(Text, nullable=True)
 
 
 class ContradictionModelRow(Base):
