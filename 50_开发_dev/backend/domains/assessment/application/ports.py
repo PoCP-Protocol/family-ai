@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from ..domain.ai_run import AiRunRecord
 from ..domain.entities import AssessmentSession, GrowthHypothesisEvidence
 from ..domain.value_objects import AssessmentTool
 
@@ -137,3 +138,17 @@ class AssessmentInterpretationPort(Protocol):
     async def interpret(
         self, family_id: str, evidence: GrowthHypothesisEvidence, service_depth: str = "DEEP_AI_INTERPRETATION"
     ) -> dict: ...
+
+
+class AiRunLedgerPort(Protocol):
+    """Records the "AI Run" step of the migration plan's AI Runtime call
+    chain (section 6) — a durable, append-only trace of one AI Runtime call
+    (deterministic fallback or live gateway), independent of the interpretation
+    draft's own content. Implementations MUST NOT raise on the caller's
+    behalf for a failed write becoming a failed interpretation: see
+    `infrastructure/ai_run_ledger.py` module docstring for the fail-open
+    rationale for ledger writes specifically (distinct from this domain's
+    general fail-closed posture on AI *content* boundary violations).
+    """
+
+    async def record(self, run: AiRunRecord) -> None: ...

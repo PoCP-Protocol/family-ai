@@ -13,10 +13,23 @@ Boundary labels (`hypothesis_not_fact`, `recommendation_not_decision`,
 `signal_not_diagnosis`) and the construct-ref whitelist rule are the same
 fail-closed guarantees `assertInterpretationBoundary` enforces in the
 TypeScript version — see migration plan section 10.
+
+AI Run Ledger: an optional `AiRunLedgerPort` may be injected (constructor
+arg, defaulted to `None` for backward compatibility with existing call
+sites). When present, every `interpret()` call — including this fallback
+path with no external call — writes one `AiRunRecord` with
+`generator="deterministic"`, so the ledger can distinguish "this session's
+draft came from the rule-based fallback" from "this session's draft came
+from the live model", which is exactly the audit gap migration plan §9's
+"AI Run Ledger" item exists to close. See `domain/ai_run.py`.
 """
 from __future__ import annotations
 
-from ..application.ports import AssessmentInterpretationPort
+import uuid
+from datetime import datetime, timezone
+
+from ..application.ports import AiRunLedgerPort, AssessmentInterpretationPort
+from ..domain.ai_run import AiRunRecord
 from ..domain.entities import GrowthHypothesisEvidence
 
 _LEGAL_CONSTRUCT_REFS = {
@@ -39,9 +52,16 @@ class DeterministicInterpretationAdapter(AssessmentInterpretationPort):
     which adapter is behind the port.
     """
 
+    def __init__(self, ai_run_ledger: AiRunLedgerPort | None = None):
+        # Optional, defaulted — existing call sites that construct this
+        # adapter with no arguments (tests, prior wiring) keep working
+        # unchanged; the ledger dependency is additive, not breaking.
+        self._ai_run_ledger = ai_run_ledger
+
     async def interpret(
         self, family_id: str, evidence: GrowthHypothesisEvidence, service_depth: str = "DEEP_AI_INTERPRETATION"
     ) -> dict:
+        started_at = datetime.now(timezone.utc)
         construct_ref = _FOCUS_TO_CONSTRUCT.get(evidence.focus_ref)
         construct_signals = []
         if construct_ref in _LEGAL_CONSTRUCT_REFS:
@@ -75,6 +95,28 @@ class DeterministicInterpretationAdapter(AssessmentInterpretationPort):
             "human_gate": {"required": False, "reason_refs": []},
             "prohibited_outputs": [],
         }
+
+        # Ledger entry even though no external call happened — the point of
+        # this record is precisely "this session's interpretation went
+        # through the fallback path, not the live gateway", which matters
+        # for anyone auditing why a family got a deterministic draft.
+        if self._ai_run_ledger is not None:
+            await self._ai_run_ledger.record(
+                AiRunRecord(
+                    run_id=str(uuid.uuid4()),
+                    assessment_session_id=evidence.assessment_session_id,
+                    service_depth=service_depth,
+                    generator="deterministic",
+                    model_name=None,
+                    started_at=started_at,
+                    completed_at=datetime.now(timezone.utc),
+                    input_tokens=None,
+                    output_tokens=None,
+                    outcome="success",
+                    error_detail=None,
+                )
+            )
+
         return {
             "subsystem_ref": "FAMILY_ASSESSMENT_AI_SUBSYSTEM",
             "subsystem_version": "0.1.0",

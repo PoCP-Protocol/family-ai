@@ -14,6 +14,7 @@ from domains.assessment.application.growth_hypothesis_commands import GrowthHypo
 from domains.assessment.application.ports import AssessmentInterpretationPort
 from domains.assessment.application.queries import AssessmentQueryHandler
 from domains.assessment.infrastructure.cached_query_handler import CachedAssessmentQueryHandler
+from domains.assessment.infrastructure.ai_run_ledger import SqlAlchemyAiRunLedger
 from domains.assessment.infrastructure.claude_interpretation import (
     ClaudeInterpretationAdapter,
     is_live_external_ai_authorized,
@@ -32,24 +33,47 @@ from .db import get_connection
 # verification, not for a multi-worker production deployment.
 _query_cache = FakeQueryCache()
 
+# Process-lifetime anthropic client, same rationale as before this task
+# (AI Run Ledger): avoid constructing a fresh `anthropic.AsyncAnthropic()`
+# per request. Only used when `is_live_external_ai_authorized()` is true.
+_anthropic_client: object | None = None
+if is_live_external_ai_authorized():
+    import anthropic
+
+    _anthropic_client = anthropic.AsyncAnthropic()
+
 
 def get_repository(connection: AsyncConnection = Depends(get_connection)) -> SqlAlchemyAssessmentRepository:
     return SqlAlchemyAssessmentRepository(connection)
 
 
-# Constructed once, at import time, not per-request — matches
-# DeterministicInterpretationAdapter's statelessness and avoids constructing
-# a fresh anthropic.AsyncAnthropic() per request if the live path is on.
-# `is_live_external_ai_authorized()` is the ONLY switch: both
-# FAMILY_MODEL_GATEWAY_MODE=live and FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI=true
-# must be explicitly set (G1-A's binding default is neither set, i.e. mock).
-_interpretation_adapter: AssessmentInterpretationPort = (
-    ClaudeInterpretationAdapter() if is_live_external_ai_authorized() else DeterministicInterpretationAdapter()
-)
+def get_ai_run_ledger(connection: AsyncConnection = Depends(get_connection)) -> SqlAlchemyAiRunLedger:
+    """Per-request AI Run Ledger writer — uses the same per-request
+    connection as the repository for simplicity, but issues its own commit
+    (see `SqlAlchemyAiRunLedger`) so a ledger write is not lost if the
+    caller's own transaction later rolls back for an unrelated domain
+    reason, and so a ledger write failure cannot abort the caller's
+    transaction either.
+    """
+    return SqlAlchemyAiRunLedger(connection)
 
 
-def get_interpretation_adapter() -> AssessmentInterpretationPort:
-    return _interpretation_adapter
+def get_interpretation_adapter(
+    ai_run_ledger: SqlAlchemyAiRunLedger = Depends(get_ai_run_ledger),
+) -> AssessmentInterpretationPort:
+    # The adapter itself is now constructed per-request (previously a
+    # process-lifetime singleton) ONLY so the ledger can be wired to the
+    # current request's connection — the underlying `anthropic` client
+    # (the expensive part) stays a process-lifetime singleton via
+    # `_anthropic_client` above, so this is not "construct a fresh
+    # AsyncAnthropic() per request". `is_live_external_ai_authorized()` is
+    # still the ONLY switch between the two adapters: both
+    # FAMILY_MODEL_GATEWAY_MODE=live and
+    # FAMILY_MODEL_ALLOW_LIVE_EXTERNAL_AI=true must be explicitly set
+    # (G1-A's binding default is neither set, i.e. mock/deterministic).
+    if is_live_external_ai_authorized():
+        return ClaudeInterpretationAdapter(client=_anthropic_client, ai_run_ledger=ai_run_ledger)
+    return DeterministicInterpretationAdapter(ai_run_ledger=ai_run_ledger)
 
 
 def get_command_handler(repository: SqlAlchemyAssessmentRepository = Depends(get_repository)) -> AssessmentCommandHandler:
