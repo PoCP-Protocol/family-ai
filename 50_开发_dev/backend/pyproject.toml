@@ -43,6 +43,7 @@ members = [
   "domains/family",
   "domains/consent",
   "domains/growth_priority",
+  "domains/growth_plan",
   "intelligence",
 ]
 
