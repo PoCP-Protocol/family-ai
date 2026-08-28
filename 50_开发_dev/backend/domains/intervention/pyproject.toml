@@ -1,0 +1,10 @@
+[project]
+name = "family-intervention-domain"
+version = "0.1.0"
+description = "Intervention + Action domain — ported from apps/api/src/modules/family/{intervention,growth-action}.service.ts"
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.9"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
