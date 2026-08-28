@@ -36,8 +36,94 @@ Authorization scope:
 **2026-08-26 Project Owner Override (not a Chief Architect ruling — recorded separately, original G1-A block above left unmodified in substance):**
 The project owner explicitly authorized `G1_B_PLUS` and `DB_SCHEMA_CHANGE` for the pre-existing service-collaboration-allocation feature line (`feat/service-collab-allocation-p0-002` and its history: `9d9de4d`→`e84a919`→`a0ea305`→`8427997`→`6eef592`), plus the 4 branches built on top of it today (`feat/theory-whitelist-registry-001`, `feat/academic-need-classification-g1a-001`, `feat/service-product-registry-001`, `feat/growth-priority-theory-basis-001`). This override was requested verbally in-session by the project owner, not by the Chief Architect who signed the G1-A block above — recorded here for traceability, not silently merged into the original ruling. `governance/AUTHORIZATION_REGISTRY.yaml` has no corresponding entry yet; a formal registry entry should still be added before treating this as durable (this note is the interim record). `AUTO_MERGE` and `DIRECT_PUSH_MAIN` remain `NO` — this override unblocks PR creation and review, not unreviewed merge.
 
+**2026-08-27 Project Owner Override #2 (GOLDEN_GROWTH_LOOP UI-02 real-content closure — confirmed after concrete-plan review):**
+The project owner reviewed a concrete implementation plan (per-file breakdown of the 8 hardcoded `M2GrowthDimensionId` sites across 6 files + 2 DB CHECK constraints, and the family-model package's actual dependency footprint) and explicitly authorized:
+1. Bringing `@family/family-model`'s `FAMILY_EDUCATION_ASSESSMENT_ITEM_BANK` constant data (not the LLM runtime — `FamilyEducationModelRuntime`/`assertInterpretationBoundary` and any live external model call remain out of scope, unaffected by G1-A's existing mock/fail-closed default) into `main`, sourced fresh from `packages/family-model/` on `feat/family-memory-p0-subject-scope-001` as standalone files in a new commit — not a cherry-pick of `c53a040` or `44aa11c`, both of which carry unrelated changes.
+2. Widening `M2GrowthDimensionId` by exactly two values: `C_HOMEWORK_PROCESS`, `C_DEVICE_USE_CONTEXT` (confirmed naming, not the full 16-construct item-bank vocabulary).
+3. A new `family.service.ts` orchestration method that, on UI-02 assessment submission, auto-chains `recordPerspective`(per item) → `buildGrowthProfileDrafts` → `confirmGrowthPriority` → `startIntervention` — i.e. all the way through to real `growth_actions` creation, so UI-09 shows a real today-task after a parent submits the assessment. This is a wider automation than the original plan draft (which stopped at priority-confirm); the project owner explicitly extended it to `startIntervention` in this confirmation round.
+Excluded (unchanged from the original G1-A scope and from `confirmGrowthPriority`'s DB-level evidence rule): `assertRequiredGrowthConsents` is not bypassed; perspectives must still originate from the onboarding they're confirmed against; no live external model call. `AUTO_MERGE`/`DIRECT_PUSH_MAIN` remain `NO`. `governance/AUTHORIZATION_REGISTRY.yaml` needs a corresponding formal entry (capability `G1A_FAMILY_EDUCATION_ASSESSMENT_MODEL_INTERNAL` was never registered on `main` at all — this is being added, not amended) before this is durable; this note is the interim record.
+
 Program: 21-Day Program is carried by UI-14/UI-09/UI-31/UI-34; UI-35 is deleted from the product baseline.
-Architecture: `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md`
+Architecture: `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md` — **SUPERSEDED as of 2026-08-28, see below.**
+
+---
+
+## 2026-08-28 Project Owner Override #3 — ARCHITECTURE BASELINE REPLACEMENT: Python-only backend (SUPERSEDES V4.1 `TARGET_FROZEN`)
+
+**This is a project-owner architectural override, not a Chief Architect ruling.** It replaces the frozen target of `architecture/FAMILY_AI_PLATFORM_TECH_ARCHITECTURE_V4_1.md` (business=TypeScript/NestJS, intelligence=Python split) with a new target:
+
+```text
+NEW_TARGET_ARCHITECTURE = PYTHON_ONLY_BACKEND
+FRONTEND                = TypeScript (React Native app / React-Next.js web / ops web / OpenAPI-generated SDK) — UNCHANGED
+BACKEND                 = Python (API, identity/tenancy, all business domains, AI runtime, workflow, data access, migrations)
+MIGRATION_MODE          = ONE_WAY_DOMAIN_TAKEOVER  # per domain: NEST_ACTIVE → PYTHON_READY → CUTOVER → PYTHON_ACTIVE → NEST_REMOVED
+DUAL_WRITE              = FORBIDDEN
+DUAL_PRIMARY            = FORBIDDEN
+V4_1_STATUS             = SUPERSEDED_NOT_DELETED  # kept as historical record of the prior frozen target
+FIRST_TASK              = FAMILY-AI-PYTHON-ONLY-VERTICAL-P0-001 (assessment domain full vertical migration)
+```
+
+**Decision recorded (project owner, in-session, 2026-08-28):**
+1. New frozen architecture baseline is Python-only backend + TypeScript frontend, per the plan authored this session (`50_开发_dev/architecture/FAMILY_AI_PYTHON_ONLY_MIGRATION_PLAN_V1.md` — to be committed as part of this override's paper trail).
+2. Migration is one-way domain takeover, not a big-bang rewrite — one domain has exactly one active runtime owner at any time; NestJS/Python dual-write and dual-primary are explicitly forbidden for any domain during transition.
+3. First development task authorized: `FAMILY-AI-PYTHON-ONLY-VERTICAL-P0-001` — build the Python workspace (`backend/` under `50_开发_dev/`) and migrate the Assessment domain (UI-02/UI-03, AssessmentSession/Response/Evidence/Interpretation, GrowthHypothesis, GrowthIntent bridging) as the first full vertical slice, **including** deregistering/removing the NestJS assessment Controller once the Python path is verified end-to-end. This is a wider authorization than a workspace-skeleton-only start — deregistration/removal of the NestJS assessment module is explicitly in scope for this first task, not deferred to a later confirmation round.
+4. Three PRs opened earlier today under the now-superseded V4.1 target (`#19` communication-conflict closed loop, `#10` `@family/family-model` package, `#21` AI use case ↔ code mapping) are **paused** — no further development or merge review continues on them while this migration is in flight. They remain open (not closed) as a record of validated NestJS-era work; whether their domain logic is ported into the Python migration or left to lapse is a decision for when their respective domains are reached in the migration order below, not now.
+
+**Migration order (per the plan; first batch only is currently authorized to start):**
+```text
+Batch 1 (AUTHORIZED, IN_PROGRESS) = Platform foundation + Assessment domain (UI-02/UI-03)
+Batch 2 (NOT YET AUTHORIZED)      = Family/Relationship/Consent/GrowthIntent/GrowthPlan/Intervention/Action/Outcome
+Batch 3 (NOT YET AUTHORIZED)      = Principal/Conversation/Agent Runtime/Human Handoff
+Batch 4 (NOT YET AUTHORIZED)      = 21-Day Program
+Batch 5 (NOT YET AUTHORIZED)      = Resource/Service/Expert/Organization
+Batch 6 (NOT YET AUTHORIZED)      = Content/Community/Commerce
+Batch 7 (NOT YET AUTHORIZED)      = Design/Product Blueprint platform
+Batch 8 (NOT YET AUTHORIZED)      = Full NestJS deletion + production hardening
+```
+Only Batch 1 is authorized to begin. Each subsequent batch requires its own explicit project-owner confirmation before starting, following the same pattern as this override (concrete plan review, not verbal blanket delegation).
+
+**Unchanged from prior governance (still binding):** `AUTO_MERGE=NO`, `DIRECT_PUSH_MAIN=NO`, `AGENT_SELF_AUTH=NO`, `EXACT_HEAD_REVIEW=REQUIRED`. Consent/safety/human-confirmation/fact-boundary rules carried over from the NestJS implementation must be preserved in the Python port, not weakened in translation. `governance/AUTHORIZATION_REGISTRY.yaml` needs a corresponding formal entry (new capability id, e.g. `PYTHON_ONLY_ARCHITECTURE_MIGRATION_BATCH_1`) before this override is durable; this note is the interim record.
+
+## 2026-08-28 Project Owner Override #4 — GOVERNANCE VELOCITY RELAXATION (Batch 1 exact-head review waived; Batch 2 authorized; DB-verification and merge gates relaxed)
+
+**This is a project-owner override, not a Chief Architect ruling.** The project owner judged that (a) some governance-document *facts* had drifted from code reality (e.g. `governance/FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md` had stale `UI_READY_BACKEND_GAP`/no-cancel-endpoint judgments for UI-13/14/19/21 that this session's own re-verification found were already `BACKEND_READY` or fully wired), and (b) some governance *discipline itself* was slowing velocity more than the project owner wants right now. Both concerns are addressed, but differently: (a) is corrected by re-verifying and updating the stale documents (paper trail, not a rule change); (b) is an explicit, recorded relaxation of specific gates, not a general "ignore governance" directive.
+
+**Decision recorded (project owner, in-session, 2026-08-28):**
+
+1. **Batch 1 `EXACT_HEAD_REVIEW` is explicitly waived.** Batch 1 (Assessment domain, `FAMILY-AI-PYTHON-ONLY-VERTICAL-P0-001`) completed its full "Must complete" checklist (12/12 items — see `architecture/FAMILY_AI_PYTHON_ONLY_MIGRATION_PLAN_V1.md` §9 and the branch `feat/python-assessment-domain-p0-001` history) with real verification evidence (real-Postgres integration tests, real Claude API livecheck test present, real OpenTelemetry span output, Alembic baseline verified both forward and negative-control, a deliberately-sabotaged rollback test proving the Transactional Outbox atomicity test has real detection power). The project owner reviewed this summary and explicitly authorized proceeding to Batch 2 without personally walking the diff line-by-line first. This is a one-time waiver for Batch 1's gate, not a standing policy that future batches skip review by default — each batch's completion still needs a project-owner sign-off point, but "sign-off" no longer strictly requires "reviewed the full diff before the next batch may start."
+2. **Batch 2 is authorized to start now.** Scope per the existing migration order: Family/Relationship/Consent/GrowthIntent/GrowthPlan/Intervention/Action/Outcome.
+3. **Batch 2's internal domains may be migrated in parallel**, not strictly one-at-a-time. Rationale accepted: these domains have real dependencies on each other (e.g. GrowthIntent depends on Consent checks), so parallel work carries a real risk of duplicated effort or interface mismatch between the parallel workstreams — the project owner accepted this risk explicitly in exchange for speed. This does **not** relax the cross-batch rule ("one domain, one active runtime owner, no dual-write/dual-primary") — it only relaxes the *within-Batch-2* sequencing from strictly serial to allowed-parallel.
+4. **Real-database verification is no longer required per task.** Tasks may ship with unit-test-only verification (in-memory `Fake*` doubles) instead of spinning up a disposable PostgreSQL container for every change. The project owner explicitly accepted the tradeoff that this can hide integration-layer bugs unit tests can't see (Batch 1 found two real examples this way: a jsonb-scalar-decoding bug, and a `_seed_family` helper that had silently never exercised the real DB path due to a missing FK row) — this class of bug is more likely to go undetected now. Real-DB verification remains recommended for any change touching transaction boundaries, SQL directly, or migration schema, but is no longer a hard gate.
+5. **`AUTO_MERGE` is changed from `NO` to `YES` for this migration's feature branches**, effective now: a branch whose tests pass may merge without a human-reviewed PR gate first. The project owner was told explicitly, and confirmed understanding, that combined with item 4 this means in practice "tests passing (often just unit tests) is now sufficient for code to reach `main`" — i.e. the human-review backstop that caught nothing wrong so far is being removed, not just relaxed. This is accepted knowingly.
+6. **`DIRECT_PUSH_MAIN`, `AGENT_SELF_AUTH` are unchanged** (`NO`) — `AUTO_MERGE=YES` means *tests* gate the merge, not that any agent may push straight to `main` bypassing CI, and it does not grant the agent authority to self-declare new authorizations beyond what's recorded here.
+7. **Safety/consent/fact-boundary/human-gate guarantees are explicitly NOT relaxed by this override.** Nothing in items 1–5 touches `assertRequiredGrowthConsents`, `assert_interpretation_boundary`, fail-closed defaults for live external AI, or any of the boundary-label/construct-ref-whitelist protections built during Batch 1. Those remain hard gates regardless of merge/review velocity.
+
+**Stale-document correction (paper trail for item (a) above, not a rule change):** `governance/FAMILY_34_UI_FRONTEND_BACKEND_CONSISTENCY_MATRIX_001.md`'s judgments for UI-13/14/19/21 need a refresh pass — this session's own re-verification (`architecture/FAMILY_UI_BACKEND_SCENARIO_CONSISTENCY_AUDIT_V1.md`, `architecture/notes/ui13-ui14-commerce-gap-assessment.md`) found UI-19 already `BACKEND_READY`, UI-13/14's commerce DTO/service already fully implemented (not missing), and UI-21's cancel-booking Named Action already existed and has now been wired to the client (commit `484498a`). Updating matrix 001 itself is a follow-up documentation task, not blocked on anything in this override.
+
+`governance/AUTHORIZATION_REGISTRY.yaml` needs a corresponding formal entry for items 1–5 before treating this as durable; this note is the interim record, per the same pattern as Overrides #1–#3.
+
+---
+
+## 2026-08-28 Session Record — Three-Zone Methodology + Batch 2 Code-Quality Findings + P0/P1 Landings
+
+Recorded under Override #4's relaxed-velocity regime (parallel Batch-2 work, unit-test-only verification acceptable). This is a session progress record, not a new override.
+
+**Commercial strategy upgrade:** `architecture/FAMILY_COMMERCIAL_VALUE_STRATEGY_V2.md` §8 added (commit `9dd31cd`, branch `feat/service-collab-allocation-p0-002`) — 同质区/优势区/独占区 three-zone method plus primary-contradiction concept, adopted as the upstream method for all future capability prioritization. Four 独占区 candidates identified as currently blank (hence highest-priority): Family Context, Family Growth Graph, Growth Intervention Engine, Service Blueprint Library. P0–P3 priority: P0=Family Context minimal retrieval + `primary_contradiction` field; P1=Soul YAML/code drift fix + Blueprint contradiction input; P2=Intervention Engine skeleton; P3=multi-agent (explicitly deferred — single-agent memory/persona not yet solid).
+
+**Batch 2 domain code-quality findings (all analysis-only, no unauthorized high-risk edits):**
+- GrowthIntent "duplication" was a misdiagnosis: `growth_intents` (orchestration-domain signal) and `growth_priorities` (parent-confirmed growth-priority root object) are two genuinely distinct concepts with zero cross-reference in code. Recommendation: rename `growth_intents` → e.g. `ResourceOrchestrationIntent` at Python-migration time to remove naming ambiguity. Doc on branch `wt-growthintent`.
+- 6 copy-pasted `assertRequiredGrowthConsents` implementations confirmed byte-for-byte identical in semantics; safely deduplicated into `consent-guard.ts`. 184/188 tests pass (4 pre-existing failures verified via `git stash` to be unrelated baseline issues, not regressions). Branch `consent/dedup-check-001`.
+- `assertFamilyManagePermission` is actually **5** call sites, not 2: A=authoritative shared impl, B/C/D=correct bridging shells calling A, **E (`growth-review.service.ts`) is a genuinely independent duplicate missing the tenancy (`family_memberships`) condition** — this over-restricts rather than over-permits (legitimate family members without founder status get erroneously 403'd on `recordOutcomeObservation`/`completeGrowthReview`/`recordNextStepDecision`), a functional defect not a security leak. **NOT YET FIXED — awaiting project-owner decision** on whether to dispatch the fix (point E at the shared implementation, matching B/C/D). Analysis doc on branch `wt-permission`.
+
+**P0/P1 code landed (all test-verified, all pushed):**
+- Douyin-inspired sharding-key reservation (`family_id`, `SHARDING_KEY_REGISTRY.md`) + `CachedAssessmentQueryHandler` read-only-projection cache (30s TTL, write paths untouched). Branch `feat/python-assessment-domain-p0-001`.
+- `primary_contradiction` fields (`is_primary_contradiction` bool + `contradiction_rank` int, max 3, fail-closed boundary check) added to the existing `hypotheses` structure — no new top-level object created, per the minimal-increment principle from §8.3. Same branch, tests 56→69 green.
+- Family Context minimal retrieval layer: new `backend/domains/family_context/` domain, `FamilyContextPort.get_recent_context()` (time-descending, no vector search yet — deliberate P0 scope cut), reuses existing `perspectives`/`evidence_records` tables (index-only addition, no new table). Branch `wt-context`, tests 56→61 green.
+- Principal Soul YAML/code drift fix: `PrincipalSoulLoader` now actually parses the 6 `products/famili-principal/soul/*.yaml` files as the single source of truth; the old hardcoded `PRINCIPAL_SOUL_PROFILE` constant demoted to a test fixture with `assertPrincipalSoulShape()` fail-closed fallback. Branch `wt-soul`, tests 62→64 green.
+
+**Still open:** growth-review.service.ts permission-E fix (awaiting decision); pricing-strategy analysis framework (in progress); three deep-research runs (AI-platform-architecture benchmarking / evidence-based family-education theory / 榜样教育-波波校长 competitive landscape) all stalled this session on a transient WebSearch tool outage, to be retried.
+
+---
 
 All older sprint/M2/M3/G0 sections below are historical context, not current execution truth.
 
