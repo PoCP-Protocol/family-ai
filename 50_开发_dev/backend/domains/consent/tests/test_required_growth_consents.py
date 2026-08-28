@@ -122,3 +122,25 @@ class TestConsentQueryHandlerAgainstFakeRepository:
 
         with pytest.raises(ConsentForbiddenError):
             await handler.assert_required_growth_consents("other-family", SUBJECT_ID)
+
+    async def test_explicit_required_purposes_overrides_default_set(self):
+        """Callers may pass a narrower/wider `required_purposes` set than the
+        hardcoded default -- e.g. a future domain checking only RESEARCH
+        consent. The override must be honored end to end, not just accepted
+        and ignored.
+        """
+        repo = FakeConsentRepository()
+        repo.seed_consent(FAMILY_ID, SUBJECT_ID, ConsentPurpose.RESEARCH, ConsentStatus.GRANTED)
+        handler = ConsentQueryHandler(repo)
+
+        await handler.assert_required_growth_consents(
+            FAMILY_ID, SUBJECT_ID, required_purposes=(ConsentPurpose.RESEARCH,)
+        )  # must not raise -- RESEARCH alone is required and is granted
+
+        with pytest.raises(ConsentForbiddenError) as exc_info:
+            await handler.assert_required_growth_consents(
+                FAMILY_ID,
+                SUBJECT_ID,
+                required_purposes=(ConsentPurpose.RESEARCH, ConsentPurpose.EXPERT_SERVICE),
+            )
+        assert exc_info.value.code == "missing_required_consent:EXPERT_SERVICE"

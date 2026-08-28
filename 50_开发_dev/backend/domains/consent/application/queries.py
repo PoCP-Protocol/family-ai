@@ -7,7 +7,7 @@ in `backend/domains/assessment/application/queries.py`.
 from __future__ import annotations
 
 from ..domain.policies import assert_required_growth_consents_from_granted
-from ..domain.value_objects import REQUIRED_GROWTH_CONSENT_PURPOSES
+from ..domain.value_objects import REQUIRED_GROWTH_CONSENT_PURPOSES, ConsentPurpose
 from .ports import ConsentRepositoryPort
 
 
@@ -21,8 +21,12 @@ class ConsentQueryHandler:
     def __init__(self, repository: ConsentRepositoryPort):
         self._repository = repository
 
-    async def assert_required_growth_consents(self, family_id: str, subject_person_id: str) -> None:
-        granted = await self._repository.load_granted_purposes(
-            family_id, subject_person_id, REQUIRED_GROWTH_CONSENT_PURPOSES
-        )
-        assert_required_growth_consents_from_granted(granted, REQUIRED_GROWTH_CONSENT_PURPOSES)
+    async def assert_required_growth_consents(
+        self,
+        family_id: str,
+        subject_person_id: str,
+        required_purposes: tuple[ConsentPurpose, ...] | None = None,
+    ) -> None:
+        purposes = required_purposes if required_purposes is not None else REQUIRED_GROWTH_CONSENT_PURPOSES
+        granted = await self._repository.load_granted_purposes(family_id, subject_person_id, purposes)
+        assert_required_growth_consents_from_granted(granted, purposes)

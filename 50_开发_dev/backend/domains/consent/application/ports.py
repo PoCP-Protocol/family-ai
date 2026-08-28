@@ -48,4 +48,9 @@ class ConsentQueryPort(Protocol):
     `consent-guard.ts`.
     """
 
-    async def assert_required_growth_consents(self, family_id: str, subject_person_id: str) -> None: ...
+    async def assert_required_growth_consents(
+        self,
+        family_id: str,
+        subject_person_id: str,
+        required_purposes: tuple[ConsentPurpose, ...] | None = None,
+    ) -> None: ...
