@@ -40,6 +40,7 @@ members = [
   "packages/security",
   "packages/testing",
   "domains/assessment",
+  "domains/growth_priority",
   "intelligence",
 ]
 
@@ -55,3 +56,7 @@ warn_unused_ignores = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests", "domains"]
+# Multiple domains under `domains/` each ship a `tests/__init__.py` package
+# of the same name — importlib mode (vs. the default "prepend") lets pytest
+# import same-named test packages from different domains without collision.
+addopts = "--import-mode=importlib"
