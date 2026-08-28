@@ -18,6 +18,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from domains.assessment.api import dependencies as assessment_dependencies
+from domains.assessment.api.routes import register_exception_handlers
 from domains.assessment.api.routes import router as assessment_router
 
 from .auth import extract_family_context
@@ -48,6 +49,7 @@ app.dependency_overrides[assessment_dependencies.get_command_handler] = get_comm
 app.dependency_overrides[assessment_dependencies.get_query_handler] = get_query_handler
 app.dependency_overrides[assessment_dependencies.get_growth_hypothesis_handler] = get_growth_hypothesis_handler
 
+register_exception_handlers(app)
 app.include_router(assessment_router, prefix="/families", tags=["assessment"])
 
 
