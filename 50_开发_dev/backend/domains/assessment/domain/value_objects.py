@@ -71,3 +71,13 @@ MUTATION_RECEIPT_BOUNDARY: Literal["FAMILY_PERSPECTIVE_NOT_SCORE_OR_DIAGNOSIS"] 
 GrowthHypothesisDecisionType = Literal["CONFIRM", "DISMISS"]
 HYPOTHESIS_FACT_BOUNDARY: Literal["HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS"] = "HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS"
 GROWTH_INTENT_BOUNDARY: Literal["HUMAN_CONFIRMED_INTENT_NOT_OUTCOME"] = "HUMAN_CONFIRMED_INTENT_NOT_OUTCOME"
+
+# Consent purposes required before the Growth main loop may run on a
+# subject. Project owner decided (2026-08-28) to align the Assessment
+# domain's consent gate with the Growth main loop's three-purpose set
+# (previously Assessment checked only ASSESSMENT — a deliberately narrower
+# gate in the NestJS source; the owner chose to tighten it to the full set).
+# Kept as a domain-local constant (not imported from the Consent domain) per
+# the four-layer domain-isolation rule; same value set as
+# `consent.domain.value_objects.REQUIRED_GROWTH_CONSENT_PURPOSES`.
+REQUIRED_GROWTH_CONSENT_PURPOSES: tuple[str, ...] = ("SERVICE", "ASSESSMENT", "GROWTH_TRACKING")

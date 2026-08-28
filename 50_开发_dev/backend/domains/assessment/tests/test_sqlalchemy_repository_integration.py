@@ -96,13 +96,18 @@ async def _seed_family(conn) -> tuple[str, str, str, str]:
         ),
         {"id": child_id, "family_id": family_id},
     )
-    await conn.execute(
-        text(
-            "insert into consents(family_id, subject_person_id, guardian_person_id, purpose, status, policy_version, granted_at) "
-            "values (:family_id, :subject_id, :guardian_id, 'ASSESSMENT', 'GRANTED', 'PYVERIFY_V1', now())"
-        ),
-        {"family_id": family_id, "subject_id": child_id, "guardian_id": guardian_id},
-    )
+    # Grant ALL three required Growth-loop consents (SERVICE/ASSESSMENT/
+    # GROWTH_TRACKING) — the Assessment consent gate was tightened from
+    # ASSESSMENT-only to the three-purpose set on 2026-08-28, so seeding only
+    # ASSESSMENT here would now fail the (broadened) gate.
+    for purpose in ("SERVICE", "ASSESSMENT", "GROWTH_TRACKING"):
+        await conn.execute(
+            text(
+                "insert into consents(family_id, subject_person_id, guardian_person_id, purpose, status, policy_version, granted_at) "
+                "values (:family_id, :subject_id, :guardian_id, :purpose, 'GRANTED', 'PYVERIFY_V1', now())"
+            ),
+            {"family_id": family_id, "subject_id": child_id, "guardian_id": guardian_id, "purpose": purpose},
+        )
     # `assertFamilyManagePermission` (ported in permission_policy.py /
     # sqlalchemy_repository.py) requires an ACTIVE OWNER_GUARDIAN/GUARDIAN
     # family_membership row for the actor — without this every command call

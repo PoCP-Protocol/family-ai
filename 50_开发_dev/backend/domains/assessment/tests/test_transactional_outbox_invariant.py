@@ -105,13 +105,16 @@ async def _seed_family(conn) -> tuple[str, str, str, str]:
         ),
         {"id": child_id, "family_id": family_id},
     )
-    await conn.execute(
-        text(
-            "insert into consents(family_id, subject_person_id, guardian_person_id, purpose, status, policy_version, granted_at) "
-            "values (:family_id, :subject_id, :guardian_id, 'ASSESSMENT', 'GRANTED', 'PYVERIFY_V1', now())"
-        ),
-        {"family_id": family_id, "subject_id": child_id, "guardian_id": guardian_id},
-    )
+    # Tightened 2026-08-28: Assessment consent gate now requires all three
+    # Growth-loop purposes, not just ASSESSMENT — seed the full set.
+    for purpose in ("SERVICE", "ASSESSMENT", "GROWTH_TRACKING"):
+        await conn.execute(
+            text(
+                "insert into consents(family_id, subject_person_id, guardian_person_id, purpose, status, policy_version, granted_at) "
+                "values (:family_id, :subject_id, :guardian_id, :purpose, 'GRANTED', 'PYVERIFY_V1', now())"
+            ),
+            {"family_id": family_id, "subject_id": child_id, "guardian_id": guardian_id, "purpose": purpose},
+        )
     await conn.execute(
         text(
             "insert into family_memberships(family_id, person_id, role, status, joined_at) "

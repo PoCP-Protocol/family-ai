@@ -87,7 +87,7 @@ class GrowthHypothesisCommandHandler:
         if hypothesis["hypothesis_ref"] != command.hypothesis_ref:
             raise AssessmentConflictError("growth_hypothesis_reference_mismatch")
 
-        await self._repository.assert_subject_consent(command.family_id, evidence.subject_person_id, "ASSESSMENT")
+        await self._repository.assert_subject_consent(command.family_id, evidence.subject_person_id)
 
         intent: dict | None = None
         if command.decision_type == "CONFIRM":

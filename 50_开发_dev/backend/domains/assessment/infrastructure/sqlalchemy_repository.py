@@ -23,7 +23,13 @@ from ..application.ports import AssessmentRepositoryPort
 from ..domain.entities import AssessmentResponse, AssessmentSession, GrowthHypothesisEvidence
 from ..domain.errors import AssessmentConflictError, AssessmentForbiddenError, AssessmentNotFoundError
 from ..domain.permission_policy import CREATE_FAMILY_ACTION, FAMILY_MANAGE_ROLES
-from ..domain.value_objects import AssessmentSessionStatus, AssessmentTool, AssessmentToolBoundary, AssessmentToolItem
+from ..domain.value_objects import (
+    REQUIRED_GROWTH_CONSENT_PURPOSES,
+    AssessmentSessionStatus,
+    AssessmentTool,
+    AssessmentToolBoundary,
+    AssessmentToolItem,
+)
 
 
 def _decode_jsonb(raw):
@@ -138,21 +144,32 @@ class SqlAlchemyAssessmentRepository(AssessmentRepositoryPort):
 
         raise AssessmentForbiddenError("actor_has_family_manage_permission")
 
-    async def assert_subject_consent(self, family_id: str, subject_person_id: str, purpose: str) -> None:
+    async def assert_subject_consent(self, family_id: str, subject_person_id: str) -> None:
+        # Subject must be a CHILD of the family AND have ALL of the required
+        # three Growth-loop consent purposes GRANTED (project owner tightened
+        # this from ASSESSMENT-only on 2026-08-28). Count the distinct GRANTED
+        # required purposes and require the count to equal the required-set
+        # size — a subset (e.g. only ASSESSMENT) must now fail closed.
+        required = list(REQUIRED_GROWTH_CONSENT_PURPOSES)
         result = await self._connection.execute(
             text(
                 """
                 select 1 from persons p
                 where p.person_id=:subject_id and p.family_id=:family_id and p.person_type='CHILD'
-                  and exists(
-                    select 1 from consents c
+                  and (
+                    select count(distinct c.purpose) from consents c
                     where c.family_id=p.family_id and c.subject_person_id=p.person_id
-                      and c.purpose=:purpose and c.status='GRANTED'
-                  )
+                      and c.purpose in :required and c.status='GRANTED'
+                  ) = :required_count
                 limit 1
                 """
-            ),
-            {"subject_id": subject_person_id, "family_id": family_id, "purpose": purpose},
+            ).bindparams(bindparam("required", expanding=True)),
+            {
+                "subject_id": subject_person_id,
+                "family_id": family_id,
+                "required": required,
+                "required_count": len(required),
+            },
         )
         if result.first() is None:
             raise AssessmentForbiddenError("assessment_subject_or_consent_unavailable")

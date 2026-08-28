@@ -15,7 +15,12 @@ from datetime import UTC, datetime
 from ..domain.entities import AssessmentResponse, AssessmentSession, GrowthHypothesisEvidence
 from ..domain.errors import AssessmentConflictError, AssessmentForbiddenError, AssessmentNotFoundError
 from ..domain.permission_policy import FAMILY_MANAGE_ROLES
-from ..domain.value_objects import AssessmentSessionStatus, AssessmentTool, AssessmentToolItem
+from ..domain.value_objects import (
+    REQUIRED_GROWTH_CONSENT_PURPOSES,
+    AssessmentSessionStatus,
+    AssessmentTool,
+    AssessmentToolItem,
+)
 
 DEFAULT_TEST_ACTOR = "actor-1"
 
@@ -101,7 +106,11 @@ class FakeAssessmentRepository:
             {"person_id": person_id, "display_name": display_name, "consent_granted": consent_granted}
         )
         if consent_granted:
-            self.consents.add((family_id, person_id, "ASSESSMENT"))
+            # Grant ALL required Growth-loop purposes (tightened from
+            # ASSESSMENT-only on 2026-08-28) so `consent_granted=True` still
+            # means "this subject passes the (now three-purpose) gate".
+            for purpose in REQUIRED_GROWTH_CONSENT_PURPOSES:
+                self.consents.add((family_id, person_id, purpose))
 
     def seed_need_type(self, focus_ref: str, need_type_ref: str, title: str, description: str, capability_keys: list[str]) -> None:
         self.need_types[focus_ref] = {
@@ -125,8 +134,13 @@ class FakeAssessmentRepository:
             return
         raise AssessmentForbiddenError("actor_has_family_manage_permission")
 
-    async def assert_subject_consent(self, family_id: str, subject_person_id: str, purpose: str) -> None:
-        if (family_id, subject_person_id, purpose) not in self.consents:
+    async def assert_subject_consent(self, family_id: str, subject_person_id: str) -> None:
+        # ALL required Growth-loop purposes must be GRANTED (tightened from
+        # ASSESSMENT-only on 2026-08-28) — a subset must fail closed.
+        if any(
+            (family_id, subject_person_id, purpose) not in self.consents
+            for purpose in REQUIRED_GROWTH_CONSENT_PURPOSES
+        ):
             raise AssessmentForbiddenError("assessment_subject_or_consent_unavailable")
 
     async def load_active_tool(self, tool_ref: str) -> AssessmentTool | None:

@@ -106,7 +106,7 @@ class AssessmentCommandHandler:
             return {**replay, "replayed": True}
 
         await self._repository.assert_tenant_family_scope(command.tenant_id, command.family_id, command.actor_id)
-        await self._repository.assert_subject_consent(command.family_id, command.subject_person_id, "ASSESSMENT")
+        await self._repository.assert_subject_consent(command.family_id, command.subject_person_id)
 
         tool = await self._repository.load_active_tool(tool_ref)
         if tool is None:
@@ -191,7 +191,7 @@ class AssessmentCommandHandler:
         )
         if not session.is_editable():
             raise AssessmentConflictError("submitted_assessment_is_immutable")
-        await self._repository.assert_subject_consent(command.family_id, session.subject_person_id, "ASSESSMENT")
+        await self._repository.assert_subject_consent(command.family_id, session.subject_person_id)
 
         tool = await self._repository.load_tool_version(session.tool_ref, session.tool_version)
         item = tool.find_item(item_ref)
@@ -255,7 +255,7 @@ class AssessmentCommandHandler:
         )
         if not session.is_editable():
             raise AssessmentConflictError("assessment_session_not_editable")
-        await self._repository.assert_subject_consent(command.family_id, session.subject_person_id, "ASSESSMENT")
+        await self._repository.assert_subject_consent(command.family_id, session.subject_person_id)
 
         tool = await self._repository.load_tool_version(session.tool_ref, session.tool_version)
         answered = session.answered_item_refs()

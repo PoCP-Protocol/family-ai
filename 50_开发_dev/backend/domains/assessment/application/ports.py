@@ -21,7 +21,14 @@ class AssessmentRepositoryPort(Protocol):
 
     async def assert_tenant_family_scope(self, tenant_id: str, family_id: str, actor_id: str) -> None: ...
 
-    async def assert_subject_consent(self, family_id: str, subject_person_id: str, purpose: str) -> None: ...
+    async def assert_subject_consent(self, family_id: str, subject_person_id: str) -> None:
+        """Subject must be a CHILD of the family AND have ALL of the required
+        Growth-loop consents (`REQUIRED_GROWTH_CONSENT_PURPOSES`:
+        SERVICE + ASSESSMENT + GROWTH_TRACKING) GRANTED. Project owner
+        decided (2026-08-28) to tighten this from the prior ASSESSMENT-only
+        gate to the full three-purpose set, aligning Assessment with the
+        Growth main loop's `assert_required_growth_consents`."""
+        ...
 
     async def load_active_tool(self, tool_ref: str) -> AssessmentTool | None: ...
 
