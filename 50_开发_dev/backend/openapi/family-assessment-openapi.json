@@ -1,0 +1,1623 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Family API (Python, Batch 1 — Assessment domain)",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/families/{family_id}/ui/02/assessment": {
+      "get": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "Get Ui02 Projection",
+        "operationId": "get_ui02_projection_families__family_id__ui_02_assessment_get",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Family Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Ui02 Projection Families  Family Id  Ui 02 Assessment Get",
+                  "$ref": "#/components/schemas/Ui02AssessmentProjectionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/families/{family_id}/assessments/sessions": {
+      "post": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "Start Assessment",
+        "operationId": "start_assessment_families__family_id__assessments_sessions_post",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Family Id"
+            }
+          },
+          {
+            "name": "x-correlation-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Correlation-Id"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "x-source",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Source"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartAssessmentRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Start Assessment Families  Family Id  Assessments Sessions Post",
+                  "$ref": "#/components/schemas/AssessmentMutationReceiptResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/families/{family_id}/assessments/sessions/{session_id}/responses": {
+      "post": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "Save Assessment Response",
+        "operationId": "save_assessment_response_families__family_id__assessments_sessions__session_id__responses_post",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Family Id"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "x-correlation-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Correlation-Id"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "x-source",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Source"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAssessmentResponseRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Save Assessment Response Families  Family Id  Assessments Sessions  Session Id  Responses Post",
+                  "$ref": "#/components/schemas/AssessmentMutationReceiptResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/families/{family_id}/assessments/sessions/{session_id}/submit": {
+      "post": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "Submit Assessment",
+        "operationId": "submit_assessment_families__family_id__assessments_sessions__session_id__submit_post",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Family Id"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "x-correlation-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Correlation-Id"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "x-source",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Source"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Submit Assessment Families  Family Id  Assessments Sessions  Session Id  Submit Post",
+                  "$ref": "#/components/schemas/AssessmentMutationReceiptResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/families/{family_id}/ui/03/growth-hypothesis": {
+      "get": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "Get Ui03 Projection",
+        "operationId": "get_ui03_projection_families__family_id__ui_03_growth_hypothesis_get",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Family Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Ui03 Projection Families  Family Id  Ui 03 Growth Hypothesis Get",
+                  "$ref": "#/components/schemas/Ui03GrowthHypothesisProjectionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/families/{family_id}/growth-hypotheses/decisions": {
+      "post": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "Decide Growth Hypothesis",
+        "operationId": "decide_growth_hypothesis_families__family_id__growth_hypotheses_decisions_post",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Family Id"
+            }
+          },
+          {
+            "name": "x-correlation-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Correlation-Id"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideGrowthHypothesisRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Decide Growth Hypothesis Families  Family Id  Growth Hypotheses Decisions Post",
+                  "$ref": "#/components/schemas/GrowthHypothesisDecisionReceiptResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AssessmentMutationReceiptResponse": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "START_ASSESSMENT",
+              "SAVE_ASSESSMENT_RESPONSE",
+              "SUBMIT_ASSESSMENT"
+            ],
+            "title": "Action"
+          },
+          "replayed": {
+            "type": "boolean",
+            "title": "Replayed"
+          },
+          "session": {
+            "$ref": "#/components/schemas/AssessmentSessionDtoModel"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          },
+          "boundary": {
+            "type": "string",
+            "const": "FAMILY_PERSPECTIVE_NOT_SCORE_OR_DIAGNOSIS",
+            "title": "Boundary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "replayed",
+          "session",
+          "boundary"
+        ],
+        "title": "AssessmentMutationReceiptResponse"
+      },
+      "AssessmentResponseDtoModel": {
+        "properties": {
+          "assessment_response_id": {
+            "type": "string",
+            "title": "Assessment Response Id"
+          },
+          "item_ref": {
+            "type": "string",
+            "title": "Item Ref"
+          },
+          "response_type": {
+            "type": "string",
+            "enum": [
+              "SINGLE_CHOICE",
+              "TEXT",
+              "BOOLEAN"
+            ],
+            "title": "Response Type"
+          },
+          "response_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Response Value"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "captured_at": {
+            "type": "string",
+            "title": "Captured At"
+          },
+          "visibility": {
+            "type": "string",
+            "const": "FAMILY_PRIVATE",
+            "title": "Visibility"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assessment_response_id",
+          "item_ref",
+          "response_type",
+          "response_value",
+          "revision",
+          "captured_at",
+          "visibility"
+        ],
+        "title": "AssessmentResponseDtoModel"
+      },
+      "AssessmentSessionDtoModel": {
+        "properties": {
+          "assessment_session_id": {
+            "type": "string",
+            "title": "Assessment Session Id"
+          },
+          "family_id": {
+            "type": "string",
+            "title": "Family Id"
+          },
+          "subject_person_id": {
+            "type": "string",
+            "title": "Subject Person Id"
+          },
+          "tool_ref": {
+            "type": "string",
+            "title": "Tool Ref"
+          },
+          "tool_version": {
+            "type": "integer",
+            "title": "Tool Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "SUBMITTED",
+              "EXITED"
+            ],
+            "title": "Status"
+          },
+          "started_at": {
+            "type": "string",
+            "title": "Started At"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "row_version": {
+            "type": "integer",
+            "title": "Row Version"
+          },
+          "responses": {
+            "items": {
+              "$ref": "#/components/schemas/AssessmentResponseDtoModel"
+            },
+            "type": "array",
+            "title": "Responses"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assessment_session_id",
+          "family_id",
+          "subject_person_id",
+          "tool_ref",
+          "tool_version",
+          "status",
+          "started_at",
+          "submitted_at",
+          "row_version",
+          "responses"
+        ],
+        "title": "AssessmentSessionDtoModel"
+      },
+      "AssessmentToolBoundaryModel": {
+        "properties": {
+          "truth_class": {
+            "type": "string",
+            "const": "FAMILY_PERSPECTIVE",
+            "title": "Truth Class"
+          },
+          "not_a_score": {
+            "type": "boolean",
+            "const": true,
+            "title": "Not A Score"
+          },
+          "not_a_diagnosis": {
+            "type": "boolean",
+            "const": true,
+            "title": "Not A Diagnosis"
+          },
+          "no_eligibility_effect": {
+            "type": "boolean",
+            "const": true,
+            "title": "No Eligibility Effect"
+          },
+          "withdrawable": {
+            "type": "boolean",
+            "const": true,
+            "title": "Withdrawable"
+          },
+          "training_use": {
+            "type": "boolean",
+            "const": false,
+            "title": "Training Use"
+          }
+        },
+        "type": "object",
+        "required": [
+          "truth_class",
+          "not_a_score",
+          "not_a_diagnosis",
+          "no_eligibility_effect",
+          "withdrawable",
+          "training_use"
+        ],
+        "title": "AssessmentToolBoundaryModel"
+      },
+      "DecideGrowthHypothesisRequestBody": {
+        "properties": {
+          "assessment_session_id": {
+            "type": "string",
+            "title": "Assessment Session Id"
+          },
+          "hypothesis_ref": {
+            "type": "string",
+            "title": "Hypothesis Ref"
+          },
+          "decision_type": {
+            "type": "string",
+            "enum": [
+              "CONFIRM",
+              "DISMISS"
+            ],
+            "title": "Decision Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assessment_session_id",
+          "hypothesis_ref",
+          "decision_type"
+        ],
+        "title": "DecideGrowthHypothesisRequestBody"
+      },
+      "GrowthHypothesisDecisionReceiptResponse": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "CONFIRM_GROWTH_HYPOTHESIS",
+              "DISMISS_GROWTH_HYPOTHESIS"
+            ],
+            "title": "Action"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "INTENT_CREATED",
+              "NO_ACTION"
+            ],
+            "title": "Outcome"
+          },
+          "hypothesis_ref": {
+            "type": "string",
+            "title": "Hypothesis Ref"
+          },
+          "intent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GrowthIntentModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replayed": {
+            "type": "boolean",
+            "title": "Replayed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "outcome",
+          "hypothesis_ref",
+          "intent",
+          "replayed"
+        ],
+        "title": "GrowthHypothesisDecisionReceiptResponse"
+      },
+      "GrowthIntentModel": {
+        "properties": {
+          "intent_id": {
+            "type": "string",
+            "title": "Intent Id"
+          },
+          "need_type": {
+            "type": "string",
+            "title": "Need Type"
+          },
+          "status": {
+            "type": "string",
+            "const": "OPEN",
+            "title": "Status"
+          },
+          "required_capability_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Capability Keys"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Refs"
+          },
+          "boundary": {
+            "type": "string",
+            "const": "HUMAN_CONFIRMED_INTENT_NOT_OUTCOME",
+            "title": "Boundary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "intent_id",
+          "need_type",
+          "status",
+          "required_capability_keys",
+          "evidence_refs",
+          "boundary"
+        ],
+        "title": "GrowthIntentModel"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "SaveAssessmentResponseRequestBody": {
+        "properties": {
+          "item_ref": {
+            "type": "string",
+            "title": "Item Ref"
+          },
+          "response_type": {
+            "type": "string",
+            "enum": [
+              "SINGLE_CHOICE",
+              "TEXT",
+              "BOOLEAN"
+            ],
+            "title": "Response Type"
+          },
+          "response_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Response Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_ref",
+          "response_type",
+          "response_value"
+        ],
+        "title": "SaveAssessmentResponseRequestBody"
+      },
+      "StartAssessmentRequestBody": {
+        "properties": {
+          "subject_person_id": {
+            "type": "string",
+            "title": "Subject Person Id"
+          },
+          "tool_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject_person_id"
+        ],
+        "title": "StartAssessmentRequestBody"
+      },
+      "Ui02AssessmentProjectionResponse": {
+        "properties": {
+          "projection_version": {
+            "type": "string",
+            "const": "UI02_FAMILY_ASSESSMENT_V1",
+            "title": "Projection Version"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "family_id": {
+            "type": "string",
+            "title": "Family Id"
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "CONSENT_REQUIRED",
+              "NO_SUBJECT",
+              "POLICY_BLOCKED"
+            ],
+            "title": "Availability"
+          },
+          "subjects": {
+            "items": {
+              "$ref": "#/components/schemas/Ui02AssessmentSubjectModel"
+            },
+            "type": "array",
+            "title": "Subjects"
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ui02AssessmentToolModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/AssessmentSessionDtoModel"
+            },
+            "type": "array",
+            "title": "Sessions"
+          },
+          "named_actions": {
+            "$ref": "#/components/schemas/Ui02NamedActionsModel"
+          }
+        },
+        "type": "object",
+        "required": [
+          "projection_version",
+          "tenant_id",
+          "family_id",
+          "availability",
+          "subjects",
+          "tool",
+          "sessions",
+          "named_actions"
+        ],
+        "title": "Ui02AssessmentProjectionResponse"
+      },
+      "Ui02AssessmentSubjectModel": {
+        "properties": {
+          "person_id": {
+            "type": "string",
+            "title": "Person Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "CONSENT_REQUIRED"
+            ],
+            "title": "Availability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "person_id",
+          "display_name",
+          "availability"
+        ],
+        "title": "Ui02AssessmentSubjectModel"
+      },
+      "Ui02AssessmentToolItemModel": {
+        "properties": {
+          "item_ref": {
+            "type": "string",
+            "title": "Item Ref"
+          },
+          "response_type": {
+            "type": "string",
+            "enum": [
+              "SINGLE_CHOICE",
+              "TEXT",
+              "BOOLEAN"
+            ],
+            "title": "Response Type"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_ref",
+          "response_type",
+          "required"
+        ],
+        "title": "Ui02AssessmentToolItemModel"
+      },
+      "Ui02AssessmentToolModel": {
+        "properties": {
+          "tool_ref": {
+            "type": "string",
+            "title": "Tool Ref"
+          },
+          "version_no": {
+            "type": "integer",
+            "title": "Version No"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "evidence_level": {
+            "type": "string",
+            "const": "E1",
+            "title": "Evidence Level"
+          },
+          "schema_ref": {
+            "type": "string",
+            "title": "Schema Ref"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Ui02AssessmentToolItemModel"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "boundary": {
+            "$ref": "#/components/schemas/AssessmentToolBoundaryModel"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool_ref",
+          "version_no",
+          "title",
+          "purpose",
+          "evidence_level",
+          "schema_ref",
+          "items",
+          "boundary"
+        ],
+        "title": "Ui02AssessmentToolModel"
+      },
+      "Ui02NamedActionsModel": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "const": "START_ASSESSMENT",
+            "title": "Start"
+          },
+          "save_response": {
+            "type": "string",
+            "const": "SAVE_ASSESSMENT_RESPONSE",
+            "title": "Save Response"
+          },
+          "submit": {
+            "type": "string",
+            "const": "SUBMIT_ASSESSMENT",
+            "title": "Submit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start",
+          "save_response",
+          "submit"
+        ],
+        "title": "Ui02NamedActionsModel"
+      },
+      "Ui03GrowthHypothesisModel": {
+        "properties": {
+          "hypothesis_ref": {
+            "type": "string",
+            "title": "Hypothesis Ref"
+          },
+          "subject_person_id": {
+            "type": "string",
+            "title": "Subject Person Id"
+          },
+          "subject_display_name": {
+            "type": "string",
+            "title": "Subject Display Name"
+          },
+          "focus_ref": {
+            "type": "string",
+            "title": "Focus Ref"
+          },
+          "need_type_ref": {
+            "type": "string",
+            "title": "Need Type Ref"
+          },
+          "need_type_version": {
+            "type": "integer",
+            "title": "Need Type Version"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "statement": {
+            "type": "string",
+            "title": "Statement"
+          },
+          "required_capability_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Capability Keys"
+          },
+          "source_refs": {
+            "$ref": "#/components/schemas/Ui03SourceRefsModel"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
+          "generator": {
+            "type": "string",
+            "enum": [
+              "DETERMINISTIC_CATALOG_POLICY_NOT_MODEL",
+              "FAMILY_EDUCATION_ASSESSMENT_MODEL_V0_1"
+            ],
+            "title": "Generator"
+          },
+          "model_draft_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Draft Ref"
+          },
+          "model_generator": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "FAMILY_EDUCATION_MODEL_RUNTIME_DETERMINISTIC",
+                  "FAMILY_EDUCATION_MODEL_RUNTIME_GATEWAY"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Generator"
+          },
+          "model_component_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Component Ref"
+          },
+          "model_boundary_labels": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Boundary Labels"
+          },
+          "need_refs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Need Refs"
+          },
+          "construct_refs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Construct Refs"
+          },
+          "action_candidate_refs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Candidate Refs"
+          },
+          "fact_boundary": {
+            "type": "string",
+            "const": "HYPOTHESIS_NOT_FACT_OR_DIAGNOSIS",
+            "title": "Fact Boundary"
+          },
+          "principal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ui03PrincipalInterpretationModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scorecard": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ui03GrowthScorecardModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "hypothesis_ref",
+          "subject_person_id",
+          "subject_display_name",
+          "focus_ref",
+          "need_type_ref",
+          "need_type_version",
+          "title",
+          "statement",
+          "required_capability_keys",
+          "source_refs",
+          "limitations",
+          "generator",
+          "fact_boundary"
+        ],
+        "title": "Ui03GrowthHypothesisModel"
+      },
+      "Ui03GrowthHypothesisProjectionResponse": {
+        "properties": {
+          "projection_version": {
+            "type": "string",
+            "const": "UI03_GROWTH_HYPOTHESIS_V1",
+            "title": "Projection Version"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "family_id": {
+            "type": "string",
+            "title": "Family Id"
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "READY",
+              "NO_SUBMITTED_ASSESSMENT",
+              "POLICY_BLOCKED"
+            ],
+            "title": "Availability"
+          },
+          "hypothesis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ui03GrowthHypothesisModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "named_actions": {
+            "$ref": "#/components/schemas/Ui03NamedActionsModel"
+          },
+          "ai_state": {
+            "type": "string",
+            "enum": [
+              "NOT_INVOKED",
+              "MODEL_DRAFT_READY",
+              "MODEL_GATEWAY_BLOCKED"
+            ],
+            "title": "Ai State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "projection_version",
+          "tenant_id",
+          "family_id",
+          "availability",
+          "hypothesis",
+          "named_actions",
+          "ai_state"
+        ],
+        "title": "Ui03GrowthHypothesisProjectionResponse"
+      },
+      "Ui03GrowthScoreDimensionModel": {
+        "properties": {
+          "dimension_ref": {
+            "type": "string",
+            "title": "Dimension Ref"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "peer_reference": {
+            "type": "number",
+            "title": "Peer Reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dimension_ref",
+          "label",
+          "score",
+          "peer_reference"
+        ],
+        "title": "Ui03GrowthScoreDimensionModel"
+      },
+      "Ui03GrowthScorecardModel": {
+        "properties": {
+          "generated_by": {
+            "type": "string",
+            "const": "FAMILI_PRINCIPAL_FAMILY_EDUCATION_MODEL",
+            "title": "Generated By"
+          },
+          "overall_score": {
+            "type": "number",
+            "title": "Overall Score"
+          },
+          "overall_band": {
+            "type": "string",
+            "title": "Overall Band"
+          },
+          "dimensions": {
+            "items": {
+              "$ref": "#/components/schemas/Ui03GrowthScoreDimensionModel"
+            },
+            "type": "array",
+            "title": "Dimensions"
+          },
+          "core_issue_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Core Issue Tags"
+          },
+          "recommendations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommendations"
+          },
+          "score_boundary": {
+            "type": "string",
+            "const": "SUPPORT_ORIENTATION_SCORE_NOT_CHILD_DIAGNOSIS_OR_RANKING",
+            "title": "Score Boundary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_by",
+          "overall_score",
+          "overall_band",
+          "dimensions",
+          "core_issue_tags",
+          "recommendations",
+          "score_boundary"
+        ],
+        "title": "Ui03GrowthScorecardModel"
+      },
+      "Ui03NamedActionsModel": {
+        "properties": {
+          "confirm": {
+            "type": "string",
+            "const": "CONFIRM_GROWTH_HYPOTHESIS",
+            "title": "Confirm"
+          },
+          "dismiss": {
+            "type": "string",
+            "const": "DISMISS_GROWTH_HYPOTHESIS",
+            "title": "Dismiss"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confirm",
+          "dismiss"
+        ],
+        "title": "Ui03NamedActionsModel"
+      },
+      "Ui03PrincipalInterpretationModel": {
+        "properties": {
+          "public_role": {
+            "type": "string",
+            "title": "Public Role"
+          },
+          "codename": {
+            "type": "string",
+            "title": "Codename"
+          },
+          "opening": {
+            "type": "string",
+            "title": "Opening"
+          },
+          "reading": {
+            "type": "string",
+            "title": "Reading"
+          },
+          "boundary": {
+            "type": "string",
+            "title": "Boundary"
+          },
+          "boundary_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Boundary Labels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_role",
+          "codename",
+          "opening",
+          "reading",
+          "boundary",
+          "boundary_labels"
+        ],
+        "title": "Ui03PrincipalInterpretationModel"
+      },
+      "Ui03SourceRefsModel": {
+        "properties": {
+          "assessment_session_id": {
+            "type": "string",
+            "title": "Assessment Session Id"
+          },
+          "assessment_response_id": {
+            "type": "string",
+            "title": "Assessment Response Id"
+          },
+          "assessment_evidence_id": {
+            "type": "string",
+            "title": "Assessment Evidence Id"
+          },
+          "tool_ref": {
+            "type": "string",
+            "title": "Tool Ref"
+          },
+          "tool_version": {
+            "type": "integer",
+            "title": "Tool Version"
+          },
+          "assessment_submitted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Submitted At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assessment_session_id",
+          "assessment_response_id",
+          "assessment_evidence_id",
+          "tool_ref",
+          "tool_version"
+        ],
+        "title": "Ui03SourceRefsModel"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

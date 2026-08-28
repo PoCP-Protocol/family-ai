@@ -45,6 +45,12 @@ from ..domain.errors import (
 )
 from .dependencies import FamilyContext, get_command_handler, get_family_context, get_growth_hypothesis_handler, get_query_handler
 from .requests import DecideGrowthHypothesisRequestBody, SaveAssessmentResponseRequestBody, StartAssessmentRequestBody
+from .responses import (
+    AssessmentMutationReceiptResponse,
+    GrowthHypothesisDecisionReceiptResponse,
+    Ui02AssessmentProjectionResponse,
+    Ui03GrowthHypothesisProjectionResponse,
+)
 
 router = APIRouter()
 
@@ -69,18 +75,18 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(status_code=status_code, content={"detail": error.code})
 
 
-@router.get("/{family_id}/ui/02/assessment")
+@router.get("/{family_id}/ui/02/assessment", responses={200: {"model": Ui02AssessmentProjectionResponse}})
 async def get_ui02_projection(
     family_id: str,
     context: FamilyContext = Depends(get_family_context),
     handler: AssessmentQueryHandler = Depends(get_query_handler),
-):
+) -> dict:
     if context.family_id != family_id:
         raise HTTPException(status_code=401, detail="real_family_session_required")
     return await handler.get_ui02_projection(GetUi02ProjectionQuery(family_id, context.tenant_id, context.person_id))
 
 
-@router.post("/{family_id}/assessments/sessions")
+@router.post("/{family_id}/assessments/sessions", responses={200: {"model": AssessmentMutationReceiptResponse}})
 async def start_assessment(
     family_id: str,
     body: StartAssessmentRequestBody,
@@ -89,7 +95,7 @@ async def start_assessment(
     x_correlation_id: str | None = Header(default=None),
     idempotency_key: str | None = Header(default=None),
     x_source: str | None = Header(default=None),
-):
+) -> dict:
     if context.family_id != family_id:
         raise HTTPException(status_code=401, detail="real_family_session_required")
     meta = MutationMeta(x_correlation_id or "", idempotency_key or "", x_source or "")
@@ -98,7 +104,10 @@ async def start_assessment(
     )
 
 
-@router.post("/{family_id}/assessments/sessions/{session_id}/responses")
+@router.post(
+    "/{family_id}/assessments/sessions/{session_id}/responses",
+    responses={200: {"model": AssessmentMutationReceiptResponse}},
+)
 async def save_assessment_response(
     family_id: str,
     session_id: str,
@@ -108,7 +117,7 @@ async def save_assessment_response(
     x_correlation_id: str | None = Header(default=None),
     idempotency_key: str | None = Header(default=None),
     x_source: str | None = Header(default=None),
-):
+) -> dict:
     if context.family_id != family_id:
         raise HTTPException(status_code=401, detail="real_family_session_required")
     meta = MutationMeta(x_correlation_id or "", idempotency_key or "", x_source or "")
@@ -126,7 +135,10 @@ async def save_assessment_response(
     )
 
 
-@router.post("/{family_id}/assessments/sessions/{session_id}/submit")
+@router.post(
+    "/{family_id}/assessments/sessions/{session_id}/submit",
+    responses={200: {"model": AssessmentMutationReceiptResponse}},
+)
 async def submit_assessment(
     family_id: str,
     session_id: str,
@@ -135,25 +147,28 @@ async def submit_assessment(
     x_correlation_id: str | None = Header(default=None),
     idempotency_key: str | None = Header(default=None),
     x_source: str | None = Header(default=None),
-):
+) -> dict:
     if context.family_id != family_id:
         raise HTTPException(status_code=401, detail="real_family_session_required")
     meta = MutationMeta(x_correlation_id or "", idempotency_key or "", x_source or "")
     return await handler.submit(SubmitAssessmentCommand(family_id, context.tenant_id, context.person_id, session_id, meta))
 
 
-@router.get("/{family_id}/ui/03/growth-hypothesis")
+@router.get("/{family_id}/ui/03/growth-hypothesis", responses={200: {"model": Ui03GrowthHypothesisProjectionResponse}})
 async def get_ui03_projection(
     family_id: str,
     context: FamilyContext = Depends(get_family_context),
     handler: AssessmentQueryHandler = Depends(get_query_handler),
-):
+) -> dict:
     if context.family_id != family_id:
         raise HTTPException(status_code=401, detail="real_family_session_required")
     return await handler.get_ui03_projection(GetUi03ProjectionQuery(family_id, context.tenant_id, context.person_id))
 
 
-@router.post("/{family_id}/growth-hypotheses/decisions")
+@router.post(
+    "/{family_id}/growth-hypotheses/decisions",
+    responses={200: {"model": GrowthHypothesisDecisionReceiptResponse}},
+)
 async def decide_growth_hypothesis(
     family_id: str,
     body: DecideGrowthHypothesisRequestBody,
@@ -161,7 +176,7 @@ async def decide_growth_hypothesis(
     handler: GrowthHypothesisCommandHandler = Depends(get_growth_hypothesis_handler),
     x_correlation_id: str | None = Header(default=None),
     idempotency_key: str | None = Header(default=None),
-):
+) -> dict:
     if context.family_id != family_id:
         raise HTTPException(status_code=401, detail="real_family_session_required")
     return await handler.decide(
