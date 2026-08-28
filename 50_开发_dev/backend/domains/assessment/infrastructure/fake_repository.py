@@ -14,7 +14,10 @@ from datetime import UTC, datetime
 
 from ..domain.entities import AssessmentResponse, AssessmentSession, GrowthHypothesisEvidence
 from ..domain.errors import AssessmentConflictError, AssessmentForbiddenError, AssessmentNotFoundError
+from ..domain.permission_policy import FAMILY_MANAGE_ROLES
 from ..domain.value_objects import AssessmentSessionStatus, AssessmentTool, AssessmentToolItem
+
+DEFAULT_TEST_ACTOR = "actor-1"
 
 
 def default_tool() -> AssessmentTool:
@@ -47,6 +50,12 @@ class FakeAssessmentRepository:
 
     families: set[str] = field(default_factory=set)
     tenant_family_bindings: set[tuple[str, str]] = field(default_factory=set)
+    # (family_id, actor_id) -> a successful legacy `CreateFamily` audit exists.
+    # Port of the `assertFamilyManagePermission` pass condition #1.
+    create_family_audit: set[tuple[str, str]] = field(default_factory=set)
+    # (family_id, person_id) -> role, for ACTIVE family_memberships rows.
+    # Port of the `assertFamilyManagePermission` pass condition #2.
+    family_memberships: dict[tuple[str, str], str] = field(default_factory=dict)
     consents: set[tuple[str, str, str]] = field(default_factory=set)  # (family_id, subject_person_id, purpose)
     subjects: dict[str, list[dict]] = field(default_factory=dict)  # family_id -> [{person_id, display_name, consent_granted}]
     tools: dict[tuple[str, int], AssessmentTool] = field(default_factory=dict)
@@ -64,6 +73,28 @@ class FakeAssessmentRepository:
         self.tenant_family_bindings.add((tenant_id, family_id))
         self.tenant_allowed_pages.setdefault(tenant_id, set()).update({"UI-02", "UI-03"})
         self.tools[("FAMILY_SUPPORT_NEEDS", 1)] = default_tool()
+        # Every existing test drives commands/queries as actor `"actor-1"`
+        # without separately seeding a membership — grant it OWNER_GUARDIAN
+        # here (mirrors a family always having its creator as an
+        # OWNER_GUARDIAN member) so `assert_tenant_family_scope`'s newly
+        # ported RBAC check doesn't regress every pre-existing test.
+        # Tests exercising the "no manage permission" path use
+        # `grant_family_manage_permission` / a bare actor id instead.
+        self.grant_family_manage_permission(family_id, DEFAULT_TEST_ACTOR, role="OWNER_GUARDIAN")
+
+    def grant_family_manage_permission(self, family_id: str, person_id: str, role: str = "OWNER_GUARDIAN") -> None:
+        """Port of an ACTIVE `family_memberships` row with a manage-eligible
+        role — the fake-repository equivalent of pass condition #2 in
+        `assertFamilyManagePermission` (family-permission.ts).
+        """
+        self.family_memberships[(family_id, person_id)] = role
+
+    def seed_create_family_audit(self, family_id: str, actor_id: str) -> None:
+        """Port of a SUCCESS `CreateFamily` `audit_logs` row — the fake
+        equivalent of pass condition #1 (legacy creator) in
+        `assertFamilyManagePermission`.
+        """
+        self.create_family_audit.add((family_id, actor_id))
 
     def seed_subject(self, family_id: str, person_id: str, display_name: str, consent_granted: bool = True) -> None:
         self.subjects.setdefault(family_id, []).append(
@@ -84,6 +115,15 @@ class FakeAssessmentRepository:
     async def assert_tenant_family_scope(self, tenant_id: str, family_id: str, actor_id: str) -> None:
         if (tenant_id, family_id) not in self.tenant_family_bindings:
             raise AssessmentForbiddenError("tenant_family_scope_denied")
+
+        # Port of `assertFamilyManagePermission` — same two pass conditions,
+        # OR'd, as the real repository's SQL. See `seed_family` for why the
+        # default test actor is pre-granted.
+        if (family_id, actor_id) in self.create_family_audit:
+            return
+        if self.family_memberships.get((family_id, actor_id)) in FAMILY_MANAGE_ROLES:
+            return
+        raise AssessmentForbiddenError("actor_has_family_manage_permission")
 
     async def assert_subject_consent(self, family_id: str, subject_person_id: str, purpose: str) -> None:
         if (family_id, subject_person_id, purpose) not in self.consents:

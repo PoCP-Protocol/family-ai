@@ -16,12 +16,13 @@ from __future__ import annotations
 import json
 from datetime import datetime
 
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from ..application.ports import AssessmentRepositoryPort
 from ..domain.entities import AssessmentResponse, AssessmentSession, GrowthHypothesisEvidence
 from ..domain.errors import AssessmentConflictError, AssessmentForbiddenError, AssessmentNotFoundError
+from ..domain.permission_policy import CREATE_FAMILY_ACTION, FAMILY_MANAGE_ROLES
 from ..domain.value_objects import AssessmentSessionStatus, AssessmentTool, AssessmentToolBoundary, AssessmentToolItem
 
 
@@ -81,9 +82,8 @@ class SqlAlchemyAssessmentRepository(AssessmentRepositoryPort):
         self._connection = connection
 
     async def assert_tenant_family_scope(self, tenant_id: str, family_id: str, actor_id: str) -> None:
-        # Port of AssessmentService.assertScope (tenant_family_bindings check).
-        # NOTE: assertFamilyManagePermission's RBAC check is NOT yet ported —
-        # tracked as a follow-up, not silently skipped. See task report.
+        # Port of AssessmentService.assertScope: the tenant_family_bindings
+        # check, followed by assertFamilyManagePermission (family-permission.ts).
         result = await self._connection.execute(
             text(
                 """
@@ -97,6 +97,46 @@ class SqlAlchemyAssessmentRepository(AssessmentRepositoryPort):
         )
         if result.first() is None:
             raise AssessmentForbiddenError("tenant_family_scope_denied")
+
+        await self._assert_family_manage_permission(family_id, actor_id)
+
+    async def _assert_family_manage_permission(self, family_id: str, actor_id: str) -> None:
+        # Port of `assertFamilyManagePermission` (family-permission.ts).
+        # Pass condition 1 (legacy): actor is the audited SUCCESS actor of
+        # this family's `CreateFamily` action.
+        audit = await self._connection.execute(
+            text(
+                """
+                select 1 from audit_logs
+                where family_id=:family_id and actor_id=:actor_id and action_name=:action and result='SUCCESS'
+                limit 1
+                """
+            ),
+            {"family_id": family_id, "actor_id": actor_id, "action": CREATE_FAMILY_ACTION},
+        )
+        if audit.first() is not None:
+            return
+
+        # Pass condition 2 (tenancy): actor (a trusted personId, per
+        # FamilyScopeGuard) holds an ACTIVE OWNER_GUARDIAN/GUARDIAN
+        # family_membership for this family. `person_id::text = :actor_id`
+        # mirrors the Nest cast — a non-UUID legacy actor_id simply fails to
+        # match instead of erroring.
+        membership = await self._connection.execute(
+            text(
+                """
+                select 1 from family_memberships
+                where family_id=:family_id and person_id::text=:actor_id and status='ACTIVE'
+                  and role in :roles
+                limit 1
+                """
+            ).bindparams(bindparam("roles", expanding=True)),
+            {"family_id": family_id, "actor_id": actor_id, "roles": list(FAMILY_MANAGE_ROLES)},
+        )
+        if membership.first() is not None:
+            return
+
+        raise AssessmentForbiddenError("actor_has_family_manage_permission")
 
     async def assert_subject_consent(self, family_id: str, subject_person_id: str, purpose: str) -> None:
         result = await self._connection.execute(
