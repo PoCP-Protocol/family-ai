@@ -12,10 +12,19 @@ theories:
     defines: [CN-001, CN-002]
     boundary: 涉即时人身危险/暴力升级不适用,须直接进入 Human Gate;不主张"复述一句必然改善关系"。
     china_fit: 情绪教练思路跨文化较稳,但表达方式需本土化;高学业压力下家长执行难度更高,存疑。
+    mechanism: >
+      Gottman提出"元情绪哲学(meta-emotion philosophy)"分两类家长:情绪教练型(emotion-coaching,视孩子的负面情绪为连接/教导机会)
+      vs 情绪抹除型(emotion-dismissing,视负面情绪为需尽快消除的麻烦)。情绪教练型家长的具体行为可拆解为五步:
+      (1)察觉孩子的情绪(尤其低强度阶段,不等爆发才处理);
+      (2)把情绪表达视为连接机会而非麻烦(不因为"闹情绪"而不耐烦或转移话题);
+      (3)带着共情倾听并确认孩子的情绪合理(不否定"这有什么好难过的");
+      (4)帮孩子用语言给情绪命名(把模糊的难受具体化成"沮丧""被冷落"等词);
+      (5)在孩子情绪平复后,再共同设定行为边界/解决问题(纠正/立规矩发生在连接之后,不是替代连接)。
+      核心机制假设:情绪未被承接时,孩子处于防御/唤起状态,认知资源被情绪占用,此时讲道理/纠正效率低且容易被体验为"不被理解";
+      先降低唤起水平(承接情绪)才能让孩子的认知资源回到"能听道理"的状态。
     tags: [情绪社会化, 先连接再纠正, theory]
     open_questions:
       - Gottman & DeClaire (1997) Raising an Emotionally Intelligent Child 仅作 BACKGROUND_REFERENCE,不入 decisive 证据集。
-      - Gottman 1996 原始文献精确书目/DOI 待 APA/PsycNet 核验后方可升为 decisive。
     evidence:
       - claim: >
           Rogers 提出共情性理解等为治疗关系的必要条件(理论背景描述,非亲子干预效果证据)。
@@ -29,13 +38,430 @@ theories:
           不得作为 LISTEN_BEFORE_RESPOND 有效性的证据。
         tags: [theory-background, rogers, no-effect-claim]
       - claim: >
-          父母元情绪哲学(情绪教练取向)与儿童情绪调节相关(理论奠基,初步实证)。
-        grade: 6
-        provenance: unverified
-        source: "VERIFY: Gottman, Katz & Hooven (1996), J. Family Psychology 10(3)"
+          父母元情绪哲学(情绪教练取向)与儿童情绪调节/家庭功能相关(理论奠基,含理论模型+初步实证数据)。
+        grade: 4
+        provenance: third_party_real
+        source: "doi:10.1037/0893-3200.10.3.243"
         year: 1996
-        population: 家庭(需核验精确样本)
+        population: 家庭(理论建构+初步实证,非大样本RCT)
         note: >
-          VERIFY_EXACT_SOURCE(裁决 M3-W2R-CONV-001)。未核验 DOI/书目前 provenance=unverified
-          → NON_DECISIVE,不可用于支撑结论;核验为原始研究后再升 third_party_real/E6。
-        tags: [theory-foundation, verify-pending, non-decisive]
+          2026-08-28 经 Crossref 核验书目信息真实存在,VERIFY_EXACT_SOURCE 裁决(M3-W2R-CONV-001)已解除。
+          2026-08-28 复核:原先误标 grade 5,E5 在本库 rubric 中定义为"一手运营数据",不适用于学术文献,系误用;
+          本文兼具理论模型与初步原始数据采集(非纯理论综述),改标 E4,不等同于 E6 系统性观察研究/E7 RCT/元分析;
+          不得据此宣称"情绪教练式回应对亲子关系有确定效应量"。
+        tags: [theory-foundation, verified, meta-emotion]
+
+  - id: TH-002
+    name: 教养方式分类(权威型/专制型/放纵型/忽视型)
+    summary: 家长教养行为可沿"要求性(demandingness)×回应性(responsiveness)"两维度区分,权威型(高要求高回应)长期发展结果最好。
+    core_claim: 相比专制型(高要求低回应)与放纵型(低要求高回应),权威型教养与儿童社会能力/学业/情绪调节等结果更优;Maccoby & Martin 在此基础上增补"忽视型(低要求低回应)"为第四类。
+    originators: [Baumrind, Maccoby, Martin]
+    year: "1966"
+    defines: [CN-003]
+    boundary: >
+      分类基于横断面/纵向观察研究,非RCT;不构成"某一分类必然导致某结果"的因果证据。
+      Baumrind本人关于体罚在权威支持型背景下"轻度打屁股影响不显著"的观点存在学界争议(Gershoff 2002等提出反驳),
+      本平台不采用该争议结论,仅采用四分类框架本身。
+    china_fit: >
+      跨文化适用性存争议:西方量表常把东亚家长的高要求(如督促学业)误判为"专制型",
+      但东亚家长的高要求可能伴随高情感投入,不完全对应西方"专制型"的低回应特征(Chao 1994 的"training"概念讨论此争议)。
+      本平台在生成建议时不得直接套用西方四分类给中国家庭贴"专制型"标签,须结合具体行为观察。
+    mechanism: >
+      两个正交维度构成四象限判断框架:
+      要求性(demandingness,家长是否设定清晰规则/督促执行/一致性)× 回应性(responsiveness,家长是否敏感回应孩子的情感需求/给自主空间)。
+      - 权威型(高要求+高回应):立规矩但会解释理由,允许协商,情感上温暖且尊重孩子观点——四类中长期结果最优;
+      - 专制型(高要求+低回应):要求绝对服从,较少解释/较少情感回应,倾向控制而非引导;
+      - 放纵型(低要求+高回应):情感温暖但少立规矩/少一致执行,孩子自我控制发展可能不足;
+      - 忽视型(低要求+低回应,Maccoby & Martin补充):既不管教也不参与,风险最高。
+      判断一个家庭落在哪个象限,不能只看"严不严"，要同时评估"孩子的情感需求有没有被看见/回应"——
+      这正是本平台不能直接照搬西方问卷给中国家庭贴标签的原因:中国家长常见的"高要求"背后可能伴随高投入/高关注(仍有回应性),
+      不应被简化判定为"专制型"，需要结合具体互动样本(是否解释理由、是否倾听孩子的异议)综合判断。
+    tags: [教养方式, Baumrind, 四分类, theory]
+    open_questions:
+      - 体罚相关的争议结论(Baumrind vs Gershoff)不纳入本平台任何生成式建议,仅记录学理背景。
+    evidence:
+      - claim: >
+          权威支持型教养(高要求+高回应)与儿童行为结果优于专制型/放纵型(观察性/纵向研究)。
+        grade: 6
+        provenance: third_party_real
+        source: "Baumrind, D. (1966). Effects of Authoritative Parental Control on Child Behavior. Child Development, 37(4), 887-907. doi:10.2307/1126611"
+        year: 1966
+        population: 学龄前儿童及其家长(美国样本)
+        note: >
+          2026-08-28 经维基百科条目+交叉核验确认书目真实。原研究为真实观察性/横断面实证研究(非纯理论综述),
+          按rubric属E6(观察性研究/准实验);2026-08-28复核:原先误标grade 5(E5在本库定义为"一手运营数据",不适用于学术观察研究,系误用),
+          纠正为E6;非RCT,不得升级为因果效应证据(E6≠E7)。
+        tags: [theory-foundation, verified, observational]
+      - claim: >
+          Maccoby & Martin 在Baumrind三分类基础上,增补"忽视型(低要求低回应)"形成四分类框架,并系统梳理该框架下的亲子互动机制。
+        grade: 4
+        provenance: third_party_real
+        source: "Maccoby, E. E., & Martin, J. A. (1983). Socialization in the context of the family: Parent-child interaction. In E. M. Hetherington (Ed.), Handbook of Child Psychology, Vol. 4 (4th ed.). New York: Wiley."
+        year: 1983
+        population: 综述/理论章节,非独立实证研究
+        note: >
+          2026-08-28 经第三方文献引用记录间接核验(书目信息在他人参考文献列表中出现,非直接抓取原文),
+          provenance 标注为third_party_real但页码信息未获取,属THEORY_FRAMEWORK非效应证据。
+        tags: [theory-foundation, verified-indirect, four-typology]
+      - claim: >
+          中国家长的高要求教养行为常与"training(训导/管教)"这一本土文化概念绑定,该概念强调家长的关注、参与与对孩子的责任感,
+          与西方"专制型(authoritarian)"标签所隐含的低回应/低情感投入内涵不完全对应(理论辨析,含质性/量性证据)。
+        grade: 6
+        provenance: third_party_real
+        source: "Chao, R. K. (1994). Beyond Parental Control and Authoritarian Parenting Style: Understanding Chinese Parenting Through the Cultural Notion of Training. Child Development, 65(4), 1111-1119. doi:10.2307/1131308"
+        year: 1994
+        note: >
+          2026-08-28经Crossref核验书目真实存在;CULTURAL_ADAPTATION_EVIDENCE,直接解除本卡此前的open_question待查状态。
+          本文含真实的中美家长比较调查数据,非纯概念文章,按rubric属E6(观察性/准实验);
+          2026-08-28复核:原先误标grade 5(E5误用,同TH-002其他条目),纠正为E6。
+          本文核心贡献是提出概念性区分框架,不等同于对中国家长逐一实证测量后判定"均非专制型"。
+        tags: [cultural-adaptation, verified, china-fit, chao-training]
+
+  - id: TH-003
+    name: 依恋理论(Attachment Theory)
+    summary: 早期照养者-婴儿互动的敏感回应质量,塑造婴儿的依恋安全性,进而形成影响终身关系模式的"内部工作模型"。
+    core_claim: 照养者对婴儿信号的敏感、及时回应程度,与婴儿依恋安全性呈正相关(meta分析级证据);依恋安全性被认为是后续社会情绪发展的重要基础。
+    originators: [Bowlby, Ainsworth]
+    year: "1969"
+    defines: [CN-004]
+    boundary: >
+      核心证据链是"敏感性→依恋安全性"这一段(meta分析支持),不等于"依恋安全性→某个具体成年结果"全链条都是同等证据强度;
+      "内部工作模型影响终身关系"这一延伸主张更多是理论推演,非本卡直接证据覆盖范围。
+    china_fit: >
+      依恋理论核心机制(敏感回应-安全感)跨文化研究支持较稳,但"陌生情境"分类比例在集体主义/多照养者文化中的分布
+      与西方常模存在差异,本平台尚未核验中国本土依恋测量常模研究,不得直接套用西方分类比例宣称中国婴幼儿依恋分布。
+    mechanism: >
+      核心机制是"敏感回应(sensitive responsiveness)"这一具体照养者行为束,通常拆解为四要素:
+      (1)察觉(能注意到婴儿发出的信号,不管信号是哭闹还是细微的表情/姿态变化);
+      (2)正确解读(能大致判断信号背后的需求,如"饿了"vs"要抱"vs"过度刺激想休息",不强加自己的解释);
+      (3)及时回应(在婴儿能建立"信号-回应"关联的时间窗内做出反应,不是完全不回应也不是过度包办替代婴儿自己调节);
+      (4)恰当性(回应的方式匹配婴儿当下真正的需求强度,不过度也不不足)。
+      经典分类(Ainsworth陌生情境范式)把依恋模式分为:安全型(照养者离开会不安、回来能被安慰并恢复探索)、
+      回避型(表面不在意照养者离开/回来,内在生理应激仍升高)、焦虑/矛盾型(过度苦恼且回来后难被安慰)、
+      混乱型(缺乏一致应对策略,常见于照养环境本身不稳定/有创伤)。
+      平台生成建议时的核心可操作抓手是"敏感回应"这四要素本身,而不是急于给某个家庭的婴儿贴"哪种依恋类型"的标签——
+      分类需要标准化范式和专业评估,家庭日常场景更适合评估和提升"敏感回应"这个照养行为本身。
+      "家长第二次成长"维度延伸:家长自身的依恋表征(通过成人依恋访谈AAI测量)对其婴儿的依恋安全性有跨代预测力(meta分析证据),
+      提示"教好孩子"与"家长自己有没有被安全地依恋过/是否处理好自己的依恋经历"部分绑定——
+      这是本平台把"家长自身成长"纳入家庭教育范畴的直接理论支撑,而非仅仅关注家长的教养技巧。
+    tags: [依恋理论, Bowlby, Ainsworth, theory]
+    open_questions:
+      - Bowlby (1969) Attachment and Loss Vol.1 原著为书籍无DOI,本卡以Ainsworth 1969期刊论文+De Wolff & van IJzendoorn 1997 meta分析作为可机器核验的证据锚点。
+      - 中国本土依恋测量常模/跨文化适配研究尚未核验,列为待查。
+      - 依恋代际传递的具体作用机制(是否可通过家长自我反思类干预改变)本卡未核验对应干预研究,只确认"预测关联"本身。
+    evidence:
+      - claim: >
+          婴儿-母亲依恋关系可理论化为"内部工作模型"的雏形,依恋对象在情感联结中的功能性角色具跨情境一致性(理论综述)。
+        grade: 3
+        provenance: third_party_real
+        source: "Ainsworth, M. D. S. (1969). Object Relations, Dependency, and Attachment: A Theoretical Review of the Infant-Mother Relationship. Child Development, 40(4), 969-1025."
+        year: 1969
+        population: 理论综述,非独立实证研究
+        note: 2026-08-28经Crossref核验书目真实存在;THEORY_FRAMEWORK,非效应证据,不得作为因果依据引用。
+        tags: [theory-foundation, verified]
+      - claim: >
+          照养者敏感性与婴儿依恋安全性存在中等强度正相关(66项研究汇总,meta分析)。
+        grade: 6
+        provenance: third_party_real
+        source: "De Wolff MS, van IJzendoorn MH. (1997). Sensitivity and attachment: a meta-analysis on parental antecedents of infant attachment. Child Development, 68(4), 571-91. PMID: 9306636"
+        year: 1997
+        sample_n: 4176
+        population: 66项研究汇总的婴儿-母亲对(meta分析,主要西方样本)
+        note: 2026-08-28经PubMed核验书目真实存在;METHOD/CONSTRUCT级meta证据,本库证据强度最高的条目之一。
+        tags: [meta-analysis, verified, sensitivity-attachment]
+      - claim: >
+          成人依恋访谈(AAI)测得的家长自身依恋表征,对婴儿依恋安全性有中等强度预测力(依恋代际传递,meta分析)。
+        grade: 6
+        provenance: third_party_real
+        source: "van IJzendoorn MH. (1995). Adult attachment representations, parental responsiveness, and infant attachment: A meta-analysis on the predictive validity of the Adult Attachment Interview. Psychological Bulletin, 117(3), 387-403. doi:10.1037/0033-2909.117.3.387"
+        year: 1995
+        note: >
+          2026-08-28经Crossref核验书目真实存在;INTERGENERATIONAL_TRANSMISSION证据,是"家长自身依恋经历影响教养"这一
+          "家长第二次成长"主张的核心证据锚点,meta分析级别。
+        tags: [meta-analysis, verified, intergenerational-transmission, parent-growth]
+
+  - id: TH-004
+    name: 家长教养自我效能感(Parenting Self-Efficacy)
+    summary: 家长对"自己能不能胜任教养任务、有效影响孩子"的自我信念,是"家长第二次成长"维度的核心理论根——教养行为改变的中介变量之一往往是家长自身效能感的提升,而非仅靠外部知识灌输。
+    core_claim: 家长的教养自我效能感(相信自己能有效应对教养挑战)与更积极的教养行为、更低的教养压力、更好的儿童适应结果相关;效能感本身可通过掌握经验(mastery experience)、观摩示范、他人反馈等途径提升,不是固定不变的人格特质。
+    originators: [Bandura, Jones, Prinz]
+    year: "1977"
+    defines: [CN-005]
+    boundary: >
+      Bandura的自我效能理论是跨领域通用框架,本卡引用的是其在教养领域的应用综述(Jones & Prinz 2005),
+      该综述本身是叙述性综述(narrative review)而非meta分析,效应量证据强度弱于TH-003的meta分析级证据,
+      不构成"提升效能感必然改善儿童结果"的因果证明,只支持"两者相关且理论上可解释"。
+    china_fit: >
+      教养自我效能感的测量多为西方自评量表,本平台未核验中文本土化版本的信效度;
+      中国家长的效能感来源可能更多与"外部评价(如学业成绩)"绑定,与西方研究默认的"内在胜任感"构念内涵是否完全一致,存疑,列为待查。
+    mechanism: >
+      Bandura自我效能理论提出四条效能感的信息来源(适用于任何领域,包括教养):
+      (1)掌握经验(mastery experience)——自己实际成功应对过某个教养场景,是效能感最强的来源;
+      (2)替代性经验(vicarious experience)——观摩其他家长/榜样成功处理类似场景,能部分提升"我也能做到"的信念;
+      (3)言语说服(verbal persuasion)——他人(专家/伴侣/朋友)给予肯定和具体反馈,效果弱于前两者且容易随挫折消退;
+      (4)生理/情绪状态(physiological/emotional state)——家长自身焦虑/疲惫水平会直接压低对自己教养能力的判断,即使实际能力没变。
+      应用到"家长第二次成长": 单纯给家长灌输"应该怎么做"的知识(纯言语说服)提升效能感效果有限且不持久;
+      更有效的路径是让家长在真实/接近真实的场景中获得"掌握经验"(哪怕是小范围的成功尝试),并配合看到其他家长的真实(非完美化)应对示范。
+      这对应本平台"AI生成建议"的一个设计含义:建议应该是"具体到今晚能试、能看到小成功"的颗粒度,而不是抽象的育儿理念灌输。
+    tags: [自我效能, 家长成长, Bandura, theory]
+    open_questions:
+      - Jones & Prinz (2005) 是叙述性综述非meta分析,效应量强度未在本平台逐条核验，不得引用具体相关系数。
+      - 中文本土化教养效能感量表尚未核验，列为待查。
+    evidence:
+      - claim: >
+          自我效能感理论的四个信息来源(掌握经验/替代性经验/言语说服/生理情绪状态)构成通用行为改变框架(理论奠基)。
+        grade: 4
+        provenance: third_party_real
+        source: "Bandura, A. (1977). Self-efficacy: Toward a unifying theory of behavioral change. Psychological Review, 84(2), 191-215. doi:10.1037/0033-295x.84.2.191"
+        year: 1977
+        population: 跨领域理论框架,非教养专用研究
+        note: 2026-08-28经Crossref核验书目真实存在;THEORY_FOUNDATION,通用理论非教养专属实证。
+        tags: [theory-foundation, verified, bandura]
+      - claim: >
+          家长教养自我效能感与教养行为质量/教养压力/儿童适应结果相关(叙述性综述,汇总多项研究)。
+        grade: 3
+        provenance: third_party_real
+        source: "Jones TL, Prinz RJ. (2005). Potential roles of parental self-efficacy in parent and child adjustment: A review. Clinical Psychology Review, 25(3), 341-363. doi:10.1016/j.cpr.2004.12.004"
+        year: 2005
+        note: >
+          2026-08-28经Crossref核验书目真实存在;NARRATIVE_REVIEW非meta分析,grade定为3(领域应用综述级),
+          不得等同于TH-003依恋理论那条meta分析(E6)的证据强度。
+        tags: [narrative-review, verified, parenting-self-efficacy]
+
+  - id: TH-005
+    name: 家庭系统理论与自我分化(Bowen Family Systems Theory / Differentiation of Self)
+    summary: 家庭是一个情绪互联的系统,个体在这个系统里"自我分化"程度(能否在保持亲密的同时不被家庭情绪氛围淹没、维持独立思考)影响其自身心理适应与亲子/婚姻关系质量。
+    core_claim: 自我分化程度更高的个体(能区分自己的想法/感受,不轻易被家庭情绪牵动或过度融合/过度疏离)心理症状更少、婚姻/亲密关系适应更好;这是"家长第二次成长"里区别于"教养技巧"的另一条独立维度——家长自己在原生家庭/婚姻系统里的分化程度,会影响其作为家长时的情绪稳定性。
+    originators: [Bowen, Skowron, Friedlander]
+    year: "1998"
+    defines: [CN-006]
+    boundary: >
+      Bowen家庭系统理论本身(1966年提出雏形,后续系统化)缺乏本平台可核验的单篇奠基性期刊论文(其理论散见于多部专著/临床文集);
+      本卡以Skowron开发的可操作化测量工具(DSI量表)及其效度研究作为可机器核验的证据锚点,理论溯源到Bowen但不等同于逐字核验Bowen本人原始著作。
+    china_fit: >
+      "自我分化"构念本身预设个体主义文化下"独立自我"与"关系自我"的张力框架,
+      在强调家庭整体性的中国文化情境下,"低融合"是否等同于"分化程度低"存在概念适配问题——
+      本平台不确定西方DSI量表条目在中国家庭语境下是否测量同一构念,列为待查,不得直接使用西方常模判断中国家长的分化水平。
+    mechanism: >
+      Bowen理论核心概念是"自我分化(differentiation of self)"，拆解为两个层面:
+      (1)个体内层面(intrapsychic)——能否区分自己的"理性思考"与"情绪反应",不被强烈情绪(焦虑/愤怒)直接主宰行为决策;
+      (2)人际层面(interpersonal)——能否在与家人保持亲密的同时不过度融合(丧失自我边界)也不过度疏离(情绪隔离/切断关系),
+      即"我能爱你,也能不同意你,还能留在这个关系里"。
+      分化程度低的个体容易在家庭压力下出现两种极端反应模式:融合式反应(情绪传染,家人焦虑我就焦虑,丧失独立判断)
+      或疏离式反应(用物理/情感抽离来逃避家庭系统的情绪张力)。
+      应用到家长角色:分化程度较低的家长,更容易把自己的焦虑(如对孩子学业的焦虑)不经处理地直接"传染"给孩子
+      (Bowen称为"焦虑的代际传递"),或者在冲突时选择情绪化对抗/彻底回避两种极端反应,而非稳定地坚持立场同时保持连接。
+      这与TH-001(情绪教练)的关系是:情绪教练是"对孩子情绪的具体回应技巧",自我分化是"家长自身情绪调节的底层能力"——
+      分化程度低的家长即使学会了情绪教练的话术步骤,遇到真实压力场景时也更容易被自己的情绪淹没而做不出来。
+    tags: [家庭系统理论, Bowen, 自我分化, 家长成长, theory]
+    open_questions:
+      - Bowen本人原始理论著作(专著/临床文集,非单篇期刊论文)未逐一核验,本卡以DSI量表开发/效度研究作为机器可核验锚点,理论渊源标注但非逐字核验。
+      - 中文本土化DSI量表及其在集体主义文化下的构念等值性尚未核验。
+      - Bowen理论整体证据基础以临床观察/量表关联研究为主，本平台未核验其RCT级干预效果证据（如Bowenian家庭治疗的疗效试验），不得宣称"提升自我分化"这一干预方向本身有RCT支撑。
+    evidence:
+      - claim: >
+          自我分化量表(DSI)可信效度良好,验证了自我分化作为可操作化测量构念的合理性(量表开发与效度验证研究)。
+        grade: 4
+        provenance: third_party_real
+        source: "Skowron, E. A., & Friedlander, M. L. (1998). The Differentiation of Self Inventory: Development and initial validation. Journal of Counseling Psychology, 45(3), 235-246. doi:10.1037/0022-0167.45.3.235"
+        year: 1998
+        note: 2026-08-28经Crossref核验书目真实存在(含2009年勘误Errata,56(4),597-598);MEASUREMENT_VALIDATION,非效应证据。
+        tags: [measurement-validation, verified, DSI]
+      - claim: >
+          自我分化程度与婚姻适应质量存在关联(实证研究,非meta分析)。
+        grade: 4
+        provenance: third_party_real
+        source: "Skowron, E. A. (2000). The role of differentiation of self in marital adjustment. Journal of Counseling Psychology, 47(2), 229-237."
+        year: 2000
+        note: >
+          2026-08-28经Crossref核验书目真实存在;单篇实证研究(非meta分析),grade定为4;
+          证据链是"自我分化→婚姻适应"，不直接是"自我分化→教养行为"，后者为本平台的理论推演延伸,未有直接实证锚点,列为open_question。
+        tags: [empirical-study, verified, marital-adjustment]
+
+  - id: TH-006
+    name: 目标定向理论/"成长型思维"(Dweck Goal Orientation / Growth Mindset)
+    summary: 个体对自身能力"是否可以通过努力改变"的内隐信念(成长型 vs 固定型思维),影响其面对学业挑战时的目标选择与挫折应对方式;但该理论近年最强证据(多项大规模meta分析)显示其对学业成绩的实际效应量远小于流行说法宣称的程度。
+    core_claim: 持有"能力可通过努力发展"信念(成长型思维)的学生更倾向选择"学习目标"而非单纯"表现目标",面对失败时更可能归因于努力不足而非能力不够,从而更能坚持;但"培养成长型思维就能显著提升学业成绩"这一流行主张,在大规模meta分析中被证明效应量很小且存在很多null结果。
+    originators: [Dweck, Leggett]
+    year: "1988"
+    defines: [CN-007]
+    boundary: >
+      本理论的"信念-归因-坚持性"机制本身证据基础较扎实(理论奠基论文+后续大量实证);
+      但"成长型思维干预项目能提升学业成绩"这一应用层主张,在2018年与2023年两项独立meta分析中效应量都很小(部分子群体接近零),
+      本平台明确不采用"教孩子成长型思维就能提分"这类被流行心理学夸大的简化叙事。
+    china_fit: >
+      中国教育环境的"努力归因"文化本身就很强(常被认为比西方更强调努力而非天赋),
+      "成长型思维"这套源自美国文化情境的干预话术直接翻译过来是否有增量价值存疑,
+      本平台未核验中国学生样本中的相关研究,列为待查。
+    mechanism: >
+      核心区分两种内隐信念:
+      (1)固定型思维(fixed mindset)——认为智力/能力是相对固定的特质,失败会被解读为"我不够聪明"这种能力归因,容易导致回避挑战、放弃;
+      (2)成长型思维(growth mindset)——认为能力可通过努力/策略/反馈发展,失败被解读为"这个方法还不够/还需要练习"这种努力/策略归因,更容易坚持并调整策略。
+      这套信念进一步影响目标定向:固定型思维者更倾向"表现目标"(证明自己聪明/避免看起来笨),成长型思维者更倾向"学习目标"(把重点放在掌握技能本身)。
+      理论本身的机制链条(信念→归因→目标定向→坚持性)有扎实的实证支持链,但从"改变学生的信念"到"实际提升学业成绩"这一段,
+      是应用层最薄弱的环节——多项大规模meta分析显示,单纯的"成长型思维讲座/工作坊"式干预,对多数学生群体的成绩提升效应很小,
+      仅在特定高风险/低资源学生子群体中观察到更明显效应,且结果在不同研究间不一致。
+      对本平台的含义:如果要用这套理论生成建议,重点应放在"具体场景下如何做努力归因/策略反馈"(如MD类方法可以设计的具体话术),
+      而不是抽象宣传"要有成长型思维"这种没有操作抓手的说教。
+    tags: [成长型思维, 目标定向, 学业动机, 认知发展, theory]
+    open_questions:
+      - 中国学生样本中成长型思维相关研究尚未核验,列为待查。
+      - 具体哪类"成长型思维干预设计"(如反馈话术vs整套课程)效应量差异尚未逐条核验，本卡不确定推荐哪种具体干预形式。
+    evidence:
+      - claim: >
+          个体的内隐能力信念(固定型/成长型)与其目标定向(表现目标/学习目标)及应对失败的归因方式形成一套社会认知动机理论(理论奠基)。
+        grade: 3
+        provenance: third_party_real
+        source: "Dweck, C. S., & Leggett, E. L. (1988). A social-cognitive approach to motivation and personality. Psychological Review, 95(2), 256-273. doi:10.1037/0033-295x.95.2.256"
+        year: 1988
+        note: >
+          2026-08-28经Crossref核验书目真实存在;THEORY_FOUNDATION,Psychological Review为理论整合期刊,本文是纯理论综述非原始实证研究。
+          2026-08-28复核:原先误标grade 5(E5误用),纠正为E3,与Jones & Prinz 2005等同类叙述性综述保持同一等级基准。
+        tags: [theory-foundation, verified, dweck]
+      - claim: >
+          成长型思维水平与学业成绩的关联,在大规模meta分析中效应量很小,且"成长型思维干预"对学业成绩的因果效应普遍很小/多为null结果。
+        grade: 7
+        provenance: third_party_real
+        source: "Sisk VF, Burgoyne AP, Sun J, Butler JL, Macnamara BN. (2018). To What Extent and Under Which Circumstances Are Growth Mind-Sets Important to Academic Achievement? Two Meta-Analyses. Psychological Science, 29(4), 549-571. doi:10.1177/0956797617739704"
+        year: 2018
+        note: >
+          2026-08-28经Crossref核验书目真实存在;这是ANTI_OVERCLAIM关键证据——meta分析级别,直接反驳"成长型思维显著提分"的流行简化说法,
+          本平台故意保留此条以防止生成式建议过度宣传该理论的应用效果。
+        tags: [meta-analysis, verified, anti-overclaim, null-effect]
+      - claim: >
+          系统综述与meta分析(2023年,覆盖更多近期研究)进一步确认成长型思维干预对学业成绩的整体影响很小,并给出干预设计的最佳实践建议。
+        grade: 7
+        provenance: third_party_real
+        source: "Macnamara BN, et al. (2023). Do growth mindset interventions impact students' academic achievement? A systematic review and meta-analysis with recommendations for best practices. Psychological Bulletin, 149(3), 133-173. doi:10.1037/bul0000352"
+        year: 2023
+        note: 2026-08-28经Crossref核验书目真实存在;ANTI_OVERCLAIM证据,与Sisk et al. 2018结论方向一致,强化"效应量小"这一结论的稳健性。
+        tags: [meta-analysis, systematic-review, verified, anti-overclaim]
+
+  - id: TH-007
+    name: 自我决定理论(Self-Determination Theory)
+    summary: 人的内在动机(不需要外部奖惩就想去做某事)需要三种基本心理需求被满足才能维持:自主性(autonomy,感到行为出于自己的选择而非被迫)、胜任感(competence,感到自己有能力做好)、归属感(relatedness,感到与重要他人有联结)。
+    core_claim: 当环境(包括家庭教养环境)支持而非破坏这三种基本心理需求时,个体(包括儿童在学习/成长任务中)更容易维持内在动机,呈现更好的投入度、创造力与心理健康;过度使用外部控制式奖惩、过度包办替代、忽视情感联结,都会削弱这些需求的满足从而削弱内在动机。
+    originators: [Deci, Ryan]
+    year: "2000"
+    defines: [CN-008]
+    boundary: >
+      本理论是跨领域通用动机理论(工作场所/教育/健康行为等均有应用),本卡聚焦在其对家庭教养/儿童学习动机的应用意涵;
+      "三需求"框架本身证据基础扎实,但具体到"某个家长应该怎么做才能同时满足三种需求"这类操作化建议,是本平台基于理论机制的推演,非直接效应证据。
+    china_fit: >
+      "自主性"这一构念在集体主义/强调家长权威的中国家庭教育情境下的适用性存在学界讨论
+      (部分学者认为SDT的自主性内核仍适用,但"自主支持"的具体表现形式需要本土化,不等同于"完全放任孩子自己决定");
+      本平台未核验中国家庭样本中的SDT应用研究,列为待查。
+    mechanism: >
+      三种基本心理需求及其在家庭教养场景中的具体表现:
+      (1)自主性支持(vs 控制)——给孩子在合理范围内的选择权和解释规则的理由(呼应TH-002权威型教养的"高要求但解释理由"),
+      而非单纯要求服从;过度包办/过度控制会直接压低自主性满足感,即使家长的出发点是"为孩子好"。
+      (2)胜任感支持(vs 习得性无助)——提供匹配孩子当前能力水平的挑战(不过难导致挫败,不过易导致无聊),
+      给予具体的、聚焦过程/策略的反馈(呼应TH-006"努力/策略归因"),而非笼统的评价性反馈("你真聪明"/"你怎么这么笨")。
+      (3)归属感支持(vs 情感忽视/条件性关爱)——让孩子感到被爱和被接纳是无条件的,不与"是否达到某个表现标准"绑定
+      (即不因为孩子没考好就明显减少温暖表达);呼应TH-001情绪教练"先连接"的逻辑。
+      三个需求可以同时用一套教养行为观察框架来评估,不是三套独立技巧——比如"权威型教养"(TH-002)本身就是同时支持自主性(解释理由)、
+      胜任感(合理挑战+一致反馈)、归属感(高回应)的教养模式,SDT为其提供了动机机制层面的解释。
+    tags: [自我决定理论, 内在动机, 自主性, 胜任感, 归属感, theory]
+    open_questions:
+      - 中国家庭样本中SDT应用研究(尤其"自主性"构念的本土化适配)尚未核验,列为待查。
+      - 三需求框架与TH-002/TH-001/TH-006等既有理论存在概念重叠(如"高回应"≈"归属感支持"),尚未系统梳理避免重复计分/重复建议。
+    evidence:
+      - claim: >
+          自主性、胜任感、归属感三种基本心理需求的满足程度,预测个体的内在动机、社会性发展与心理健康水平(理论综述,整合大量实证研究)。
+        grade: 3
+        provenance: third_party_real
+        source: "Deci EL, Ryan RM. (2000). Self-determination theory and the facilitation of intrinsic motivation, social development, and well-being. American Psychologist, 55(1), 68-78. doi:10.1037/0003-066x.55.1.68"
+        year: 2000
+        note: >
+          2026-08-28经Crossref核验书目真实存在;THEORY_FOUNDATION级叙述性综述,整合此前大量实证但本身非单一效应研究,
+          不等同于meta分析(E7)的单一效应量证据。2026-08-28复核:原先误标grade 5(E5误用),纠正为E3,
+          与Jones & Prinz 2005/Dweck & Leggett 1988等同类叙述性综述保持同一等级基准。
+        tags: [theory-foundation, verified, self-determination]
+
+  - id: TH-008
+    name: 照养者语言输入与词汇发展(Caregiver Language Input)
+    summary: 幼儿早期从照养者那里接收到的语言输入的数量与质量,预测其后续词汇量与语言能力发展,且这种影响独立于家庭社经地位本身的直接效应(即社经地位通过语言输入这条路径起作用,不是社经地位本身直接决定词汇量)。
+    core_claim: 照养者对幼儿说话的词汇丰富度、句法复杂度、对话式互动(而非单向指令)的比例越高,幼儿后续词汇发展越好;这条机制部分解释了家庭社经背景差异如何转化为儿童早期语言能力差异。
+    originators: [Hoff, Rowe]
+    year: "2003"
+    defines: [CN-009]
+    boundary: >
+      证据基础是纵向观察研究(非RCT),证明的是"语言输入质量与词汇发展的关联及部分中介机制",
+      不是"某个具体语言干预项目对词汇量有因果提升效应"的RCT级证据;本平台未核验语言输入类干预项目(如亲子共读项目)的RCT效果证据。
+    china_fit: >
+      本平台未核验中文语境下"照养者语言输入质量"的测量工具与关联研究;
+      中文的语法结构、多语言/方言家庭环境(常见于中国家庭,如祖辈用方言照养)可能改变输入-发展关系的具体表现形式,列为待查。
+    mechanism: >
+      "语言输入质量"通常拆解为几个可观察维度:
+      (1)词汇多样性(照养者使用的独特词汇数量,而非只是说话总量);
+      (2)句法复杂度(是否使用完整句、从句等更复杂的语言结构,而非只是简单指令);
+      (3)对话式互动比例(照养者是否跟进孩子发起的话题、提开放式问题,而非只是单向的指令/命名);
+      (4)去情境化语言(谈论当下不在场的事物/过去将来,而非只描述眼前发生的事)。
+      Hoff (2003)的核心发现是:社经地位对早期词汇发展的影响,很大程度上是通过"母亲言语的词汇多样性"这条路径起作用的——
+      也就是说,社经地位本身不是直接原因,真正起作用的是社经地位关联的照养者语言输入模式,这意味着"改变语言输入模式"
+      理论上比"改变社经地位"更具可干预性,这是本卡对家庭教育实践的核心含义。
+    tags: [语言发展, 词汇习得, 照养者语言输入, 认知发展, theory]
+    open_questions:
+      - 语言输入类具体干预项目(如系统化的亲子共读方案)的RCT效果证据本平台尚未核验，不得宣称"改善语言输入=RCT验证提升词汇量"。
+      - 中文语境/多语言家庭的适配研究尚未核验。
+    evidence:
+      - claim: >
+          社经地位对幼儿早期词汇发展的影响,很大程度上通过母亲言语的词汇多样性这一具体路径起作用(纵向观察研究)。
+        grade: 6
+        provenance: third_party_real
+        source: "Hoff E. (2003). The Specificity of Environmental Influence: Socioeconomic Status Affects Early Vocabulary Development Via Maternal Speech. Child Development, 74(5), 1368-1378. doi:10.1111/1467-8624.00612"
+        year: 2003
+        note: >
+          2026-08-28经Crossref核验书目真实存在;真实纵向观察研究,按rubric属E6(观察性研究/准实验),非RCT。
+          2026-08-28复核:原先误标grade 5(E5在本库定义为"一手运营数据",不适用于学术观察研究,系误用),纠正为E6。
+        tags: [longitudinal, verified, mechanism-support]
+      - claim: >
+          照养者语言输入的数量与质量(尤其质量维度)纵向预测幼儿后续词汇发展水平(长期追踪研究)。
+        grade: 6
+        provenance: third_party_real
+        source: "Rowe ML. (2012). A Longitudinal Investigation of the Role of Quantity and Quality of Child-Directed Speech in Vocabulary Development. Child Development, 83(5), 1762-1774. doi:10.1111/j.1467-8624.2012.01805.x"
+        year: 2012
+        note: >
+          2026-08-28经Crossref核验书目真实存在;真实纵向研究,按rubric属E6(观察性/准实验),非meta分析/RCT(E7)。
+          2026-08-28复核:原先误标grade 5(E5误用,同上),纠正为E6。
+        tags: [longitudinal, verified, method-effect]
+
+  - id: TH-009
+    name: 社会信息加工模型(Social Information Processing)
+    summary: 儿童在与同伴互动的社会情境中,要经历一系列信息加工步骤(编码线索→解读→设定目标→生成应对方式→评估选择→执行)才能做出社会行为反应;这些加工步骤中的偏差(如把中性线索解读为敌意)与攻击性/社会适应不良行为相关。
+    core_claim: 儿童处理社会信息时若存在系统性偏差(如对模糊情境的敌意归因偏差、应对方式生成库狭窄、只会用攻击性方式解决冲突),更容易表现出攻击性行为或社交困难;这些加工步骤本身可以被识别和针对性训练,而不只是笼统归因为"性格问题"。
+    originators: [Crick, Dodge]
+    year: "1994"
+    defines: [CN-010]
+    boundary: >
+      本理论综述整合了大量实证研究(观察性为主,部分实验室情境实验),证明的是"社会信息加工偏差与社会适应问题相关"，
+      不是所有攻击性行为都源于信息加工偏差(部分源于工具性/预谋性攻击,加工模式不同);本卡不适用于替代对严重行为问题的专业评估。
+    china_fit: >
+      本平台未核验该模型在中国儿童样本中的应用研究;中国教育环境的同伴竞争/集体活动结构与西方研究情境存在差异,
+      具体加工步骤的表现形式(如"敌意归因偏差"在集体主义文化下的具体行为表现)尚待核验。
+    mechanism: >
+      社会信息加工模型把儿童面对一个社交情境(比如"同伴不小心撞倒了我搭的积木")时的反应拆解为六个步骤:
+      (1)编码线索(注意到情境中的哪些信息——是看到"撞倒"这个动作,还是也注意到"同伴的表情/是不是故意的"这些线索);
+      (2)解读线索(对线索赋予意义——判断这是"故意的"还是"不小心的",存在"敌意归因偏差"的儿童更容易把模糊情境解读为故意);
+      (3)澄清目标(这个情境下我想要什么结果——报复?维持关系?解决问题?);
+      (4)生成应对方式(能想出哪些应对选项——应对方式库狭窄的儿童可能只能想到"打回去"这一种);
+      (5)评估与选择应对方式(对生成的选项进行评估,选一个去执行——攻击性儿童可能高估攻击性方式的效果/低估其代价);
+      (6)执行(把选定的应对方式付诸行动,执行的社交技巧熟练度也影响最终效果)。
+      对家庭教育实践的含义:当孩子表现出"一点小事就动手"这类行为时,与其只归因为"脾气不好",更有用的是定位到具体哪个步骤出了偏差
+      (是解读线索时容易往坏处想?还是想不出除了动手以外的办法?),针对具体步骤设计练习,而不是笼统的"要控制情绪"式说教。
+    tags: [同伴关系, 社会认知, 攻击行为, 社会性发展, theory]
+    open_questions:
+      - 中国儿童样本中该模型的应用研究尚未核验。
+      - 具体针对某一加工步骤的训练干预(如归因再训练)的RCT效果证据本平台尚未核验，本卡目前只支持"识别偏差在哪一步"这一诊断性应用，不支持具体干预方法的效果宣称。
+    evidence:
+      - claim: >
+          儿童社会信息加工过程中的系统性偏差(如敌意归因偏差、应对方式生成受限)与攻击性行为/社会适应不良相关(理论综述,整合大量实证研究)。
+        grade: 3
+        provenance: third_party_real
+        source: "Crick NR, Dodge KA. (1994). A review and reformulation of social information-processing mechanisms in children's social adjustment. Psychological Bulletin, 115(1), 74-101. doi:10.1037/0033-2909.115.1.74"
+        year: 1994
+        note: >
+          2026-08-28经Crossref核验书目真实存在;THEORY_FOUNDATION级综述(Psychological Bulletin为综述/元分析期刊,
+          本文标题即"review and reformulation",整合大量实证但非单一效应研究)。
+          2026-08-28复核:原先误标grade 5(E5误用),纠正为E3,与Jones & Prinz/Dweck & Leggett/Deci & Ryan等同类叙述性综述保持同一等级基准。
+        tags: [theory-foundation, verified, social-information-processing]

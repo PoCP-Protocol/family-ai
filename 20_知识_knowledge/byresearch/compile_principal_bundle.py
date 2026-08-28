@@ -24,6 +24,14 @@ from .schema import Card
 # intervention_id → 链的 root method 卡(从它沿 grounded_in/targets_constructs/measured_by 遍历)
 INTERVENTION_ROOT_METHOD = {
     "LISTEN_BEFORE_RESPOND": "MD-001",
+    "AUTHORITATIVE_PARENTING_PRACTICE": "MD-002",
+    "SENSITIVE_RESPONSIVENESS_PRACTICE": "MD-003",
+    "PARENTING_SELF_EFFICACY_SMALL_WINS": "MD-004",
+    "DIFFERENTIATION_PAUSE_AND_HOLD": "MD-005",
+    "EFFORT_PROCESS_FEEDBACK": "MD-006",
+    "AUTONOMY_SUPPORTIVE_RULE_NEGOTIATION": "MD-007",
+    "CONVERSATIONAL_LANGUAGE_ENRICHMENT": "MD-008",
+    "SOCIAL_SITUATION_SIX_STEP_REVIEW": "MD-009",
 }
 
 REAL_PROVENANCE = {Provenance.THIRD_PARTY_REAL, Provenance.PRIMARY_REAL}
@@ -32,7 +40,7 @@ REGISTRY_PATH = Path(__file__).resolve().parents[1] / "library" / "verified_sour
 
 
 def _load_verified_registry() -> set[str]:
-    """机器可读的已核验来源注册表 → {已 VERIFIED 的 doi(小写) 与 'pmid:<n>'}。
+    """机器可读的已核验来源注册表 → {已 VERIFIED 的 DOI、PMID 与 URL}。
     找不到/解析失败 → 空集(FAIL SAFE:一切外部来源都视为未核验)。"""
     try:
         import yaml  # PyYAML(library 加载已依赖)
@@ -47,6 +55,8 @@ def _load_verified_registry() -> set[str]:
             ids.add(str(s["doi"]).strip().lower())
         if s.get("pmid"):
             ids.add("pmid:" + str(s["pmid"]).strip().lower())
+        if s.get("url"):
+            ids.add(str(s["url"]).strip().rstrip("/").lower())
     return ids
 
 
@@ -54,7 +64,7 @@ _VERIFIED_IDS = _load_verified_registry()
 
 
 def _source_ids(source: str) -> set[str]:
-    """从 source 串抽取可比对标识(裸 DOI 与 pmid:<n>)。"""
+    """从 source 串抽取可比对标识(裸 DOI、pmid:<n> 与 URL)。"""
     import re
     s = (source or "").strip().lower()
     out: set[str] = set()
@@ -66,6 +76,8 @@ def _source_ids(source: str) -> set[str]:
     m2 = re.search(r"pmid[:\s]*([0-9]{5,9})", s)
     if m2:
         out.add("pmid:" + m2.group(1))
+    if s.startswith(("http://", "https://")):
+        out.add(s.rstrip("/") )
     return out
 
 
@@ -106,10 +118,23 @@ def _decisive_refs(card: Card, min_grade: Grade = Grade.E6) -> list[str]:
     return refs
 
 
+#: 每层除通用字段外,还应带进 bundle 的"实质内容"字段(machine内容层,不是只有引用元数据)。
+#: 缺失此列会导致 mechanism/steps/dose 等内容层在编译产物里丢失,AI 生成端拿不到可用内容,只拿到一堆"证据存在"的空壳。
+_CONTENT_FIELDS: dict[str, tuple[str, ...]] = {
+    "theory": ("core_claim", "mechanism", "boundary", "china_fit"),
+    "construct": ("definition", "direction", "proxy_risk"),
+    "program": ("origin", "target", "dose", "delivery", "mechanism", "effect_note", "licensing", "transferability"),
+    "method": ("steps", "dose", "age_range", "observable_signal", "contraindication",
+               "failure_mode", "risk_level", "human_requirement"),
+    "modality": ("channel", "instrument", "reliability", "cost", "home_feasible",
+                 "privacy_risk", "minors_handling"),
+}
+
+
 def _node(card: Card) -> dict:
     ext = [e for e in card.evidence if _external_verified(e)]
     highest = max((int(e.grade) for e in ext), default=0)
-    return {
+    node = {
         "id": card.id,
         "title": card.name,
         "summary": card.summary,
@@ -118,7 +143,13 @@ def _node(card: Card) -> dict:
         # 家庭决策层:研究证据永不直接决定家庭行为(≠ Evidence.decisive)
         "family_decision_non_decisive": True,
         "source_refs": _decisive_refs(card),
+        "open_questions": list(card.open_questions),
     }
+    for fname in _CONTENT_FIELDS.get(card.layer, ()):
+        val = getattr(card, fname, None)
+        if val:  # 只带有内容的字段,避免大量空字符串/空列表污染产物
+            node[fname] = val
+    return node
 
 
 def compile_bundle(intervention_id: str, lib: Library) -> dict:
@@ -174,10 +205,12 @@ def compile_bundle(intervention_id: str, lib: Library) -> dict:
         "unregistered_external_source": unregistered_external,
     }
     source_registry_pass = unregistered_external == 0
+    # 注:adolescent_direct 是 LISTEN_BEFORE_RESPOND 语料本身携带的"直接青少年样本证据"计数,
+    # 是该链的信息性指标,不是通用 gate 门槛——依恋/自我效能等其他方法链条本不该以"有无青少年样本"作为通过标准,
+    # 硬编码进 gate_pass 会让其余方法在证据结构健全时仍被误判 FAIL。
     gate_pass = (
         len(validate_errors) == 0
         and external_verified_count >= 2
-        and adolescent_direct >= 1
         and method_max_grade == int(Grade.E7)
         and construct_external >= 1
         and unverified_decisive == 0
@@ -186,13 +219,14 @@ def compile_bundle(intervention_id: str, lib: Library) -> dict:
     )
 
     highest_grade = max((int(e.grade) for e in external), default=0)
-    limitations = [
-        "ResearchEvidence 恒 family_decision_non_decisive:不直接决定任何家庭必须做什么。",
-        "强制/防御循环证据为早期儿童样本,外推到 12-15 岁青少年 LIMITED(见 CN-002)。",
-        "被听见感(CN-001)当前直接实证有限,未过度赋级。",
-        "微动作(今晚复述一句)本身直接效果证据有限;方法效果来自情绪教练式家长干预整体证据。",
-        "Gottman 1996 待核验(unverified,非 decisive);Rogers/Gottman&DeClaire 仅理论背景。",
-    ]
+    # limitations 动态取自链上每张卡片自己登记的 open_questions,不再是写死给 LISTEN_BEFORE_RESPOND 一条链的文本
+    # (硬编码文本换了 intervention 后失真:比如 Gottman 1996 已核验,若仍写"待核验"就是虚假限制声明)。
+    limitations = ["ResearchEvidence 恒 family_decision_non_decisive:不直接决定任何家庭必须做什么。"]
+    for c in chain_cards:
+        for q in c.open_questions:
+            line = f"[{c.id}] {q}"
+            if line not in limitations:
+                limitations.append(line)
 
     bundle = {
         "schema_version": "KNOWLEDGE_CHAIN_V2",

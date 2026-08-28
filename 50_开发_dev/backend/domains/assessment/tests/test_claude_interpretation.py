@@ -97,6 +97,46 @@ class TestClaudeInterpretationAdapter:
         assert "json_schema" in call_kwargs["output_config"]["format"]["type"]
         assert "reviewed whitelist" in call_kwargs["system"]
 
+    async def test_system_prompt_includes_verified_knowledge_grounding(self):
+        """PARENT_CHILD_COMMUNICATION 在 CONSTRUCT_KNOWLEDGE_MAP 里映射到 TH-001 —— 验证它的
+        core_claim 真的进了 system prompt,不是知识库接进来了但内容没流到模型输入里。"""
+        mock_client = MagicMock()
+        mock_client.messages.create = AsyncMock(return_value=_fake_response(_valid_model_output()))
+        adapter = ClaudeInterpretationAdapter(client=mock_client)
+
+        await adapter.interpret("family-1", _evidence())
+
+        system_prompt = mock_client.messages.create.call_args.kwargs["system"]
+        assert "TH-001" in system_prompt
+        assert "情绪教练式回应" in system_prompt  # TH-001 core_claim 的关键片段
+
+    async def test_grounding_source_is_sanitized_against_known_card_ids(self):
+        """模型自报一个不在 CONSTRUCT_KNOWLEDGE_MAP 名单里的 grounding_source(编造的卡片id)
+        —— 必须被清空,不能原样透传出去看起来像是有据可查。"""
+        output = _valid_model_output()
+        output["construct_signals"][0]["grounding_source"] = "TH-999-FABRICATED"
+        mock_client = MagicMock()
+        mock_client.messages.create = AsyncMock(return_value=_fake_response(output))
+        adapter = ClaudeInterpretationAdapter(client=mock_client)
+
+        result = await adapter.interpret("family-1", _evidence())
+
+        signal = result["interpretation"]["draft"]["construct_signals"][0]
+        assert "grounding_source" not in signal
+
+    async def test_grounding_source_passes_through_when_valid(self):
+        """模型引用的 grounding_source 确实在该 construct_ref 的已知卡片名单里 —— 应原样保留。"""
+        output = _valid_model_output()
+        output["construct_signals"][0]["grounding_source"] = "TH-001"
+        mock_client = MagicMock()
+        mock_client.messages.create = AsyncMock(return_value=_fake_response(output))
+        adapter = ClaudeInterpretationAdapter(client=mock_client)
+
+        result = await adapter.interpret("family-1", _evidence())
+
+        signal = result["interpretation"]["draft"]["construct_signals"][0]
+        assert signal["grounding_source"] == "TH-001"
+
     async def test_refusal_stop_reason_with_no_text_block_fails_closed(self):
         response = MagicMock()
         response.content = []  # no text block — e.g. pure refusal

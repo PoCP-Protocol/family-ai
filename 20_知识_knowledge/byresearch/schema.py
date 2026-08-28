@@ -31,6 +31,7 @@ class Card:
     evidence: list[Evidence] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     open_questions: list[str] = field(default_factory=list)
+    mechanism: str = ""             # 机制展开:可操作的核心内容(具体分几层/几步/判断标准),不是引用存在证明,供AI生成时实际取用
 
     layer: str = "card"
 
