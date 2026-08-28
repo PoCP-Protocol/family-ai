@@ -1,10 +1,22 @@
-"""In-memory fake implementation of `GrowthIntentPort` — the test double this
-domain's own test suite runs against, per
+"""In-memory fake implementation of `GrowthIntentPort` — kept for
+`GrowthPlanCommandHandler`'s own isolated unit tests
+(`tests/test_growth_plan_flow.py`), per
 `architecture/FAMILY_AI_PYTHON_ONLY_MIGRATION_PLAN_V1.md` section 9
-"FakeProvider" requirement. Not a port of the real GrowthIntent/
-GrowthPriority domain's persistence (that domain is out of scope for this
-batch); this fake just lets `GrowthPlanCommandHandler.create_plan` be
-exercised without blocking on that domain landing first.
+"FakeProvider" requirement.
+
+Superseded for real wiring purposes: the `growth_priority` domain now has a
+real (in-batch) implementation of the GrowthPriority lifecycle
+(`confirmGrowthPriority` port, safety/consent gates, ACTIVE/SUPERSEDED
+version chain — see `application/commands.py` and
+`infrastructure/fake_repository.py` there). Use
+`infrastructure/growth_priority_adapter.py`'s `GrowthPriorityAdapter` to
+wire `GrowthPlanCommandHandler` to that real domain instead of this stub
+whenever the caller wants `createPlan` to actually be gated by a genuinely
+confirmed GrowthPriority (see
+`tests/test_growth_priority_adapter_integration.py`). This fake remains
+useful on its own only for exercising `growth_plan`'s state machine in
+isolation, since it has no concept of "confirmed" and will fabricate an
+active priority on demand via `seed_active_priority()`.
 """
 from __future__ import annotations
 
