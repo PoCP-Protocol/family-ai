@@ -78,4 +78,6 @@ export function resolveResourceRuntimeState(resourceType: ResourceType, env: Nod
 export const V1_GROWTH_CAPABILITIES: Record<GrowthCapabilityKey, { description_ref: string; risk_class: string }> = {
   DE_ESCALATION: { description_ref: 'capability.de_escalation', risk_class: 'LOW' },
   COMMUNICATION_REOPENING: { description_ref: 'capability.communication_reopening', risk_class: 'LOW' },
+  // G1-A范围:仅登记描述,无候选 offer(candidateOffersForCommunicationConflict 未接入此能力)。
+  ACADEMIC_SUPPORT_TRIAGE: { description_ref: 'capability.academic_support_triage', risk_class: 'LOW' },
 };
