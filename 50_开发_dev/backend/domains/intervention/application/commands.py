@@ -29,6 +29,7 @@ from ..domain.errors import (
 from ..domain.policies import (
     assert_completable_growth_action_status,
     assert_execution_transition,
+    assert_reflection_safety_route,
     build_growth_action_assignments,
 )
 from ..domain.value_objects import (
@@ -220,17 +221,15 @@ class GrowthActionCommandHandler:
             await self._repository.assert_required_growth_consents(command.family_id, subject["child_person_id"])
             await self._repository.assert_normal_safety_route(command.family_id, action.onboarding_id)
 
-        # assertReflectionSafetyRoute (regex scan on reflection text) is a
-        # separate, already-ported safety concern
-        # (`architecture/notes/batch2-domain-research-v1.md` section 5.3
-        # point 5 / section 7). We surface the hook here but do not
-        # re-implement the regex signal set inside this domain — it belongs
-        # to a shared safety module, same as `assertNormalSafetyRoute`
-        # above, and is out of scope for the Intervention+Action port
-        # itself. Callers that need the real reflection-safety gate should
-        # wire it into the repository's `assert_normal_safety_route`/a
-        # dedicated port method before going to production; the fake
-        # repository test double does not enforce it.
+        # Step 5 of completeGrowthAction (`architecture/notes/batch2-domain-research-v1.md`
+        # section 5.3 point 5 / section 7.3): regex-scan the reflection text
+        # for sensitive safety signals and raise 403
+        # `reflection_requires_safety_support` if it trips any of them.
+        # Pure function, no repository I/O — ported from
+        # `assertReflectionSafetyRoute` (reflection-safety.policy.ts), same
+        # call position (after the safety-route/consent checks above, before
+        # the completion is persisted) as the NestJS source.
+        assert_reflection_safety_route(command.reflection)
 
         updated = await self._repository.update_growth_action_completion(
             command.action_id, command.completion_status, command.reflection
