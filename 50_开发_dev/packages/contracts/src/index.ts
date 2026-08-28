@@ -40,6 +40,24 @@ export type SafetyScreeningResult = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type GrowthOnboardingStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 export type GrowthOnboardingPhase = 'ONBOARDING';
 export type M2GrowthDimensionId = 'P03' | 'R03' | 'R04' | 'R05';
+
+/**
+ * docs/GROWTH_MODEL_24D_REVERSE_VALIDATION.md 的核验决策(2026-08-26)在这4个已实装维度上的落地。
+ * CONSTRUCT_SUPPORTED: 描述性构念有实证支持,可用于诊断性观察描述。
+ * INTERVENTION_EFFICACY_INSUFFICIENT: 构念可能有支持,但"照此方法练习能改善"这类干预有效性证据不足——
+ *   典型案例是Gottman method(R04/R05),构念(四骑士/修复尝试)有描述性研究支持,但2023年一篇论文判定
+ *   作为干预疗法"证据质量差,不足以称为循证治疗"。禁止暗示因果/疗效承诺。
+ * THEORY_UNRESOLVED: 目前没有单一权威理论支撑(P03/R03被核验列为"维度必要性待重新考虑",非最终结论)，
+ *   AI输出不得援引任何理论出处,只能用中性描述。
+ */
+export type GrowthDimensionEvidenceGrade = 'CONSTRUCT_SUPPORTED' | 'INTERVENTION_EFFICACY_INSUFFICIENT' | 'THEORY_UNRESOLVED';
+
+export interface GrowthDimensionTheoryBasis {
+  dimension_id: M2GrowthDimensionId;
+  theory_label: string;
+  evidence_grade: GrowthDimensionEvidenceGrade;
+  citation_boundary: string;
+}
 export type PerspectiveType = 'PARENT_PERSPECTIVE' | 'CHILD_PERSPECTIVE';
 export type PerspectiveCaptureMode = 'DIRECT_SELF_REPORT' | 'FACILITATED_ENTRY' | 'PROXY_REPORTED';
 export type PerspectiveFactBoundary = 'PERSPECTIVE_NOT_FACT';
@@ -445,6 +463,7 @@ export interface GrowthPriorityCandidateDto {
   why: string;
   expected_change: string;
   limitations: GrowthPriorityLimitation[];
+  theory_basis: GrowthDimensionTheoryBasis;
   policy_version: GrowthPriorityPolicyVersion;
   created_at: string;
 }
