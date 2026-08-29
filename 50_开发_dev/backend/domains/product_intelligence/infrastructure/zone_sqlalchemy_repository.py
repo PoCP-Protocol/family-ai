@@ -22,7 +22,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..domain.errors import ProductIntelligenceNotFoundError
+from ..domain.errors import ProductIntelligenceNotFoundError, ProductIntelligenceValidationError
 from ..domain.zone_entities import DimensionAssessment, ProductZoneAssessment, ZonePolicyVersion
 from . import zone_sqlalchemy_models as m
 
@@ -74,13 +74,35 @@ class SqlAlchemyZoneAssessmentRepository:
         # NOT tenant-scoped in V0 — see `application/zone_ports.py` module
         # docstring "Tenancy judgment call". `tenant_scope` is accepted for
         # call-site symmetry only and must not be used to filter here.
+        #
+        # Closure fix (chief-architect review): previously took `.first()`
+        # over ALL rows with `status == "ACTIVE"` regardless of `policy_id`,
+        # silently picking an arbitrary one if more than one ever existed.
+        # V0 ships exactly one policy lineage in practice, but "fail closed
+        # on a data inconsistency" beats "silently return a random row" —
+        # this now groups by `policy_id` and fails loudly if any single
+        # `policy_id` has more than one ACTIVE row, rather than only
+        # detecting cross-policy_id duplicates. The real backstop against
+        # this ever happening at all is the partial unique index added by
+        # `0060_product_zone_engine_canonical_cleanup.sql`
+        # (`uq_zone_policy_active_per_id`, `WHERE status = 'ACTIVE'`); this
+        # check exists for defense in depth (e.g. a backend not yet migrated
+        # to that index, or a direct DB write that bypassed it).
         result = await self._session.execute(
             select(m.ZonePolicyVersionRow).where(m.ZonePolicyVersionRow.status == "ACTIVE")
         )
-        row = result.scalars().first()
-        if row is None:
+        rows = list(result.scalars().all())
+        if not rows:
             raise ProductIntelligenceNotFoundError("zone_policy_version_not_found")
-        return _load_zone_policy_version(row)
+
+        by_policy_id: dict[str, list[object]] = {}
+        for row in rows:
+            by_policy_id.setdefault(row.policy_id, []).append(row)
+        for policy_id, policy_rows in by_policy_id.items():
+            if len(policy_rows) > 1:
+                raise ProductIntelligenceValidationError("multiple_active_policy_versions_for_policy_id")
+
+        return _load_zone_policy_version(rows[0])
 
     async def save_zone_policy_version(self, entity: ZonePolicyVersion) -> None:
         await self._merge(m.ZonePolicyVersionRow(**_dump_zone_policy_version(entity)))

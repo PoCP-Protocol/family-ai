@@ -139,10 +139,12 @@ async def test_summary_counts_only_approved_zone_not_recommended(context_a):
 
 
 @pytest.mark.asyncio
-async def test_summary_rejected_assessment_counts_as_unreviewed(context_a):
-    # REJECTED never sets approved_zone (rejection is not an approval) so it
-    # must fall into unreviewed_count per the "no approved_zone -> unreviewed"
-    # counting rule documented in PortfolioZoneSummary.unreviewed_count.
+async def test_summary_rejected_assessment_counts_in_its_own_bucket_not_unreviewed(context_a):
+    # Chief-architect closure ruling (supersedes the prior "folded into
+    # unreviewed_count" behavior): REJECTED never sets approved_zone
+    # (rejection is not an approval), but it is reviewed-and-turned-down, not
+    # pending review — it gets its own `rejected_count` bucket and must NOT
+    # inflate `unreviewed_count`.
     assessments = [
         _build_assessment(id="r1", status="REJECTED", recommended_zone="UNIQUE", approved_zone=None),
     ]
@@ -150,9 +152,62 @@ async def test_summary_rejected_assessment_counts_as_unreviewed(context_a):
 
     summary = await get_portfolio_zone_summary(port, context_a, now=UTC_NOW)
 
-    assert summary.unreviewed_count == 1
+    assert summary.rejected_count == 1
+    assert summary.unreviewed_count == 0
     assert summary.unique_count == 0
     assert summary.total_count == 1
+
+
+@pytest.mark.asyncio
+async def test_summary_retired_assessment_counts_in_its_own_bucket_not_approved_zone(context_a):
+    # RETIRED was APPROVED (only legal predecessor per
+    # ZONE_ASSESSMENT_STATUS_TRANSITIONS) and still carries a non-None
+    # approved_zone, but the closure ruling excludes it from the three
+    # "current active distribution" zone buckets -- it must land only in
+    # retired_count.
+    assessments = [
+        _build_assessment(id="t1", status="RETIRED", recommended_zone="UNIQUE", approved_zone="UNIQUE", reviewed_at=UTC_NOW),
+    ]
+    port = FakePortfolioQueryPort(assessments)
+
+    summary = await get_portfolio_zone_summary(port, context_a, now=UTC_NOW)
+
+    assert summary.retired_count == 1
+    assert summary.unique_count == 0
+    assert summary.unreviewed_count == 0
+    assert summary.rejected_count == 0
+    assert summary.total_count == 1
+
+
+@pytest.mark.asyncio
+async def test_summary_six_buckets_partition_exhaustively_with_no_overlap(context_a):
+    # One assessment per legal ZoneAssessmentStatus value -- verifies the
+    # six-bucket case-split covers all six states exactly once each (the
+    # invariant get_portfolio_zone_summary itself asserts).
+    assessments = [
+        _build_assessment(id="s-draft", status="DRAFT", recommended_zone="ADVANTAGE", approved_zone=None),
+        _build_assessment(id="s-scored", status="SCORED", recommended_zone="ADVANTAGE", approved_zone=None),
+        _build_assessment(id="s-under-review", status="UNDER_REVIEW", recommended_zone="ADVANTAGE", approved_zone=None),
+        _build_assessment(id="s-approved", status="APPROVED", recommended_zone="COMMODITY", approved_zone="COMMODITY", reviewed_at=UTC_NOW),
+        _build_assessment(id="s-rejected", status="REJECTED", recommended_zone="ADVANTAGE", approved_zone=None),
+        _build_assessment(id="s-retired", status="RETIRED", recommended_zone="UNIQUE", approved_zone="UNIQUE", reviewed_at=UTC_NOW),
+    ]
+    port = FakePortfolioQueryPort(assessments)
+
+    summary = await get_portfolio_zone_summary(port, context_a, now=UTC_NOW)
+
+    assert summary.unreviewed_count == 3
+    assert summary.commodity_count == 1
+    assert summary.advantage_count == 0
+    assert summary.unique_count == 0
+    assert summary.rejected_count == 1
+    assert summary.retired_count == 1
+    assert summary.total_count == 6
+    assert (
+        summary.commodity_count + summary.advantage_count + summary.unique_count
+        + summary.unreviewed_count + summary.rejected_count + summary.retired_count
+        == summary.total_count
+    )
 
 
 # --- 6-month (180-day) re-review boundary -----------------------------------
@@ -227,7 +282,8 @@ async def test_empty_tenant_portfolio_returns_empty_view_and_zeroed_summary(cont
     assert rows == []
     assert summary == PortfolioZoneSummary(
         commodity_count=0, advantage_count=0, unique_count=0,
-        unreviewed_count=0, pending_re_review_count=0, total_count=0,
+        unreviewed_count=0, rejected_count=0, retired_count=0,
+        pending_re_review_count=0, total_count=0,
     )
 
 

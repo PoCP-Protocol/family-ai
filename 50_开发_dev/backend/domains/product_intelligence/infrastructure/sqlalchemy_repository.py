@@ -36,7 +36,6 @@ from ..domain.entities import (
     ProductConcept,
     ProductDefinition,
     ProductPattern,
-    ProductZoneAssessment,
     ServiceBlueprintVersion,
     SignalCluster,
     UnmetNeed,
@@ -125,10 +124,6 @@ class SqlAlchemyProductIntelligenceRepository:
     async def load_growth_strategy(self, entity_id: str, tenant_scope: str) -> GrowthStrategy:
         row = await self._get_scoped(m.GrowthStrategyRow, entity_id, tenant_scope, "growth_strategy_not_found")
         return GrowthStrategy(**_row_to_dict(row))
-
-    # -- ProductZoneAssessment --
-    async def save_product_zone_assessment(self, entity: ProductZoneAssessment) -> None:
-        await self._merge(m.ProductZoneAssessmentRow(**entity.model_dump()))
 
     # -- ProductConcept --
     async def save_product_concept(self, entity: ProductConcept) -> None:
