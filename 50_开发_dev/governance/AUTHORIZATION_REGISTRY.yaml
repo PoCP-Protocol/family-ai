@@ -507,3 +507,33 @@ capabilities:
       simulation_authorized: false
       component_registry_authorized: false
     notes: "三区战略引擎 V0(Three-Zone Strategy Engine);仅对 ProductConcept 做内部确定性评分/分区,契约与范围以两份 ADR 为准,本条目不重复展开细节。"
+
+  - capability_id: PRODUCT_ZONE_ENGINE_V0_CLOSURE_PR002R
+    stage: PR-002R
+    status: INTERNAL_LOCAL_ALLOWED   # 仅内部确定性三区战略引擎 V0 收口;不含前端/真实模型调用/试点/生产/自动发布/FPDL/Compiler/Simulation/Component Registry
+    architecture_authorized: true
+    code_authorized: true
+    runtime_authorized: true          # 仅本地/内部确定性 runtime(non-generative,non-live-model);非生产
+    live_external_call_authorized: false
+    pilot_authorized: false
+    production_authorized: false
+    authorized_by: "project-owner (PR-002R MASTER TASK instruction, chief-architect closure review of PR #37)"
+    authorization_ref: "architecture/ADR_PRODUCT_ZONE_GOVERNANCE_V0.md (§0 canonical model, §3.1 Active Policy uniqueness, §5.1 Portfolio bucket mapping, §7 tenant-mismatch trigger — PR-002R closure additions); architecture/ADR_PRODUCT_ZONE_SCORING_V0.md (weights normalization, scoring_algorithm_version, non_gated_unique_penalty_factor — PR-002R closure fixes)"
+    authorized_at: "2026-08-29"
+    supersedes: []
+    scope:
+      domain: product_intelligence
+      subject: ProductConcept
+      surfaces: []   # 不含前端
+      included_ranges: [domain, api_local, migration, test]
+    constraints:
+      frontend_authorized: false
+      live_model_call_authorized: false
+      pilot_authorized: false
+      production_authorized: false
+      automatic_publish_authorized: false
+      fpdl_authorized: false
+      compiler_authorized: false
+      simulation_authorized: false
+      component_registry_authorized: false
+    notes: "PR-002R 是对 PR-002 三区引擎的 canonical/语义收口(唯一 canonical ProductZoneAssessment、policy weights 真正驱动计算、Portfolio 口径严格六分、Active Policy 唯一性 DB+应用层双重保证),不是新功能 PR,不解锁 PR-003;范围与约束继承 PRODUCT_ZONE_ENGINE_V0_PR002 条目。"

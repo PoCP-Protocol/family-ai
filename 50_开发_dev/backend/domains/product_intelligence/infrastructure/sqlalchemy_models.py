@@ -230,32 +230,6 @@ class GrowthStrategyRow(Base):
     confidence = Column(Float, nullable=True)
 
 
-class ProductZoneAssessmentRow(Base):
-    __tablename__ = "product_intelligence_zone_assessments"
-    id = Column(String, primary_key=True)
-    version = Column(Integer, nullable=False, default=1)
-    created_at = Column(DateTime, nullable=False)
-    updated_at = Column(DateTime, nullable=False)
-    created_by = Column(String, nullable=False)
-    tenant_scope = Column(String, nullable=False)
-    status = Column(String, nullable=False)
-    subject_ref = Column(String, nullable=False)
-    subject_type = Column(String, nullable=False)
-    customer_scarcity = Column(Float, nullable=False)
-    replaceability = Column(Float, nullable=False)
-    data_advantage = Column(Float, nullable=False)
-    network_effect = Column(Float, nullable=False)
-    learning_effect = Column(Float, nullable=False)
-    switching_cost = Column(Float, nullable=False)
-    commodity_score = Column(Float, nullable=False)
-    advantage_score = Column(Float, nullable=False)
-    unique_score = Column(Float, nullable=False)
-    zone = Column(String, nullable=False)
-    assessment_reason = Column(Text, nullable=True)
-    evidence_refs = Column(JSON, nullable=False, default=list)
-    assessor = Column(String, nullable=False)
-
-
 class ProductConceptRow(Base):
     __tablename__ = "product_intelligence_product_concepts"
     id = Column(String, primary_key=True)

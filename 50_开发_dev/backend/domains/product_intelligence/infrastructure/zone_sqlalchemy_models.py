@@ -32,6 +32,18 @@ class ZonePolicyVersionRow(Base):
     effective_from = Column(DateTime, nullable=False)
     status = Column(String, nullable=False)
     checksum = Column(String, nullable=False)
+    scoring_algorithm_version = Column(
+        String, nullable=False, server_default="ZONE_SCORING_V0"
+    )
+    """Closure fix (chief-architect review, mirrors
+    `domain/zone_entities.py::ZonePolicyVersion.scoring_algorithm_version`,
+    added by Agent B after this table's original 0059 shape). `server_default`
+    covers any pre-existing row from before this column existed (see the
+    `0060` migration's `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ... DEFAULT
+    'ZONE_SCORING_V0'`); new rows going through `save_zone_policy_version`
+    always supply the entity's real value explicitly (the domain field has
+    its own non-server default of the same literal), so the server default
+    is a backfill safety net, not the normal write path."""
 
     __table_args__ = (
         UniqueConstraint("policy_id", "version", name="uq_zone_policy_versions_policy_id_version"),

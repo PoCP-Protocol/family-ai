@@ -23,7 +23,6 @@ from ..domain.entities import (
     ProductConcept,
     ProductDefinition,
     ProductPattern,
-    ProductZoneAssessment,
     ServiceBlueprintVersion,
     SignalCluster,
     UnmetNeed,
@@ -45,7 +44,6 @@ class FakeProductIntelligenceRepository:
     _growth_hypotheses: dict = field(default_factory=dict)
     _contradiction_models: dict = field(default_factory=dict)
     _growth_strategies: dict = field(default_factory=dict)
-    _zone_assessments: dict = field(default_factory=dict)
     _product_concepts: dict = field(default_factory=dict)
     _product_components: dict = field(default_factory=dict)
     _product_patterns: dict = field(default_factory=dict)
@@ -108,9 +106,6 @@ class FakeProductIntelligenceRepository:
 
     async def load_growth_strategy(self, entity_id: str, tenant_scope: str) -> GrowthStrategy:
         return self._get_scoped(self._growth_strategies, entity_id, tenant_scope, "growth_strategy_not_found")
-
-    async def save_product_zone_assessment(self, entity: ProductZoneAssessment) -> None:
-        self._zone_assessments[entity.id] = entity
 
     async def save_product_concept(self, entity: ProductConcept) -> None:
         self._product_concepts[entity.id] = entity

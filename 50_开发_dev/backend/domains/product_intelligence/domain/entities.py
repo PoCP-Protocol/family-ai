@@ -250,25 +250,6 @@ class GrowthStrategy(_CommonFields, _AiProvenanceFields):
         return self
 
 
-class ProductZoneAssessment(_CommonFields):
-    status: GenericRecordStatus = "DRAFT"
-    subject_ref: str
-    subject_type: str
-    customer_scarcity: float
-    replaceability: float
-    data_advantage: float
-    network_effect: float
-    learning_effect: float
-    switching_cost: float
-    commodity_score: float
-    advantage_score: float
-    unique_score: float
-    zone: str
-    assessment_reason: str | None = None
-    evidence_refs: list[str] = Field(default_factory=list)
-    assessor: str
-
-
 class ProductConcept(_CommonFields, _AiProvenanceFields):
     status: ProductConceptStatus = "DRAFT"
     strategy_id: str

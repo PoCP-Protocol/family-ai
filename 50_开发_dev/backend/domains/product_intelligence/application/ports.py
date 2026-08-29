@@ -33,7 +33,6 @@ from ..domain.entities import (
     ProductConcept,
     ProductDefinition,
     ProductPattern,
-    ProductZoneAssessment,
     ServiceBlueprintVersion,
     SignalCluster,
     UnmetNeed,
@@ -68,8 +67,6 @@ class ProductIntelligenceRepositoryPort(Protocol):
 
     async def save_growth_strategy(self, entity: GrowthStrategy) -> None: ...
     async def load_growth_strategy(self, entity_id: str, tenant_scope: str) -> GrowthStrategy: ...
-
-    async def save_product_zone_assessment(self, entity: ProductZoneAssessment) -> None: ...
 
     async def save_product_concept(self, entity: ProductConcept) -> None: ...
     async def load_product_concept(self, entity_id: str, tenant_scope: str) -> ProductConcept: ...

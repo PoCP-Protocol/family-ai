@@ -39,6 +39,16 @@ from .zone_value_objects import (
     ZoneDimensionName,
 )
 
+# ADR-Scoring §2 / chief-architect closure directive: the scoring-algorithm
+# version this codebase currently knows how to execute. A `ZonePolicyVersion`
+# whose `scoring_algorithm_version` is not in this set must be fail-closed by
+# `zone_scoring_engine.score_assessment` — see that module's
+# `_SUPPORTED_ALGORITHM_VERSIONS` re-export/check. Kept as a plain string
+# (not an enum/Literal) on `ZonePolicyVersion` itself, deliberately, so a
+# future PR introducing `ZONE_SCORING_V1` does not require a schema
+# migration to widen a `Literal` — only an engine-side allowlist change.
+ZONE_SCORING_ALGORITHM_V0 = "ZONE_SCORING_V0"
+
 
 def _require_non_empty_str(value: str, field_name: str) -> str:
     if not value or not value.strip():
@@ -119,13 +129,69 @@ class ZonePolicyVersion(BaseModel):
     """ADR-Scoring §2: equal-weight in V0 (`PROVISIONAL_POLICY_V0`), but kept
     as policy data (not hardcoded in the scoring engine) so a future policy
     can change weighting without touching historical assessments' stored
-    results (ADR-Governance §3)."""
+    results (ADR-Governance §3).
+
+    Closure fix (chief-architect review): this field previously existed and
+    was checksummed, but `zone_scoring_engine.compute_differentiation_index`/
+    `compute_defensibility_index` never actually read it — every policy
+    version produced identical scores regardless of `weights`. Now the
+    engine reads these per-dimension weights and computes a **normalized**
+    weighted average within each of the two independent groups:
+
+    - Differentiation group: `{customer_scarcity, replaceability}` (the
+      `replaceability` weight applies to `inverse_replaceability`, per
+      ADR-Scoring §1.2's direction rule).
+    - Defensibility group: `{data_advantage, network_effect,
+      learning_effect, switching_cost}`.
+
+    Design decision on normalization (there is no ADR requirement that the
+    six raw weights sum to any particular total): each group's weighted
+    average divides by the **sum of that group's own weights**
+    (`weight_i / sum(weights in group)`), not by a global sum across all six
+    keys. This means a policy author does not need to make the six raw
+    weights add up to 1.0/100/anything — the formula is scale-invariant
+    within each group (doubling every weight in a group leaves that group's
+    index unchanged), which is the standard definition of a weighted
+    average. It also means the two groups are normalized independently:
+    changing the *relative* weights between, say, `customer_scarcity` and
+    `replaceability` changes `differentiation_index`, but has no effect on
+    `defensibility_index` (and vice versa) — consistent with ADR-Scoring
+    §2's two-index structure being a deliberate grouping of collinear
+    dimensions, not one global six-way weighted sum.
+
+    V0's default/fixture policy sets every weight to `1.0` (see
+    `tests/test_zone_scoring.py::_build_policy`), which — after
+    normalization — reduces exactly to the equal-weighted `/2` and `/4`
+    averages the ADR specifies. This preserves all existing V0 business
+    results; only a *non-default* policy (different relative weights) now
+    changes scoring output, which was previously impossible.
+
+    Validated below (`_weights_cover_all_six_dimensions_non_negative`): must
+    contain all six `ZONE_DIMENSION_NAMES` keys (fail closed if any is
+    missing) and every value must be `>= 0` (a negative weight would invert
+    a dimension's contribution to the average, which is not a weighting
+    scheme this ADR licenses)."""
     thresholds: dict[str, float]
     """ADR-Scoring §2.1 fixture values, e.g.
     `{"unique_defensibility_min": 75.0, "unique_floor_gate_min": 50.0,
     "commodity_differentiation_max": 40.0, "commodity_defensibility_max": 40.0}`.
     `zone_scoring_engine.classify_zone` reads these keys — see that module's
-    docstring for the exact key names it expects."""
+    docstring for the exact key names it expects.
+
+    Also carries `non_gated_unique_penalty_factor` (default `0.5` if the key
+    is absent — see `zone_scoring_engine.compute_three_scores`). Closure fix:
+    this multiplier was previously a hardcoded `0.5` literal inside
+    `compute_three_scores`, invisible to policy versioning/checksums despite
+    materially affecting `unique_score` for every non-UNIQUE assessment. It
+    is kept inside this dict (rather than as a new top-level field) so no
+    database migration is required (`thresholds` is already a JSON/JSONB
+    column in both the SQLAlchemy model and the `0059_product_zone_engine_v0`
+    migration) — a new top-level field would need a new NOT NULL column
+    with a backfill for every already-persisted policy row. Because it lives
+    in `thresholds`, it is automatically covered by `compute_checksum()`
+    (which already hashes the whole `thresholds` dict), so changing the
+    penalty factor across policy versions changes the checksum, same as any
+    other threshold."""
     classification_rules: str
     """The floor-gated classification rule, recorded as data (a human-
     readable rule description/DSL string) alongside the executable
@@ -154,6 +220,22 @@ class ZonePolicyVersion(BaseModel):
     `@property`) so it can be persisted verbatim and compared later without
     recomputation, per ADR-Governance §3's "so 'same policy version' is
     verifiable"."""
+    scoring_algorithm_version: str = Field(default=ZONE_SCORING_ALGORITHM_V0)
+    """Closure fix (chief-architect review): ADR-Scoring's own framing —
+    "influences the result -> either policy data or a traceable algorithm
+    version" — previously had no traceable version at all; the scoring
+    *code* (`zone_scoring_engine.py`) had no version identifier a persisted
+    policy row could reference. This field records which version of the
+    scoring algorithm (`compute_differentiation_index` /
+    `compute_defensibility_index` / `compute_three_scores` / `classify_zone`
+    as a bundle) a given policy version's stored results were computed
+    under. `zone_scoring_engine.score_assessment` checks this value against
+    its own `_SUPPORTED_ALGORITHM_VERSIONS` allowlist and fails closed if it
+    does not recognize it — so a future `ZONE_SCORING_V1` engine cannot
+    silently reinterpret an old `ZONE_SCORING_V0` policy (or vice versa)
+    under a formula it was never validated against. Included in
+    `compute_checksum()` for the same reason `weights`/`thresholds` are:
+    it is part of what determines the output for given dimension inputs."""
 
     @field_validator("status")
     @classmethod
@@ -167,11 +249,33 @@ class ZonePolicyVersion(BaseModel):
     def _policy_id_non_empty(cls, value: str) -> str:
         return _require_non_empty_str(value, "policy_id")
 
+    @field_validator("weights")
+    @classmethod
+    def _weights_cover_all_six_dimensions_non_negative(cls, value: dict[str, float]) -> dict[str, float]:
+        # Closure fix: fail closed if a policy omits any of the six frozen
+        # dimensions' weights (silently defaulting a missing weight would
+        # let a policy author accidentally zero out a dimension's
+        # contribution with no record of having done so) or supplies a
+        # negative weight (would invert that dimension's sign inside a
+        # weighted average, which no ADR licenses).
+        missing = ZONE_DIMENSION_NAMES - value.keys()
+        if missing:
+            raise ProductIntelligenceValidationError("zone_policy_weights_missing_required_dimensions")
+        negative = [k for k, v in value.items() if v < 0.0]
+        if negative:
+            raise ProductIntelligenceValidationError("zone_policy_weights_must_be_non_negative")
+        return value
+
     def compute_checksum(self) -> str:
         """Deterministic sha256 over the policy-defining fields, JSON-encoded
         with sorted keys so field/dict-key ordering never changes the hash.
         Excludes `checksum` itself (obviously), `policy_id`, `effective_from`,
         and `status` — see class docstring for why those are excluded.
+
+        Includes `scoring_algorithm_version` alongside `weights`/`thresholds`
+        (closure fix) — see that field's docstring: it is part of what
+        determines the scoring result for given inputs, so it belongs in the
+        same "policy-defining fields" hash as the rest.
         """
         payload = {
             "version": self.version,
@@ -180,6 +284,7 @@ class ZonePolicyVersion(BaseModel):
             "thresholds": self.thresholds,
             "classification_rules": self.classification_rules,
             "review_policy": self.review_policy,
+            "scoring_algorithm_version": self.scoring_algorithm_version,
         }
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

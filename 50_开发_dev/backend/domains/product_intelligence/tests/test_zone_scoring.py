@@ -198,9 +198,23 @@ def test_inverse_replaceability_flips_direction():
     assert inverse_replaceability(30.0) == 70.0
 
 
+_EQUAL_WEIGHTS = {
+    "customer_scarcity": 1.0,
+    "replaceability": 1.0,
+    "data_advantage": 1.0,
+    "network_effect": 1.0,
+    "learning_effect": 1.0,
+    "switching_cost": 1.0,
+}
+
+
 def test_lower_replaceability_yields_higher_differentiation_index():
-    high_replaceability_index = compute_differentiation_index(customer_scarcity=60.0, replaceability=90.0)
-    low_replaceability_index = compute_differentiation_index(customer_scarcity=60.0, replaceability=10.0)
+    high_replaceability_index = compute_differentiation_index(
+        customer_scarcity=60.0, replaceability=90.0, weights=_EQUAL_WEIGHTS
+    )
+    low_replaceability_index = compute_differentiation_index(
+        customer_scarcity=60.0, replaceability=10.0, weights=_EQUAL_WEIGHTS
+    )
 
     assert low_replaceability_index > high_replaceability_index
 
@@ -236,7 +250,7 @@ def test_floor_gate_blocks_unique_even_with_high_average_defensibility():
         learning_effect=100.0,
         switching_cost=10.0,
     )
-    defensibility_index = compute_defensibility_index(100.0, 100.0, 100.0, 10.0)
+    defensibility_index = compute_defensibility_index(100.0, 100.0, 100.0, 10.0, weights=_EQUAL_WEIGHTS)
     assert defensibility_index >= 75.0  # average alone would qualify for UNIQUE
 
     (*_rest, recommended_zone) = score_assessment(dims, policy)
@@ -496,3 +510,198 @@ def test_lifecycle_missing_evidence_blocks_entry_into_under_review():
     )
     with pytest.raises(ProductIntelligenceValidationError):
         stripped.transition_to(new_status="UNDER_REVIEW", actor_id="a")
+
+
+# ---------------------------------------------------------------------------
+# 10. Weights: per-group normalized weighted average (closure fix)
+# ---------------------------------------------------------------------------
+
+
+def test_score_assessment_is_deterministic_with_same_policy_including_algorithm_version():
+    # Same inputs + same policy (including scoring_algorithm_version) twice
+    # must produce byte-identical results — the ADR-Governance §3 "canonical
+    # calculation hash" invariant.
+    policy = _build_policy(scoring_algorithm_version="ZONE_SCORING_V0")
+    dims = _build_six_dimensions()
+
+    first = score_assessment(dims, policy)
+    second = score_assessment(dims, policy)
+
+    assert first == second
+
+
+def test_changing_differentiation_weights_changes_differentiation_index_only():
+    # customer_scarcity=90 and inverse_replaceability(30)=70 must differ, or
+    # a weight skew between them would leave the weighted average unchanged
+    # (degenerate case) and this test would not actually exercise weighting.
+    dims = _build_six_dimensions(customer_scarcity=90.0, replaceability=30.0)
+
+    equal_weight_policy = _build_policy(
+        weights={
+            "customer_scarcity": 1.0,
+            "replaceability": 1.0,
+            "data_advantage": 1.0,
+            "network_effect": 1.0,
+            "learning_effect": 1.0,
+            "switching_cost": 1.0,
+        }
+    )
+    skewed_weight_policy = _build_policy(
+        weights={
+            "customer_scarcity": 3.0,
+            "replaceability": 1.0,
+            "data_advantage": 1.0,
+            "network_effect": 1.0,
+            "learning_effect": 1.0,
+            "switching_cost": 1.0,
+        }
+    )
+
+    equal_result = score_assessment(dims, equal_weight_policy)
+    skewed_result = score_assessment(dims, skewed_weight_policy)
+
+    equal_differentiation_index, equal_defensibility_index = equal_result[0], equal_result[1]
+    skewed_differentiation_index, skewed_defensibility_index = skewed_result[0], skewed_result[1]
+
+    assert equal_differentiation_index != skewed_differentiation_index
+    # Defensibility group's weights were untouched -> defensibility_index
+    # must be unaffected by a purely-differentiation-group weight change
+    # (the two groups normalize independently).
+    assert equal_defensibility_index == pytest.approx(skewed_defensibility_index)
+
+    expected_skewed = (3.0 * 90.0 + 1.0 * inverse_replaceability(30.0)) / 4.0
+    assert skewed_differentiation_index == pytest.approx(expected_skewed)
+
+
+def test_weights_missing_a_dimension_fails_policy_construction():
+    incomplete_weights = {
+        "customer_scarcity": 1.0,
+        "replaceability": 1.0,
+        "data_advantage": 1.0,
+        "network_effect": 1.0,
+        "learning_effect": 1.0,
+        # switching_cost intentionally omitted
+    }
+    with pytest.raises(ProductIntelligenceValidationError):
+        _build_policy(weights=incomplete_weights)
+
+
+def test_weights_with_negative_value_fails_policy_construction():
+    negative_weights = {
+        "customer_scarcity": 1.0,
+        "replaceability": -1.0,
+        "data_advantage": 1.0,
+        "network_effect": 1.0,
+        "learning_effect": 1.0,
+        "switching_cost": 1.0,
+    }
+    with pytest.raises(ProductIntelligenceValidationError):
+        _build_policy(weights=negative_weights)
+
+
+# ---------------------------------------------------------------------------
+# 11. scoring_algorithm_version fail-closed gate
+# ---------------------------------------------------------------------------
+
+
+def test_score_assessment_rejects_unsupported_algorithm_version():
+    policy = _build_policy(scoring_algorithm_version="ZONE_SCORING_V99_DOES_NOT_EXIST")
+    dims = _build_six_dimensions()
+    with pytest.raises(ProductIntelligenceValidationError):
+        score_assessment(dims, policy)
+
+
+# ---------------------------------------------------------------------------
+# 12. non_gated_unique_penalty_factor (via thresholds dict)
+# ---------------------------------------------------------------------------
+
+
+def test_non_gated_unique_penalty_factor_default_is_one_half():
+    # ADVANTAGE-zone (non-UNIQUE) assessment: unique_score should equal
+    # defensibility_index * 0.5 when the policy does not set the key.
+    policy = _build_policy()
+    dims = _build_six_dimensions(
+        customer_scarcity=55.0,
+        replaceability=45.0,
+        data_advantage=55.0,
+        network_effect=55.0,
+        learning_effect=55.0,
+        switching_cost=55.0,
+    )
+    (
+        _differentiation_index,
+        defensibility_index,
+        _commodity_score,
+        _advantage_score,
+        unique_score,
+        recommended_zone,
+    ) = score_assessment(dims, policy)
+    assert recommended_zone != "UNIQUE"
+    assert unique_score == pytest.approx(defensibility_index * 0.5)
+
+
+def test_non_gated_unique_penalty_factor_custom_value_is_applied():
+    dims = _build_six_dimensions(
+        customer_scarcity=55.0,
+        replaceability=45.0,
+        data_advantage=55.0,
+        network_effect=55.0,
+        learning_effect=55.0,
+        switching_cost=55.0,
+    )
+    custom_policy = _build_policy(
+        thresholds={
+            "unique_defensibility_min": 75.0,
+            "unique_floor_gate_min": 50.0,
+            "commodity_differentiation_max": 40.0,
+            "commodity_defensibility_max": 40.0,
+            "non_gated_unique_penalty_factor": 0.25,
+        }
+    )
+    (
+        _differentiation_index,
+        defensibility_index,
+        _commodity_score,
+        _advantage_score,
+        unique_score,
+        recommended_zone,
+    ) = score_assessment(dims, custom_policy)
+
+    assert recommended_zone != "UNIQUE"
+    assert unique_score == pytest.approx(defensibility_index * 0.25)
+
+
+# ---------------------------------------------------------------------------
+# 13. Checksum sensitivity to the three closure-fix fields
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "override_kwargs",
+    [
+        {
+            "weights": {
+                "customer_scarcity": 2.0,
+                "replaceability": 1.0,
+                "data_advantage": 1.0,
+                "network_effect": 1.0,
+                "learning_effect": 1.0,
+                "switching_cost": 1.0,
+            }
+        },
+        {
+            "thresholds": {
+                "unique_defensibility_min": 75.0,
+                "unique_floor_gate_min": 50.0,
+                "commodity_differentiation_max": 40.0,
+                "commodity_defensibility_max": 40.0,
+                "non_gated_unique_penalty_factor": 0.9,
+            }
+        },
+        {"scoring_algorithm_version": "ZONE_SCORING_V0_ALT_FOR_TEST"},
+    ],
+)
+def test_checksum_changes_when_weights_thresholds_or_algorithm_version_change(override_kwargs):
+    baseline = _build_policy()
+    changed = _build_policy(**override_kwargs)
+    assert baseline.checksum != changed.checksum

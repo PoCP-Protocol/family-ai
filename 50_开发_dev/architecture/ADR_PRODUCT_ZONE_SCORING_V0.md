@@ -74,16 +74,53 @@ validate or replace the two-index model, not silently forgotten.
 ```text
 inverse_replaceability = 100 - replaceability
 
-Differentiation Index = (customer_scarcity + inverse_replaceability) / 2
+Differentiation Index = (w_cs * customer_scarcity + w_repl * inverse_replaceability) / (w_cs + w_repl)
 
-Defensibility Index = (data_advantage + network_effect + learning_effect + switching_cost) / 4
+Defensibility Index = (w_da*data_advantage + w_ne*network_effect + w_le*learning_effect + w_sc*switching_cost)
+                       / (w_da + w_ne + w_le + w_sc)
 ```
 
-Both indices are simple, equal-weighted averages in V0 — **not** because equal weighting is known to be
-correct, but because no real historical data exists yet to justify any other weighting scheme (per the
-project-owner's standing rule against inventing business parameters without evidence — see
-`CLAUDE.md` §4 and prior PR-001R decisions). This is recorded as `PROVISIONAL_POLICY_V0` in
-`ZonePolicyVersion` (see ADR-Governance §2), not as a scientifically validated formula.
+where `w_*` are the per-dimension weights read from `ZonePolicyVersion.weights` (never hardcoded in the
+engine). **Closure fix** (chief-architect review, 2026-08-29): `weights` previously existed on
+`ZonePolicyVersion` and was checksummed but never actually read by the scoring engine — every policy
+version produced identical scores regardless of `weights`. The engine now computes a **normalized
+weighted average within each of the two independent groups** above:
+
+- Differentiation group: `{customer_scarcity, replaceability}` — the `replaceability` weight applies to
+  `inverse_replaceability`, per §1.2's direction rule, not to raw `replaceability`.
+- Defensibility group: `{data_advantage, network_effect, learning_effect, switching_cost}`.
+
+Each group's weighted average divides by **that group's own weight sum**, not a global sum across all
+six dimensions — this makes the formula scale-invariant within a group (doubling every weight in a
+group leaves that group's index unchanged) and keeps the two groups normalized independently: changing
+the relative weight between `customer_scarcity` and `replaceability` changes `Differentiation Index` but
+has no effect on `Defensibility Index`, and vice versa. This matches §1.3's framing of the two-index
+structure as a deliberate grouping of collinear dimensions, not one global six-way weighted sum.
+
+`ZonePolicyVersion.weights` must contain all six dimension keys with values `>= 0` (fail-closed —
+`ProductIntelligenceValidationError` — otherwise); a group whose weights sum to exactly `0` is also
+fail-closed (division-by-zero guard) rather than silently producing a `NaN`/undefined index.
+
+V0's default/fixture policy (`PROVISIONAL_POLICY_V0`) sets every weight to `1.0`, which — after
+normalization — reduces exactly to the original equal-weighted `/2` and `/4` averages. This is **not**
+because equal weighting is known to be correct, but because no real historical data exists yet to
+justify any other weighting scheme (per the project-owner's standing rule against inventing business
+parameters without evidence — see `CLAUDE.md` §4 and prior PR-001R decisions). This is recorded as
+`PROVISIONAL_POLICY_V0` in `ZonePolicyVersion` (see ADR-Governance §2), not as a scientifically
+validated formula; only a *non-default* policy (different relative weights) changes scoring output
+from V0's original all-equal-weighting behavior.
+
+### 2.0.1 Scoring-algorithm version — traceable, not implicit
+
+`ZonePolicyVersion.scoring_algorithm_version` (default `"ZONE_SCORING_V0"`) records which version of the
+scoring engine (`compute_differentiation_index` / `compute_defensibility_index` / `compute_three_scores` /
+`classify_zone` as a bundle) a policy version's results were computed under. `score_assessment` checks
+this value against an engine-side allowlist (`zone_scoring_engine._SUPPORTED_ALGORITHM_VERSIONS`) and
+fails closed (`ProductIntelligenceValidationError`) if it does not recognize it. This exists so a future
+`ZONE_SCORING_V1` engine cannot silently reinterpret an old `ZONE_SCORING_V0` policy (or vice versa)
+under a formula it was never validated against — the ADR's own framing that anything influencing the
+result must be "either policy data or a traceable algorithm version" previously had no traceable version
+identifier at all. Included in `ZonePolicyVersion.compute_checksum()` alongside `weights`/`thresholds`.
 
 ### 2.1 Zone classification — thresholds + a floor gate, not pure weighted-sum
 
@@ -104,6 +141,20 @@ The floor-gate threshold (`50`) and the UNIQUE/COMMODITY cut points (`75`/`40`/`
 `PROVISIONAL_POLICY_V0` fixture values, not empirically calibrated — they exist so the classification
 pipeline is testable end-to-end. They are versioned via `ZonePolicyVersion` precisely so they can be
 revised without rewriting history (see ADR-Governance §3).
+
+### 2.2 Three scores: non-gated `unique_score` penalty factor — versioned, not hardcoded
+
+`compute_three_scores` sets `unique_score = Defensibility Index` when the assessment classifies as
+UNIQUE, else `unique_score = Defensibility Index * penalty_factor` (a product that is defensible on
+average yet failed the floor gate should not show as high a `unique_score` as one that actually cleared
+the gate). **Closure fix**: this `penalty_factor` was previously a hardcoded `0.5` literal inside the
+engine, invisible to policy versioning/checksums despite materially affecting `unique_score` for every
+non-UNIQUE assessment. It now lives in `ZonePolicyVersion.thresholds["non_gated_unique_penalty_factor"]`
+(defaulting to `0.5` if the key is absent, preserving V0's original behavior) — kept inside the existing
+`thresholds` dict rather than a new top-level field so no database migration is required (`thresholds`
+is already a JSON/JSONB column). Because it lives in `thresholds`, it is automatically covered by
+`compute_checksum()`, so changing the penalty factor across policy versions changes the checksum like
+any other threshold.
 
 ## 3. Evidence types per dimension (for `DimensionAssessment.evidence_refs`, not enforced by schema in V0 beyond "at least one ref required")
 
