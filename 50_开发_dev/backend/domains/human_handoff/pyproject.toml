@@ -1,0 +1,10 @@
+[project]
+name = "family-human-handoff-domain"
+version = "0.1.0"
+description = "Human Handoff domain -- decoupled from Principal. Ported from the principal_human_handoffs table + the handoff state machine embedded in apps/api/src/modules/principal/principal.service.ts (handleMessage handoff creation) and principal.repository.ts (saveHandoff/resolveHandoff/loadHandoff/markHandoffReleased). Pure guardrail state machine (OPEN->RESOLVED->released), no generative element."
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.9", "sqlalchemy>=2.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
