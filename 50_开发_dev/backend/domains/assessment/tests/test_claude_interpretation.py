@@ -216,6 +216,21 @@ class TestClaudeInterpretationAdapter:
             await adapter.interpret("family-1", _evidence())
         assert "construct_ref_not_in_reviewed_registry" in exc.value.code
 
+    async def test_batch2_admitted_construct_refs_are_accepted(self):
+        """2026-08-29 Batch 2 admitted LEARNING_STRATEGY_METACOGNITION/
+        SELF_REGULATION_SUPPORT after clarifying they are distinct analysis
+        levels from HOMEWORK_PROCESS, not overlapping duplicates."""
+        output = _valid_model_output()
+        output["construct_signals"][0]["construct_ref"] = "LEARNING_STRATEGY_METACOGNITION"
+        output["hypotheses"][0]["construct_refs"] = ["SELF_REGULATION_SUPPORT"]
+        mock_client = MagicMock()
+        mock_client.messages.create = AsyncMock(return_value=_fake_response(output))
+        adapter = ClaudeInterpretationAdapter(client=mock_client)
+
+        result = await adapter.interpret("family-1", _evidence())
+
+        assert result["interpretation"]["draft"]["construct_signals"][0]["construct_ref"] == "LEARNING_STRATEGY_METACOGNITION"
+
     async def test_too_many_primary_contradictions_in_model_output_fails_closed(self):
         """4 hypotheses all marked is_primary_contradiction=True should be
         rejected by the boundary re-validation, even though the JSON schema

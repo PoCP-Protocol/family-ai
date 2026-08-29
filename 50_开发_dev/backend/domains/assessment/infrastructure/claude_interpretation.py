@@ -55,8 +55,14 @@ from ..application.ports import AiRunLedgerPort, AssessmentInterpretationPort
 # governance/CONSTRUCT_ADMISSION_REGISTRY.yaml (project owner reviewed the
 # 12-candidate review table and confirmed this exact 3-admit/9-hold split via
 # AskUserQuestion — not a separate formal sign-off meeting; recorded as such,
-# not overstated). The other 9 reviewed candidates remain HOLD in that
-# registry — do not add them here without a new, separately recorded review.
+# not overstated).
+# 2026-08-29: Batch 2 admission — LEARNING_STRATEGY_METACOGNITION/
+# SELF_REGULATION_SUPPORT added after re-review clarified they are distinct
+# analysis levels from the already-admitted HOMEWORK_PROCESS (task-execution
+# vs child-cognition vs family-support-behavior), not overlapping duplicates
+# as first assessed; project owner confirmed via AskUserQuestion. The
+# remaining 7 reviewed candidates stay HOLD in that registry — do not add
+# them here without a new, separately recorded review.
 _LEGAL_CONSTRUCT_REFS = {
     "PARENT_CHILD_COMMUNICATION",
     "HOMEWORK_PROCESS",
@@ -64,6 +70,8 @@ _LEGAL_CONSTRUCT_REFS = {
     "EMOTION_REGULATION_SUPPORT",
     "PARENT_CAPACITY",
     "SCHOOL_FAMILY_COLLABORATION",
+    "LEARNING_STRATEGY_METACOGNITION",
+    "SELF_REGULATION_SUPPORT",
 }
 
 _DRAFT_OUTPUT_SCHEMA = {

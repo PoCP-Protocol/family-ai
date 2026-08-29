@@ -57,22 +57,33 @@ admissions:
     legal_construct_refs_updated: true
 
   - construct_ref: LEARNING_STRATEGY_METACOGNITION
-    status: HOLD
+    status: ADMITTED
     knowledge_backing: weak
-    risk_note: 与已admit的HOMEWORK_PROCESS概念边界重叠未厘清；且与SELF_REGULATION_SUPPORT高度重叠，建议两个一起审。
-    admitted_by: null
-    admission_ref: null
-    admitted_at: null
-    legal_construct_refs_updated: false
+    risk_note: >
+      2026-08-29复审：与已admit的HOMEWORK_PROCESS边界厘清完毕——HOMEWORK_PROCESS是
+      "作业这件具体事怎么执行"(任务执行层)，本construct是"孩子自己的认知/元认知策略
+      (计划/复盘/纠错/自查)"(孩子认知层)，两者是不同分析层级不是重复。与
+      SELF_REGULATION_SUPPORT概念上仍有观察信号重叠(如weak_self_check同时出现在两者
+      observable_signals里)，但定义的主体不同(本construct是孩子的认知能力，
+      SELF_REGULATION_SUPPORT是家庭的支持行为)，可以分别admit。知识库backing仍偏弱
+      (TH-006成长型思维部分相关但非直接对应)，风险整体可控。
+    admitted_by: project-owner
+    admission_ref: "2026-08-29：项目所有人经AskUserQuestion确认ADMIT本construct及SELF_REGULATION_SUPPORT，基于三层边界厘清分析(任务执行/孩子认知/家庭行为)及相关4题(LEARNING_HABITS_Q02+SELF_REGULATION_Q01-03)均为normal_learning_support(无危机标记)。"
+    admitted_at: "2026-08-29"
+    legal_construct_refs_updated: true
 
   - construct_ref: SELF_REGULATION_SUPPORT
-    status: HOLD
+    status: ADMITTED
     knowledge_backing: weak
-    risk_note: 与LEARNING_STRATEGY_METACOGNITION高度重叠，建议两个一起审。
-    admitted_by: null
-    admission_ref: null
-    admitted_at: null
-    legal_construct_refs_updated: false
+    risk_note: >
+      2026-08-29复审：定义是"家庭对日常任务的计划/启动/监控/检查提供的支持，不评判孩子
+      意志力/性格"(家庭行为层)，与LEARNING_STRATEGY_METACOGNITION(孩子认知层)分析主体
+      不同，可分别admit。知识库backing偏弱，风险整体可控(不涉及对孩子的能力/性格判断，
+      反而明确排除了这类判断)。
+    admitted_by: project-owner
+    admission_ref: "2026-08-29：项目所有人经AskUserQuestion确认ADMIT本construct及LEARNING_STRATEGY_METACOGNITION，基于三层边界厘清分析(任务执行/孩子认知/家庭行为)及相关4题(LEARNING_HABITS_Q02+SELF_REGULATION_Q01-03)均为normal_learning_support(无危机标记)。"
+    admitted_at: "2026-08-29"
+    legal_construct_refs_updated: true
 
   - construct_ref: ACADEMIC_DEVELOPMENT
     status: HOLD
