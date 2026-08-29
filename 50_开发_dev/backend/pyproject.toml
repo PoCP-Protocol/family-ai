@@ -46,6 +46,7 @@ members = [
   "domains/growth_plan",
   "domains/intervention",
   "domains/outcome",
+  "domains/human_handoff",
   "intelligence",
 ]
 
