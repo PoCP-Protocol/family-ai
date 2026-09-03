@@ -47,6 +47,15 @@ export interface TestExperienceCustomerProjection {
     follow_up_status: 'NOT_MARKED' | 'PENDING_FOLLOW_UP' | 'PROCESSED';
     operator_note: string | null;
     follow_up_updated_at: string | null;
+    assigned_to_account_id: string | null;
+    assigned_to_display_name: string | null;
+    follow_up_due_date: string | null;
+    case_id: string | null;
+    case_priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT' | null;
+    sla_target_at: string | null;
+    sla_status: 'NOT_STARTED' | 'ON_TRACK' | 'DUE_SOON' | 'OVERDUE' | 'MET' | 'BREACHED';
+    resolved_at: string | null;
+    resolution_summary: string | null;
     external_effect: false;
     created_at: string;
   }>;
@@ -56,6 +65,10 @@ export interface TestExperienceCustomerProjection {
 export interface UpdateOperationFollowUpDto {
   follow_up_status?: 'PENDING_FOLLOW_UP' | 'PROCESSED';
   operator_note?: string | null;
+  assigned_to_account_id?: string | null;
+  follow_up_due_date?: string | null;
+  case_priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  resolution_summary?: string | null;
 }
 
 export interface OperationFollowUpResult {
@@ -63,8 +76,61 @@ export interface OperationFollowUpResult {
   follow_up_status: 'PENDING_FOLLOW_UP' | 'PROCESSED';
   operator_note: string | null;
   follow_up_updated_at: string;
+  assigned_to_account_id: string | null;
+  assigned_to_display_name: string | null;
+  follow_up_due_date: string | null;
+  case_id: string;
+  case_priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  sla_target_at: string;
+  sla_status: 'ON_TRACK' | 'DUE_SOON' | 'OVERDUE' | 'MET' | 'BREACHED';
+  resolved_at: string | null;
+  resolution_summary: string | null;
   external_effect: false;
   text_equivalent: string;
+}
+
+export interface BatchProcessOperationFollowUpsDto {
+  operation_ids?: string[];
+}
+
+export interface BatchProcessOperationFollowUpsResult {
+  operation_ids: string[];
+  updated_count: number;
+  follow_up_status: 'PROCESSED';
+  external_effect: false;
+  text_equivalent: string;
+}
+
+export interface BatchAssignOperationFollowUpsDto {
+  operation_ids?: string[];
+  assigned_to_account_id?: string;
+  follow_up_due_date?: string | null;
+}
+
+export interface BatchAssignOperationFollowUpsResult {
+  operation_ids: string[];
+  updated_count: number;
+  assigned_to_account_id: string;
+  follow_up_due_date: string | null;
+  external_effect: false;
+  text_equivalent: string;
+}
+
+export interface OperationFollowUpAssignee {
+  account_id: string;
+  display_name: string;
+}
+
+export interface OperationFollowUpWorkspaceMetrics {
+  today_new: number;
+  pending: number;
+  processed: number;
+  overdue: number;
+  due_soon: number;
+  sla_met: number;
+  sla_breached: number;
+  resolution_rate: number;
+  assignee_workload: Array<OperationFollowUpAssignee & { pending_count: number; overdue_count: number }>;
 }
 
 const FIXTURE_RULES: Record<TestExperienceAction, readonly string[]> = {

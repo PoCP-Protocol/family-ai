@@ -18,6 +18,20 @@ interface RemoteExplanation {
   recommendations?: { text: string; source: string; status: string }[];
 }
 
+interface RemoteInterventionLibrary {
+  items?: Array<{
+    review_status?: string;
+    intervention?: { intervention_code?: string; why?: string; action_template?: string };
+  }>;
+}
+
+interface RemoteContextResolution {
+  consent?: { allowed?: boolean };
+  ai_personalization?: { allowed?: boolean };
+  model_gateway_status?: string;
+  action_bridge_status?: string;
+}
+
 const RADAR_LABELS = ["亲子沟通", "学习习惯", "情绪调节", "自我管理", "手机与边界"] as const;
 const RADAR_POINTS = [
   { x: 120, y: 22, labelX: 120, labelY: 12, anchor: "middle" as const },
@@ -34,6 +48,8 @@ export default function GrowthExplanationScreen() {
   const focus = getGrowthFocus(selectedGrowthFocus);
   const local = getLocalGrowthExplanation(selectedGrowthFocus);
   const [remote, setRemote] = useState<RemoteExplanation | null>(null);
+  const [library, setLibrary] = useState<RemoteInterventionLibrary | null>(null);
+  const [contextResolution, setContextResolution] = useState<RemoteContextResolution | null>(null);
   const [remoteState, setRemoteState] = useState<"idle" | "loading" | "ready" | "fallback">("idle");
 
   useEffect(() => {
@@ -45,11 +61,21 @@ export default function GrowthExplanationScreen() {
         const onboardingId = typeof onboarding?.onboarding_id === "string" ? onboarding.onboarding_id : activeOnboardingId;
         if (!onboardingId) throw new Error("NO_ACTIVE_ONBOARDING");
         if (active) setActiveOnboardingId(onboardingId);
-        return familyApi.getReportExplanation<RemoteExplanation>(session.token!, session.selectedFamily!.family_id, onboardingId);
+        const familyId = session.selectedFamily!.family_id;
+        const [explanation, interventionLibrary, context] = await Promise.all([
+          familyApi.getReportExplanation<RemoteExplanation>(session.token!, familyId, onboardingId),
+          familyApi.getInterventionLibrary<RemoteInterventionLibrary>(session.token!, familyId).catch(() => null),
+          typeof onboarding?.child_id === "string"
+            ? familyApi.resolveFamilyContext<RemoteContextResolution>(session.token!, familyId, onboarding.child_id, "GROWTH_GUIDANCE").catch(() => null)
+            : Promise.resolve(null),
+        ]);
+        return { explanation, interventionLibrary, context };
       })
       .then((result) => {
         if (!active) return;
-        setRemote(result);
+        setRemote(result.explanation);
+        setLibrary(result.interventionLibrary);
+        setContextResolution(result.context);
         setRemoteState("ready");
       })
       .catch(() => {
@@ -60,12 +86,13 @@ export default function GrowthExplanationScreen() {
 
   const actionItems = useMemo(() => {
     if (!local) return [];
+    const reviewedPractice = library?.items?.find((item) => item.review_status === "PUBLISHED");
     return [
-      remote?.recommendations?.[0]?.text ?? local.recommendation,
+      remote?.recommendations?.[0]?.text ?? reviewedPractice?.intervention?.why ?? local.recommendation,
       local.fallback,
       `记录一次观察：${local.observationPrompt}`,
     ];
-  }, [local, remote?.recommendations]);
+  }, [library?.items, local, remote?.recommendations]);
 
   if (!focus || !local) {
     return (
@@ -144,6 +171,7 @@ export default function GrowthExplanationScreen() {
             </View>
           ))}
         </View>
+        <Text style={[styles.provenance, { color: colors.muted }]}>建议来源：{library?.items?.some((item) => item.review_status === "PUBLISHED") ? "已审核家庭练习库" : "家庭本机规则"} · {contextResolution?.consent?.allowed ? "成长使用同意已确认" : "未读取到完整成长使用同意"} · 所有行动仍需家长确认</Text>
 
         <Pressable onPress={() => router.push("/ui/UI-04" as Href)} style={({ pressed }) => [styles.primaryButton, { backgroundColor: colors.tint }, pressed && styles.pressed]}>
           <IconSymbol name="star.fill" size={20} color="#FFFFFF" />
@@ -199,6 +227,7 @@ const styles = StyleSheet.create({
   suggestionIndex: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", marginTop: 1 },
   suggestionIndexText: { fontSize: 12, lineHeight: 17, fontWeight: "800" },
   suggestionText: { flex: 1, fontSize: 14, lineHeight: 22 },
+  provenance: { fontSize: 11, lineHeight: 17 },
   primaryButton: { minHeight: 52, borderRadius: 26, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 2 },
   primaryButtonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 22, fontWeight: "800" },
   pressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },

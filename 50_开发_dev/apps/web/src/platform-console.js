@@ -5,9 +5,11 @@ const tenants = [
 
 /** @typedef {{ benefit_status?: string, remaining_units?: number|string, service_offering_ref?: string, channel?: string, booking_status?: string, external_effect?: boolean }} TenantProjectionRow */
 /** @typedef {{ tenant: { tenant_id: string, tenant_ref: string, display_name: string }, commercial?: { entitlement_assets?: TenantProjectionRow[], membership_assets?: TenantProjectionRow[] }, service?: { booking_records?: TenantProjectionRow[] } }} TenantScopedUiProjection */
-/** @typedef {{ operation_id: string, page_id: string, operation_kind: string, fixture_ref: string, status: 'CREATED'|'CONFIRMED'|'CANCELLED', source: 'TEST_FIXTURE'|'DOMAIN_COMMAND_ADAPTER', authorization_status: 'FAMILY_SCOPE_AUTHORIZED', follow_up_status?: 'NOT_MARKED'|'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null, follow_up_updated_at?: string|null, external_effect: false, created_at: string }} FamilyOperationReceipt */
+/** @typedef {{ operation_id: string, page_id: string, operation_kind: string, fixture_ref: string, status: 'CREATED'|'CONFIRMED'|'CANCELLED', source: 'TEST_FIXTURE'|'DOMAIN_COMMAND_ADAPTER', authorization_status: 'FAMILY_SCOPE_AUTHORIZED', follow_up_status?: 'NOT_MARKED'|'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null, follow_up_updated_at?: string|null, assigned_to_account_id?: string|null, assigned_to_display_name?: string|null, follow_up_due_date?: string|null, case_id?: string|null, case_priority?: 'LOW'|'NORMAL'|'HIGH'|'URGENT'|null, sla_target_at?: string|null, sla_status?: 'NOT_STARTED'|'ON_TRACK'|'DUE_SOON'|'OVERDUE'|'MET'|'BREACHED', resolved_at?: string|null, resolution_summary?: string|null, external_effect: false, created_at: string }} FamilyOperationReceipt */
 /** @typedef {{ operations?: FamilyOperationReceipt[] }} FamilyOperationsProjection */
-/** @typedef {{ page: string, status: string, from: string, to: string, source: string, authorization: string, sort: 'NEWEST'|'OLDEST' }} ReceiptFilters */
+/** @typedef {{ page: string, status: string, from: string, to: string, source: string, authorization: string, overdue: boolean, sort: 'NEWEST'|'OLDEST' }} ReceiptFilters */
+/** @typedef {{ account_id: string, display_name: string }} OperationFollowUpAssignee */
+/** @typedef {{ today_new: number, pending: number, processed: number, overdue: number, due_soon?: number, sla_met?: number, sla_breached?: number, resolution_rate?: number, assignee_workload: Array<OperationFollowUpAssignee & { pending_count: number, overdue_count: number }> }} OperationFollowUpWorkspaceMetrics */
 
 const roleNames = {
   PLATFORM_ADMIN: '平台管理员',
@@ -31,7 +33,7 @@ const roleVisibility = {
   FAMILY_MEMBER: ['overview', 'journeys', 'services', 'assets'],
 };
 
-/** @typedef {{ tenantId?: string, role?: keyof typeof roleVisibility, initialProjection?: TenantScopedUiProjection|null, loadTenantScopedProjection?: () => Promise<TenantScopedUiProjection>, initialOperations?: FamilyOperationsProjection|null, loadFamilyOperations?: () => Promise<FamilyOperationsProjection>, updateFamilyOperationFollowUp?: (operationId: string, input: { follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null }) => Promise<{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string }> }} PlatformConsoleOptions */
+/** @typedef {{ tenantId?: string, role?: keyof typeof roleVisibility, initialProjection?: TenantScopedUiProjection|null, loadTenantScopedProjection?: () => Promise<TenantScopedUiProjection>, initialOperations?: FamilyOperationsProjection|null, loadFamilyOperations?: () => Promise<FamilyOperationsProjection>, initialFollowUpAssignees?: OperationFollowUpAssignee[], loadOperationFollowUpAssignees?: () => Promise<{ assignees?: OperationFollowUpAssignee[] }>, initialFollowUpWorkspaceMetrics?: OperationFollowUpWorkspaceMetrics|null, loadOperationFollowUpWorkspaceMetrics?: () => Promise<OperationFollowUpWorkspaceMetrics>, updateFamilyOperationFollowUp?: (operationId: string, input: { follow_up_status: 'PENDING_FOLLOW_UP'|'PROCESSED', operator_note?: string|null, assigned_to_account_id?: string|null, follow_up_due_date?: string|null, case_priority?: 'LOW'|'NORMAL'|'HIGH'|'URGENT', resolution_summary?: string|null }) => Promise<{ follow_up_status: string, operator_note: string|null, follow_up_updated_at: string, assigned_to_account_id: string|null, assigned_to_display_name: string|null, follow_up_due_date: string|null, case_id?: string, case_priority?: 'LOW'|'NORMAL'|'HIGH'|'URGENT', sla_target_at?: string, sla_status?: string, resolved_at?: string|null, resolution_summary?: string|null }>, batchProcessFamilyOperationFollowUps?: (operationIds: string[]) => Promise<{ operation_ids: string[], updated_count: number, follow_up_status: string }>, batchAssignFamilyOperationFollowUps?: (operationIds: string[], assignedToAccountId: string, dueDate: string|null) => Promise<{ operation_ids: string[], updated_count: number, assigned_to_account_id: string, follow_up_due_date: string|null }> }} PlatformConsoleOptions */
 
 // Web 仅消费既有 tenant_family_bindings、tenant_policy_profiles 和 Family Scope Guard；不在 Web 端创建平行的 tenant 或 IAM 本体。
 
@@ -97,7 +99,8 @@ function filterReceipts(receipts, filters) {
       && (filters.source === 'ALL' || item.source === filters.source)
       && (filters.authorization === 'ALL' || item.authorization_status === filters.authorization)
       && (!filters.from || receiptDate >= filters.from)
-      && (!filters.to || receiptDate <= filters.to);
+      && (!filters.to || receiptDate <= filters.to)
+      && (!filters.overdue || (item.follow_up_status === 'PENDING_FOLLOW_UP' && typeof item.follow_up_due_date === 'string' && item.follow_up_due_date < new Date().toISOString().slice(0, 10)));
   });
 }
 /** @param {number} days */
@@ -116,9 +119,19 @@ const FOLLOW_UP_LABELS = { NOT_MARKED: '未标记', PENDING_FOLLOW_UP: '待跟�
 function csvCell(value) { return `"${value.replace(/"/g, '""')}"`; }
 /** @param {FamilyOperationReceipt[]} receipts */
 function receiptCsv(receipts) {
-  const header = ['页面', '动作', '状态', '来源', '授权状态', '人工跟进', '操作备注', '外部效果', '回执日期'];
-  const rows = receipts.map((item) => [receiptPageLabel(item.page_id), item.operation_kind, item.status, item.source, item.authorization_status, FOLLOW_UP_LABELS[item.follow_up_status ?? 'NOT_MARKED'], item.operator_note ?? '', '未执行', item.created_at]);
+  const header = ['页面', '动作', '状态', 'Family Case', '优先级', 'SLA 状态', 'SLA 目标', '来源', '授权状态', '人工跟进', '负责人', '截止日期', '操作备注', '解决摘要', '外部效果', '回执日期'];
+  const rows = receipts.map((item) => [receiptPageLabel(item.page_id), item.operation_kind, item.status, item.case_id ?? '', item.case_priority ?? '', item.sla_status ?? 'NOT_STARTED', item.sla_target_at ?? '', item.source, item.authorization_status, FOLLOW_UP_LABELS[item.follow_up_status ?? 'NOT_MARKED'], item.assigned_to_display_name ?? '', item.follow_up_due_date ?? '', item.operator_note ?? '', item.resolution_summary ?? '', '未执行', item.created_at]);
   return `\uFEFF${[header, ...rows].map((row) => row.map((value) => csvCell(String(value))).join(',')).join('\n')}`;
+}
+
+/** @param {FamilyOperationReceipt[]} receipts */
+function receiptFollowUpStats(receipts) {
+  const today = new Date().toISOString().slice(0, 10);
+  return {
+    today: receipts.filter((item) => item.created_at.slice(0, 10) === today).length,
+    pending: receipts.filter((item) => item.follow_up_status === 'PENDING_FOLLOW_UP').length,
+    processed: receipts.filter((item) => item.follow_up_status === 'PROCESSED').length,
+  };
 }
 /** @param {FamilyOperationReceipt[]} receipts */
 function downloadReceiptCsv(receipts) {
@@ -127,8 +140,36 @@ function downloadReceiptCsv(receipts) {
   anchor.href = url; anchor.download = `family-operation-receipts-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.append(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url);
 }
-/** @param {FamilyOperationsProjection|null} receiptProjection @param {'live'|'loading'|'preview'} receiptState @param {ReceiptFilters} filters @param {{ count: number, at: string }|null} exportAudit @param {number} receiptPage @param {'idle'|'loading'|'success'} exportState @param {string|null} followUpSavingId @param {string|null} followUpMessage @param {boolean} hasFollowUpWriter */
-function operations(receiptProjection, receiptState, filters, exportAudit, receiptPage, exportState, followUpSavingId, followUpMessage, hasFollowUpWriter) {
+
+/** @param {HTMLElement} root @param {FamilyOperationReceipt[]} receipts @param {OperationFollowUpAssignee[]} assignees @param {Set<string>} selectedOperationIds @param {boolean} hasBatchWriter @param {boolean} hasBatchAssigner @param {OperationFollowUpWorkspaceMetrics|null} workspaceMetrics */
+function enhanceReceiptOperations(root, receipts, assignees, selectedOperationIds, hasBatchWriter, hasBatchAssigner, workspaceMetrics) {
+  const panel = root.querySelector('.receipt-panel');
+  if (!panel) return;
+  const localStats = receiptFollowUpStats(receipts);
+  const stats = workspaceMetrics ?? { today_new: localStats.today, pending: localStats.pending, processed: localStats.processed, overdue: receipts.filter((item) => item.follow_up_status === 'PENDING_FOLLOW_UP' && typeof item.follow_up_due_date === 'string' && item.follow_up_due_date < new Date().toISOString().slice(0, 10)).length, due_soon: 0, sla_met: 0, sla_breached: 0, resolution_rate: 0 };
+  const workload = workspaceMetrics?.assignee_workload ?? [];
+  const summary = document.createElement('div'); summary.className = 'metrics-grid receipt-summary';
+  summary.innerHTML = `${metric('今日新增', String(stats.today_new), '当前家庭回执', 'blue')}${metric('待跟进', String(stats.pending), '需要人工回看', 'amber')}${metric('已处理', String(stats.processed), '已留处理回执', 'green')}${metric('已逾期', String(stats.overdue), '业务截止日期', 'amber')}${metric('SLA 即将到期', String(stats.due_soon ?? 0), '12 小时内', 'amber')}${metric('SLA 达标', String(stats.sla_met ?? 0), `处理率 ${stats.resolution_rate ?? 0}%`, 'green')}${metric('SLA 违约', String(stats.sla_breached ?? 0), '需要升级处理', 'violet')}${workload.length ? `<article class="metric-card violet receipt-workload"><span>负责人工作负载</span><strong>${workload.map((item) => `${escapeHtml(item.display_name)} ${item.pending_count}`).join(' · ')}</strong><em>${workload.map((item) => `逾期 ${item.overdue_count}`).join(' · ')}</em></article>` : ''}`;
+  panel.prepend(summary);
+  const filters = panel.querySelector('.receipt-filters');
+  if (filters) {
+    const batch = document.createElement('div'); batch.className = 'filter-row receipt-batch-actions';
+    const assigneeOptions = [`<option value="">选择负责人</option>`, ...assignees.map((assignee) => `<option value="${escapeHtml(assignee.account_id)}">${escapeHtml(assignee.display_name)}</option>`)].join('');
+    batch.innerHTML = `<span>已选 ${selectedOperationIds.size} 条</span><select id="receiptBatchAssignee" ${hasBatchAssigner ? '' : 'disabled'}>${assigneeOptions}</select><input id="receiptBatchDueDate" type="date" ${hasBatchAssigner ? '' : 'disabled'} /><button id="receiptBatchAssign" class="secondary-btn" ${selectedOperationIds.size && hasBatchAssigner ? '' : 'disabled'}>批量分派</button><button id="receiptBatchProcess" class="secondary-btn" ${selectedOperationIds.size && hasBatchWriter ? '' : 'disabled'}>批量标记已处理</button>`;
+    filters.insertAdjacentElement('afterend', batch);
+  }
+  const header = panel.querySelector('thead tr');
+  if (header) header.insertAdjacentHTML('beforeend', '<th>负责人 / 截止日期</th><th><input id="receiptSelectAll" type="checkbox" aria-label="勾选本页回执" /></th>');
+  panel.querySelectorAll('[data-followup-status]').forEach((element) => {
+    const operationId = /** @type {HTMLElement} */ (element).dataset.followupStatus ?? '';
+    const row = element.closest('tr'); const receipt = receipts.find((item) => item.operation_id === operationId);
+    if (!row || !receipt) return;
+    const assigneeOptions = [`<option value="">未分派</option>`, ...assignees.map((assignee) => `<option value="${escapeHtml(assignee.account_id)}" ${assignee.account_id === receipt.assigned_to_account_id ? 'selected' : ''}>${escapeHtml(assignee.display_name)}</option>`)].join('');
+    row.insertAdjacentHTML('beforeend', `<td><select data-followup-assignee="${escapeHtml(operationId)}">${assigneeOptions}</select><input data-followup-due-date="${escapeHtml(operationId)}" type="date" value="${escapeHtml(receipt.follow_up_due_date ?? '')}" /><select data-case-priority="${escapeHtml(operationId)}"><option value="LOW" ${receipt.case_priority === 'LOW' ? 'selected' : ''}>低优先级</option><option value="NORMAL" ${!receipt.case_priority || receipt.case_priority === 'NORMAL' ? 'selected' : ''}>普通</option><option value="HIGH" ${receipt.case_priority === 'HIGH' ? 'selected' : ''}>高优先级</option><option value="URGENT" ${receipt.case_priority === 'URGENT' ? 'selected' : ''}>紧急</option></select><small>Case ${escapeHtml(receipt.case_id?.slice(0, 8) ?? '未建立')} · ${escapeHtml(receipt.sla_status ?? 'NOT_STARTED')}</small><small>${escapeHtml(receipt.assigned_to_display_name ?? '未分派')} · ${escapeHtml(receipt.follow_up_due_date ?? '未设截止日期')}</small></td><td><input data-operation-select="${escapeHtml(operationId)}" type="checkbox" ${selectedOperationIds.has(operationId) ? 'checked' : ''} aria-label="勾选回执" /></td>`);
+  });
+}
+/** @param {FamilyOperationsProjection|null} receiptProjection @param {'live'|'loading'|'preview'} receiptState @param {ReceiptFilters} filters @param {{ count: number, at: string }|null} exportAudit @param {number} receiptPage @param {'idle'|'loading'|'success'} exportState @param {string|null} followUpSavingId @param {string|null} followUpMessage @param {boolean} hasFollowUpWriter @param {OperationFollowUpWorkspaceMetrics|null} workspaceMetrics */
+function operations(receiptProjection, receiptState, filters, exportAudit, receiptPage, exportState, followUpSavingId, followUpMessage, hasFollowUpWriter, workspaceMetrics) {
   const receipts = safeReceipts(receiptProjection);
   const pages = [...new Set(receipts.map((item) => item.page_id))].sort();
   const statuses = [...new Set(receipts.map((item) => item.status))].sort();
@@ -141,7 +182,7 @@ function operations(receiptProjection, receiptState, filters, exportAudit, recei
   const followUpCopy = followUpMessage ? `<p class="muted receipt-followup-message">${escapeHtml(followUpMessage)}</p>` : '';
   const presetLabel = window.localStorage.getItem('family-operation-receipt-filters-v1') ? '恢复常用筛选' : '暂无常用筛选';
   const queue = receiptState === 'live'
-    ? `<div class="table-panel receipt-panel"><div class="filter-row receipt-filters"><button id="receiptRecent7" class="filter">最近 7 天</button><button id="receiptRecent30" class="filter">最近 30 天</button><button id="receiptSavePreset" class="filter">保存常用筛选</button><button id="receiptRestorePreset" class="filter" ${presetLabel === '暂无常用筛选' ? 'disabled' : ''}>${presetLabel}</button><label>页面<select id="receiptPageFilter"><option value="ALL">全部页面</option>${pages.map((page) => `<option value="${escapeHtml(page)}" ${page === filters.page ? 'selected' : ''}>${escapeHtml(receiptPageLabel(page))}</option>`).join('')}</select></label><label>状态<select id="receiptStatusFilter"><option value="ALL">全部状态</option>${statuses.map((status) => `<option value="${escapeHtml(status)}" ${status === filters.status ? 'selected' : ''}>${escapeHtml(status)}</option>`).join('')}</select></label><label>开始日期<input id="receiptFromDate" type="date" value="${escapeHtml(filters.from)}" /></label><label>结束日期<input id="receiptToDate" type="date" value="${escapeHtml(filters.to)}" /></label><label>来源<select id="receiptSourceFilter"><option value="ALL">全部来源</option>${sources.map((source) => `<option value="${escapeHtml(source)}" ${source === filters.source ? 'selected' : ''}>${source === 'DOMAIN_COMMAND_ADAPTER' ? '领域命令回执' : '测试体验回执'}</option>`).join('')}</select></label><label>授权<select id="receiptAuthorizationFilter"><option value="ALL">全部授权</option>${authorizations.map((status) => `<option value="${escapeHtml(status)}" ${status === filters.authorization ? 'selected' : ''}>家庭范围已授权</option>`).join('')}</select></label><label>时间<select id="receiptSort"><option value="NEWEST" ${filters.sort === 'NEWEST' ? 'selected' : ''}>最新优先</option><option value="OLDEST" ${filters.sort === 'OLDEST' ? 'selected' : ''}>最早优先</option></select></label><button class="secondary-btn" id="receiptExport" ${filtered.length && exportState !== 'loading' ? '' : 'disabled'}>${exportState === 'loading' ? '正在生成表格…' : exportState === 'success' ? '导出已完成' : '导出当前表格'}</button></div>${filtered.length ? `<table><thead><tr><th>页面</th><th>受控动作</th><th>状态</th><th>人工跟进</th><th>操作备注</th><th>来源</th><th>日期</th></tr></thead><tbody>${paged.map((item) => `<tr><td><b>${escapeHtml(receiptPageLabel(item.page_id))}</b><small>${escapeHtml(item.page_id)}</small></td><td>${escapeHtml(item.operation_kind)}<small>${escapeHtml(item.fixture_ref)}</small></td><td>${pill(escapeHtml(item.status), item.status === 'CANCELLED' ? 'amber' : 'green')}</td><td><select data-followup-status="${escapeHtml(item.operation_id)}" ${hasFollowUpWriter ? '' : 'disabled'}><option value="NOT_MARKED" ${(item.follow_up_status ?? 'NOT_MARKED') === 'NOT_MARKED' ? 'selected' : ''}>未标记</option><option value="PENDING_FOLLOW_UP" ${item.follow_up_status === 'PENDING_FOLLOW_UP' ? 'selected' : ''}>待跟进</option><option value="PROCESSED" ${item.follow_up_status === 'PROCESSED' ? 'selected' : ''}>已处理</option></select><button class="text-btn" data-save-followup="${escapeHtml(item.operation_id)}" ${hasFollowUpWriter && followUpSavingId !== item.operation_id ? '' : 'disabled'}>${followUpSavingId === item.operation_id ? '保存中…' : '保存'}</button></td><td><textarea data-followup-note="${escapeHtml(item.operation_id)}" maxlength="1000" ${hasFollowUpWriter ? '' : 'disabled'}>${escapeHtml(item.operator_note ?? '')}</textarea></td><td>${item.source === 'DOMAIN_COMMAND_ADAPTER' ? '领域命令回执' : '测试体验回执'}<small>家庭范围已授权</small></td><td>${escapeHtml(item.created_at.slice(0, 10))}</td></tr>`).join('')}</tbody></table><div class="filter-row receipt-pagination"><span>共 ${filtered.length} 条 · 第 ${safePage}/${totalPages} 页</span><button id="receiptPrevPage" class="filter" ${safePage <= 1 ? 'disabled' : ''}>上一页</button><button id="receiptNextPage" class="filter" ${safePage >= totalPages ? 'disabled' : ''}>下一页</button></div>` : '<p class="muted">当前筛选没有家庭回执。</p>'}${followUpCopy}${exportReceipt}</div>`
+    ? `<div class="table-panel receipt-panel"><div class="filter-row receipt-filters"><button id="receiptRecent7" class="filter">最近 7 天</button><button id="receiptRecent30" class="filter">最近 30 天</button><button id="receiptOverdue" class="filter ${filters.overdue ? 'active' : ''}">仅看逾期</button><button id="receiptSavePreset" class="filter">保存常用筛选</button><button id="receiptRestorePreset" class="filter" ${presetLabel === '暂无常用筛选' ? 'disabled' : ''}>${presetLabel}</button><label>页面<select id="receiptPageFilter"><option value="ALL">全部页面</option>${pages.map((page) => `<option value="${escapeHtml(page)}" ${page === filters.page ? 'selected' : ''}>${escapeHtml(receiptPageLabel(page))}</option>`).join('')}</select></label><label>状态<select id="receiptStatusFilter"><option value="ALL">全部状态</option>${statuses.map((status) => `<option value="${escapeHtml(status)}" ${status === filters.status ? 'selected' : ''}>${escapeHtml(status)}</option>`).join('')}</select></label><label>开始日期<input id="receiptFromDate" type="date" value="${escapeHtml(filters.from)}" /></label><label>结束日期<input id="receiptToDate" type="date" value="${escapeHtml(filters.to)}" /></label><label>来源<select id="receiptSourceFilter"><option value="ALL">全部来源</option>${sources.map((source) => `<option value="${escapeHtml(source)}" ${source === filters.source ? 'selected' : ''}>${source === 'DOMAIN_COMMAND_ADAPTER' ? '领域命令回执' : '测试体验回执'}</option>`).join('')}</select></label><label>授权<select id="receiptAuthorizationFilter"><option value="ALL">全部授权</option>${authorizations.map((status) => `<option value="${escapeHtml(status)}" ${status === filters.authorization ? 'selected' : ''}>家庭范围已授权</option>`).join('')}</select></label><label>时间<select id="receiptSort"><option value="NEWEST" ${filters.sort === 'NEWEST' ? 'selected' : ''}>最新优先</option><option value="OLDEST" ${filters.sort === 'OLDEST' ? 'selected' : ''}>最早优先</option></select></label><button class="secondary-btn" id="receiptExport" ${filtered.length && exportState !== 'loading' ? '' : 'disabled'}>${exportState === 'loading' ? '正在生成表格…' : exportState === 'success' ? '导出已完成' : '导出当前表格'}</button></div>${filtered.length ? `<table><thead><tr><th>页面</th><th>受控动作</th><th>状态</th><th>人工跟进</th><th>操作备注</th><th>来源</th><th>日期</th></tr></thead><tbody>${paged.map((item) => `<tr><td><b>${escapeHtml(receiptPageLabel(item.page_id))}</b><small>${escapeHtml(item.page_id)}</small></td><td>${escapeHtml(item.operation_kind)}<small>${escapeHtml(item.fixture_ref)}</small></td><td>${pill(escapeHtml(item.status), item.status === 'CANCELLED' ? 'amber' : 'green')}</td><td><select data-followup-status="${escapeHtml(item.operation_id)}" ${hasFollowUpWriter ? '' : 'disabled'}><option value="NOT_MARKED" ${(item.follow_up_status ?? 'NOT_MARKED') === 'NOT_MARKED' ? 'selected' : ''}>未标记</option><option value="PENDING_FOLLOW_UP" ${item.follow_up_status === 'PENDING_FOLLOW_UP' ? 'selected' : ''}>待跟进</option><option value="PROCESSED" ${item.follow_up_status === 'PROCESSED' ? 'selected' : ''}>已处理</option></select><button class="text-btn" data-save-followup="${escapeHtml(item.operation_id)}" ${hasFollowUpWriter && followUpSavingId !== item.operation_id ? '' : 'disabled'}>${followUpSavingId === item.operation_id ? '保存中…' : '保存'}</button></td><td><textarea data-followup-note="${escapeHtml(item.operation_id)}" maxlength="1000" ${hasFollowUpWriter ? '' : 'disabled'}>${escapeHtml(item.operator_note ?? '')}</textarea></td><td>${item.source === 'DOMAIN_COMMAND_ADAPTER' ? '领域命令回执' : '测试体验回执'}<small>家庭范围已授权</small></td><td>${escapeHtml(item.created_at.slice(0, 10))}</td></tr>`).join('')}</tbody></table><div class="filter-row receipt-pagination"><span>共 ${filtered.length} 条 · 第 ${safePage}/${totalPages} 页</span><button id="receiptPrevPage" class="filter" ${safePage <= 1 ? 'disabled' : ''}>上一页</button><button id="receiptNextPage" class="filter" ${safePage >= totalPages ? 'disabled' : ''}>下一页</button></div>` : '<p class="muted">当前筛选没有家庭回执。</p>'}${followUpCopy}${exportReceipt}</div>`
     : `<p class="muted">${receiptState === 'loading' ? '正在读取当前家庭的运营回执…' : '建立真实家庭会话后，可按页面、状态、日期、来源和授权状态查看当前家庭的受控回执。'}</p>`;
   return `<section class="workspace-grid"><article class="panel wide"><span class="eyebrow">运营漏斗</span><h3>把家庭行动与服务质量放在同一张图上</h3><div class="funnel"><div style="--w:100%"><b>326</b><span>进入首页</span></div><div style="--w:78%"><b>255</b><span>选择主题</span></div><div style="--w:56%"><b>183</b><span>完成首个行动</span></div><div style="--w:32%"><b>104</b><span>进入陪伴计划</span></div><div style="--w:18%"><b>58</b><span>使用服务权益</span></div></div></article><article class="panel"><span class="eyebrow">风险队列</span><h3>运营需要先处理什么</h3><ul class="signal-list"><li><i class="dot red"></i><span>1 条内容举报待审核</span></li><li><i class="dot amber"></i><span>3 个服务需求接近 SLA</span></li><li><i class="dot blue"></i><span>5 个权益即将到期</span></li></ul></article><article class="panel wide"><span class="eyebrow">家庭受控回执</span><h3>按筛选条件回看当前家庭操作</h3>${queue}</article></section>`;
 }
@@ -157,7 +198,7 @@ export function createPlatformConsole(root, options = {}) {
   /** @type {'live'|'loading'|'preview'} */
   let receiptState = receiptProjection ? 'live' : options.loadFamilyOperations ? 'loading' : 'preview';
   /** @type {ReceiptFilters} */
-  let receiptFilters = { page: 'ALL', status: 'ALL', from: '', to: '', source: 'ALL', authorization: 'ALL', sort: 'NEWEST' };
+  let receiptFilters = { page: 'ALL', status: 'ALL', from: '', to: '', source: 'ALL', authorization: 'ALL', overdue: false, sort: 'NEWEST' };
   /** @type {{ count: number, at: string }|null} */
   let receiptExportAudit = null;
   let receiptPage = 1;
@@ -167,13 +208,22 @@ export function createPlatformConsole(root, options = {}) {
   let followUpSavingId = null;
   /** @type {string|null} */
   let followUpMessage = null;
+  /** @type {OperationFollowUpAssignee[]} */
+  let followUpAssignees = options.initialFollowUpAssignees ?? [];
+  /** @type {OperationFollowUpWorkspaceMetrics|null} */
+  let followUpWorkspaceMetrics = options.initialFollowUpWorkspaceMetrics ?? null;
+  /** @type {Set<string>} */
+  let selectedOperationIds = new Set();
+  let batchProcessing = false;
+  let batchAssigning = false;
   const render = () => {
     const previewTenant = tenants.find((item) => item.id === tenantId) ?? tenants[0]; const tenant = projection ? { id: projection.tenant.tenant_id, name: projection.tenant.display_name, short: projection.tenant.tenant_ref, city: '已授权会话', families: '当前家庭' } : previewTenant; const copy = pageCopy[active];
     const visibleNav = nav.filter(([id]) => (roleVisibility[role] ?? roleVisibility.TENANT_OPERATOR).includes(id));
     if (!visibleNav.some(([id]) => id === active)) active = 'overview';
     const runtimeNotice = projectionState === 'live' ? '已加载真实 tenant-scoped 读取投影：当前显示内容已同时通过家庭会话、账户成员资格、tenant policy profile 与 tenant/family 双重范围校验；前端不在 Web 端自行裁决高风险策略。' : projectionState === 'loading' ? '正在通过 Family API 读取当前家庭的 tenant-scoped 投影；不会在前端生成或放大任何授权，也不在 Web 端自行裁决高风险策略。' : '开发预览：未建立真实家庭会话，页面不展示伪造的商业、服务或会员数据。真实读取仍由 Family API 的账户成员资格、tenant policy profile 与 Family Scope Guard 校验；前端切换不构成授权，且不在 Web 端自行裁决高风险策略。';
-    const content = active === 'operations' ? operations(receiptProjection, receiptState, receiptFilters, receiptExportAudit, receiptPage, receiptExportState, followUpSavingId, followUpMessage, Boolean(options.updateFamilyOperationFollowUp)) : renderers[active](projection);
+    const content = active === 'operations' ? operations(receiptProjection, receiptState, receiptFilters, receiptExportAudit, receiptPage, receiptExportState, followUpSavingId, followUpMessage, Boolean(options.updateFamilyOperationFollowUp), followUpWorkspaceMetrics) : renderers[active](projection);
     root.innerHTML = `<div class="console-shell"><aside class="sidebar"><div class="brand"><span class="brand-mark">F</span><div><b>Family AI</b><small>成长运营平台</small></div></div><div class="tenant-select"><span class="eyebrow">当前租户</span><select id="tenantSelect" ${projection ? 'disabled' : ''}>${projection ? `<option>${escapeHtml(tenant.name)}</option>` : tenants.map((item)=>`<option value="${item.id}" ${item.id===tenantId?'selected':''}>${item.name}</option>`).join('')}</select><small>${escapeHtml(tenant.city)} · ${escapeHtml(tenant.families)} 个家庭</small></div><nav>${visibleNav.map(([id,label,icon])=>`<button class="nav-item ${active===id?'active':''}" data-page="${id}"><span>${icon}</span>${label}</button>`).join('')}</nav><div class="sidebar-foot"><span class="secure-dot"></span><small>${projection ? '真实范围已加载' : '开发预览范围'}</small></div></aside><main class="console-main"><header class="topbar"><div class="crumb"><span>Family AI</span><b>/</b><strong>${escapeHtml(tenant.short)}</strong></div><div class="top-actions"><select id="roleSelect" class="role-select" aria-label="开发预览角色">${Object.entries(roleNames).map(([id,label])=>`<option value="${id}" ${id===role?'selected':''}>${label}</option>`).join('')}</select><button class="help">?</button><button class="user">林</button></div></header><div class="preview-notice">${runtimeNotice}</div><section class="hero"><div><span class="eyebrow">${copy.kicker}</span><h1>${copy.title}</h1><p>${copy.intro}</p></div><div class="hero-actions"><button class="secondary-btn">查看帮助</button><button class="primary-btn" id="quickAction">新建受控任务 <span>+</span></button></div></section><section class="content-area">${content}</section></main></div>`;
+    if (active === 'operations' && receiptState === 'live') enhanceReceiptOperations(root, safeReceipts(receiptProjection), followUpAssignees, selectedOperationIds, Boolean(options.batchProcessFamilyOperationFollowUps) && !batchProcessing, Boolean(options.batchAssignFamilyOperationFollowUps) && !batchAssigning, followUpWorkspaceMetrics);
     root.querySelectorAll('[data-page]').forEach((button)=>button.addEventListener('click',()=>{active=/** @type {keyof typeof renderers} */ (/** @type {HTMLElement} */ (button).dataset.page ?? 'overview');render();}));
     root.querySelector('#tenantSelect')?.addEventListener('change',(event)=>{tenantId=/** @type {HTMLSelectElement} */ (event.target).value;render();});
     root.querySelector('#roleSelect')?.addEventListener('change',(event)=>{role=/** @type {keyof typeof roleVisibility} */ (/** @type {HTMLSelectElement} */ (event.target).value);render();});
@@ -187,6 +237,7 @@ export function createPlatformConsole(root, options = {}) {
     root.querySelector('#receiptSort')?.addEventListener('change',(event)=>{receiptFilters.sort=/** @type {'NEWEST'|'OLDEST'} */ (/** @type {HTMLSelectElement} */ (event.target).value);resetReceiptPage();render();});
     root.querySelector('#receiptRecent7')?.addEventListener('click',()=>{receiptFilters.from=recentDate(7);receiptFilters.to=new Date().toISOString().slice(0,10);resetReceiptPage();render();});
     root.querySelector('#receiptRecent30')?.addEventListener('click',()=>{receiptFilters.from=recentDate(30);receiptFilters.to=new Date().toISOString().slice(0,10);resetReceiptPage();render();});
+    root.querySelector('#receiptOverdue')?.addEventListener('click',()=>{receiptFilters.overdue=!receiptFilters.overdue;resetReceiptPage();render();});
     root.querySelector('#receiptSavePreset')?.addEventListener('click',()=>{window.localStorage.setItem('family-operation-receipt-filters-v1',JSON.stringify(receiptFilters));followUpMessage='已在当前浏览器保存常用筛选条件。';render();});
     root.querySelector('#receiptRestorePreset')?.addEventListener('click',()=>{try { const saved=window.localStorage.getItem('family-operation-receipt-filters-v1'); if(saved) receiptFilters={...receiptFilters,...JSON.parse(saved)}; } catch { followUpMessage='常用筛选无法恢复，请重新保存。'; } resetReceiptPage();render();});
     root.querySelector('#receiptPrevPage')?.addEventListener('click',()=>{receiptPage=Math.max(1,receiptPage-1);render();});
@@ -196,23 +247,52 @@ export function createPlatformConsole(root, options = {}) {
       const operationId = /** @type {HTMLElement} */ (button).dataset.saveFollowup ?? '';
       const statusElement = /** @type {HTMLSelectElement|null} */ (root.querySelector(`[data-followup-status="${operationId}"]`));
       const noteElement = /** @type {HTMLTextAreaElement|null} */ (root.querySelector(`[data-followup-note="${operationId}"]`));
+      const assigneeElement = /** @type {HTMLSelectElement|null} */ (root.querySelector(`[data-followup-assignee="${operationId}"]`));
+      const dueDateElement = /** @type {HTMLInputElement|null} */ (root.querySelector(`[data-followup-due-date="${operationId}"]`));
+      const priorityElement = /** @type {HTMLSelectElement|null} */ (root.querySelector(`[data-case-priority="${operationId}"]`));
       if (!options.updateFamilyOperationFollowUp || !operationId || !statusElement || !noteElement || statusElement.value === 'NOT_MARKED') return;
       const requestedStatus = /** @type {'PENDING_FOLLOW_UP'|'PROCESSED'} */ (statusElement.value);
       const requestedNote = noteElement.value || null;
+      const requestedAssignee = assigneeElement?.value || null;
+      const requestedDueDate = dueDateElement?.value || null;
+      const requestedPriority = /** @type {'LOW'|'NORMAL'|'HIGH'|'URGENT'} */ (priorityElement?.value || 'NORMAL');
       followUpSavingId = operationId; followUpMessage = null; render();
-      options.updateFamilyOperationFollowUp(operationId, { follow_up_status: requestedStatus, operator_note: requestedNote })
-        .then(async () => {
+      options.updateFamilyOperationFollowUp(operationId, { follow_up_status: requestedStatus, operator_note: requestedNote, assigned_to_account_id: requestedAssignee, follow_up_due_date: requestedDueDate, case_priority: requestedPriority, resolution_summary: requestedStatus === 'PROCESSED' ? requestedNote : null })
+        .then(async (response) => {
           if (options.loadFamilyOperations) return options.loadFamilyOperations();
           return /** @type {FamilyOperationsProjection} */ ({
             ...(receiptProjection ?? {}),
             operations: safeReceipts(receiptProjection).map((item) => item.operation_id === operationId ? {
-              ...item, follow_up_status: requestedStatus, operator_note: requestedNote, follow_up_updated_at: new Date().toISOString(),
+              ...item, follow_up_status: requestedStatus, operator_note: requestedNote, follow_up_updated_at: response.follow_up_updated_at, assigned_to_account_id: response.assigned_to_account_id, assigned_to_display_name: response.assigned_to_display_name, follow_up_due_date: response.follow_up_due_date, case_id: response.case_id ?? item.case_id ?? null, case_priority: response.case_priority ?? requestedPriority, sla_target_at: response.sla_target_at ?? item.sla_target_at ?? null, sla_status: /** @type {FamilyOperationReceipt['sla_status']} */ (response.sla_status ?? item.sla_status ?? 'ON_TRACK'), resolved_at: response.resolved_at ?? item.resolved_at ?? null, resolution_summary: response.resolution_summary ?? item.resolution_summary ?? null,
             } : item),
           });
         })
         .then((next) => { receiptProjection = next; followUpSavingId = null; followUpMessage = '已记录人工跟进状态与备注。'; render(); })
         .catch(() => { followUpSavingId = null; followUpMessage = '暂时无法保存跟进信息，请检查家庭会话后重试。'; render(); });
     }));
+    root.querySelectorAll('[data-operation-select]').forEach((element) => element.addEventListener('change', () => { const input = /** @type {HTMLInputElement} */ (element); const operationId = input.dataset.operationSelect ?? ''; if (input.checked) selectedOperationIds.add(operationId); else selectedOperationIds.delete(operationId); render(); }));
+    root.querySelector('#receiptSelectAll')?.addEventListener('change', (event) => { const checked = /** @type {HTMLInputElement} */ (event.target).checked; root.querySelectorAll('[data-operation-select]').forEach((element) => { const operationId = /** @type {HTMLInputElement} */ (element).dataset.operationSelect ?? ''; if (checked) selectedOperationIds.add(operationId); else selectedOperationIds.delete(operationId); }); render(); });
+    root.querySelector('#receiptBatchProcess')?.addEventListener('click', () => {
+      if (!options.batchProcessFamilyOperationFollowUps || !selectedOperationIds.size || batchProcessing) return;
+      batchProcessing = true; followUpMessage = null; render();
+      const operationIds = [...selectedOperationIds];
+      options.batchProcessFamilyOperationFollowUps(operationIds)
+        .then(async () => options.loadFamilyOperations ? options.loadFamilyOperations() : /** @type {FamilyOperationsProjection} */ ({ ...(receiptProjection ?? {}), operations: safeReceipts(receiptProjection).map((item) => operationIds.includes(item.operation_id) ? { ...item, follow_up_status: 'PROCESSED', follow_up_updated_at: new Date().toISOString() } : item) }))
+        .then((next) => { receiptProjection = next; selectedOperationIds = new Set(); batchProcessing = false; followUpMessage = `已将 ${operationIds.length} 条家庭回执标记为已处理。`; if (options.loadOperationFollowUpWorkspaceMetrics) options.loadOperationFollowUpWorkspaceMetrics().then((metrics) => { followUpWorkspaceMetrics = metrics; render(); }).catch(() => {}); render(); })
+        .catch(() => { batchProcessing = false; followUpMessage = '暂时无法批量处理回执，请检查家庭会话后重试。'; render(); });
+    });
+    root.querySelector('#receiptBatchAssign')?.addEventListener('click', () => {
+      if (!options.batchAssignFamilyOperationFollowUps || !selectedOperationIds.size || batchAssigning) return;
+      const assignee = /** @type {HTMLSelectElement|null} */ (root.querySelector('#receiptBatchAssignee'));
+      const dueDate = /** @type {HTMLInputElement|null} */ (root.querySelector('#receiptBatchDueDate'));
+      if (!assignee?.value) { followUpMessage = '请先选择当前租户内的跟进负责人。'; render(); return; }
+      batchAssigning = true; followUpMessage = null; render();
+      const operationIds = [...selectedOperationIds];
+      options.batchAssignFamilyOperationFollowUps(operationIds, assignee.value, dueDate?.value || null)
+        .then(async () => options.loadFamilyOperations ? options.loadFamilyOperations() : /** @type {FamilyOperationsProjection} */ ({ ...(receiptProjection ?? {}), operations: safeReceipts(receiptProjection).map((item) => operationIds.includes(item.operation_id) ? { ...item, follow_up_status: item.follow_up_status === 'PROCESSED' ? 'PROCESSED' : 'PENDING_FOLLOW_UP', assigned_to_account_id: assignee.value, assigned_to_display_name: followUpAssignees.find((candidate) => candidate.account_id === assignee.value)?.display_name ?? assignee.value, follow_up_due_date: dueDate?.value || null } : item) }))
+        .then((next) => { receiptProjection = next; selectedOperationIds = new Set(); batchAssigning = false; followUpMessage = `已将 ${operationIds.length} 条家庭回执分派给负责人。`; if (options.loadOperationFollowUpWorkspaceMetrics) options.loadOperationFollowUpWorkspaceMetrics().then((metrics) => { followUpWorkspaceMetrics = metrics; render(); }).catch(() => {}); render(); })
+        .catch(() => { batchAssigning = false; followUpMessage = '暂时无法批量分派回执，请检查家庭会话后重试。'; render(); });
+    });
     root.querySelector('#quickAction')?.addEventListener('click',()=>window.alert('此演示仅展示受控任务入口。实际写入仍由现有 Family API、角色、租户与家庭范围策略校验。'));
   };
   render();
@@ -221,5 +301,11 @@ export function createPlatformConsole(root, options = {}) {
   }
   if (options.loadFamilyOperations) {
     options.loadFamilyOperations().then((nextProjection) => { receiptProjection = nextProjection; receiptState = 'live'; render(); }).catch(() => { receiptState = 'preview'; render(); });
+  }
+  if (options.loadOperationFollowUpAssignees) {
+    options.loadOperationFollowUpAssignees().then((result) => { followUpAssignees = Array.isArray(result.assignees) ? result.assignees : []; render(); }).catch(() => { followUpAssignees = []; render(); });
+  }
+  if (options.loadOperationFollowUpWorkspaceMetrics) {
+    options.loadOperationFollowUpWorkspaceMetrics().then((metrics) => { followUpWorkspaceMetrics = metrics; render(); }).catch(() => { followUpWorkspaceMetrics = null; render(); });
   }
 }

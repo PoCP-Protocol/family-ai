@@ -61,6 +61,8 @@ export interface FamilyContextsResponse {
 export interface ActiveOnboarding {
   onboarding_id?: string;
   family_id?: string;
+  child_id?: string;
+  guardian_person_id?: string;
   status?: string;
   [key: string]: unknown;
 }
@@ -177,6 +179,14 @@ export class FamilyApiClient {
 
   getActiveOnboarding(token: string, familyId: string) {
     return this.request<ActiveOnboarding | null>(`/families/${familyId}/growth/onboarding/active`, { token });
+  }
+
+  getInterventionLibrary<T>(token: string, familyId: string) {
+    return this.request<T>(`/families/${familyId}/growth/interventions`, { token });
+  }
+
+  resolveFamilyContext<T>(token: string, familyId: string, subjectPersonId: string, purpose: "GROWTH_GUIDANCE" | "AI_PERSONALIZATION") {
+    return this.request<T>(`/families/${familyId}/growth/subjects/${encodeURIComponent(subjectPersonId)}/context/${purpose}`, { token });
   }
 
   getDevCoreGrowth<T>(token: string, familyId: string) {

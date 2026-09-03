@@ -57,9 +57,9 @@ function controller(overrides: Record<string, unknown> = {}) {
     list: async (scopeFamilyId: string) => [],
   };
   return new FamilyController(
-    {} as any, {} as any, {} as any, {} as any,
+    {} as any, {} as any, {} as any, {} as any, {} as any, {} as any,
     growthActionService as any, {} as any, {} as any, todayService as any,
-    devCoreGrowthService as any, devPlatformSurfacesService as any, devFlowReceiptService as any,
+    devCoreGrowthService as any, devPlatformSurfacesService as any, devFlowReceiptService as any, {} as any,
   );
 }
 

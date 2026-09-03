@@ -2,7 +2,13 @@ import { BadRequestException, ConflictException, ForbiddenException, Inject, Inj
 import { createHash } from 'node:crypto';
 import { OrchestrationRepository } from './orchestration.repository';
 import {
+  type BatchAssignOperationFollowUpsDto,
+  type BatchAssignOperationFollowUpsResult,
+  type BatchProcessOperationFollowUpsDto,
+  type BatchProcessOperationFollowUpsResult,
   type ExecuteTestExperienceDto,
+  type OperationFollowUpAssignee,
+  type OperationFollowUpWorkspaceMetrics,
   type OperationFollowUpResult,
   type TestExperienceAction,
   type TestExperienceCustomerProjection,
@@ -44,11 +50,35 @@ interface OperationFollowUpRow {
   operation_id: string;
   follow_up_status: 'PENDING_FOLLOW_UP' | 'PROCESSED';
   operator_note: string | null;
+  assigned_to_account_id: string | null;
+  assigned_to_display_name: string | null;
+  due_date: string | Date | null;
+  case_id: string;
+  case_priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  sla_target_at: string | Date | null;
+  resolved_at: string | Date | null;
+  resolution_summary: string | null;
   updated_at: string | Date;
 }
 
 function operationTimestamp(value: string | Date): string {
   return value instanceof Date ? value.toISOString() : String(value);
+}
+
+function slaHours(priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'): number {
+  return priority === 'URGENT' ? 4 : priority === 'HIGH' ? 12 : priority === 'LOW' ? 72 : 48;
+}
+
+function operationSlaStatus(row: Pick<OperationFollowUpRow, 'follow_up_status' | 'sla_target_at' | 'resolved_at'>): 'NOT_STARTED' | 'ON_TRACK' | 'DUE_SOON' | 'OVERDUE' | 'MET' | 'BREACHED' {
+  if (!row.sla_target_at) return 'NOT_STARTED';
+  const target = new Date(row.sla_target_at).getTime();
+  if (row.follow_up_status === 'PROCESSED') {
+    const resolved = row.resolved_at ? new Date(row.resolved_at).getTime() : Date.now();
+    return resolved <= target ? 'MET' : 'BREACHED';
+  }
+  const remaining = target - Date.now();
+  if (remaining < 0) return 'OVERDUE';
+  return remaining <= 12 * 60 * 60 * 1000 ? 'DUE_SOON' : 'ON_TRACK';
 }
 
 @Injectable()
@@ -111,6 +141,50 @@ export class TestExperienceService {
     return status === 'TEST_VALIDATED' ? 'TEST' : 'DEV';
   }
 
+  private normalizeDueDate(value: unknown): string | null {
+    if (value === undefined || value === null || value === '') return null;
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00.000Z`))) {
+      throw new BadRequestException('follow_up_due_date_invalid');
+    }
+    return value;
+  }
+
+  private normalizeCasePriority(value: unknown): 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT' | null {
+    if (value === undefined || value === null || value === '') return null;
+    if (!['LOW', 'NORMAL', 'HIGH', 'URGENT'].includes(String(value))) throw new BadRequestException('case_priority_invalid');
+    return value as 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  }
+
+  private async assertTenantAssignee(tenantId: string, accountId: string | null): Promise<void> {
+    if (!accountId) return;
+    const eligible = await this.repo.query<{ found: boolean }>(
+      `select exists(
+         select 1 from tenant_account_memberships
+          where tenant_id=$1 and account_id=$2 and status='ACTIVE'
+            and role in ('TENANT_OWNER','TENANT_ADMIN','TENANT_OPERATOR')
+            and valid_from <= now() and (valid_to is null or valid_to > now())
+       ) as found`,
+      [tenantId, accountId],
+    );
+    if (!eligible.rows[0]?.found) throw new ForbiddenException('tenant_operator_assignee_required');
+  }
+
+  async operationFollowUpAssignees(familyId: string): Promise<OperationFollowUpAssignee[]> {
+    requireDevSyntheticTestLoop();
+    const tenantId = await this.tenantForFamily(familyId);
+    const result = await this.repo.query<OperationFollowUpAssignee>(
+      `select a.account_id::text, coalesce(a.external_ref, a.account_id::text) as display_name
+         from tenant_account_memberships m
+         join accounts a on a.account_id=m.account_id and a.status='ACTIVE'
+        where m.tenant_id=$1 and m.status='ACTIVE'
+          and m.role in ('TENANT_OWNER','TENANT_ADMIN','TENANT_OPERATOR')
+          and m.valid_from <= now() and (m.valid_to is null or m.valid_to > now())
+        order by display_name asc`,
+      [tenantId],
+    );
+    return result.rows;
+  }
+
   async updateOperationFollowUp(
     familyId: string,
     actorPersonId: string,
@@ -125,11 +199,18 @@ export class TestExperienceService {
     const note = dto.operator_note?.trim() || null;
     if (note && note.length > 1000) throw new BadRequestException('operator_note_too_long');
     const tenantId = await this.tenantForFamily(familyId);
+    const assigneeAccountId = dto.assigned_to_account_id?.trim() || null;
+    const dueDate = this.normalizeDueDate(dto.follow_up_due_date);
+    const casePriority = this.normalizeCasePriority(dto.case_priority);
+    const resolutionSummary = dto.resolution_summary?.trim() || null;
+    if (resolutionSummary && resolutionSummary.length > 1000) throw new BadRequestException('resolution_summary_too_long');
+    const targetHours = slaHours(casePriority ?? 'NORMAL');
+    await this.assertTenantAssignee(tenantId, assigneeAccountId);
     return this.withIdempotency(
       familyId,
       'ManageOperationReceipt',
       idempotencyKey,
-      { familyId, actorPersonId, operationId, followUpStatus, note },
+      { familyId, actorPersonId, operationId, followUpStatus, note, assigneeAccountId, dueDate, casePriority, resolutionSummary },
       async () => {
         const target = await this.repo.query<{ found: boolean }>(
           `select exists(
@@ -142,27 +223,199 @@ export class TestExperienceService {
         if (!target.rows[0]?.found) throw new NotFoundException('family_operation_receipt_not_found');
         const result = await this.repo.query<OperationFollowUpRow>(
           `insert into family_operation_followups(
-             tenant_id, family_id, operation_id, follow_up_status, operator_note, updated_by_person_id
-           ) values ($1,$2,$3,$4,$5,$6)
+             tenant_id, family_id, operation_id, follow_up_status, operator_note, assigned_to_account_id, due_date,
+             updated_by_person_id, case_priority, sla_target_at, resolved_at, resolution_summary
+           ) values ($1,$2,$3,$4::varchar,$5,$6,$7,$8,coalesce($9::varchar,'NORMAL'),now()+make_interval(hours => $10),
+                     case when $4::varchar='PROCESSED' then now() else null end, case when $4::varchar='PROCESSED' then $11 else null end)
            on conflict (tenant_id, family_id, operation_id) do update set
              follow_up_status=excluded.follow_up_status,
              operator_note=excluded.operator_note,
+             assigned_to_account_id=coalesce(excluded.assigned_to_account_id, family_operation_followups.assigned_to_account_id),
+             due_date=coalesce(excluded.due_date, family_operation_followups.due_date),
+             case_priority=coalesce($9::varchar, family_operation_followups.case_priority),
+             sla_target_at=case when $9::varchar is not null then now()+make_interval(hours => $10) else coalesce(family_operation_followups.sla_target_at, excluded.sla_target_at) end,
+             resolved_at=case when excluded.follow_up_status='PROCESSED' then now() else null end,
+             resolution_summary=case when excluded.follow_up_status='PROCESSED' then coalesce($11, excluded.operator_note, family_operation_followups.operator_note) else null end,
              updated_by_person_id=excluded.updated_by_person_id,
              updated_at=now()
-           returning operation_id, follow_up_status, operator_note, updated_at`,
-          [tenantId, familyId, operationId, followUpStatus, note, actorPersonId],
+           returning operation_id, follow_up_status, operator_note, assigned_to_account_id, due_date::text as due_date,
+                     case_id, case_priority, sla_target_at, resolved_at, resolution_summary, updated_at`,
+          [tenantId, familyId, operationId, followUpStatus, note, assigneeAccountId, dueDate, actorPersonId, casePriority, targetHours, resolutionSummary],
         );
         const row = result.rows[0];
+        const assigneeName = row.assigned_to_account_id
+          ? (await this.repo.query<{ display_name: string }>(`select coalesce(external_ref, account_id::text) as display_name from accounts where account_id=$1`, [row.assigned_to_account_id])).rows[0]?.display_name ?? row.assigned_to_account_id
+          : null;
+        const computedSlaStatus = operationSlaStatus(row);
         return {
           operation_id: row.operation_id,
           follow_up_status: row.follow_up_status,
           operator_note: row.operator_note,
           follow_up_updated_at: operationTimestamp(row.updated_at),
+          assigned_to_account_id: row.assigned_to_account_id,
+          assigned_to_display_name: assigneeName,
+          follow_up_due_date: row.due_date ? operationTimestamp(row.due_date).slice(0, 10) : null,
+          case_id: row.case_id,
+          case_priority: row.case_priority,
+          sla_target_at: operationTimestamp(row.sla_target_at!),
+          sla_status: computedSlaStatus === 'NOT_STARTED' ? 'ON_TRACK' : computedSlaStatus,
+          resolved_at: row.resolved_at ? operationTimestamp(row.resolved_at) : null,
+          resolution_summary: row.resolution_summary,
           external_effect: false,
-          text_equivalent: '已记录当前家庭范围内的人工跟进状态和备注；不会变更订单、服务、权益、儿童事实或触发外部通知。',
+          text_equivalent: '已记录当前家庭范围内的人工跟进、Family Case、负责人、优先级和 SLA；不会变更订单、服务、权益、儿童事实或触发外部通知。',
         };
       },
     );
+  }
+
+  async batchProcessOperationFollowUps(
+    familyId: string,
+    actorPersonId: string,
+    dto: BatchProcessOperationFollowUpsDto,
+    idempotencyKey?: string,
+  ): Promise<BatchProcessOperationFollowUpsResult> {
+    requireDevSyntheticTestLoop();
+    const operationIds = [...new Set(dto?.operation_ids ?? [])];
+    if (!operationIds.length || operationIds.length > 100 || operationIds.some((value) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value))) {
+      throw new BadRequestException('operation_ids_invalid');
+    }
+    const tenantId = await this.tenantForFamily(familyId);
+    return this.withIdempotency(
+      familyId,
+      'BatchProcessOperationReceipt',
+      idempotencyKey,
+      { familyId, actorPersonId, operationIds },
+      async () => {
+        const targets = await this.repo.query<{ operation_id: string }>(
+          `select operation_id::text from test_experience_operations where family_id=$1 and operation_id = any($2::uuid[])
+           union
+           select event_id::text as operation_id from family_product_events where family_id=$1 and event_id = any($2::uuid[])`,
+          [familyId, operationIds],
+        );
+        if (targets.rows.length !== operationIds.length) throw new NotFoundException('family_operation_receipt_not_found');
+        await this.repo.query(
+          `insert into family_operation_followups(
+             tenant_id, family_id, operation_id, follow_up_status, operator_note, updated_by_person_id,
+             case_priority, sla_target_at, resolved_at, resolution_summary
+           ) select $1, $2, operation_id::uuid, 'PROCESSED', null, $3, 'NORMAL', now()+interval '48 hours', now(), '批量确认已处理'
+               from unnest($4::uuid[]) as operation_id
+           on conflict (tenant_id, family_id, operation_id) do update set
+             follow_up_status='PROCESSED',
+             sla_target_at=coalesce(family_operation_followups.sla_target_at, now()+interval '48 hours'),
+             resolved_at=now(),
+             resolution_summary=coalesce(family_operation_followups.operator_note, '批量确认已处理'),
+             updated_by_person_id=excluded.updated_by_person_id, updated_at=now()`,
+          [tenantId, familyId, actorPersonId, operationIds],
+        );
+        return {
+          operation_ids: operationIds,
+          updated_count: operationIds.length,
+          follow_up_status: 'PROCESSED',
+          external_effect: false,
+          text_equivalent: '已在当前家庭范围内批量标记回执为已处理；不会变更订单、服务、权益或触发外部效果。',
+        };
+      },
+    );
+  }
+
+  async batchAssignOperationFollowUps(
+    familyId: string,
+    actorPersonId: string,
+    dto: BatchAssignOperationFollowUpsDto,
+    idempotencyKey?: string,
+  ): Promise<BatchAssignOperationFollowUpsResult> {
+    requireDevSyntheticTestLoop();
+    const operationIds = [...new Set(dto?.operation_ids ?? [])];
+    const assigneeAccountId = dto.assigned_to_account_id?.trim();
+    if (!operationIds.length || operationIds.length > 100 || operationIds.some((value) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value))) {
+      throw new BadRequestException('operation_ids_invalid');
+    }
+    if (!assigneeAccountId) throw new BadRequestException('assigned_to_account_id_required');
+    const dueDate = this.normalizeDueDate(dto.follow_up_due_date);
+    const tenantId = await this.tenantForFamily(familyId);
+    await this.assertTenantAssignee(tenantId, assigneeAccountId);
+    return this.withIdempotency(
+      familyId,
+      'BatchAssignOperationReceipt',
+      idempotencyKey,
+      { familyId, actorPersonId, operationIds, assigneeAccountId, dueDate },
+      async () => {
+        const targets = await this.repo.query<{ operation_id: string }>(
+          `select operation_id::text from test_experience_operations where family_id=$1 and operation_id = any($2::uuid[])
+           union
+           select event_id::text as operation_id from family_product_events where family_id=$1 and event_id = any($2::uuid[])`,
+          [familyId, operationIds],
+        );
+        if (targets.rows.length !== operationIds.length) throw new NotFoundException('family_operation_receipt_not_found');
+        await this.repo.query(
+          `insert into family_operation_followups(
+             tenant_id, family_id, operation_id, follow_up_status, operator_note, assigned_to_account_id, due_date,
+             updated_by_person_id, case_priority, sla_target_at
+           ) select $1, $2, operation_id::uuid, 'PENDING_FOLLOW_UP', null, $3, $4, $5, 'NORMAL', now()+interval '48 hours'
+               from unnest($6::uuid[]) as operation_id
+           on conflict (tenant_id, family_id, operation_id) do update set
+             assigned_to_account_id=excluded.assigned_to_account_id,
+             due_date=excluded.due_date,
+             sla_target_at=coalesce(family_operation_followups.sla_target_at, excluded.sla_target_at),
+             updated_by_person_id=excluded.updated_by_person_id,
+             updated_at=now()`,
+          [tenantId, familyId, assigneeAccountId, dueDate, actorPersonId, operationIds],
+        );
+        return {
+          operation_ids: operationIds,
+          updated_count: operationIds.length,
+          assigned_to_account_id: assigneeAccountId,
+          follow_up_due_date: dueDate,
+          external_effect: false,
+          text_equivalent: '已在当前家庭范围内批量分派负责人和截止日期；不会变更订单、服务、权益或触发外部效果。',
+        };
+      },
+    );
+  }
+
+  async operationFollowUpWorkspaceMetrics(familyId: string): Promise<OperationFollowUpWorkspaceMetrics> {
+    requireDevSyntheticTestLoop();
+    const tenantId = await this.tenantForFamily(familyId);
+    const result = await this.repo.query<{
+      today_new: string; pending: string; processed: string; overdue: string; due_soon: string;
+      sla_met: string; sla_breached: string; resolution_rate: string;
+      account_id: string | null; display_name: string | null; pending_count: string; overdue_count: string;
+    }>(
+      `with family_receipts as (
+         select operation_id::text as operation_id, created_at::date as created_date from test_experience_operations where family_id=$1
+         union all
+         select event_id::text as operation_id, occurred_at::date as created_date from family_product_events where family_id=$1 and object_type <> 'TestExperienceOperation'
+       ), scoped_followups as (
+         select r.operation_id, r.created_date, f.follow_up_status, f.assigned_to_account_id, f.due_date,
+                f.sla_target_at, f.resolved_at
+           from family_receipts r left join family_operation_followups f
+             on f.tenant_id=$2 and f.family_id=$1 and f.operation_id::text=r.operation_id
+       ), totals as (
+         select count(*) filter (where created_date=current_date)::text as today_new,
+                count(*) filter (where follow_up_status='PENDING_FOLLOW_UP')::text as pending,
+                count(*) filter (where follow_up_status='PROCESSED')::text as processed,
+                count(*) filter (where follow_up_status='PENDING_FOLLOW_UP' and due_date < current_date)::text as overdue,
+                count(*) filter (where follow_up_status='PENDING_FOLLOW_UP' and sla_target_at between now() and now()+interval '12 hours')::text as due_soon,
+                count(*) filter (where follow_up_status='PROCESSED' and resolved_at <= sla_target_at)::text as sla_met,
+                count(*) filter (where (follow_up_status='PENDING_FOLLOW_UP' and sla_target_at < now()) or (follow_up_status='PROCESSED' and resolved_at > sla_target_at))::text as sla_breached,
+                coalesce(round(100.0 * count(*) filter (where follow_up_status='PROCESSED') / nullif(count(*) filter (where follow_up_status is not null),0),1),0)::text as resolution_rate
+           from scoped_followups
+       ), workloads as (
+         select f.assigned_to_account_id::text as account_id, coalesce(a.external_ref, a.account_id::text) as display_name,
+                count(*) filter (where f.follow_up_status='PENDING_FOLLOW_UP')::text as pending_count,
+                count(*) filter (where f.follow_up_status='PENDING_FOLLOW_UP' and f.due_date < current_date)::text as overdue_count
+           from family_operation_followups f join accounts a on a.account_id=f.assigned_to_account_id
+          where f.tenant_id=$2 and f.family_id=$1 and f.assigned_to_account_id is not null
+          group by f.assigned_to_account_id, a.external_ref, a.account_id
+       ) select totals.*, workloads.* from totals left join workloads on true order by display_name asc nulls last`,
+      [familyId, tenantId],
+    );
+    const first = result.rows[0];
+    return {
+      today_new: Number(first?.today_new ?? 0), pending: Number(first?.pending ?? 0), processed: Number(first?.processed ?? 0), overdue: Number(first?.overdue ?? 0),
+      due_soon: Number(first?.due_soon ?? 0), sla_met: Number(first?.sla_met ?? 0), sla_breached: Number(first?.sla_breached ?? 0), resolution_rate: Number(first?.resolution_rate ?? 0),
+      assignee_workload: result.rows.filter((row) => row.account_id && row.display_name).map((row) => ({ account_id: row.account_id ?? '', display_name: row.display_name ?? '', pending_count: Number(row.pending_count), overdue_count: Number(row.overdue_count) })),
+    };
   }
 
   async execute(
@@ -317,9 +570,13 @@ export class TestExperienceService {
         [familyId, ['UI-13', 'UI-14', 'UI-15', 'UI-16', 'UI-17', 'UI-18', 'UI-19', 'UI-20', 'UI-21', 'UI-22', 'UI-23', 'UI-24']],
       ),
       this.repo.query<OperationFollowUpRow>(
-        `select operation_id::text, follow_up_status, operator_note, updated_at
-           from family_operation_followups
-          where tenant_id=$1 and family_id=$2`,
+        `select f.operation_id::text, f.follow_up_status, f.operator_note, f.assigned_to_account_id,
+                coalesce(a.external_ref, a.account_id::text) as assigned_to_display_name,
+                f.due_date::text as due_date, f.case_id::text, f.case_priority, f.sla_target_at,
+                f.resolved_at, f.resolution_summary, f.updated_at
+           from family_operation_followups f
+           left join accounts a on a.account_id=f.assigned_to_account_id
+          where f.tenant_id=$1 and f.family_id=$2`,
         [tenantId, familyId],
       ),
     ]);
@@ -338,6 +595,15 @@ export class TestExperienceService {
         follow_up_status: followUp?.follow_up_status ?? 'NOT_MARKED' as const,
         operator_note: followUp?.operator_note ?? null,
         follow_up_updated_at: followUp ? operationTimestamp(followUp.updated_at) : null,
+        assigned_to_account_id: followUp?.assigned_to_account_id ?? null,
+        assigned_to_display_name: followUp?.assigned_to_display_name ?? null,
+        follow_up_due_date: followUp?.due_date ? operationTimestamp(followUp.due_date).slice(0, 10) : null,
+        case_id: followUp?.case_id ?? null,
+        case_priority: followUp?.case_priority ?? null,
+        sla_target_at: followUp?.sla_target_at ? operationTimestamp(followUp.sla_target_at) : null,
+        sla_status: followUp ? operationSlaStatus(followUp) : 'NOT_STARTED' as const,
+        resolved_at: followUp?.resolved_at ? operationTimestamp(followUp.resolved_at) : null,
+        resolution_summary: followUp?.resolution_summary ?? null,
         external_effect: false as const,
         created_at: operationTimestamp(row.created_at),
         };
@@ -355,6 +621,15 @@ export class TestExperienceService {
         follow_up_status: followUp?.follow_up_status ?? 'NOT_MARKED' as const,
         operator_note: followUp?.operator_note ?? null,
         follow_up_updated_at: followUp ? operationTimestamp(followUp.updated_at) : null,
+        assigned_to_account_id: followUp?.assigned_to_account_id ?? null,
+        assigned_to_display_name: followUp?.assigned_to_display_name ?? null,
+        follow_up_due_date: followUp?.due_date ? operationTimestamp(followUp.due_date).slice(0, 10) : null,
+        case_id: followUp?.case_id ?? null,
+        case_priority: followUp?.case_priority ?? null,
+        sla_target_at: followUp?.sla_target_at ? operationTimestamp(followUp.sla_target_at) : null,
+        sla_status: followUp ? operationSlaStatus(followUp) : 'NOT_STARTED' as const,
+        resolved_at: followUp?.resolved_at ? operationTimestamp(followUp.resolved_at) : null,
+        resolution_summary: followUp?.resolution_summary ?? null,
         external_effect: false as const,
         created_at: operationTimestamp(row.created_at),
         };

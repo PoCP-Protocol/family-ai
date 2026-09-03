@@ -2,6 +2,7 @@ import { ConflictException, ForbiddenException, Inject, Injectable, Optional } f
 import { createHash, randomUUID } from 'node:crypto';
 import type { InterventionCode, StartInterventionResponse } from '@family/contracts';
 import type { AiGateway } from '@family/ai-gateway';
+import { InterventionLibraryService } from '../family/intervention-library.service';
 import { InterventionService } from '../family/intervention.service';
 import {
   runPrincipalTextMvp, safetyPrecheck, assessResponseQuality,
@@ -72,6 +73,7 @@ export class PrincipalService {
     @Inject(InterventionService) private readonly intervention: InterventionService,
     // env-gated 真实模型网关(cc switch / AnthropicAiGateway)。null → runPrincipalTextMvp 走确定性回退,不发外部调用。
     @Optional() @Inject(PRINCIPAL_AI_GATEWAY) private readonly gateway: AiGateway | null = null,
+    @Optional() @Inject(InterventionLibraryService) private readonly interventionLibrary: InterventionLibraryService | null = null,
   ) {}
 
   async createSession(familyId: string, subjectRef: string, actorId: string, correlationId: string): Promise<{ session_id: string }> {
@@ -166,8 +168,9 @@ export class PrincipalService {
     //  precheck=HIGH_RISK → 根本不调用模型;调用后 postcheck;schema 不过 → FAIL_CLOSED(REVIEW,绝不返自由文本)。
     //  gateway=null(默认/CI/测试)→ 确定性回退,零外部调用;gateway=真实(FPAI_PRINCIPAL_PROVIDER=real)→ cc switch(anthropic-compatible)。
     // FAIL CLOSED:真实网关任何失败(超时/网络/4xx/5xx/非法JSON/schema)绝不 500、绝不返原始文本 —— 安全降级到人工复核。
-    // W2R-103B:注入唯一 Intervention(LISTEN_BEFORE_RESPOND)的循证链;找不到 bundle → grounded=false(不编造)。
-    const grounding = loadGroundedKnowledge('LISTEN_BEFORE_RESPOND');
+    const approvedInterventionCode = await this.resolveApprovedInterventionCode(familyId, actorId);
+    // W2R-103B:只有发布态 Intervention 才能进入 grounding 和 proposal;无发布项时 grounded=false 且不建 proposal。
+    const grounding = loadGroundedKnowledge(approvedInterventionCode ?? 'NO_PUBLISHED_INTERVENTION');
     let run: Awaited<ReturnType<typeof runPrincipalTextMvp>>;
     try {
       run = await runPrincipalTextMvp(input, willCallExternal ? (this.gateway ?? undefined) : undefined, grounding);
@@ -268,10 +271,10 @@ export class PrincipalService {
     // LEGACY NORMAL(schema 已过;FAIL_CLOSED 会被降为 REVIEW,不进此分支)→ 建 Action Proposal(canonical=false)。
     // ORCHESTRATION_AI_COACH 复用本方法前面的完整安全管线，但不创建 legacy proposal，也不调用 acceptProposal。
     let proposalId: string | null = null;
-    if (route === 'NORMAL' && output.one_small_action && deliveryMode === 'LEGACY') {
+    if (route === 'NORMAL' && output.one_small_action && deliveryMode === 'LEGACY' && approvedInterventionCode) {
       const p = await this.repo.saveProposal({
         response_id: resp.response_id, session_id: sessionId, family_id: familyId, subject_ref: subjectRef,
-        proposal_type: 'RECOMMEND_INTERVENTION', recommended_intervention_id: 'LISTEN_BEFORE_RESPOND',
+        proposal_type: 'RECOMMEND_INTERVENTION', recommended_intervention_id: approvedInterventionCode,
         display_title: 'Tonight', display_instruction: output.one_small_action,
         rationale: output.possible_pattern ?? null, risk_route: route,
       });
@@ -363,6 +366,11 @@ export class PrincipalService {
     if (!interventionCode) {
       throw new ConflictException('intervention_not_bridgeable');
     }
+    if (this.interventionLibrary) {
+      const library = await this.interventionLibrary.listPublishedForFamily(familyId, actorId);
+      const stillPublished = library.items.some((item) => item.intervention.intervention_code === interventionCode);
+      if (!stillPublished) throw new ConflictException('intervention_not_published');
+    }
 
     // 调用既有 Named Action。其内部再校验 family/权限/priority(ACTIVE R03 + WORKING confirmed profile)/
     // consent(SERVICE+ASSESSMENT+GROWTH_TRACKING)/NORMAL safety/无活动 episode/幂等。失败抛出 → 直接上抛(fail closed)。
@@ -376,6 +384,13 @@ export class PrincipalService {
     await this.repo.recordProductEvent('principal_action_bridged', familyId, proposal.session_id, correlationId, { episode_id: response.episode.episode_id, intervention_code: interventionCode });
 
     return { proposal_id: proposalId, episode: response.episode, actions: response.actions };
+  }
+
+  private async resolveApprovedInterventionCode(familyId: string, actorId: string): Promise<InterventionCode | null> {
+    if (!this.interventionLibrary) return 'LISTEN_BEFORE_RESPOND';
+    const library = await this.interventionLibrary.listPublishedForFamily(familyId, actorId);
+    const match = library.items.find((item) => BRIDGEABLE_INTERVENTIONS[item.intervention.intervention_code]);
+    return match?.intervention.intervention_code ?? null;
   }
 
   async getSession(familyId: string, sessionId: string): Promise<Record<string, unknown> | null> {

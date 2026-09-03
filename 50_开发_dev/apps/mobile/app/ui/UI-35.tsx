@@ -1,5 +1,6 @@
 import type { Href } from "expo-router";
 import { Stack, router } from "expo-router";
+import { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
@@ -7,6 +8,8 @@ import { FamilyRefreshControl } from "@/components/family/family-refresh-control
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { CAMP_21_DAYS, getCamp21Day } from "@/lib/family/camp21";
+import { familyApi } from "@/lib/family/family-api-client";
+import { useFamilyApiSession } from "@/lib/family/family-api-session";
 import { useFamilyMobile } from "@/lib/family/family-state";
 import { haptic } from "@/lib/haptics";
 
@@ -18,9 +21,30 @@ const STAGES = [
 
 export default function Camp21Screen() {
   const colors = useColors();
+  const session = useFamilyApiSession();
   const { campStarted, campCurrentDay, campCompletedDays, startCamp, activateCampDay } = useFamilyMobile();
+  const [reviewedContentConnected, setReviewedContentConnected] = useState(false);
+  const [growthConsentReady, setGrowthConsentReady] = useState(false);
   const day = getCamp21Day(campCurrentDay);
   const progress = campCompletedDays.length / CAMP_21_DAYS.length;
+
+  useEffect(() => {
+    if (session.status !== "connected" || !session.token || !session.selectedFamily) return;
+    let active = true;
+    const familyId = session.selectedFamily.family_id;
+    Promise.all([
+      familyApi.getActiveOnboarding(session.token, familyId),
+      familyApi.getInterventionLibrary<{ items?: Array<{ review_status?: string }> }>(session.token, familyId).catch(() => null),
+    ]).then(async ([onboarding, library]) => {
+      const context = typeof onboarding?.child_id === "string"
+        ? await familyApi.resolveFamilyContext<{ consent?: { allowed?: boolean } }>(session.token!, familyId, onboarding.child_id, "GROWTH_GUIDANCE").catch(() => null)
+        : null;
+      if (!active) return;
+      setReviewedContentConnected(Boolean(library?.items?.some((item) => item.review_status === "PUBLISHED")));
+      setGrowthConsentReady(Boolean(context?.consent?.allowed));
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [session.selectedFamily, session.status, session.token]);
 
   const beginToday = () => {
     if (!campStarted) startCamp();
@@ -69,7 +93,7 @@ export default function Camp21Screen() {
               <IconSymbol name="checkmark.seal.fill" size={23} color={colors.warning} />
               <View style={styles.reviewCopy}>
                 <Text style={[styles.reviewTitle, { color: colors.text }]}>成长营说明</Text>
-                <Text style={[styles.reviewText, { color: colors.muted }]}>三阶段帮助家长循序练习；每天的内容都可按家庭当下需要调整。</Text>
+                <Text style={[styles.reviewText, { color: colors.muted }]}>三阶段帮助家长循序练习；{reviewedContentConnected ? "首个练习已连接审核内容库" : "当前使用已评审课程基线"}，{growthConsentReady ? "成长使用同意已确认" : "仅按最小必要家庭信息运行"}。</Text>
               </View>
             </View>
 
